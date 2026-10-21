@@ -59,7 +59,7 @@ components:
       description: Optional decrypted chat payload property. Absent means Auto; manual never falls back to another logical model.
     AiNovelPublicModel:
       type: object
-      required: [key, label, localIcon, onlineIcon, inputMultiplier, cachedInputMultiplier, outputMultiplier, contextWindowTokens]
+      required: [key, label, localIcon, onlineIcon, inputMultiplier, cachedInputMultiplier, outputMultiplier, estimatedMultiplier, contextWindowTokens]
       properties:
         key: { type: string }
         label: { type: string }
@@ -81,6 +81,10 @@ components:
         inputMultiplier: { type: number, minimum: 0 }
         cachedInputMultiplier: { type: number, minimum: 0 }
         outputMultiplier: { type: number, minimum: 0 }
+        estimatedMultiplier:
+          type: number
+          minimum: 0
+          description: Server-calculated display-only estimate using historical 94.51% uncached input and 5.49% output, base context tier, with friendly 0.1/0.5 rounding. Not a settlement rate. Auto has no fixed estimate.
         contextWindowTokens:
           type: integer
           minimum: 1

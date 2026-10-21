@@ -29,6 +29,7 @@ import {
 } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager, type LLMProvider } from "./services/llm-manager.ts";
 import { createOpenRouterAwareProvider } from "./services/openrouter-aware-provider.ts";
+import { VolcengineProvider, VOLCENGINE_PROVIDER_KEY } from "./services/volcengine-provider.ts";
 import {
   VolcengineAgentPlanProvider,
   VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
@@ -84,6 +85,10 @@ export function createApplicationAiRuntime(
     logger: options.logger,
     diagnostics: llmUpstreamDiagnostics,
   });
+  const volcengineProvider = new VolcengineProvider({
+    logger: options.logger,
+    diagnostics: llmUpstreamDiagnostics,
+  });
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
     : undefined;
@@ -103,6 +108,7 @@ export function createApplicationAiRuntime(
     openrouter: localAiNovelE2eProvider ?? openRouterProvider,
     [VOLCENGINE_AGENT_PLAN_PROVIDER_KEY]:
       localAiNovelE2eProvider ?? volcengineAgentPlanProvider,
+    [VOLCENGINE_PROVIDER_KEY]: localAiNovelE2eProvider ?? volcengineProvider,
   };
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,

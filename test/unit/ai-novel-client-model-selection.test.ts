@@ -43,7 +43,7 @@ test("catalog derives rates and eligibility from server configuration without pr
   const { common, pricing } = fixture();
   const models = buildAiNovelPublicModels(common, pricing);
   assert.deepEqual(models.map((item) => item.key), ["manual", "qwen3.6-plus"]);
-  assert.deepEqual(models[0], { key: "manual", label: "manual", localIcon: "generic", onlineIcon: "", inputMultiplier: 2, cachedInputMultiplier: 0.2, outputMultiplier: 4, contextWindowTokens: 256000 });
+  assert.deepEqual(models[0], { key: "manual", label: "manual", localIcon: "generic", onlineIcon: "", inputMultiplier: 2, cachedInputMultiplier: 0.2, outputMultiplier: 4, estimatedMultiplier: 2, contextWindowTokens: 256000 });
   assert.equal(models[1]?.cachedInputMultiplier, 1); // No cache discount when unset.
   assert.ok(!JSON.stringify(models).includes("secret"));
   assert.deepEqual(buildAiNovelPublicModels({ ...common, enabled: false }, pricing), []);

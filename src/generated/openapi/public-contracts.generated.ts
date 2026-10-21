@@ -5981,6 +5981,7 @@ export const AiNovelPublicModelSchema = {
     "inputMultiplier",
     "cachedInputMultiplier",
     "outputMultiplier",
+    "estimatedMultiplier",
     "contextWindowTokens"
   ],
   "properties": {
@@ -6033,6 +6034,11 @@ export const AiNovelPublicModelSchema = {
       "type": "number",
       "minimum": 0
     },
+    "estimatedMultiplier": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Server-calculated display-only estimate using historical 94.51% uncached input and 5.49% output, base context tier, with friendly 0.1/0.5 rounding. Not a settlement rate. Auto has no fixed estimate."
+    },
     "contextWindowTokens": {
       "type": "integer",
       "minimum": 1,
@@ -6084,6 +6090,7 @@ export type AiNovelPublicModel = {
   "inputMultiplier": number;
   "cachedInputMultiplier": number;
   "outputMultiplier": number;
+  "estimatedMultiplier": number;
   "contextWindowTokens": number;
   "contextTiers"?: (
 {
@@ -6113,6 +6120,7 @@ export const AiNovelModelCatalogDataSchema = {
           "inputMultiplier",
           "cachedInputMultiplier",
           "outputMultiplier",
+          "estimatedMultiplier",
           "contextWindowTokens"
         ],
         "properties": {
@@ -6164,6 +6172,11 @@ export const AiNovelModelCatalogDataSchema = {
           "outputMultiplier": {
             "type": "number",
             "minimum": 0
+          },
+          "estimatedMultiplier": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Server-calculated display-only estimate using historical 94.51% uncached input and 5.49% output, base context tier, with friendly 0.1/0.5 rounding. Not a settlement rate. Auto has no fixed estimate."
           },
           "contextWindowTokens": {
             "type": "integer",
@@ -6222,6 +6235,7 @@ export type AiNovelModelCatalogData = {
   "inputMultiplier": number;
   "cachedInputMultiplier": number;
   "outputMultiplier": number;
+  "estimatedMultiplier": number;
   "contextWindowTokens": number;
   "contextTiers"?: (
 {

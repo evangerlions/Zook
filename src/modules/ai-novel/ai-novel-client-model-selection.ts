@@ -2,6 +2,7 @@ import { badRequest } from "../../shared/errors.ts";
 import type { LlmServiceConfig, AiNovelModelPointPricingConfig } from "../../shared/types.ts";
 import { ZOOK_CONTEXT_WINDOW_TOKENS } from "../../services/llm-context-window.ts";
 import { defaultModelLocalIcon, type ModelCatalogPresentation } from "../../shared/model-catalog-presentation.ts";
+import { estimateAiNovelDisplayMultiplier } from "./ai-novel-model-display-rate.ts";
 
 export type AiNovelClientModelSelection =
   | { mode: "auto" }
@@ -17,6 +18,7 @@ export interface AiNovelPublicModel {
   inputMultiplier: number;
   cachedInputMultiplier: number;
   outputMultiplier: number;
+  estimatedMultiplier: number;
   contextWindowTokens: number;
   contextTiers?: Array<{
     abovePromptTokens: number;
@@ -62,6 +64,9 @@ export function buildAiNovelPublicModels(common: LlmServiceConfig, pricing: AiNo
       inputMultiplier: rate.inputPointsPerMillionTokens / 100,
       cachedInputMultiplier: (rate.cachedInputPointsPerMillionTokens ?? rate.inputPointsPerMillionTokens) / 100,
       outputMultiplier: rate.outputPointsPerMillionTokens / 100,
+      estimatedMultiplier: estimateAiNovelDisplayMultiplier(
+        rate.inputPointsPerMillionTokens / 100, rate.outputPointsPerMillionTokens / 100,
+      ),
       contextWindowTokens: ZOOK_CONTEXT_WINDOW_TOKENS,
       ...(rate.contextTiers?.length ? { contextTiers: rate.contextTiers.map((tier) => ({
         abovePromptTokens: tier.abovePromptTokens,

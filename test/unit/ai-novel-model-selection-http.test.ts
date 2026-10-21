@@ -29,6 +29,8 @@ test("authenticated HTTP catalog and encrypted manual requests route and charge 
     const catalog = await response.json();
     assert.deepEqual(catalog.data.models.map((model: { key: string }) => model.key), ["manual-fixture", "qwen3.6-plus"]);
     assert.equal(catalog.data.models[0].cachedInputMultiplier, 0.2);
+    // Input 2x / output 8x => 2.3294, displayed in friendly half steps.
+    assert.equal(catalog.data.models[0].estimatedMultiplier, 2.5);
     assert.ok(!JSON.stringify(catalog.data).includes("apiKey"));
     assert.equal(((await send({ mode: "manual", modelKey: "manual-fixture" })).events.at(-1) as { type?: string } | undefined)?.type, "done");
     assert.deepEqual(fixture.observedModels(), ["manual-fixture"]);

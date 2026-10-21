@@ -1181,7 +1181,7 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 
 模型目录还返回 `localIcon`（本地图标选择器）和 `onlineIcon`（公共 HTTPS 图片 URL，可为空）；可选 `description` 和 `badge` 为产品配置的介绍与标签。客户端先显示本地资源，在线图片解码出第一帧后替换，加载中或失败继续使用本地资源；更换 URL 后不得暂留上一模型的图标。图片须为客户端可解码的光栅格式，不携带鉴权凭证。列表顺序及隐藏配置由服务端应用后返回，费率仍只从点数计价配置计算。
 
-- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`contextWindowTokens`。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
+- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
 - 加密 chat inner body 可选 `modelSelection: {"mode":"auto"}` 或 `{"mode":"manual","modelKey":"qwen3.6-plus"}`；缺省保持 Auto。`sceneKey` 只决定工作流。直接 `model` / `modelKey` / `providerModel` 等旧字段仍拒绝。不可用手动模型返回 `AI_MODEL_NOT_AVAILABLE`，不静默降级为其他模型。
 - Auto 保留现有健康度/权重和跨逻辑模型重试；手动仅允许同一逻辑模型内部的 provider 路由重试。客户端任务启动时固定选择快照，后端每次 HTTP 请求固定收到的选择。embedding 不接受模型选择，仍用专用 embedding 模型。
 - 三个倍率复用后台 AINovel 实际点数配置，费率除以 100 得到倍率（1 点=10000 加权 tokens）；缓存费率未配时等于普通输入费率。目录展示基础倍率，已配置的长上下文计价阶梯结算时仍生效。`contextWindowTokens` 为现有 Zook 256000 操作预算，不是假定的上游物理容量；目前无独立模型上下文/输出容量配置。
