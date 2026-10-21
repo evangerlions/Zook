@@ -1303,3 +1303,7 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 `POST /api/v1/lighttick/grow-bridge` 增加签名 source-context/source-confirmation/source-receipt/source-reconcile。仅已有 active 绑定和活跃注册会员可用；服务器生成的 article_read/lesson_completed 证明通过私有 outbox 投递，按不可变事件 ID/hash 去重，丢响应后查询/重放，running 结束后核对原事件完成。origin 证明保留原计划日期/时区；不复制正文/笔记。新增稳定错误 SOURCE_EVENT_CONFLICT、SOURCE_PROOF_INVALID、SOURCE_DELIVERY_UNAVAILABLE；详细字段、状态与恢复见 [共享行动协议](docs/public-lighttick-actions.md#c2-私有来源通道2026-10-21) 和唯一 OpenAPI 的 LightTickActionSource* schemas。
 
 此通道不放行普通 action 写入、新配对或 v2 接管，公共能力门槛保持关闭，未接入原生端或部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。
+
+### LightTick 行动接管内部快照 v2（受控，尚未开放）
+
+唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对继续关闭，`CONTRACT_UPGRADE_REQUIRED / CONNECTION_WRITES_DISABLED` 行为不变，原生消费者也未修改。完整切换协调及切换期间来源确认屏障仍需后续实施；不能把内部导入成功视为可迁移真实账号。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。

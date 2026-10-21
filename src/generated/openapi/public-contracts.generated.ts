@@ -15252,6 +15252,12 @@ export const LightTickGrowBridgeRequestSchema = {
       "type": "string",
       "maxLength": 80
     },
+    "target_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647,
+      "description": "Internal preflight target version; public import remains disabled."
+    },
     "snapshot_hash": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
@@ -15512,6 +15518,1169 @@ export const LightTickGrowBridgeRequestSchema = {
   "allOf": [
     {
       "if": {
+        "required": [
+          "action",
+          "snapshot"
+        ],
+        "properties": {
+          "action": {
+            "const": "import"
+          },
+          "snapshot": {
+            "type": "object",
+            "required": [
+              "snapshot_version"
+            ],
+            "properties": {
+              "snapshot_version": {
+                "const": 2
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "snapshot_hash",
+          "binding_id",
+          "target_version"
+        ],
+        "properties": {
+          "snapshot_hash": {},
+          "binding_id": {},
+          "target_version": {},
+          "snapshot": {
+            "type": "object",
+            "description": "C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This schema does not open pairing or public import.",
+            "additionalProperties": false,
+            "required": [
+              "snapshot_version",
+              "source_account_id",
+              "plans",
+              "records",
+              "reviews",
+              "reports",
+              "operations",
+              "claims",
+              "content_sources",
+              "content_events"
+            ],
+            "properties": {
+              "snapshot_version": {
+                "type": "integer",
+                "const": 2
+              },
+              "source_account_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "plans": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "oneOf": [
+                    {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 160
+                            },
+                            "period": {
+                              "type": "string",
+                              "enum": [
+                                "year",
+                                "month",
+                                "week",
+                                "day"
+                              ]
+                            },
+                            "horizon": {
+                              "type": "string",
+                              "enum": [
+                                "short",
+                                "long"
+                              ]
+                            },
+                            "start_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            },
+                            "end_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            },
+                            "timezone": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "parent_id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 80
+                            },
+                            "target_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "minimum_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "target_count": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000
+                            },
+                            "at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "reminder": {
+                              "type": "boolean"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "if_then": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "target": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "library",
+                                        "book",
+                                        "renzhi",
+                                        "yingyu",
+                                        "biaoda",
+                                        "plan",
+                                        "article"
+                                      ]
+                                    },
+                                    "course": {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    "plan_id": {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    "lesson_no": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 100000
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false,
+                                  "allOf": [
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "article"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "plan"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "plan_id",
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "plan_id": {
+                                            "type": "string",
+                                            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                          },
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "renzhi"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "yingyu"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "biaoda"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "completion_mode": {
+                              "type": "string",
+                              "enum": [
+                                "time",
+                                "content",
+                                "check"
+                              ],
+                              "default": "time"
+                            },
+                            "estimated_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "id": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "active",
+                                "paused",
+                                "completed",
+                                "archived"
+                              ]
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "reminder_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            },
+                            "progress": {
+                              "type": "object",
+                              "properties": {
+                                "minutes": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "completed": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "minimum": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "interrupted": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "partial": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "minutes",
+                                "completed",
+                                "minimum",
+                                "interrupted",
+                                "partial"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "blocked": {
+                              "type": "boolean"
+                            },
+                            "schema_version": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ]
+                            },
+                            "completed_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            },
+                            "completion_record_id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 80
+                            }
+                          },
+                          "required": [
+                            "title",
+                            "period",
+                            "horizon",
+                            "start_date",
+                            "end_date",
+                            "timezone",
+                            "parent_id",
+                            "target_minutes",
+                            "minimum_minutes",
+                            "target_count",
+                            "at",
+                            "reminder",
+                            "reason",
+                            "if_then",
+                            "target",
+                            "completion_mode",
+                            "estimated_minutes",
+                            "id",
+                            "revision",
+                            "status",
+                            "created_at",
+                            "updated_at",
+                            "reminder_at",
+                            "schema_version",
+                            "completed_at",
+                            "completion_record_id"
+                          ],
+                          "additionalProperties": false,
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "completion_mode": {
+                                    "enum": [
+                                      "content",
+                                      "check"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "target_minutes": {
+                                    "type": "null"
+                                  },
+                                  "minimum_minutes": {
+                                    "type": "null"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "completion_mode": {
+                                    "const": "check"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "target": {
+                                    "type": "null"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "completion_mode": {
+                                    "const": "time"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "target_minutes": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1440
+                                  },
+                                  "estimated_minutes": {
+                                    "type": "null"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "schema_version"
+                          ],
+                          "properties": {
+                            "schema_version": {
+                              "const": 2
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "schema_version": {
+                          "type": "integer",
+                          "const": 1
+                        }
+                      },
+                      "not": {
+                        "required": [
+                          "schema_version"
+                        ],
+                        "properties": {
+                          "schema_version": {
+                            "const": 2
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              },
+              "records": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "oneOf": [
+                    {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "plan_id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "started_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "ended_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            },
+                            "variant": {
+                              "type": "string",
+                              "enum": [
+                                "standard",
+                                "minimum"
+                              ]
+                            },
+                            "planned_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "actual_minutes": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "outcome": {
+                              "type": "string",
+                              "enum": [
+                                "running",
+                                "completed",
+                                "minimum",
+                                "partial",
+                                "interrupted",
+                                "recorded",
+                                "reopened"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "business_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "timezone": {
+                              "type": "string"
+                            },
+                            "target": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "library",
+                                        "book",
+                                        "renzhi",
+                                        "yingyu",
+                                        "biaoda",
+                                        "plan",
+                                        "article"
+                                      ]
+                                    },
+                                    "course": {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    "plan_id": {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    "lesson_no": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 100000
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false,
+                                  "allOf": [
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "article"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "plan"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "plan_id",
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "plan_id": {
+                                            "type": "string",
+                                            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                          },
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "renzhi"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "yingyu"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "biaoda"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "schema_version": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ]
+                            },
+                            "record_kind": {
+                              "type": "string",
+                              "enum": [
+                                "session",
+                                "completion",
+                                "reversal"
+                              ]
+                            },
+                            "completion_mode": {
+                              "type": "string",
+                              "enum": [
+                                "time",
+                                "content",
+                                "check"
+                              ]
+                            },
+                            "completion_effect": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "complete",
+                                "reopen"
+                              ]
+                            },
+                            "planned_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            },
+                            "date_basis": {
+                              "type": "string",
+                              "enum": [
+                                "legacy_planned",
+                                "actual_start",
+                                "actual_confirmation"
+                              ]
+                            },
+                            "reverses_record_id": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "source_event_id": {
+                              "type": "string",
+                              "maxLength": 160
+                            },
+                            "recorded_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "plan_id",
+                            "title",
+                            "started_at",
+                            "ended_at",
+                            "variant",
+                            "planned_minutes",
+                            "actual_minutes",
+                            "outcome",
+                            "note",
+                            "business_date",
+                            "timezone",
+                            "target",
+                            "schema_version",
+                            "record_kind",
+                            "completion_mode",
+                            "completion_effect",
+                            "planned_date",
+                            "date_basis"
+                          ],
+                          "additionalProperties": false,
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "record_kind": {
+                                    "enum": [
+                                      "completion",
+                                      "reversal"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "actual_minutes": {
+                                    "const": 0
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "record_kind": {
+                                    "const": "reversal"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "required": [
+                                  "reverses_record_id"
+                                ],
+                                "properties": {
+                                  "outcome": {
+                                    "const": "reopened"
+                                  },
+                                  "completion_effect": {
+                                    "const": "reopen"
+                                  },
+                                  "reverses_record_id": {}
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "record_kind": {
+                                    "const": "completion"
+                                  },
+                                  "completion_mode": {
+                                    "const": "content"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "source_event_id": {}
+                                },
+                                "required": [
+                                  "source_event_id"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "schema_version"
+                          ],
+                          "properties": {
+                            "schema_version": {
+                              "const": 2
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "plan_id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "schema_version": {
+                          "type": "integer",
+                          "const": 1
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              },
+              "reviews": {
+                "type": "array",
+                "maxItems": 2000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "reports": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "operations": {
+                "type": "array",
+                "maxItems": 20000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "hash",
+                    "result"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              },
+              "claims": {
+                "type": "array",
+                "maxItems": 20000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "claimed_at"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "claimed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "content_sources": {
+                "type": "array",
+                "maxItems": 2000,
+                "uniqueItems": true,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "article"
+                        },
+                        "course": {
+                          "type": "string",
+                          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "course"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "plan"
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                        },
+                        "lesson_no": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "plan_id",
+                        "lesson_no"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "content_events": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "type": "object",
+                  "description": "Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.",
+                  "additionalProperties": false,
+                  "required": [
+                    "event_id",
+                    "owner",
+                    "normalized_target",
+                    "confirmed_at",
+                    "request_key",
+                    "request_hash"
+                  ],
+                  "properties": {
+                    "event_id": {
+                      "type": "string",
+                      "pattern": "^source-[a-f0-9]{32}$"
+                    },
+                    "owner": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "normalized_target": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "const": "article"
+                            },
+                            "course": {
+                              "type": "string",
+                              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "course"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "const": "plan"
+                            },
+                            "plan_id": {
+                              "type": "string",
+                              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                            },
+                            "lesson_no": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100000
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "plan_id",
+                            "lesson_no"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "confirmed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "origin_action_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 80
+                    },
+                    "planned_date_at_confirmation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "timezone_at_confirmation": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "consumed_by": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "request_key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "request_hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
         "properties": {
           "action": {
             "enum": [
@@ -15616,6 +16785,7 @@ export type LightTickGrowBridgeRequest = (
 {
   "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
   "code"?: string;
+  "target_version"?: number;
   "snapshot_hash"?: string;
   "snapshot"?: {
   [key: string]: unknown;
@@ -15703,6 +16873,7 @@ export type LightTickGrowBridgeRequest = (
 {
   "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
   "code"?: string;
+  "target_version"?: number;
   "snapshot_hash"?: string;
   "snapshot"?: {
   [key: string]: unknown;
@@ -15790,6 +16961,7 @@ export type LightTickGrowBridgeRequest = (
 {
   "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
   "code"?: string;
+  "target_version"?: number;
   "snapshot_hash"?: string;
   "snapshot"?: {
   [key: string]: unknown;
@@ -15877,6 +17049,7 @@ export type LightTickGrowBridgeRequest = (
 {
   "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
   "code"?: string;
+  "target_version"?: number;
   "snapshot_hash"?: string;
   "snapshot"?: {
   [key: string]: unknown;
@@ -15964,6 +17137,95 @@ export type LightTickGrowBridgeRequest = (
 {
   "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
   "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "code"?: string;
+  "target_version"?: number;
   "snapshot_hash"?: string;
   "snapshot"?: {
   [key: string]: unknown;
@@ -16048,6 +17310,1946 @@ export type LightTickGrowBridgeRequest = (
 );
 }
 );
+
+export const LightTickActionHandoffEventSchema = {
+  "type": "object",
+  "description": "Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "owner",
+    "normalized_target",
+    "confirmed_at",
+    "request_key",
+    "request_hash"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^source-[a-f0-9]{32}$"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "normalized_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "article"
+            },
+            "course": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "course"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "plan"
+            },
+            "plan_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origin_action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "planned_date_at_confirmation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "timezone_at_confirmation": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "consumed_by": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "request_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "request_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickActionHandoffEvent = {
+  "event_id": string;
+  "owner": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "planned_date_at_confirmation"?: string | null;
+  "timezone_at_confirmation"?: string;
+  "consumed_by"?: string;
+  "request_key": string;
+  "request_hash": string;
+};
+
+export const LightTickActionHandoffSnapshotSchema = {
+  "type": "object",
+  "description": "C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This schema does not open pairing or public import.",
+  "additionalProperties": false,
+  "required": [
+    "snapshot_version",
+    "source_account_id",
+    "plans",
+    "records",
+    "reviews",
+    "reports",
+    "operations",
+    "claims",
+    "content_sources",
+    "content_events"
+  ],
+  "properties": {
+    "snapshot_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "source_account_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "period": {
+                    "type": "string",
+                    "enum": [
+                      "year",
+                      "month",
+                      "week",
+                      "day"
+                    ]
+                  },
+                  "horizon": {
+                    "type": "string",
+                    "enum": [
+                      "short",
+                      "long"
+                    ]
+                  },
+                  "start_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "end_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "parent_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  },
+                  "target_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "minimum_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "target_count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "reminder": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "if_then": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "target": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "library",
+                              "book",
+                              "renzhi",
+                              "yingyu",
+                              "biaoda",
+                              "plan",
+                              "article"
+                            ]
+                          },
+                          "course": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "plan_id": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "lesson_no": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "article"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "plan"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "plan_id",
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "plan_id": {
+                                  "type": "string",
+                                  "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                },
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "renzhi"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "yingyu"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "biaoda"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "completion_mode": {
+                    "type": "string",
+                    "enum": [
+                      "time",
+                      "content",
+                      "check"
+                    ],
+                    "default": "time"
+                  },
+                  "estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "paused",
+                      "completed",
+                      "archived"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reminder_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "progress": {
+                    "type": "object",
+                    "properties": {
+                      "minutes": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "completed": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "minimum": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "interrupted": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "partial": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "minutes",
+                      "completed",
+                      "minimum",
+                      "interrupted",
+                      "partial"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "blocked": {
+                    "type": "boolean"
+                  },
+                  "schema_version": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "completed_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "completion_record_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "title",
+                  "period",
+                  "horizon",
+                  "start_date",
+                  "end_date",
+                  "timezone",
+                  "parent_id",
+                  "target_minutes",
+                  "minimum_minutes",
+                  "target_count",
+                  "at",
+                  "reminder",
+                  "reason",
+                  "if_then",
+                  "target",
+                  "completion_mode",
+                  "estimated_minutes",
+                  "id",
+                  "revision",
+                  "status",
+                  "created_at",
+                  "updated_at",
+                  "reminder_at",
+                  "schema_version",
+                  "completed_at",
+                  "completion_record_id"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "completion_mode": {
+                          "enum": [
+                            "content",
+                            "check"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "target_minutes": {
+                          "type": "null"
+                        },
+                        "minimum_minutes": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "completion_mode": {
+                          "const": "check"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "target": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "completion_mode": {
+                          "const": "time"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "target_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "estimated_minutes": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "schema_version"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": 2
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "schema_version": {
+                "type": "integer",
+                "const": 1
+              }
+            },
+            "not": {
+              "required": [
+                "schema_version"
+              ],
+              "properties": {
+                "schema_version": {
+                  "const": 2
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "plan_id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "started_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ended_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "variant": {
+                    "type": "string",
+                    "enum": [
+                      "standard",
+                      "minimum"
+                    ]
+                  },
+                  "planned_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "actual_minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "outcome": {
+                    "type": "string",
+                    "enum": [
+                      "running",
+                      "completed",
+                      "minimum",
+                      "partial",
+                      "interrupted",
+                      "recorded",
+                      "reopened"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "business_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "library",
+                              "book",
+                              "renzhi",
+                              "yingyu",
+                              "biaoda",
+                              "plan",
+                              "article"
+                            ]
+                          },
+                          "course": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "plan_id": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "lesson_no": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "article"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "plan"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "plan_id",
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "plan_id": {
+                                  "type": "string",
+                                  "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                },
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "renzhi"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "yingyu"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "biaoda"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "schema_version": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "record_kind": {
+                    "type": "string",
+                    "enum": [
+                      "session",
+                      "completion",
+                      "reversal"
+                    ]
+                  },
+                  "completion_mode": {
+                    "type": "string",
+                    "enum": [
+                      "time",
+                      "content",
+                      "check"
+                    ]
+                  },
+                  "completion_effect": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "complete",
+                      "reopen"
+                    ]
+                  },
+                  "planned_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "date_basis": {
+                    "type": "string",
+                    "enum": [
+                      "legacy_planned",
+                      "actual_start",
+                      "actual_confirmation"
+                    ]
+                  },
+                  "reverses_record_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "source_event_id": {
+                    "type": "string",
+                    "maxLength": 160
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "id",
+                  "plan_id",
+                  "title",
+                  "started_at",
+                  "ended_at",
+                  "variant",
+                  "planned_minutes",
+                  "actual_minutes",
+                  "outcome",
+                  "note",
+                  "business_date",
+                  "timezone",
+                  "target",
+                  "schema_version",
+                  "record_kind",
+                  "completion_mode",
+                  "completion_effect",
+                  "planned_date",
+                  "date_basis"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "record_kind": {
+                          "enum": [
+                            "completion",
+                            "reversal"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "actual_minutes": {
+                          "const": 0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "record_kind": {
+                          "const": "reversal"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "reverses_record_id"
+                      ],
+                      "properties": {
+                        "outcome": {
+                          "const": "reopened"
+                        },
+                        "completion_effect": {
+                          "const": "reopen"
+                        },
+                        "reverses_record_id": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "record_kind": {
+                          "const": "completion"
+                        },
+                        "completion_mode": {
+                          "const": "content"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "source_event_id": {}
+                      },
+                      "required": [
+                        "source_event_id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "schema_version"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": 2
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "plan_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "schema_version": {
+                "type": "integer",
+                "const": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "reports": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "operations": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "hash",
+          "result"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "claimed_at"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "claimed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "content_sources": {
+      "type": "array",
+      "maxItems": 2000,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "article"
+              },
+              "course": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+              }
+            },
+            "required": [
+              "kind",
+              "course"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "plan"
+              },
+              "plan_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "content_events": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "description": "Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "owner",
+          "normalized_target",
+          "confirmed_at",
+          "request_key",
+          "request_hash"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "pattern": "^source-[a-f0-9]{32}$"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "normalized_target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  },
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "course"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "origin_action_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "planned_date_at_confirmation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "timezone_at_confirmation": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "consumed_by": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "request_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "request_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickActionHandoffSnapshot = {
+  "snapshot_version": number;
+  "source_account_id": string;
+  "plans": (
+(
+(
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+}
+)
+) & (
+{
+  "schema_version": unknown;
+}
+) | {
+  "id": string;
+  "schema_version"?: number;
+  [key: string]: unknown;
+}
+)[];
+  "records": (
+(
+(
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+)
+) & (
+{
+  "schema_version": unknown;
+}
+) | {
+  "id": string;
+  "plan_id": string;
+  "schema_version"?: number;
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reports": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "operations": (
+{
+  "key": string;
+  "hash": string;
+  "result": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "claims": (
+{
+  "key": string;
+  "claimed_at": string;
+}
+)[];
+  "content_sources": (
+{
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+}
+)[];
+  "content_events": (
+{
+  "event_id": string;
+  "owner": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "planned_date_at_confirmation"?: string | null;
+  "timezone_at_confirmation"?: string;
+  "consumed_by"?: string;
+  "request_key": string;
+  "request_hash": string;
+}
+)[];
+};
 
 export const LightTickActionSourceTargetSchema = {
   "oneOf": [
@@ -34921,6 +38123,8 @@ export const GeneratedPublicContractNames = [
   "LightTickActionCreateResult",
   "LightTickActionExecution",
   "LightTickActionFields",
+  "LightTickActionHandoffEvent",
+  "LightTickActionHandoffSnapshot",
   "LightTickActionMutationRequest",
   "LightTickActionMutationResult",
   "LightTickActionPlan",

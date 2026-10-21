@@ -108,3 +108,13 @@ C3 的 v2 全图接管、旧/新请求 key 路由与消费者放行仍未实施�
 ### C2 验收后的合同维护
 
 2026-10-21 补齐 P0 条件分支中已被 required 引用的 properties 声明，保留外层原有字段约束、null/省略语义及所有写入门禁。此变更不新增字段或放宽输入验证；生成合同同步更新，空声明归一化对比及 AJV 合同测试见 `docs/verification/lighttick-source-repair/`。
+
+## C3 内部快照 v2（2026-10-21，公开接管仍关闭）
+
+新增唯一合同 `LightTickActionHandoffSnapshot/Event`，供受信任 Grow 导出与内部 `ActionHandoffService` 验收使用。`snapshot_version=2` 包含八类数据：plans、records、reviews、reports、operations、claims、content_sources、content_events；规范 JSON SHA-256、4 MiB 上限。混合 v1/v2 的原始行动与历史事实保留；不重算历史复盘。事件携带明确确认、源请求 key/hash 和消费绑定，Zook 从已绑定来源身份映射 owner_id，保留 handoff_source 审计信息；不接受客户端自填 owner、source_result、正文或来源反馈库存。
+
+内部 `preflight(source,input)` 在账号事务锁中只读校验整个合并图，返回 binding_id、target_user_id、snapshot_hash、八类 source_counts、target_version；`import(source,{...input,target_version})` 重新验证，要求目标版本未变化，工作区和接管回执同事务提交。保存回执失败会回滚；相同 binding/hash 重试直接返回持久回执，不因目标后续版本变化重复导入；另一个快照拒绝覆盖。目标已有其他来源事件、重复对象/消费、断裂完成/撤销引用、运行冲突、旧请求 key 冲突、生成中报告均被拒绝。
+
+现有 grow-bridge 的 v2 import 输入合同引用该 schema；**运行时仍无条件通过 CONNECTION_WRITES_DISABLED 拒绝公开 import/claim/普通行动写入，未增加预检 HTTP 路由或新开关**。内部服务不代表完整切换已经可用：Grow 事务内导出一致性已验证；源写入冻结、跨切换来源确认屏障、正式备份/恢复协调和原生 C4/C5 仍未完成。详见 `docs/verification/lighttick-handoff-v2/README.md`。
+
+Grow 的 GET `/api/action-plans/requests/{key}` 现在优先查询当前账号已有本地回执；active 下本地未知 key 查询 Zook；pending 下未知 key 返回 503，表示结果未确认。远端失败或非法回执不返回伪造的 found=false。写入能力检查同时要求版本、nullable、三种模式、实际日期、文章/课程来源回执和显式写入开关；当前公开能力仍关闭。

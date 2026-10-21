@@ -24,6 +24,7 @@ export interface ActionContentEvent {
  event_id:string;owner_id:string;normalized_target:ActionTarget;confirmed_at:string;origin_action_id?:string|null;
  planned_date_at_confirmation?:string|null;timezone_at_confirmation?:string;consumed_by?:string;
  delivery_hash?:string;binding_id?:string;delivery_reason?:string;
+ handoff_source?:{account_id:string;request_key:string;request_hash:string};
 }
 export interface ActionWorkspace {
  plans:ActionPlan[]; records:ActionExecution[]; reviews:Json[];reports:Json[];claims:Record<string,string>;

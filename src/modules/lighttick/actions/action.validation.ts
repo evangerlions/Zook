@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import {ApplicationError} from '../../../shared/errors.ts';
 import type {ActionFields,ActionPlan,ActionTarget,Json} from './action.types.ts';
 import type {ErrorCode} from '../../../shared/types.ts';
-export const reject=(status:number,message:string,code:ErrorCode=status===404?'LIGHTTICK_RESOURCE_NOT_FOUND':status===409?'STATE_CONFLICT':'VALIDATION_ERROR',details?:unknown):never=>{throw new ApplicationError(status,code,message,details);};
+export function reject(status:number,message:string,code:ErrorCode=status===404?'LIGHTTICK_RESOURCE_NOT_FOUND':status===409?'STATE_CONFLICT':'VALIDATION_ERROR',details?:unknown):never {throw new ApplicationError(status,code,message,details);}
 export function canonical(value:any):string {
  if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';
  if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';

@@ -5282,6 +5282,11 @@ components:
         code:
           type: string
           maxLength: 80
+        target_version:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+          description: Internal preflight target version; public import remains disabled.
         snapshot_hash:
           type: string
           pattern: ^[a-f0-9]{64}$
@@ -5322,6 +5327,22 @@ components:
         event:
           $ref: '#/components/schemas/LightTickActionSourceEvent'
       allOf:
+      - if:
+          required: [action, snapshot]
+          properties:
+            action: {const: import}
+            snapshot:
+              type: object
+              required: [snapshot_version]
+              properties:
+                snapshot_version: {const: 2}
+        then:
+          required: [snapshot_hash, binding_id, target_version]
+          properties:
+            snapshot_hash: {}
+            binding_id: {}
+            target_version: {}
+            snapshot: {$ref: '#/components/schemas/LightTickActionHandoffSnapshot'}
       - if:
           properties:
             action:
@@ -5725,3 +5746,99 @@ components:
       - data
       - requestId
       additionalProperties: false
+
+    LightTickActionHandoffEvent:
+      type: object
+      description: Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.
+      additionalProperties: false
+      required: [event_id, owner, normalized_target, confirmed_at, request_key, request_hash]
+      properties:
+        event_id: {type: string, pattern: '^source-[a-f0-9]{32}$'}
+        owner: {type: string, minLength: 1, maxLength: 160}
+        normalized_target: {$ref: '#/components/schemas/LightTickActionSourceTarget'}
+        confirmed_at: {type: string, format: date-time}
+        origin_action_id: {type: [string, 'null'], maxLength: 80}
+        planned_date_at_confirmation: {type: [string, 'null'], format: date}
+        timezone_at_confirmation: {type: string, maxLength: 80}
+        consumed_by: {type: string, maxLength: 80}
+        request_key: {type: string, minLength: 1, maxLength: 160}
+        request_hash: {type: string, pattern: '^[a-f0-9]{64}$'}
+    LightTickActionHandoffSnapshot:
+      type: object
+      description: C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This schema does not open pairing or public import.
+      additionalProperties: false
+      required: [snapshot_version, source_account_id, plans, records, reviews, reports, operations, claims, content_sources, content_events]
+      properties:
+        snapshot_version: {type: integer, const: 2}
+        source_account_id: {type: string, minLength: 1, maxLength: 160}
+        plans:
+          type: array
+          maxItems: 1000
+          items:
+            oneOf:
+            - allOf:
+              - $ref: '#/components/schemas/LightTickActionPlan'
+              - type: object
+                required: [schema_version]
+                properties:
+                  schema_version: {const: 2}
+            - type: object
+              required: [id]
+              properties:
+                id: {type: string, maxLength: 80}
+                schema_version: {type: integer, const: 1}
+              not:
+                required: [schema_version]
+                properties:
+                  schema_version: {const: 2}
+              additionalProperties: true
+        records:
+          type: array
+          maxItems: 10000
+          items:
+            oneOf:
+            - allOf:
+              - $ref: '#/components/schemas/LightTickActionExecution'
+              - type: object
+                required: [schema_version]
+                properties:
+                  schema_version: {const: 2}
+            - type: object
+              required: [id, plan_id]
+              properties:
+                id: {type: string, maxLength: 80}
+                plan_id: {type: string, maxLength: 80}
+                schema_version: {type: integer, const: 1}
+              additionalProperties: true
+        reviews: {type: array, maxItems: 2000, items: {type: object, additionalProperties: true}}
+        reports: {type: array, maxItems: 1000, items: {type: object, additionalProperties: true}}
+        operations:
+          type: array
+          maxItems: 20000
+          items:
+            type: object
+            additionalProperties: false
+            required: [key, hash, result]
+            properties:
+              key: {type: string, minLength: 1, maxLength: 160}
+              hash: {type: string, pattern: '^[a-f0-9]{64}$'}
+              result: {type: object, additionalProperties: true}
+        claims:
+          type: array
+          maxItems: 20000
+          items:
+            type: object
+            additionalProperties: false
+            required: [key, claimed_at]
+            properties:
+              key: {type: string, minLength: 1, maxLength: 160}
+              claimed_at: {type: string, format: date-time}
+        content_sources:
+          type: array
+          maxItems: 2000
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/LightTickActionSourceTarget'}
+        content_events:
+          type: array
+          maxItems: 10000
+          items: {$ref: '#/components/schemas/LightTickActionHandoffEvent'}

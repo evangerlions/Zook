@@ -1,4 +1,5 @@
-import type { AdminAppSummary, ConfigRevisionMeta } from "./admin-core.ts";
+import type { AdminAppSummary } from "./admin-core.ts";
+import type { ConfigRevisionMeta } from "./records.ts";
 
 export type ReleaseUpdatePlatform = "android" | "ios" | "ohos" | "windows" | "web";
 export type ReleaseUpdateDelivery = "download" | "store";

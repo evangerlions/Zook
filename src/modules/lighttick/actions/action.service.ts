@@ -34,7 +34,7 @@ export class ActionService {
    const key=text(b.key,160,true);if(key.length<8)reject(422,'请求编号过短。');
    const payloadHash=digest({method,path,body:path==='/reviews/generate'?Object.fromEntries(Object.entries(b).filter(([k])=>k!=='ai_config')):b}),old=await this.repository.getOperation(owner,'action:'+key);
    if(old){if(old.payloadHash!==payloadHash)reject(409,'同一请求编号不能提交不同内容。');return old.resultPayload;}
-   if(w.legacy_operations?.[key])reject(409,'这是接管前的请求，请刷新并核对已有计划后再操作。');
+   if(w.legacy_operations&&Object.hasOwn(w.legacy_operations,key))reject(409,'这是接管前的请求，请刷新并核对已有计划后再操作。');
    let result:Json;
    if(path==='')result=createPlans(w,b,now);
    else if(path==='/schedules')result=schedule(w,b,now);
@@ -54,7 +54,7 @@ export class ActionService {
  }
  private async read(w:ActionWorkspace,path:string,q:Json,now:Date,version:number,owner:LightTickOwner):Promise<Json|string>{
   if(path==='')return listing(w,now,version);
-  if(path.startsWith('/requests/')){const key=text(path.slice(10),160,true),old=await this.repository.getOperation(owner,'action:'+key),legacy=w.legacy_operations?.[key];return {found:!!old||!!legacy,result:old?.resultPayload??legacy?.result??null};}
+  if(path.startsWith('/requests/')){const key=text(path.slice(10),160,true),old=await this.repository.getOperation(owner,'action:'+key),legacy=w.legacy_operations&&Object.hasOwn(w.legacy_operations,key)?w.legacy_operations[key]:undefined;return {found:!!old||!!legacy,result:old?.resultPayload??legacy?.result??null};}
   if(path==='/records'){
    if(q.plan_id)getPlan(w.plans,q.plan_id);const page=integer(Number(q.page??1),1,100000),records=w.records.filter(r=>!q.plan_id||r.plan_id===q.plan_id).sort((a,b)=>(b.started_at+b.id).localeCompare(a.started_at+a.id));return {records:records.slice((page-1)*30,page*30),total:records.length,page};
   }

@@ -1,0 +1,31 @@
+(node:5281) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ v2 preflight is read-only; complete/reversal/nullable/running and receipts survive exact replay (98.686458ms)
+✔ invalid graph/hash/identity/colliding receipts/stale preflight leaves staged workspace untouched (36.249209ms)
+✔ receipt persistence failure rolls back graph; retry after service restart imports once (6.476834ms)
+✔ imported unconsumed evidence maps owner and reconciles exactly once; forged consumption is rejected (34.663125ms)
+✔ v1 raw facts and archived parent relationships survive mixed-version import unchanged (4.809834ms)
+✔ arbitrary old request keys remain exact own properties, without prototype receipts (6.095792ms)
+(node:5282) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ canonical P0 input schemas cover null/modes, conditional dates and explicit operations (6.686791ms)
+✔ stable P0 errors preserve only safe recovery metadata in the Zook envelope (3.4225ms)
+✔ canonical output fixtures include nullable schedules and v2 facts without private inventory (33.490958ms)
+(node:5283) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ registered API and signed bridge remain closed independently of old enable flag and schema2 (214.646292ms)
+(node:5284) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ source contract requires explicit normalized proof, binding, version and signed origin context (9.130583ms)
+(node:5285) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated public contracts include restored AI Novel and BodyLog schemas (0.682542ms)
+✔ in-repository OpenAPI source reproduces committed runtime contracts (1182.655542ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1623.780542
