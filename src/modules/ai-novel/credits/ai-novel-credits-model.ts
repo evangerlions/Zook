@@ -6,7 +6,10 @@ export type CreditsTier = "free" | "plus" | "pro";
 export type CreditsOutcome = "success" | "failure" | "cancelled";
 export interface CreditsMembership { tier: CreditsTier; anchorAt?: string; expiresAt?: string | null; observedAt?: string }
 export const CREDIT_MICROS = 1_000_000n;
-export const LOCAL_CREDIT_QUOTAS = { free: 20, plus: 1000, pro: 4000 } as const;
+export const LOCAL_CREDIT_QUOTAS = { free: 200, plus: 1000, pro: 4000 } as const;
+// Accounts written before quota snapshots used these limits. Preserve spent
+// credits when applying a policy change inside an existing window.
+const LEGACY_CREDIT_QUOTAS = { free: 20, plus: 1000, pro: 4000 } as const;
 const CREDIT_WEEK_MS = 7 * 86400_000;
 
 export interface CreditsAccount {
@@ -18,6 +21,7 @@ export interface CreditsAccount {
   windowAnchorAt?: string;
   membershipAnchorAt?: string;
   spentMicros?: string;
+  quotaMicros?: string;
   entitlementObservedAt?: string;
   /** Earliest point from which every credit mutation has reporting coverage. */
   reportingSince?: string;
@@ -84,7 +88,7 @@ export function refreshCreditsAccount(account: CreditsAccount | undefined, value
   const newMembership = anchorChanged && !migratingPaid;
   const anchorAt = anchorChanged ? membership.anchorAt! : account?.windowAnchorAt ?? membership.anchorAt ?? now.toISOString();
   const period = creditsPeriod(anchorAt, now);
-  const base = { ...account, tier, windowAnchorAt: anchorAt, periodKey: period.key, refreshAt: period.refreshAt,
+  const base = { ...account, tier, quotaMicros: String(allowance), windowAnchorAt: anchorAt, periodKey: period.key, refreshAt: period.refreshAt,
     entitlementObservedAt: membership.observedAt ?? account?.entitlementObservedAt,
     giftMicros: account?.giftMicros ?? "0",
     membershipAnchorAt: tier === "free" ? account?.membershipAnchorAt : membership.anchorAt ?? account?.membershipAnchorAt };
@@ -95,12 +99,15 @@ export function refreshCreditsAccount(account: CreditsAccount | undefined, value
     return { ...base, periodicMicros: String(remaining), spentMicros: "0" };
   }
   const old = BigInt(account.periodicMicros);
-  const previousLimit = BigInt(LOCAL_CREDIT_QUOTAS[account.tier]) * CREDIT_MICROS;
+  const previousLimit = account.quotaMicros === undefined
+    ? BigInt(LEGACY_CREDIT_QUOTAS[account.tier]) * CREDIT_MICROS : BigInt(account.quotaMicros);
   const inferredSpent = previousLimit - min(old, previousLimit);
   const storedSpent = BigInt(account.spentMicros ?? "0");
   const spent = storedSpent > inferredSpent ? storedSpent : inferredSpent;
   const available = allowance > spent ? allowance - spent : 0n;
-  const remaining = allowance > previousLimit ? available : min(old, allowance);
+  const remaining = allowance > previousLimit
+    ? account.tier === tier ? min(old + allowance - previousLimit, allowance) : available
+    : min(old, allowance);
   return { ...base, periodicMicros: String(remaining), spentMicros: String(spent) };
 }
 

@@ -92,5 +92,5 @@ test("paid snapshot captured before expiry cannot restore quota after transactio
   const expired = refreshCreditsAccount(account, { tier: "free", observedAt: paid.observedAt }, now);
   const stale = refreshCreditsAccount(expired, paid, now);
   assert.equal(stale.tier, "free");
-  assert.equal(stale.periodicMicros, "20000000");
+  assert.equal(stale.periodicMicros, "100000000");
 });

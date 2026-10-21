@@ -25,24 +25,24 @@ test("fresh HTTP settles successful calls without client confirmation; failures 
   };
   try {
     assert.equal((await fetch(fixture.url + "/api/v1/ai_novel/credits", { headers: { "X-App-Id": "ai_novel" } })).status, 401);
-    assert.equal((await api("credits")).data.remainingMicros, 20_000_000);
+    assert.equal((await api("credits")).data.remainingMicros, 200_000_000);
 
     const first = await chat("client-choice-ignored");
     assert.equal(first.status, 200);
     assert.ok(first.events.some((event: any) => event.type === "content_delta"));
     assert.equal((first.events.at(-1) as any).type, "done");
-    assert.equal((await api("credits")).data.remainingMicros, 18_600_000);
+    assert.equal((await api("credits")).data.remainingMicros, 198_600_000);
     // Same client ID cannot waive cost, collide with accounting or defer settlement.
     await chat("client-choice-ignored");
-    assert.equal((await api("credits")).data.remainingMicros, 17_200_000);
+    assert.equal((await api("credits")).data.remainingMicros, 197_200_000);
     for (const outcome of ["success", "failure", "cancelled"]) {
       assert.equal((await api("credits/jobs/finish", { jobId: "client-choice-ignored", outcome })).status, 404);
     }
-    assert.equal((await api("credits")).data.remainingMicros, 17_200_000);
+    assert.equal((await api("credits")).data.remainingMicros, 197_200_000);
     await chat("failed", "fail");
-    assert.equal((await api("credits")).data.remainingMicros, 17_200_000);
+    assert.equal((await api("credits")).data.remainingMicros, 197_200_000);
     await chat("failed"); // Each successful retry has its own server-owned request.
-    assert.equal((await api("credits")).data.remainingMicros, 15_800_000);
+    assert.equal((await api("credits")).data.remainingMicros, 195_800_000);
     const abort = new AbortController();
     const disconnect = await fetch(fixture.url + "/api/v1/ai_novel/ai/chat-completions", { headers, method: "POST", signal: abort.signal, body: JSON.stringify(encryptCreditsFixture({ sceneKey: "write_turn", agentProtocol: "pi-v1", messages: [{ role: "user", content: "disconnect" }], stream: true })) });
     await disconnect.body!.getReader().read();
@@ -55,7 +55,7 @@ test("fresh HTTP settles successful calls without client confirmation; failures 
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
     assert.equal(recovered?.events.at(-1)?.type, "done");
-    assert.equal((await api("credits")).data.remainingMicros, 14_400_000);
+    assert.equal((await api("credits")).data.remainingMicros, 194_400_000);
     await chat("exhaust", "exhaust");
     const callsBefore = fixture.calls();
     const denied = await chat("denied");

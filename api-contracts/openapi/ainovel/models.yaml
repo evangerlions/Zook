@@ -24,6 +24,10 @@ paths:
         price. Model keys are provider-independent; no credentials or upstream
         provider names are returned. Rates are the configured base rates; any
         configured long-context pricing tiers still apply during settlement.
+        data.autoFree describes the same manually controlled campaign enforced
+        at chat admission. Responses are no-store; clients refresh on foreground
+        and periodically, and hide stale promotional badges. Missing autoFree
+        is treated as disabled by older/newer interoperating clients.
       tags: [ainovel-models]
       parameters:
         - name: X-App-Id
@@ -106,6 +110,17 @@ components:
       type: object
       required: [models]
       properties:
+        autoFree:
+          type: object
+          description: Server campaign snapshot. Missing means no free promotion. Start inclusive, end exclusive; absent bounds are unrestricted. Applies to Auto chat only, including legacy absent selection, never manual chat or embeddings. Server rechecks at request admission.
+          required: [enabled, active, serverTime]
+          properties:
+            enabled: { type: boolean }
+            active: { type: boolean }
+            startsAt: { type: string, format: date-time }
+            endsAt: { type: string, format: date-time }
+            serverTime: { type: string, format: date-time }
+          additionalProperties: false
         models:
           type: array
           items:

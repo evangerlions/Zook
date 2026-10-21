@@ -30,6 +30,8 @@ export interface AlipayOrder extends AlipayCreateInput {
   membershipExpiresAt: string | null;
   conflict: "provider_conflict" | null;
   accountDeletedAt: string | null;
+  /** Internal scheduling hint; not part of the public order contract. */
+  lastRecoveryAt?: string;
 }
 export type AlipayPublicOrder = Pick<AlipayOrder, "orderId" | "provider" | "environment" | "productKey" | "status" | "amountMinor" | "currency" | "createdAt" | "expiresAt" | "paidAt" | "membershipApplied" | "conflict">;
 export type AlipayPayment = { type: "app"; orderString: string } | { type: "page"; url: string } | { type: "qr"; qrCode: string };

@@ -17,7 +17,7 @@ const filter: UsageFilter = {
   tier: "all",
   sandbox: false,
 };
-const receipt = (id = "call", micros = "30000000") => ({
+const receipt = (id = "call", micros = "210000000") => ({
   callId: id,
   modelKey: "model",
   pointMicros: micros,
@@ -71,14 +71,14 @@ test("canonical settlement records exact two pools and absorbed overage once; ca
   assert.deepEqual(report.summary, {
     payingUsers: 0,
     activeUsers: 1,
-    chargedPoints: 25,
+    chargedPoints: 205,
     giftPoints: 5,
     absorbedPoints: 5,
     denied: 1,
   });
-  assert.equal(report.models[0]?.points, 30);
+  assert.equal(report.models[0]?.points, 210);
   assert.equal(report.tiers[0]?.exhausted, 1);
-  assert.equal(report.simulation[0]?.consumption[0], 25);
+  assert.equal(report.simulation[0]?.consumption[0], 205);
 });
 
 test("failed/cancelled provider requests before settlement and rollback create no debit evidence", async () => {
@@ -102,7 +102,7 @@ test("failed/cancelled provider requests before settlement and rollback create n
   assert.equal((await store.readUsageReport(filter)).events.length, 0);
   assert.equal(
     (await service.balanceMicros("user")).remainingMicros,
-    "20000000",
+    "200000000",
   );
 });
 

@@ -1,6 +1,7 @@
 import type { AiNovelModelSelectionConfig } from "./types";
 import { parseConfigText } from "./json.ts";
 import { parseModelCatalogPresentation } from "../../../../src/shared/model-catalog-presentation.ts";
+import { parseAiNovelAutoFreeConfig } from "../../../../src/shared/ai-novel-auto-free.ts";
 
 const WEIGHT_PRECISION = 100;
 
@@ -9,7 +10,7 @@ export function parseAiNovelModelSelectionText(
   availableModelKeys: Iterable<string>,
 ): AiNovelModelSelectionConfig {
   const root = parseConfigText(rawText);
-  assertKnownFields(root, ["schemaVersion", "chat", "catalog"], "配置");
+  assertKnownFields(root, ["schemaVersion", "chat", "catalog", "autoFree"], "配置");
   if (root.schemaVersion !== 1) {
     throw new Error("schemaVersion 必须为 1。");
   }
@@ -59,6 +60,7 @@ export function parseAiNovelModelSelectionText(
     schemaVersion: 1,
     chat: { default: models },
     ...(catalog !== undefined ? { catalog } : {}),
+    ...(root.autoFree === undefined ? {} : { autoFree: parseAiNovelAutoFreeConfig(root.autoFree) }),
   };
 }
 

@@ -23,21 +23,19 @@ function snapshot(source: AiNovelBillingSource): NormalizedRevenueCatSnapshot {
     ignoredEntitlementCount: 0, ignoredProductCount: 0, hasActiveUnverifiedEnvironmentEntitlement: false };
 }
 
-test("catalog blocks all six cross-channel combinations but permits the same channel", () => {
-  for (const current of ["app_store", "play_store", "alipay"] as const) {
+test("catalog reports public channel availability without personal restrictions", () => {
     for (const target of ["app_store", "play_store", "alipay"] as const) {
       const input = target === "app_store" ? { accountRegion: "CN", platform: "ios", distribution: "app_store" } as const
         : target === "play_store" ? { accountRegion: "GLOBAL", platform: "android", distribution: "google_play" } as const
           : { accountRegion: "CN", platform: "web", distribution: "web" } as const;
-      const catalog = buildAiNovelBillingCatalog({ ...input, activeMembershipSource: current, alipayAvailable: true,
+      const catalog = buildAiNovelBillingCatalog({ ...input, alipayAvailable: true,
         alipayPrices: { plus_monthly: 3800, plus_quarterly: 9800, plus_yearly: 29800, pro_monthly: 8800, pro_quarterly: 22800, pro_yearly: 59800 } });
       for (const product of catalog.products) {
-        assert.equal(product.providers[0].available, current === target);
-        assert.equal(product.providers[0].blockedReason, current === target ? null : "active_membership_managed_elsewhere");
+        assert.equal(product.providers[0].available, true);
+        assert.equal(product.providers[0].blockedReason, null);
       }
     }
-  }
-  const direct = buildAiNovelBillingCatalog({ accountRegion: "GLOBAL", platform: "android", distribution: "direct_android", activeMembershipSource: "app_store" });
+  const direct = buildAiNovelBillingCatalog({ accountRegion: "GLOBAL", platform: "android", distribution: "direct_android" });
   assert.equal(direct.products[0].providers[0].available, false);
 });
 

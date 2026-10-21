@@ -7,7 +7,8 @@ import type {
 import type { AccountRegion } from "../../shared/types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
 import { billingStoreProductId } from "./ainovel-store-products.ts";
-import { billingChannelsConflict } from "./billing-channel-policy.ts";
+import { billingBenefits } from "./ainovel-billing-benefits.ts";
+import { LOCAL_CREDIT_QUOTAS } from "../ai-novel/credits/ai-novel-credits-model.ts";
 
 export interface AiNovelBillingCatalogInput {
   accountRegion: AccountRegion;
@@ -15,7 +16,8 @@ export interface AiNovelBillingCatalogInput {
   distribution: DistributionChannel;
   alipayAvailable?: boolean;
   alipayPrices?: Record<string, number>;
-  activeMembershipSource?: string | null;
+  locale?: string;
+  benefitsConfig?: string;
 }
 
 type ProductDefinition = Pick<
@@ -42,6 +44,8 @@ export function buildAiNovelBillingCatalog(
     distribution: input.distribution,
     products: PRODUCT_DEFINITIONS.map((product) => ({
       ...product,
+      benefits: billingBenefits(product.tier, input.locale, input.benefitsConfig),
+      usage: { credits: LOCAL_CREDIT_QUOTAS[product.tier], resetPeriod: "P7D" },
       providers: [resolveProvider(input, product)],
     })),
   };
@@ -79,12 +83,10 @@ function resolveProvider(
   product: ProductDefinition,
 ): ProductProvider {
   if (isRevenueCatDistribution(input)) {
-    const source = input.platform === "ios" || input.platform === "macos" ? "app_store" : "play_store";
-    const conflict = billingChannelsConflict(input.activeMembershipSource, source);
     return {
       provider: "revenuecat",
-      available: !conflict,
-      blockedReason: conflict ? "active_membership_managed_elsewhere" : null,
+      available: true,
+      blockedReason: null,
       providerProductId: billingStoreProductId(product.productKey, input.distribution === "google_play"),
       providerPackageId: null,
       providerEntitlementId: REVENUECAT_ENTITLEMENT_IDS[product.tier],
@@ -93,8 +95,7 @@ function resolveProvider(
   }
 
   if (input.accountRegion === "CN" && input.alipayAvailable) {
-    const conflict = billingChannelsConflict(input.activeMembershipSource, "alipay");
-    return { provider: "alipay", available: !conflict, blockedReason: conflict ? "active_membership_managed_elsewhere" : null,
+    return { provider: "alipay", available: true, blockedReason: null,
       providerProductId: product.productKey, providerPackageId: null, providerEntitlementId: product.tier,
       price: { amountMinor: input.alipayPrices![product.productKey], currency: "CNY" } };
   }

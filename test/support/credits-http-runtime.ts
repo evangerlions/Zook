@@ -40,7 +40,7 @@ export async function startCreditsHttpRuntime(port = 0) {
         });
         if (request.signal?.aborted) return;
       }
-      yield { type: "usage", usage: { promptTokens: prompt === "exhaust" ? 200_000 : 10_000, completionTokens: 1000, totalTokens: prompt === "exhaust" ? 201_000 : 11_000 } };
+      yield { type: "usage", usage: { promptTokens: prompt === "exhaust" ? 2_000_000 : 10_000, completionTokens: 1000, totalTokens: prompt === "exhaust" ? 2_001_000 : 11_000 } };
       yield { type: "done", finishReason: "stop" };
     },
   };

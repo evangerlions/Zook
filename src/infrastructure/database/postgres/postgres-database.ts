@@ -104,6 +104,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
   override findAiNovelAlipayIdempotency(user: string, key: string) { return this.alipayOrders.findIdempotency(user, key); }
   override listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
+  override listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) { return this.alipayOrders.listRecovery(environment, merchant, seller, limit); }
   override saveAiNovelAlipayOrder(order: AlipayOrder) { return this.alipayOrders.save(order); }
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;

@@ -24,6 +24,7 @@ export interface AdminAiRoutingDocument {
 
 export interface AiNovelModelSelectionConfig {
   schemaVersion: 1;
+  autoFree?: import("../../../../../src/shared/ai-novel-auto-free.ts").AiNovelAutoFreeConfig;
   catalog?: import("../../../../../src/shared/model-catalog-presentation.ts").ModelCatalogPresentation[];
   chat: {
     default: Array<{

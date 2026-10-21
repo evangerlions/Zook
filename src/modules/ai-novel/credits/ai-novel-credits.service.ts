@@ -46,7 +46,7 @@ export class AiNovelCreditsService {
     });
   }
 
-  async begin(userId: string, jobId: string, requestId: string): Promise<"allowed" | "quota_insufficient"> {
+  async begin(userId: string, jobId: string, requestId: string, options: { allowZeroBalance?: boolean } = {}): Promise<"allowed" | "quota_insufficient"> {
     requireId(jobId); requireId(requestId);
     if (jobId.startsWith("gift:")) throw conflict("Reserved job ID namespace.");
     const membership = await this.membership(userId);
@@ -60,7 +60,7 @@ export class AiNovelCreditsService {
       if (state.job && state.job.status !== "active") throw conflict("Job has already finished.");
       if (account.activeJobId && account.activeJobId !== jobId) throw conflict("Another AI job is active.");
       if (state.job?.requestId) throw conflict("Another request in this job is active.");
-      if (BigInt(account.periodicMicros) + BigInt(account.giftMicros) <= 0n) {
+      if (!options.allowZeroBalance && BigInt(account.periodicMicros) + BigInt(account.giftMicros) <= 0n) {
         usageEvent(state, { id: `denied:${requestId}`, kind: "denied", requestId,
           periodicMicros: "0", giftMicros: "0", absorbedMicros: "0" });
         this.logger?.info("AINovel credits admission denied", { userId, jobId, requestId, reason: "quota_insufficient" });
@@ -72,7 +72,7 @@ export class AiNovelCreditsService {
       state.job.requestId = requestId;
       state.job.expiresAt = new Date(now.getTime() + JOB_LEASE_MS).toISOString();
       account.activeJobExpiresAt = state.job.expiresAt;
-      this.logger?.info("AINovel credits request admitted", { userId, jobId, requestId });
+      this.logger?.info("AINovel credits request admitted", { userId, jobId, requestId, autoFree: options.allowZeroBalance === true });
       return "allowed";
     });
   }

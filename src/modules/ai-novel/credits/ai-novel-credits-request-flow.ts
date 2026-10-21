@@ -9,6 +9,7 @@ import { normalizeMessages, normalizeEmbeddingInput, requireSceneKey } from "../
 import { quotaReply, syntheticAiNovelReply } from "./synthetic-ai-novel-reply.ts";
 import { startCreditsRequestLease } from "./credits-request-lease.ts";
 import { randomId } from "../../../shared/utils.ts";
+import { parseAiNovelClientModelSelection } from "../ai-novel-client-model-selection.ts";
 
 export interface CreditsRequestOptions {
   requestId?: string;
@@ -24,6 +25,7 @@ export class AiNovelCreditsRequestFlow {
     readonly credits: AiNovelCreditsService,
     readonly enabled: boolean,
     private readonly conversations?: AiNovelConversationRecordService,
+    private readonly autoFreeActive: () => Promise<boolean> = async () => false,
   ) {}
 
   async embeddings<T extends CreditsRequestOptions>(body: Record<string, unknown>, options: T, execute: (options: T) => Promise<AiNovelEmbeddingsResponse>): Promise<AiNovelEmbeddingsResponse> {
@@ -42,7 +44,8 @@ export class AiNovelCreditsRequestFlow {
 
   async complete<T extends CreditsRequestOptions>(body: Record<string, unknown>, options: T, execute: (options: T) => Promise<AiNovelChatResponse>): Promise<AiNovelChatResponse> {
     if (!this.enabled) return execute(options);
-    const context = await this.admit(body, options);
+    const free = await this.freeAuto(body);
+    const context = await this.admit(body, options, false, free);
     if (!context.allowed) {
       await this.recordDenied(body, options);
       throw this.denial(options);
@@ -51,7 +54,7 @@ export class AiNovelCreditsRequestFlow {
     const leasedOptions = { ...options, signal: lease.signal };
     let completed = false;
     try {
-      const result = await execute(this.measuredOptions(leasedOptions, context.jobId));
+      const result = await execute(free ? leasedOptions : this.measuredOptions(leasedOptions, context.jobId));
       completed = true;
       return result;
     } finally {
@@ -62,7 +65,8 @@ export class AiNovelCreditsRequestFlow {
 
   async *stream<T extends CreditsRequestOptions>(body: Record<string, unknown>, options: T, execute: (options: T) => AsyncIterable<AiNovelChatStreamChunk>): AsyncIterable<AiNovelChatStreamChunk> {
     if (!this.enabled) { yield* execute(options); return; }
-    const context = await this.admit(body, options);
+    const free = await this.freeAuto(body);
+    const context = await this.admit(body, options, false, free);
     if (!context.allowed) {
       await this.recordDenied(body, options);
       yield* syntheticAiNovelReply({ locale: options.locale, sceneKey: requireSceneKey(body), actionId: options.requestId!, signal: options.signal });
@@ -72,7 +76,7 @@ export class AiNovelCreditsRequestFlow {
     const leasedOptions = { ...options, signal: lease.signal };
     let completed = false;
     try {
-      for await (const chunk of execute(this.measuredOptions(leasedOptions, context.jobId))) {
+      for await (const chunk of execute(free ? leasedOptions : this.measuredOptions(leasedOptions, context.jobId))) {
         if (chunk.type === "done") {
           completed = true;
           // Release before the final frame; the next HTTP request may start immediately.
@@ -90,7 +94,7 @@ export class AiNovelCreditsRequestFlow {
     }
   }
 
-  private async admit(body: Record<string, unknown>, options: CreditsRequestOptions, embedding = false) {
+  private async admit(body: Record<string, unknown>, options: CreditsRequestOptions, embedding = false, free = false) {
     requireSceneKey(body);
     if (embedding) normalizeEmbeddingInput(body.input); else normalizeMessages(body.messages);
     if (!options.userId || !options.requestId) {
@@ -98,7 +102,12 @@ export class AiNovelCreditsRequestFlow {
     }
     // Client context (including legacy billingJobId/outcome) never controls accounting.
     const jobId = randomId("credit_request");
-    return { jobId, allowed: await this.credits.begin(options.userId, jobId, options.requestId) === "allowed" };
+    return { jobId, allowed: await this.credits.begin(options.userId, jobId, options.requestId, { allowZeroBalance: free }) === "allowed" };
+  }
+
+  private async freeAuto(body: Record<string, unknown>): Promise<boolean> {
+    // Missing selection is the existing legacy-client Auto contract, not a client billing flag.
+    return parseAiNovelClientModelSelection(body.modelSelection).mode === "auto" && await this.autoFreeActive();
   }
 
   private measuredOptions<T extends CreditsRequestOptions>(options: T, jobId: string): T {

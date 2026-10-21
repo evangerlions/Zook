@@ -23,7 +23,7 @@ export async function confirmAlipayOrder(database: ApplicationDatabase, options:
     if (typeof trade !== "string" || !/^\d{10,64}$/.test(trade)) reject();
     if (order.providerTransactionId && order.providerTransactionId !== trade) reject();
     // Successful payment is monotonic. Old WAIT/CLOSED notices cannot undo financial evidence.
-    if (order.status === "paid") return order;
+    if (order.status === "paid") return settleAlipayMembership(database, order, now);
     order.providerTransactionId = trade;
     if (status === "WAIT_BUYER_PAY") {
       await database.saveAiNovelAlipayOrder(order);
@@ -35,6 +35,24 @@ export async function confirmAlipayOrder(database: ApplicationDatabase, options:
       if (!paidAt || Date.parse(paidAt) > now.getTime() + 300_000 || Date.parse(paidAt) < Date.parse(order.createdAt) - 300_000) reject();
       order.status = "paid";
       order.paidAt = paidAt;
+    }
+    return settleAlipayMembership(database, order, now);
+  });
+}
+
+/** Replays only trusted, persisted payment evidence through the same grant path. */
+export async function retryAlipayMembership(database: ApplicationDatabase, orderId: string, now: Date) {
+  return database.withExclusiveSession(async () => {
+    const order = await database.findAiNovelAlipayOrder(orderId);
+    if (!order) throw new ApplicationError(404, "BILLING_ORDER_NOT_FOUND", "Alipay order not found.");
+    return settleAlipayMembership(database, order, now);
+  });
+}
+
+async function settleAlipayMembership(database: ApplicationDatabase, order: AlipayOrder, now: Date): Promise<AlipayOrder> {
+    if (order.status === "paid" && order.membershipApplied) return order;
+    if (order.status === "paid" && order.paidAt) {
+      const paidAt = order.paidAt;
       const account = await database.findAppUser("ai_novel", order.userId);
       if (!account || account.status === "DELETED") order.accountDeletedAt ??= account?.updatedAt ?? now.toISOString();
       const current = await database.findAiNovelBillingMembership("ai_novel", order.userId);
@@ -59,6 +77,5 @@ export async function confirmAlipayOrder(database: ApplicationDatabase, options:
       await refreshAlipayMembership(database, order.userId, now);
     }
     return order;
-  });
 }
 function reject(): never { throw new ApplicationError(400, "BILLING_EVIDENCE_MISMATCH", "Alipay settlement evidence is invalid."); }

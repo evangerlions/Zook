@@ -1,6 +1,7 @@
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type { AiNovelModelSelectionConfig } from "../../shared/types.ts";
 import { parseModelCatalogPresentation } from "../../shared/model-catalog-presentation.ts";
+import { parseAiNovelAutoFreeConfig } from "../../shared/ai-novel-auto-free.ts";
 
 export const AI_NOVEL_MODEL_SELECTION_CONFIG_KEY =
   "ai_novel.model_selection";
@@ -57,7 +58,7 @@ function normalizeConfig(
     "AINovel model selection must be a JSON object.",
     invalid,
   );
-  assertKnownFields(source, ["schemaVersion", "chat", "catalog"], "config", invalid);
+  assertKnownFields(source, ["schemaVersion", "chat", "catalog", "autoFree"], "config", invalid);
   if (source.schemaVersion !== CONFIG_SCHEMA_VERSION) {
     invalid(`schemaVersion must be ${CONFIG_SCHEMA_VERSION}.`);
   }
@@ -75,10 +76,16 @@ function normalizeConfig(
     catch (error) { invalid(error instanceof Error ? error.message : String(error)); }
   }
 
+  let autoFree: AiNovelModelSelectionConfig["autoFree"];
+  if (source.autoFree !== undefined) {
+    try { autoFree = parseAiNovelAutoFreeConfig(source.autoFree); }
+    catch (error) { invalid(error instanceof Error ? error.message : String(error)); }
+  }
   return {
     schemaVersion: CONFIG_SCHEMA_VERSION,
     chat: { default: defaultModels },
     ...(catalog ? { catalog } : {}),
+    ...(autoFree ? { autoFree } : {}),
   };
 }
 

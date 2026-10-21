@@ -6,7 +6,7 @@ import type { AlipayCreateInput, AlipayOptions, AlipayOrder } from "../modules/b
 import { ALIPAY_PRICES, alipayConfigured, assertAlipayChannel, membershipConflict, publicAlipayOrder } from "../modules/billing/alipay-policy.ts";
 import { parseAlipayNotify } from "../modules/billing/alipay-notify.ts";
 import { OfficialAlipayGateway } from "./ainovel-alipay-gateway.ts";
-import { confirmAlipayOrder } from "./ainovel-alipay-confirmation.ts";
+import { confirmAlipayOrder, retryAlipayMembership } from "./ainovel-alipay-confirmation.ts";
 import { alipayTransaction } from "./ainovel-alipay-projection.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 
@@ -70,6 +70,9 @@ export class AiNovelAlipayService {
     const log = (status: string, order?: AlipayOrder) => this.log(status, order, userId, orderId, requestId);
     log("query_start");
     let order = await this.ownedOrder(userId, orderId);
+    if (order.status === "paid" && !order.membershipApplied && this.sameMerchant(order)) {
+      order = await retryAlipayMembership(this.database, orderId, this.now());
+    }
     let syncStatus: "synchronized" | "pending" = order.status === "paid" ? (order.membershipApplied && !order.conflict ? "synchronized" : "pending") : order.status === "closed" || order.status === "failed" ? "synchronized" : "pending";
     if (order.status === "pending" && this.available && this.sameMerchant(order)) {
       try {
@@ -99,6 +102,30 @@ export class AiNovelAlipayService {
     return { order: publicAlipayOrder(order), syncStatus, membership: await this.getMembership(userId) };
   }
   private sameMerchant(order: AlipayOrder) { return order.merchantAppId === this.options.appId && order.sellerId === (this.options.sellerId?.trim() || "") && order.environment === this.options.environment; }
+  /** One bounded, sequential pass. Scheduler owns overlap prevention. */
+  async recoverOrders(limit = 20): Promise<void> {
+    if (!this.available) return;
+    const orders = await this.database.listAiNovelAlipayRecovery(this.options.environment!, this.options.appId!, this.options.sellerId?.trim() || "", limit);
+    for (const candidate of orders) {
+      try {
+        // Read again under the existing transaction boundary: never overwrite a
+        // simultaneous webhook settlement with the earlier candidate snapshot.
+        await this.database.withExclusiveSession(async () => {
+          const order = await this.ownedOrder(candidate.userId, candidate.orderId);
+          order.lastRecoveryAt = this.now().toISOString();
+          await this.database.saveAiNovelAlipayOrder(order);
+        });
+        const result = await this.query(candidate.userId, candidate.orderId);
+        this.logger.info("ainovel alipay recovery result", { orderId: candidate.orderId,
+          paymentStatus: result.order.status, membershipApplied: result.order.membershipApplied, conflict: result.order.conflict });
+        if (result.order.status === "paid" && !result.order.membershipApplied) {
+          this.logger.warn("ainovel alipay paid order awaits membership", { orderId: candidate.orderId, conflict: result.order.conflict });
+        }
+      } catch {
+        this.logger.warn("ainovel alipay recovery failed; retained for retry", { orderId: candidate.orderId });
+      }
+    }
+  }
   private async ownedOrder(user: string, id: string) {
     const order = ALIPAY_ORDER_ID_PATTERN.test(id) ? await this.database.findAiNovelAlipayOrder(id) : undefined;
     if (!order || order.userId !== user) throw new ApplicationError(404, "BILLING_ORDER_NOT_FOUND", "Alipay order not found.");

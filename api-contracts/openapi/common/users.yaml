@@ -108,7 +108,13 @@ components:
       type: object
       additionalProperties: false
       required: [active, state, tier, planKey, expiresAt, autoRenew, source]
-      description: App-scoped entitlement summary for the authenticated product account.
+      description: |
+        App-scoped membership and personal purchase-policy context. Active,
+        unexpired membership restricts purchases to its source channel;
+        cancelled renewal remains restricted until access expires. Expired/free
+        membership allows switching channels. Catalog availability is public
+        channel configuration, not personal purchase permission. Payment APIs
+        recheck this policy independently of cached user information.
       properties:
         active:
           type: boolean

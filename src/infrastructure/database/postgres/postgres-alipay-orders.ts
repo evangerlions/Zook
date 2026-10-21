@@ -9,6 +9,14 @@ export class PostgresAlipayOrders {
   }
   findOrder(orderId: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE order_id = $1", [orderId]); }
   findIdempotency(userId: string, key: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE app_id = 'ai_novel' AND user_id = $1 AND idempotency_key = $2", [userId, key]); }
+  async listRecovery(environment: string, merchant: string, seller: string, limit: number): Promise<AlipayOrder[]> {
+    const result = await this.query(`SELECT record FROM zook_ai_novel_alipay_orders
+      WHERE environment = $1 AND record->>'merchantAppId' = $2 AND record->>'sellerId' = $3
+      AND (status = 'pending' OR (status = 'paid' AND NOT membership_applied AND record->>'accountDeletedAt' IS NULL))
+      ORDER BY COALESCE(record->>'lastRecoveryAt', record->>'createdAt'), order_id LIMIT $4`,
+    [environment, merchant, seller, limit]);
+    return result.rows.map(row => row.record as AlipayOrder);
+  }
   async listAccess(userId: string, now: string): Promise<AlipayOrder[]> {
     const result = await this.query(`SELECT DISTINCT ON (split_part(record->>'productKey', '_', 1)) record
       FROM zook_ai_novel_alipay_orders WHERE user_id = $1 AND membership_applied AND membership_expires_at > $2::timestamptz

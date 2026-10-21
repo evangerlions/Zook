@@ -116,6 +116,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
   findAiNovelAlipayIdempotency(user: string, key: string) { const result = this.alipayOrders.findIdempotency(user, key); return result && structuredClone(result); }
   listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
+  listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) { return this.alipayOrders.listRecovery(environment, merchant, seller, limit); }
   saveAiNovelAlipayOrder(order: AlipayOrder) { this.alipayOrders.save(order); }
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();

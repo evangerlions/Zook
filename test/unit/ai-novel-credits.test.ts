@@ -18,8 +18,8 @@ test("expiry during balance transaction returns the effective Free tier and limi
   }), undefined, () => now);
   const balance = await service.balanceMicros("u");
   assert.equal(balance.tier, "free");
-  assert.equal(balance.periodicLimitMicros, "20000000");
-  assert.equal(balance.periodicMicros, "20000000");
+  assert.equal(balance.periodicLimitMicros, "200000000");
+  assert.equal(balance.periodicMicros, "200000000");
 });
 function receipt(id: string, points: number): CreditsReceipt {
   return { callId: id, modelKey: "minimax-m3", usage: { promptTokens: points * 10_000, completionTokens: 0, totalTokens: points * 10_000 }, pricing: { inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 }, pointMicros: String(points * 1_000_000) };
@@ -33,11 +33,11 @@ async function consume(f: ReturnType<typeof fixture>, id: string, points: number
 
 test("Free starts an independent week on first credit account access", async () => {
   const f = fixture();
-  assert.deepEqual(await f.service.balance("u"), { tier: "free", periodicPoints: 20, periodicLimit: 20, giftPoints: 0, remainingPoints: 20, refreshAt: "2026-10-11T12:00:00.000Z" });
+  assert.deepEqual(await f.service.balance("u"), { tier: "free", periodicPoints: 200, periodicLimit: 200, giftPoints: 0, remainingPoints: 200, refreshAt: "2026-10-11T12:00:00.000Z" });
   await consume(f, "job", 15);
   f.time("2026-10-11T12:00:00Z");
-  assert.equal((await f.service.balance("u")).periodicPoints, 20);
-  assert.equal((await f.service.balance("u")).periodicPoints, 20);
+  assert.equal((await f.service.balance("u")).periodicPoints, 200);
+  assert.equal((await f.service.balance("u")).periodicPoints, 200);
   f.tier("plus");
   assert.equal((await f.service.balance("u")).periodicPoints, 1000);
   assert.equal((await f.service.balance("u")).refreshAt, "2026-10-18T12:00:00.000Z");
@@ -46,8 +46,8 @@ test("Free starts an independent week on first credit account access", async () 
 test("spends periodic before permanent gifts and absorbs overage without debt", async () => {
   const f = fixture();
   await f.service.grant("u", "campaign", 5);
-  const result = await consume(f, "job", 22);
-  assert.equal(result.chargedMicros, "22000000");
+  const result = await consume(f, "job", 202);
+  assert.equal(result.chargedMicros, "202000000");
   assert.equal((await f.service.balance("u")).periodicPoints, 0);
   assert.equal((await f.service.balance("u")).giftPoints, 3);
   const overage = await consume(f, "job2", 10);
@@ -62,16 +62,16 @@ for (const outcome of ["failure", "cancelled"] as const) {
   test(outcome + " before provider success costs zero", async () => {
     const f = fixture();
     await consume(f, outcome, 12, outcome);
-    assert.equal((await f.service.balance("u")).remainingPoints, 20);
+    assert.equal((await f.service.balance("u")).remainingPoints, 200);
     assert.equal(await f.service.begin("u", "next", "r2"), "allowed");
   });
   test(outcome + " after a successful call cannot refund it", async () => {
     const f = fixture();
     await f.service.begin("u", "request", "r1");
     await f.service.record("u", "request", "r1", receipt("c1", 2));
-    assert.equal((await f.service.balance("u")).remainingPoints, 18);
+    assert.equal((await f.service.balance("u")).remainingPoints, 198);
     await f.service.closeRequest("u", "request", "r1", outcome);
-    assert.equal((await f.service.balance("u")).remainingPoints, 18);
+    assert.equal((await f.service.balance("u")).remainingPoints, 198);
     assert.equal(await f.service.begin("u", "next", "r2"), "allowed");
   });
 }
@@ -82,14 +82,14 @@ test("successful calls debit immediately and duplicate callbacks debit once", as
     f.service.record("u", "request1", "r1", receipt("c1", 2)),
     f.service.record("u", "request1", "r1", receipt("c1", 2)),
   ]);
-  assert.equal((await f.service.balance("u")).remainingPoints, 18);
+  assert.equal((await f.service.balance("u")).remainingPoints, 198);
   await f.service.record("u", "request1", "r1", receipt("c2", 3));
-  assert.equal((await f.service.balance("u")).remainingPoints, 15);
+  assert.equal((await f.service.balance("u")).remainingPoints, 195);
   await f.service.closeRequest("u", "request1", "r1", "success");
   await f.service.record("u", "request1", "r1", receipt("c1", 2));
-  assert.equal((await f.service.balance("u")).remainingPoints, 15);
+  assert.equal((await f.service.balance("u")).remainingPoints, 195);
   await consume(f, "request2", 1);
-  assert.equal((await f.service.balance("u")).remainingPoints, 14);
+  assert.equal((await f.service.balance("u")).remainingPoints, 194);
 });
 test("same-account concurrency cannot bypass admission; accounts are independent", async () => {
   const f = fixture();
@@ -102,9 +102,9 @@ test("fractional credits debit exactly before request completion", async () => {
   const f = fixture();
   await f.service.begin("u", "tiny", "r");
   await f.service.record("u", "tiny", "r", receipt("fraction", 0.001));
-  assert.equal((await f.service.balanceMicros("u")).remainingMicros, "19999000");
+  assert.equal((await f.service.balanceMicros("u")).remainingMicros, "199999000");
   await f.service.closeRequest("u", "tiny", "r", "cancelled");
-  assert.equal((await f.service.balance("u")).remainingPoints, 19.999);
+  assert.equal((await f.service.balance("u")).remainingPoints, 199.999);
 });
 
 for (const left of [100, 5, 0]) {
@@ -113,9 +113,9 @@ for (const left of [100, 5, 0]) {
     await f.service.grant("u", "campaign", 7);
     await consume(f, "paid", 1000 - left);
     f.tier("free");
-    assert.equal((await f.service.balance("u")).periodicPoints, Math.min(20, left));
+    assert.equal((await f.service.balance("u")).periodicPoints, Math.min(200, left));
     assert.equal((await f.service.balance("u")).giftPoints, 7);
-    assert.equal((await f.service.balance("u")).periodicPoints, Math.min(20, left));
+    assert.equal((await f.service.balance("u")).periodicPoints, Math.min(200, left));
   });
 }
 
@@ -130,10 +130,10 @@ test("gift retry is idempotent, conflicting amount rejected, gifts survive refre
 test("oversized and cumulative gifts reject atomically before an unsafe balance is persisted", async () => {
   const f = fixture();
   await assert.rejects(f.service.grant("u", "oversized", 9_007_199_255));
-  assert.equal((await f.service.balanceMicros("u")).remainingMicros, "20000000");
+  assert.equal((await f.service.balanceMicros("u")).remainingMicros, "200000000");
   await f.service.grant("u", "large", 9_007_195_254);
   const before = await f.service.balanceMicros("u");
-  assert.equal(before.remainingMicros, "9007195274000000");
+  assert.equal(before.remainingMicros, "9007195454000000");
   await assert.rejects(f.service.grant("u", "overflow", 1));
   assert.deepEqual(await f.service.balanceMicros("u"), before);
   // Rejected event ID was not recorded as a successful grant.
@@ -149,7 +149,7 @@ test("expiry frees admission but a stale success cannot debit the new job", asyn
   f.time("2026-10-04T12:31:00Z");
   await f.service.begin("u", "new", "r2");
   await assert.rejects(f.service.record("u", "old", "r", receipt("late", 2)));
-  assert.equal((await f.service.balance("u")).remainingPoints, 10);
+  assert.equal((await f.service.balance("u")).remainingPoints, 190);
   await assert.rejects(f.service.begin("u", "third", "r3"));
 });
 
@@ -159,7 +159,7 @@ test("invalid receipt, unknown job and reserved gift namespace fail without muta
   await f.service.begin("u", "a", "r");
   await assert.rejects(f.service.record("u", "a", "r", { ...receipt("c", 1), pointMicros: "-1" }));
   await assert.rejects(f.service.record("u", "missing", "r", receipt("c", 1)));
-  assert.equal((await f.service.balance("u")).remainingPoints, 20);
+  assert.equal((await f.service.balance("u")).remainingPoints, 200);
 });
 
 test("live request renewal keeps ownership beyond the original lease; stale renewal cannot regain it", async () => {
@@ -172,7 +172,7 @@ test("live request renewal keeps ownership beyond the original lease; stale rene
   await f.service.record("u", "long", "r", receipt("longcall", 2));
   await f.service.releaseRequest("u", "long", "r");
   await assert.rejects(f.service.renewRequest("u", "long", "r"));
-  assert.equal((await f.service.balance("u")).remainingPoints, 18);
+  assert.equal((await f.service.balance("u")).remainingPoints, 198);
 });
 
 test("expired request cannot renew over a newly admitted job", async () => {

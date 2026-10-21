@@ -15,6 +15,7 @@ export interface AdminAiRoutingDocument {
 
 export interface AiNovelModelSelectionConfig {
   schemaVersion: 1;
+  autoFree?: import("../ai-novel-auto-free.ts").AiNovelAutoFreeConfig;
   catalog?: import("../model-catalog-presentation.ts").ModelCatalogPresentation[];
   chat: {
     default: AiNovelWeightedModel[];

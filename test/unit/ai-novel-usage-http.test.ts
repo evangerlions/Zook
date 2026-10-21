@@ -22,10 +22,10 @@ test("fresh HTTP Admin flow reads canonical credit fixtures, validates filters, 
     const response = await get("days=30");
     assert.equal(response.status, 200);
     const data = (await response.json()).data;
-    assert.equal(data.summary.chargedPoints, 16335);
+    assert.equal(data.summary.chargedPoints, 16350);
     assert.equal(data.summary.activeUsers, 6);
     assert.equal(data.summary.payingUsers, 4);
-    assert.equal(data.summary.absorbedPoints, 900);
+    assert.equal(data.summary.absorbedPoints, 885);
     const plus = (await (await get("tier=plus")).json()).data;
     assert.equal(plus.summary.chargedPoints, 4215);
     assert.equal(

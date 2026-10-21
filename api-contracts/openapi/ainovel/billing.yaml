@@ -11,7 +11,7 @@ info:
     for store purchases. Explicitly configured Alipay supports CN one-off memberships.
     Development CNY prices are placeholders, not approved production catalog prices.
 
-    This contract intentionally excludes AI usage balances, product copy, and
+    This contract intentionally excludes personal AI usage balances and
     provider-specific receipt payloads from the client API. AI usage is enforced
     by Zook's AI service. Apple and Google purchases are initiated by the
     RevenueCat SDK. Other providers are unavailable until separately enabled.
@@ -83,17 +83,41 @@ paths:
       summary: Get the active AINovel billing products
       description: |
         Returns logical products and the payment providers currently available
-        to this authenticated AINovel account. Product display names and UI copy
-        remain client-owned. App Store and Google Play prices are read from
-        RevenueCat's native store products. If an active
-        entitlement is managed by another provider, that provider is returned as
-        the only available purchase path and the other providers are marked
-        unavailable.
+        for this client region and channel, including for signed-out users.
+        With no Authorization header, only public catalog data is returned;
+        X-App-Region selects CN or GLOBAL (defaults to GLOBAL). With valid
+        authorization, the persisted account region applies. No personal
+        membership is read or returned. Invalid/expired supplied credentials return 401; they do
+        not fall back to guest access. Responses are not cacheable.
+        Benefit text is localized through the existing request locale system
+        (locale query, X-App-Locale, Accept-Language). No locale is echoed in data.
+        Public weekly allowances are included, not personal remaining balances.
+        App Store and Google Play prices are read from
+        RevenueCat's native store products. Availability describes region,
+        distribution and provider configuration only. Clients derive personal
+        cross-channel purchase restrictions from GET /api/v1/users/me membership
+        (active, expiresAt, source); payment APIs independently enforce them.
       tags: [ainovel-billing]
       security:
         - bearerAuth: []
+        - {}
       parameters:
         - $ref: "#/components/parameters/XAppId"
+        - name: X-App-Region
+          in: header
+          required: false
+          description: Guest catalog region hint; authenticated account policy remains authoritative.
+          schema: { type: string, enum: [CN, GLOBAL] }
+        - name: locale
+          in: query
+          required: false
+          description: Requested copy language, using shared locale normalization and fallback.
+          schema: { type: string }
+        - name: X-App-Locale
+          in: header
+          required: false
+          description: Requested language when locale query is absent. Accept-Language is also supported.
+          schema: { type: string }
         - name: platform
           in: query
           required: true
@@ -114,7 +138,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CatalogResponse"
         "401":
-          description: Missing or invalid bearer authentication
+          description: Invalid or expired supplied bearer authentication
           content:
             application/json:
               schema:
@@ -340,12 +364,34 @@ components:
           type: string
           description: ISO 8601 duration, for example P1M or P1Y.
           enum: [P1M, P3M, P1Y]
+        benefits:
+          type: array
+          description: Server-ordered localized display configuration; not access authorization.
+          items:
+            $ref: "#/components/schemas/BillingBenefit"
+        usage:
+          type: object
+          additionalProperties: false
+          required: [credits, resetPeriod]
+          properties:
+            credits: { type: integer, minimum: 0 }
+            resetPeriod: { type: string, const: P7D }
         providers:
           type: array
           minItems: 1
           uniqueItems: true
           items:
             $ref: "#/components/schemas/BillingProductProvider"
+    BillingBenefit:
+      type: object
+      additionalProperties: false
+      required: [key, text, included, order, comingSoon]
+      properties:
+        key: { type: string, minLength: 1 }
+        text: { type: string }
+        included: { type: boolean }
+        order: { type: integer }
+        comingSoon: { type: boolean }
     BillingProductProvider:
       type: object
       additionalProperties: false
@@ -359,7 +405,6 @@ components:
           type: [string, "null"]
           enum:
             [
-              active_membership_managed_elsewhere,
               unsupported_distribution,
               provider_unavailable,
               null,

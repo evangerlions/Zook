@@ -988,7 +988,7 @@ export const CurrentUserDataSchema = {
         "autoRenew",
         "source"
       ],
-      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "description": "App-scoped membership and personal purchase-policy context. Active,\nunexpired membership restricts purchases to its source channel;\ncancelled renewal remains restricted until access expires. Expired/free\nmembership allows switching channels. Catalog availability is public\nchannel configuration, not personal purchase permission. Payment APIs\nrecheck this policy independently of cached user information.\n",
       "properties": {
         "active": {
           "type": "boolean",
@@ -1097,7 +1097,7 @@ export const MembershipInfoSchema = {
     "autoRenew",
     "source"
   ],
-  "description": "App-scoped entitlement summary for the authenticated product account.",
+  "description": "App-scoped membership and personal purchase-policy context. Active,\nunexpired membership restricts purchases to its source channel;\ncancelled renewal remains restricted until access expires. Expired/free\nmembership allows switching channels. Catalog availability is public\nchannel configuration, not personal purchase permission. Payment APIs\nrecheck this policy independently of cached user information.\n",
   "properties": {
     "active": {
       "type": "boolean",
@@ -4905,7 +4905,7 @@ export const AlipayQueryDataSchema = {
         "autoRenew",
         "source"
       ],
-      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "description": "App-scoped membership and personal purchase-policy context. Active,\nunexpired membership restricts purchases to its source channel;\ncancelled renewal remains restricted until access expires. Expired/free\nmembership allows switching channels. Catalog availability is public\nchannel configuration, not personal purchase permission. Payment APIs\nrecheck this policy independently of cached user information.\n",
       "properties": {
         "active": {
           "type": "boolean",
@@ -5164,6 +5164,57 @@ export const BillingProductSchema = {
         "P1Y"
       ]
     },
+    "benefits": {
+      "type": "array",
+      "description": "Server-ordered localized display configuration; not access authorization.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "text",
+          "included",
+          "order",
+          "comingSoon"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "included": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "comingSoon": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credits",
+        "resetPeriod"
+      ],
+      "properties": {
+        "credits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resetPeriod": {
+          "type": "string",
+          "const": "P7D"
+        }
+      }
+    },
     "providers": {
       "type": "array",
       "minItems": 1,
@@ -5194,7 +5245,6 @@ export const BillingProductSchema = {
               "null"
             ],
             "enum": [
-              "active_membership_managed_elsewhere",
               "unsupported_distribution",
               "provider_unavailable",
               null
@@ -5259,11 +5309,24 @@ export type BillingProduct = {
   "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
   "tier": "plus" | "pro";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
+  "benefits"?: (
+{
+  "key": string;
+  "text": string;
+  "included": boolean;
+  "order": number;
+  "comingSoon": boolean;
+}
+)[];
+  "usage"?: {
+  "credits": number;
+  "resetPeriod": string;
+};
   "providers": (
 {
   "provider": "revenuecat" | "alipay";
   "available": boolean;
-  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "blockedReason"?: "unsupported_distribution" | "provider_unavailable" | null;
   "providerProductId"?: string | null;
   "providerPackageId"?: string | null;
   "providerEntitlementId"?: string | null;
@@ -5301,7 +5364,6 @@ export const BillingProductProviderSchema = {
         "null"
       ],
       "enum": [
-        "active_membership_managed_elsewhere",
         "unsupported_distribution",
         "provider_unavailable",
         null
@@ -5362,7 +5424,7 @@ export const BillingProductProviderSchema = {
 export type BillingProductProvider = {
   "provider": "revenuecat" | "alipay";
   "available": boolean;
-  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "blockedReason"?: "unsupported_distribution" | "provider_unavailable" | null;
   "providerProductId"?: string | null;
   "providerPackageId"?: string | null;
   "providerEntitlementId"?: string | null;
@@ -5450,6 +5512,57 @@ export const CatalogDataSchema = {
               "P1Y"
             ]
           },
+          "benefits": {
+            "type": "array",
+            "description": "Server-ordered localized display configuration; not access authorization.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "text",
+                "included",
+                "order",
+                "comingSoon"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "text": {
+                  "type": "string"
+                },
+                "included": {
+                  "type": "boolean"
+                },
+                "order": {
+                  "type": "integer"
+                },
+                "comingSoon": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "usage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "credits",
+              "resetPeriod"
+            ],
+            "properties": {
+              "credits": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "resetPeriod": {
+                "type": "string",
+                "const": "P7D"
+              }
+            }
+          },
           "providers": {
             "type": "array",
             "minItems": 1,
@@ -5480,7 +5593,6 @@ export const CatalogDataSchema = {
                     "null"
                   ],
                   "enum": [
-                    "active_membership_managed_elsewhere",
                     "unsupported_distribution",
                     "provider_unavailable",
                     null
@@ -5553,11 +5665,24 @@ export type CatalogData = {
   "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
   "tier": "plus" | "pro";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
+  "benefits"?: (
+{
+  "key": string;
+  "text": string;
+  "included": boolean;
+  "order": number;
+  "comingSoon": boolean;
+}
+)[];
+  "usage"?: {
+  "credits": number;
+  "resetPeriod": string;
+};
   "providers": (
 {
   "provider": "revenuecat" | "alipay";
   "available": boolean;
-  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "blockedReason"?: "unsupported_distribution" | "provider_unavailable" | null;
   "providerProductId"?: string | null;
   "providerPackageId"?: string | null;
   "providerEntitlementId"?: string | null;
@@ -5598,7 +5723,7 @@ export const SyncDataSchema = {
         "autoRenew",
         "source"
       ],
-      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "description": "App-scoped membership and personal purchase-policy context. Active,\nunexpired membership restricts purchases to its source channel;\ncancelled renewal remains restricted until access expires. Expired/free\nmembership allows switching channels. Catalog availability is public\nchannel configuration, not personal purchase permission. Payment APIs\nrecheck this policy independently of cached user information.\n",
       "properties": {
         "active": {
           "type": "boolean",
@@ -6108,6 +6233,36 @@ export const AiNovelModelCatalogDataSchema = {
     "models"
   ],
   "properties": {
+    "autoFree": {
+      "type": "object",
+      "description": "Server campaign snapshot. Missing means no free promotion. Start inclusive, end exclusive; absent bounds are unrestricted. Applies to Auto chat only, including legacy absent selection, never manual chat or embeddings. Server rechecks at request admission.",
+      "required": [
+        "enabled",
+        "active",
+        "serverTime"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "startsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "serverTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
     "models": {
       "type": "array",
       "items": {
@@ -6224,6 +6379,13 @@ export const AiNovelModelCatalogDataSchema = {
 } as const;
 
 export type AiNovelModelCatalogData = {
+  "autoFree"?: {
+  "enabled": boolean;
+  "active": boolean;
+  "startsAt"?: string;
+  "endsAt"?: string;
+  "serverTime": string;
+};
   "models": (
 {
   "key": string;

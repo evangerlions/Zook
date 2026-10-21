@@ -23,7 +23,7 @@ export async function tryHandleAiNovelRoutes(
 ): Promise<HttpResponse<unknown> | undefined> {
   if (request.method === "GET" && request.path === "/api/v1/ai_novel/models") {
     await this.authenticateProductRequest(request, "ai_novel");
-    return this.ok(await this.aiNovelLlmService.getPublicModels(), request.requestId as string);
+    return { ...this.ok(await this.aiNovelLlmService.getPublicModels(), request.requestId as string), headers: { "Cache-Control": "no-store" } };
   }
   const creditsResponse = await tryHandleAiNovelCreditsRoutes.call(this, request);
   if (creditsResponse) return creditsResponse;

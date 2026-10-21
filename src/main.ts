@@ -4,6 +4,7 @@ import { resolveClientAddress } from "./infrastructure/http/client-ip.ts";
 import { readRequestBody } from "./infrastructure/http/request-body.ts";
 import { encodeHttpResponseBody } from "./infrastructure/http/response-body.ts";
 import { init } from "./infrastructure/runtime/init.ts";
+import { startAlipayRecovery } from "./services/ainovel-alipay-recovery.ts";
 import { isTelemetryPath } from "./modules/telemetry/telemetry-gateway.ts";
 import type { TelemetryGatewayResponse } from "./modules/telemetry/telemetry-gateway-types.ts";
 
@@ -33,6 +34,9 @@ const runtime = await init({
   serviceName: "api",
   emitLogs: true,
 });
+const alipayRecovery = startAlipayRecovery(
+  () => runtime.services.aiNovelBillingService.alipay.recoverOrders(), runtime.logger,
+);
 
 const server = createServer(async (request, response) => {
   const requestCancellation = new AbortController();
@@ -187,3 +191,16 @@ server.listen(port, () => {
     statusCode: 200,
   });
 });
+
+let stopping = false;
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    if (stopping) return;
+    stopping = true;
+    const recoveryStopped = alipayRecovery.stop();
+    server.close(() => {
+      void recoveryStopped.then(() => runtime.close())
+        .then(() => process.exit(0), () => process.exit(1));
+    });
+  });
+}

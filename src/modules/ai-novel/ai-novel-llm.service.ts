@@ -137,7 +137,10 @@ export class AiNovelLlmService {
   }
 
   async getPublicModels() {
-    return { models: await this.modelSelectionConfigService.getPublicModels() };
+    const [models, autoFree] = await Promise.all([
+      this.modelSelectionConfigService.getPublicModels(), this.modelSelectionConfigService.getAutoFree(),
+    ]);
+    return { models, autoFree };
   }
 
   private async executeChatCompletion(

@@ -58,7 +58,7 @@ test("enabled flow accepts old callers without any client billing protocol", asy
 test("zero balance blocks before execute/provider and returns business SSE without usage", async () => {
   const { flow, credits } = fixture();
   await credits.begin("u", "consume", "r0");
-  await credits.record("u", "consume", "r0", { callId: "cost", modelKey: "m", usage, pricing, pointMicros: "20000000" });
+  await credits.record("u", "consume", "r0", { callId: "cost", modelKey: "m", usage, pricing, pointMicros: "200000000" });
   await credits.releaseRequest("u", "consume", "r0");
   let calls = 0;
   const events = await collect(flow.stream(request, opts, async function* () { calls++; yield { type: "content_delta", text: "wrong" }; }));
@@ -78,8 +78,8 @@ test("manager price finalization is the exact same object/result used by account
     return response;
   });
   assert.equal(seen, "1880000");
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "18120000");
-  assert.equal((await credits.balance("u")).remainingPoints, 18.12);
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "198120000");
+  assert.equal((await credits.balance("u")).remainingPoints, 198.12);
 });
 
 test("required-tool retry measures both actual provider attempts", async () => {
@@ -95,7 +95,7 @@ test("required-tool retry measures both actual provider attempts", async () => {
     return response;
   });
   assert.equal(calls, 2);
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "16240000");
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "196240000");
 });
 
 test("embedding uses the same priced pipeline and settles on the server", async () => {
@@ -105,7 +105,7 @@ test("embedding uses the same priced pipeline and settles on the server", async 
     const result = await manager.embed({ modelKey: "e", input: ["text"], requirePointPricing: true, onUsageFinalized: options.onUsageFinalized });
     return { sceneKey: "memory_embedding", sceneRouteKey: "memory_embedding", ...result };
   });
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "19980000");
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "199980000");
 });
 
 test("unpriced models fail before provider; failed and disconnected streams release without debit", async () => {
@@ -114,11 +114,11 @@ test("unpriced models fail before provider; failed and disconnected streams rele
   await assert.rejects(flow.complete(request, opts, async (options) => {
     await manager.complete({ modelKey: "m", messages: [{ role: "user", content: "write" }], requirePointPricing: true, onUsageFinalized: options.onUsageFinalized }); return response;
   }));
-  assert.equal(calls, 0); assert.equal((await credits.balance("u")).remainingPoints, 20);
+  assert.equal(calls, 0); assert.equal((await credits.balance("u")).remainingPoints, 200);
 
   const interrupted = flow.stream({ ...request, context: { billingJobId: "interrupted" } }, opts, async function* () { yield { type: "content_delta", text: "partial" }; });
   await interrupted.next(); await interrupted.return(undefined);
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "20000000");
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "200000000");
 });
 
 test("length completion with missing provider usage charges the existing server estimate", async () => {
@@ -138,7 +138,7 @@ test("length completion with missing provider usage charges the existing server 
     return { ...response, completion: { ...response.completion, finishReason: "length" } };
   });
   assert.ok(BigInt(estimatedCost) > 0n);
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, String(20_000_000n - BigInt(estimatedCost)));
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, String(200_000_000n - BigInt(estimatedCost)));
 });
 
 test("successful earlier rounds remain billed when a later round throws", async () => {
@@ -153,11 +153,11 @@ test("successful earlier rounds remain billed when a later round throws", async 
   await assert.rejects(flow.complete(request, opts, async (options) => {
     const call = { modelKey: "m", messages: request.messages, onUsageFinalized: options.onUsageFinalized, requirePointPricing: true };
     await manager.complete(call);
-    assert.equal((await credits.balanceMicros("u")).remainingMicros, "18120000");
+    assert.equal((await credits.balanceMicros("u")).remainingMicros, "198120000");
     await manager.complete(call);
     return response;
   }), /later provider failure/);
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "18120000");
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "198120000");
   assert.equal(await credits.begin("u", "new-server-request", "new"), "allowed");
 });
 
@@ -172,5 +172,5 @@ test("known cancellation before usage callback is not charged", async () => {
     await manager.complete({ modelKey: "m", messages: request.messages, onUsageFinalized: options.onUsageFinalized, requirePointPricing: true });
     return response;
   });
-  assert.equal((await credits.balanceMicros("u")).remainingMicros, "20000000");
+  assert.equal((await credits.balanceMicros("u")).remainingMicros, "200000000");
 });

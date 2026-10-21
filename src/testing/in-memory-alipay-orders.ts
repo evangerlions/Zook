@@ -3,6 +3,13 @@ export class InMemoryAlipayOrders {
   readonly orders = new Map<string, AlipayOrder>();
   findOrder(id: string) { const order = this.orders.get(id); return order && structuredClone(order); }
   findIdempotency(user: string, key: string) { return [...this.orders.values()].find(order => order.userId === user && order.idempotencyKey === key); }
+  listRecovery(environment: string, merchant: string, seller: string, limit: number) {
+    return structuredClone([...this.orders.values()].filter(order =>
+      order.environment === environment && order.merchantAppId === merchant && order.sellerId === seller &&
+      (order.status === 'pending' || (order.status === 'paid' && !order.membershipApplied && !order.accountDeletedAt)))
+      .sort((a, b) => (a.lastRecoveryAt ?? a.createdAt).localeCompare(b.lastRecoveryAt ?? b.createdAt) || a.orderId.localeCompare(b.orderId))
+      .slice(0, limit));
+  }
   listAccess(user: string, now: string) {
     const tiers = new Map<string, AlipayOrder>();
     for (const order of this.orders.values()) {

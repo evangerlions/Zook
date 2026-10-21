@@ -35,7 +35,7 @@ test("authenticated HTTP catalog and encrypted manual requests route and charge 
     assert.equal(((await send({ mode: "manual", modelKey: "manual-fixture" })).events.at(-1) as { type?: string } | undefined)?.type, "done");
     assert.deepEqual(fixture.observedModels(), ["manual-fixture"]);
     const balance = await fetch(fixture.url + "/api/v1/ai_novel/credits", { headers }).then((r) => r.json());
-    assert.equal(balance.data.remainingMicros, 17_200_000);
+    assert.equal(balance.data.remainingMicros, 197_200_000);
     await send();
     assert.deepEqual(fixture.observedModels(), ["manual-fixture", "qwen3.6-plus"]);
     const calls = fixture.calls();

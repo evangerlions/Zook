@@ -438,6 +438,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     aiNovelCreditsService,
     options.aiNovelCreditsEnabled ?? process.env.AINOVEL_CREDITS_ENABLED === "true",
     aiNovelConversationRecordService,
+    async () => (await aiNovelModelSelectionConfigService.getAutoFree()).active,
   );
   const adminConsoleService = new AdminConsoleService(
     database,

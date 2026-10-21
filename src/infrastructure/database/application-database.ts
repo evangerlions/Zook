@@ -558,6 +558,7 @@ export abstract class ApplicationDatabase {
   abstract findAiNovelAlipayOrder(orderId: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder | undefined>;
   abstract findAiNovelAlipayIdempotency(userId: string, key: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder | undefined>;
   abstract listAiNovelAlipayAccess(userId: string, now: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
   abstract saveAiNovelAlipayOrder(order: import("../../modules/billing/alipay-models.ts").AlipayOrder): MaybePromise<void>;
   abstract listBillingAdminMemberships(filter: import("../../shared/types/billing-admin.ts").BillingMembershipFilter): MaybePromise<AiNovelBillingMembershipRecord[]>;
   abstract getBillingAdminRevenue(filter: import("../../shared/types/billing-admin.ts").BillingSummaryFilter): MaybePromise<import("../../shared/types/billing-admin.ts").BillingRevenueRow[]>;

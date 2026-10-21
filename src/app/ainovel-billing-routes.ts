@@ -3,6 +3,8 @@ import { tryHandleAlipayRoutes } from "./ainovel-alipay-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { getHeader } from "../shared/utils.ts";
+import { parseClientAccountRegion } from "../modules/app-registry/account-region.ts";
+import { BILLING_BENEFITS_CONFIG_KEY } from "../modules/billing/ainovel-billing-benefits.ts";
 import {
   buildAiNovelBillingCatalog,
   isAiNovelBillingChannelSupported,
@@ -65,17 +67,29 @@ export async function tryHandleAiNovelBillingRoutes(
     return undefined;
   }
 
-  const auth = await this.authenticateProductRequest(request, "ai_novel");
-  const membership = await this.aiNovelBillingService.getMembership(auth.userId);
+  // Only absence permits guest access; invalid supplied credentials still fail.
+  const auth = getHeader(request.headers, "authorization") === undefined
+    ? undefined : await this.authenticateProductRequest(request, "ai_novel");
+  const requestedApp = getHeader(request.headers, "x-app-id");
+  if (requestedApp !== undefined && requestedApp !== "ai_novel") {
+    throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", "Requested app scope does not match the catalog.");
+  }
+  await this.appRegistryService.getAppOrThrow("ai_novel");
+  const regionHeader = getHeader(request.headers, "x-app-region");
+  const guestRegion = parseClientAccountRegion(regionHeader);
+  if (!auth && regionHeader !== undefined && !guestRegion) {
+    throw new ApplicationError(400, "REQ_INVALID_QUERY", "X-App-Region must be CN or GLOBAL.");
+  }
   const input: AiNovelBillingCatalogInput = {
+    locale: this.resolveRequestLocale(request),
+    benefitsConfig: (await this.database.findAppConfig("ai_novel", BILLING_BENEFITS_CONFIG_KEY))?.configValue,
     alipayAvailable: this.aiNovelBillingService.alipay.available,
     alipayPrices: Object.fromEntries((["plus_monthly", "plus_quarterly", "plus_yearly", "pro_monthly", "pro_quarterly", "pro_yearly"] as const).map(key => [key, this.aiNovelBillingService.alipay.price(key)])),
-    activeMembershipSource: membership.active ? membership.source : null,
-    accountRegion: await this.resolveAccountRegion(
+    accountRegion: auth ? await this.resolveAccountRegion(
       request,
       "ai_novel",
       auth.userId,
-    ),
+    ) : guestRegion ?? "GLOBAL",
     platform: parsePlatform(request.query?.platform),
     distribution: parseDistribution(request.query?.distribution),
   };
@@ -88,10 +102,13 @@ export async function tryHandleAiNovelBillingRoutes(
     );
   }
 
-  return this.ok(
+  const response = this.ok(
     buildAiNovelBillingCatalog(input),
     request.requestId as string,
   );
+  response.headers = { ...response.headers, "cache-control": "no-store",
+    vary: "Authorization, X-App-Region, X-App-Id, X-App-Locale, Accept-Language" };
+  return response;
 }
 
 function parsePlatform(
