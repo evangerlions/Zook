@@ -1,4 +1,3 @@
 
 > zook-backend-scaffold@0.1.0 generate:public-contracts
 > python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts
-

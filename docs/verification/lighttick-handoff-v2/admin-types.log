@@ -5,4 +5,3 @@
 
 > typecheck
 > react-router typegen && tsc --noEmit
-
