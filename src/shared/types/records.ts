@@ -204,6 +204,8 @@ export interface FrogSleepBuddyInvitationBundleRecord {
   inviteeUserId?: string;
   recipientEmail?: string;
   recipientEmailHash?: string;
+  inviterReadAt?: string;
+  inviteeReadAt?: string;
   shareCode: string;
   handoffToken: string;
   shareLink: string;

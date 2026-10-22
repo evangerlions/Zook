@@ -269,6 +269,7 @@ export abstract class ApplicationDatabase {
     state: FrogSleepBuddySharingGrantRecord["state"],
   ): MaybePromise<FrogSleepBuddySharingGrantRecord | undefined>;
   abstract upsertFrogSleepBuddyInvitationBundle(record: FrogSleepBuddyInvitationBundleRecord): MaybePromise<FrogSleepBuddyInvitationBundleRecord>;
+  abstract markFrogSleepBuddyInvitationRead(appId: string, bundleId: string, userId: string): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
   abstract findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
   abstract listFrogSleepBuddyInvitationBundles(input: {
     appId: string; userId: string; direction: "incoming" | "outgoing";
