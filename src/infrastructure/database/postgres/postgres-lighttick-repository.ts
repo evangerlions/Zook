@@ -1,6 +1,7 @@
+import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
+import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
 import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
-import type { PlanningSession } from "../../../modules/lighttick/planning/planning.types.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
 import type {
@@ -14,7 +15,6 @@ import { ApplicationError } from "../../../shared/errors.ts";
 type QueryResult = { rows: Record<string, unknown>[]; rowCount?: number | null };
 type QueryClient = { query(sql: string, values?: unknown[]): Promise<QueryResult>; release?(): void };
 type Connector = QueryClient & { connect(): Promise<QueryClient> };
-
 function snakeToCamel(key: string): string {
   return key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
@@ -34,15 +34,12 @@ function mapRow<T>(row: Record<string, unknown>): T {
   delete mapped.scheduledBusinessDate;
   return mapped as T;
 }
-
 function timestampString(value: unknown): string {
   return value instanceof Date ? value.toISOString() : String(value);
 }
-
 function versionConflict(resourceId: string): never {
   throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.", { resourceId });
 }
-
 export class PostgresLightTickRepository implements LightTickRepository {
   private readonly session = new AsyncLocalStorage<QueryClient>();
   constructor(private readonly connector: Connector,
@@ -52,27 +49,24 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
   }
 
+  private readonly actionStore=new PostgresActionStore((sql,values)=>this.query(sql,values));
+  lockActionOwner=this.actionStore.lockActionOwner.bind(this.actionStore);
+  getActionWorkspace=this.actionStore.getActionWorkspace.bind(this.actionStore);
+  saveActionWorkspace=this.actionStore.saveActionWorkspace.bind(this.actionStore);
+  getActionTicket=this.actionStore.getActionTicket.bind(this.actionStore);
+  saveActionTicket=this.actionStore.saveActionTicket.bind(this.actionStore);
+  getActionLink=this.actionStore.getActionLink.bind(this.actionStore);
+  getOwnerActionLink=this.actionStore.getOwnerActionLink.bind(this.actionStore);
+  saveActionLink=this.actionStore.saveActionLink.bind(this.actionStore);
   async lockPlanningOwner(owner: LightTickOwner) {
     await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`planning:${owner.appId}:${owner.userId}`]);
     // Existing non-session mutations lock these same rows on write.
     for (const table of ["goals", "plan_cycles", "tasks"])
       await this.query(`SELECT id FROM zook_lighttick_${table} WHERE app_id=$1 AND user_id=$2 ORDER BY id FOR UPDATE`, [owner.appId, owner.userId]);
   }
-  async getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined> {
-    const result = await this.query("SELECT payload,version FROM zook_lighttick_planning_sessions WHERE app_id=$1 AND user_id=$2 AND id=$3", [owner.appId,owner.userId,id]);
-    return result.rows[0] ? { ...(result.rows[0].payload as PlanningSession), version: Number(result.rows[0].version) } : undefined;
-  }
-  async savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession> {
-    const result = expectedVersion === undefined
-      ? await this.query(`INSERT INTO zook_lighttick_planning_sessions (id,app_id,user_id,goal_id,thread_id,payload,version,created_at,updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6::jsonb,1,$7,$8) ON CONFLICT DO NOTHING RETURNING version`,
-          [row.id,row.appId,row.userId,row.goalId,row.threadId,JSON.stringify(row),row.createdAt,row.updatedAt])
-      : await this.query(`UPDATE zook_lighttick_planning_sessions SET payload=$1::jsonb,version=version+1,updated_at=$2
-          WHERE app_id=$3 AND user_id=$4 AND id=$5 AND version=$6 RETURNING version`,
-          [JSON.stringify(row),row.updatedAt,row.appId,row.userId,row.id,expectedVersion]);
-    if (!result.rows[0]) versionConflict(row.id);
-    return { ...row, version: Number(result.rows[0]!.version) };
-  }
+  private readonly planningStore=new PostgresPlanningStore((sql,values)=>this.query(sql,values));
+  getPlanningSession=this.planningStore.getPlanningSession.bind(this.planningStore);
+  savePlanningSession=this.planningStore.savePlanningSession.bind(this.planningStore);
   async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
     return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
@@ -570,7 +564,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+    const tables = ["action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {

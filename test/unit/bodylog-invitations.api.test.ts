@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { DatabaseSeed } from "../../src/shared/types.ts";
 import { createApplication } from "../support/create-test-application.ts";
+import { resolveBodyLogStores } from "../../src/application-bodylog-stores.ts";
 
 function seed(): DatabaseSeed {
   const value = buildDefaultSeed();
@@ -23,6 +24,7 @@ function seed(): DatabaseSeed {
 
 test("invitation binds once and qualifies after three distinct current-or-recorded plan days", async () => {
   const runtime = await createApplication({ seed: seed() });
+  await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const bob = runtime.services.tokenService.issueAccessToken("user_bob", "bodylog");
   const headers = (token: string) => ({
@@ -75,6 +77,7 @@ test("invitation binds once and qualifies after three distinct current-or-record
 
 test("self invitation is rejected", async () => {
   const runtime = await createApplication({ seed: seed() });
+  await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const headers = { authorization: `Bearer ${alice}`, "x-app-id": "bodylog" };
   const invitation = await runtime.app.handle({

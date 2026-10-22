@@ -16,6 +16,273 @@ tags:
   - name: frogsleep-focus-buddy
   - name: frogsleep-product-data
 paths:
+  /api/v1/frogsleep/product-data/sleep-sessions:
+    get:
+      operationId: frogSleepListRawSleepSessions
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Restore latest raw sessions including tombstones at a fixed boundary
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepPersonalPageResponse'
+        '400': &id001
+          description: Invalid body, required header or terminal session constraints.
+        '401': &id002
+          description: Invalid bearer or guest proof; expired/unavailable guest.
+        '403': &id003
+          description: App/owner scope, guest capability or registered target restriction.
+        '404': &id004
+          description: Private resource not found.
+        '409': &id005
+          description: Revision/epoch/idempotency mismatch, data collision, already upgraded or oversized transfer; no partial migration.
+        '410': &id006
+          description: Deleted resource cannot be recreated.
+        '503': &id007
+          description: Personal sync is disabled.
+      parameters:
+      - $ref: '#/components/parameters/PersonalLimit'
+      - $ref: '#/components/parameters/PersonalCursor'
+      description: Ascending committed sequence; follow next_cursor, then use changes_cursor on personal-sync/changes. Payloads are private
+        and scoped to the bearer account.
+    post:
+      operationId: frogSleepCreateRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Create a private terminal sleep session
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepRawSleepSessionRequest'
+      parameters: &id008
+      - $ref: '#/components/parameters/RequiredPersonalEpoch'
+      - $ref: '#/components/parameters/RequiredPersonalOperationKey'
+      - $ref: '#/components/parameters/PersonalRevision'
+  /api/v1/frogsleep/product-data/sleep-sessions/{sessionId}:
+    parameters:
+    - name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    get:
+      operationId: frogSleepGetRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Read private raw sleep session
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+    put:
+      operationId: frogSleepReplaceRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Replace terminal history with current If-Match revision
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepRawSleepSessionRequest'
+      parameters: *id008
+    patch:
+      operationId: frogSleepPatchRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Replace terminal history; full request required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepRawSleepSessionRequest'
+      parameters: *id008
+    delete:
+      operationId: frogSleepDeleteRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Tombstone terminal history using current revision
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      parameters: *id008
+  /api/v1/frogsleep/account/guest-sessions:
+    post:
+      operationId: frogSleepCreateGuestSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Create or recover a scoped Sleep guest session
+      security: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepGuestSessionResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '409': *id005
+        '429':
+          description: Anonymous guest session request rate exceeded.
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepGuestSessionRequest'
+      parameters:
+      - $ref: '#/components/parameters/RequiredPersonalOperationKey'
+      description: 'Same device_id and device_secret recover the same unexpired identity and upgrade credential. Guest lifetime is 30
+        days. Only private raw sessions/reports/report_preferences/personal-sync and own me/logout/account-delete are allowed; platform/account
+        binding/buddy/focus/device APIs are forbidden. Refresh cannot extend guest lifetime. At most 30 requests per source IP per UTC
+        hour, including retries. Lost response: retry the same key and body. Keep both credentials in secure client storage; device_id
+        alone grants no ownership.'
+  /api/v1/frogsleep/account/upgrade:
+    post:
+      operationId: frogSleepUpgradeGuestData
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Atomically transfer proven guest history to a registered account
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepGuestUpgradeResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      parameters:
+      - name: X-Sync-Epoch
+        in: header
+        description: Required for credential-based upgrade; current target epoch. Legacy guest_device_id-only requests may omit it.
+        schema: { type: string, minLength: 1, maxLength: 200 }
+      - name: Idempotency-Key
+        in: header
+        description: Required for credential-based upgrade; scoped to this source guest transfer. Exact source/target/body replay reuses the original key. A different key after transfer conflicts. Legacy requests may omit it.
+        schema: { type: string, minLength: 1, maxLength: 200 }
+      description: 'New proof-based requests require X-Sync-Epoch and Idempotency-Key, a registered target bearer and confirmed=true.
+        Latest private sessions/reports/preferences including tombstones move in one transaction. Equal target data deduplicates; differing
+        content or a live/tombstone mismatch conflicts without partial writes; two tombstones deduplicate. Limit: 10,000 resources and 32 MiB serialized versions; never truncated.
+        Source membership and epoch are revoked. Exact authenticated replay returns stored counts/epoch and retries session cleanup. Legacy
+        guest_device_id-only requests retain 409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED; device IDs alone never select data.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/FrogSleepGuestUpgradeRequest'
+              - type: object
+                additionalProperties: false
+                required:
+                - guest_device_id
+                properties:
+                  guest_device_id:
+                    type: string
+                    minLength: 1
+                    description: Compatibility only; not proof of ownership.
   /api/v1/frogsleep/auth/email/send-code:
     post:
       operationId: frogSleepSendEmailCode
@@ -251,6 +518,7 @@ paths:
       operationId: frogSleepRegisterDevice
       tags: [frogsleep]
       summary: Register or update a FrogSleep push device
+      description: The authenticated registrant becomes the sole current owner of the live app/platform/token identity. Re-registering on another account transfers that identity; former owners cannot delete the new owner's device.
       security:
         - bearerAuth: []
       requestBody:
@@ -476,6 +744,11 @@ paths:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
   /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/events:
     post:
+      description: >-
+        A participant morning_completed is terminal and retries preserve its state.
+        The session stays available for the other participant until both participants
+        are morning_completed or paused_tonight. Viewer summaries expose their own
+        completion fact. Accept replay never reopens an ended session.
       operationId: frogSleepRecordSharedSleepSessionEvent
       tags: [frogsleep, frogsleep-sleep-buddy]
       summary: Record an event on a shared sleep session
@@ -532,7 +805,18 @@ paths:
     post:
       operationId: frogSleepReportFocusSession
       tags: [frogsleep, frogsleep-focus-buddy]
-      summary: Report a focus session
+      summary: Report or update an owner-scoped focus session
+      description: >-
+        Optional session_id (alias sessionId) is an opaque, case-sensitive client ID of 1-128
+        characters containing at least one non-whitespace character. When both aliases are
+        supplied they must match. Identity is scoped by authenticated app and user; claimed
+        owner/app fields are ignored. Concurrent reports with the same key atomically write
+        one live record. Semantically identical replays return the original server record,
+        creation time and default timestamps. Changed content updates that record with the
+        last database-accepted write while preserving its server ID and created_at; this
+        is not a revisioned sync/conflict-resolution protocol. Initial milestones/shared
+        detection only run on insertion. Omitting both IDs preserves append-only legacy
+        behavior. Invalid or conflicting IDs return 400 REQ_INVALID_BODY.
       security:
         - bearerAuth: []
       requestBody:
@@ -543,6 +827,7 @@ paths:
               $ref: "#/components/schemas/FrogSleepFocusSessionRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "400": { description: "Invalid, blank, oversized or conflicting client session identifiers" }
   /api/v1/frogsleep/focus-buddy/stats/week:
     get:
       operationId: frogSleepFocusWeekStats
@@ -835,10 +1120,24 @@ paths:
       operationId: frogSleepFocusSharedMoments
       tags: [frogsleep, frogsleep-focus-buddy]
       summary: Get shared focus moments
+      description: Canonical active Focus relationships and directional shared_activity consent are revalidated. Completed session pairs are deduplicated. The response preserves legacy server session references and adds stable moment_id plus viewer-oriented client session identifiers.
       security:
         - bearerAuth: []
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200":
+          description: Authenticated viewer's shared moments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      moments: { type: array, items: { $ref: "#/components/schemas/FrogSleepSharedFocusMoment" } }
+                      pagination: { type: object }
+        "403": { description: Current sharing authorization unavailable }
   /api/v1/frogsleep/buddy/invitations:
     post:
       operationId: frogSleepCreateBuddyInvitation
@@ -936,6 +1235,208 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept:
+    post:
+      operationId: frogSleepAcceptBuddyInvitationDomain
+      tags: [frogsleep]
+      summary: Explicitly accept one independent invitation domain
+      description: >-
+        Authenticated app membership and the correct action actor are required, including replay.
+        Use this domain's decision_version from preview as expected_version, and persist the opaque
+        idempotency_key before sending. Retry the same action with the original key and version.
+        Accept creates one canonical relationship, two occupied slots and eight revoked directional grant records; no sharing is enabled.
+        Decline and cancel do not create relationships or slots and remain available when ordinary capabilities are disabled.
+        A terminal sibling is unaffected. Unknown or wrong-account invitations return neutral 404;
+        changed keys, stale versions, expired pending invitations or losing races return 409.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+        - { name: domain, in: path, required: true, schema: { type: string, enum: [sleep, focus] } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationDomainCommandRequest" } } }
+      responses:
+        "200":
+          description: Decision receipt; accept includes the original relationship ID and its current status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/BuddyInvitationDomainDecisionResponse" }
+        "404": { description: Invitation unavailable to this account }
+        "409": { description: "Version, terminal decision or domain slot conflict" }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/decline:
+    post:
+      operationId: frogSleepDeclineBuddyInvitationDomain
+      tags: [frogsleep]
+      summary: Explicitly decline one independent invitation domain
+      description: >-
+        Authenticated app membership and the correct action actor are required, including replay.
+        Use this domain's decision_version from preview as expected_version, and persist the opaque
+        idempotency_key before sending. Retry the same action with the original key and version.
+        Accept creates one canonical relationship, two occupied slots and eight revoked directional grant records; no sharing is enabled.
+        Decline and cancel do not create relationships or slots and remain available when ordinary capabilities are disabled.
+        A terminal sibling is unaffected. Unknown or wrong-account invitations return neutral 404;
+        changed keys, stale versions, expired pending invitations or losing races return 409.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+        - { name: domain, in: path, required: true, schema: { type: string, enum: [sleep, focus] } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationDomainCommandRequest" } } }
+      responses:
+        "200":
+          description: Decision receipt; accept includes the original relationship ID and its current status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/BuddyInvitationDomainDecisionResponse" }
+        "404": { description: Invitation unavailable to this account }
+        "409": { description: "Version, terminal decision or domain slot conflict" }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/cancel:
+    post:
+      operationId: frogSleepCancelBuddyInvitationDomain
+      tags: [frogsleep]
+      summary: Explicitly cancel one independent invitation domain
+      description: >-
+        Authenticated app membership and the correct action actor are required, including replay.
+        Use this domain's decision_version from preview as expected_version, and persist the opaque
+        idempotency_key before sending. Retry the same action with the original key and version.
+        Accept creates one canonical relationship, two occupied slots and eight revoked directional grant records; no sharing is enabled.
+        Decline and cancel do not create relationships or slots and remain available when ordinary capabilities are disabled.
+        A terminal sibling is unaffected. Unknown or wrong-account invitations return neutral 404;
+        changed keys, stale versions, expired pending invitations or losing races return 409.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+        - { name: domain, in: path, required: true, schema: { type: string, enum: [sleep, focus] } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationDomainCommandRequest" } } }
+      responses:
+        "200":
+          description: Decision receipt; accept includes the original relationship ID and its current status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/BuddyInvitationDomainDecisionResponse" }
+        "404": { description: Invitation unavailable to this account }
+        "409": { description: "Version, terminal decision or domain slot conflict" }
+  /api/v1/frogsleep/buddy/relationships:
+    get:
+      operationId: frogSleepListBuddyRelationships
+      tags: [frogsleep]
+      summary: List the authenticated participant's current Sleep and Focus relationships
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" }, "401": { description: Authentication required } }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}:
+    get:
+      operationId: frogSleepGetBuddyRelationship
+      tags: [frogsleep]
+      summary: Get participant-scoped relationship metadata including terminal receipts
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Relationship metadata and the viewer's notification preference
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/BuddyRelationshipSnapshot" }
+        "404": { description: Relationship unavailable to this participant }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/pause:
+    post:
+      operationId: frogSleepBuddyRelationshipPause
+      tags: [frogsleep]
+      summary: Pause the authenticated participant's buddy relationship
+      description: Participant-scoped command. Pause is independent for each participant, resume removes only the actor's pause, mute affects only the actor's notifications, revoke is terminal. Exact repeated state changes do not increment the relationship version. Safety commands remain available independently of discovery capability flags.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyRelationshipCommandRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Relationship unavailable }
+        "409": { description: Version conflict or terminal relationship }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/resume:
+    post:
+      operationId: frogSleepBuddyRelationshipResume
+      tags: [frogsleep]
+      summary: Resume the authenticated participant's buddy relationship
+      description: Participant-scoped command. Pause is independent for each participant, resume removes only the actor's pause, mute affects only the actor's notifications, revoke is terminal. Exact repeated state changes do not increment the relationship version. Safety commands remain available independently of discovery capability flags.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyRelationshipCommandRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Relationship unavailable }
+        "409": { description: Version conflict or terminal relationship }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/revoke:
+    post:
+      operationId: frogSleepBuddyRelationshipRevoke
+      tags: [frogsleep]
+      summary: Revoke the authenticated participant's buddy relationship
+      description: Participant-scoped command. Pause is independent for each participant, resume removes only the actor's pause, mute affects only the actor's notifications, revoke is terminal. Exact repeated state changes do not increment the relationship version. Safety commands remain available independently of discovery capability flags.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyRelationshipCommandRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Relationship unavailable }
+        "409": { description: Version conflict or terminal relationship }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/mute:
+    post:
+      operationId: frogSleepBuddyRelationshipMute
+      tags: [frogsleep]
+      summary: Mute the authenticated participant's buddy relationship
+      description: Participant-scoped command. Pause is independent for each participant, resume removes only the actor's pause, mute affects only the actor's notifications, revoke is terminal. Exact repeated state changes do not increment the relationship version. Safety commands remain available independently of discovery capability flags.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyRelationshipCommandRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Relationship unavailable }
+        "409": { description: Version conflict or terminal relationship }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/unmute:
+    post:
+      operationId: frogSleepBuddyRelationshipUnmute
+      tags: [frogsleep]
+      summary: Unmute the authenticated participant's buddy relationship
+      description: Participant-scoped command. Pause is independent for each participant, resume removes only the actor's pause, mute affects only the actor's notifications, revoke is terminal. Exact repeated state changes do not increment the relationship version. Safety commands remain available independently of discovery capability flags.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyRelationshipCommandRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Relationship unavailable }
+        "409": { description: Version conflict or terminal relationship }
   /api/v1/frogsleep/buddy/relationships/{relationshipId}/grants:
     get:
       operationId: frogSleepListBuddySharingGrants
@@ -945,6 +1446,21 @@ paths:
       parameters:
         - { name: relationshipId, in: path, required: true, schema: { type: string } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+    put:
+      operationId: frogSleepReplaceOwnBuddySharingGrants
+      tags: [frogsleep]
+      summary: Atomically replace only the authenticated grantor's category selection
+      description: All four expected_versions are required. Zero identifies an absent default-revoked grant. Both directions remain independent. Revoking existing grants is allowed while paused, new grants require an active relationship. Stale batches have no partial writes.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddySharingSelectionRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Relationship unavailable or cannot grant while paused }
+        "409": { description: Directional grant version conflict }
   /api/v1/frogsleep/buddy/relationships/{relationshipId}/grants/{grantId}:
     patch:
       operationId: frogSleepUpdateBuddySharingGrant
@@ -1074,11 +1590,26 @@ paths:
       operationId: frogSleepListBuddyNotifications
       tags: [frogsleep]
       summary: List the authenticated viewer's buddy notification feed
+      description: Stable in-app notification identities remain readable without a Push device or system notification permission. Queueing or provider acceptance is not device delivery. Opening a notification must call its current authorized route endpoint.
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses:
+        "200":
+          description: Viewer-scoped in-app fallback, independent of Push delivery outcome
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [notifications]
+                    properties:
+                      notifications: { type: array, items: { $ref: "#/components/schemas/FrogSleepBuddyNotification" } }
+                      next_cursor: { type: string }
+        "401": { description: Authentication required }
   /api/v1/frogsleep/buddy/notifications/preferences:
     get:
       operationId: frogSleepGetBuddyNotificationPreferences
@@ -1146,17 +1677,31 @@ paths:
     post:
       operationId: frogSleepRespondBuddyJointActivity
       tags: [frogsleep]
-      summary: Accept, decline, cancel, or complete a joint activity
+      summary: Accept, decline, cancel, start, or verify completion of a joint activity
+      description: >-
+        start persists the participant start time and requires accepted status. Completion is derived
+        from both participants real completed focus sessions or their own morning_completed sleep events;
+        complete without both source proofs returns 409. Repeated starts preserve the original timestamp.
+        Acceptance expires after 36 hours. Cancelled or declined activities cannot restart.
+        payload.participant_progress maps participant IDs to status (pending/started/completed),
+        completed_at and minutes. joint_focus requires a focus relationship; tonight_together requires sleep.
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: activityId, in: path, required: true, schema: { type: string } }
-        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, complete] } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, start, complete] } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
   /api/v1/frogsleep/buddy/goals:
     get:
       operationId: frogSleepListBuddyJointGoals
       tags: [frogsleep]
       summary: List viewer-authorized joint goals and verified progress
+      description: >-
+        Only real sources starting after bilateral acceptance and ending inside the goal window count.
+        focus_minutes is capped by elapsed session time; focus_days and shared sleep completion days
+        are deduplicated by the proposer timezone. daily_encouragement counts distinct sent interaction
+        days. sleep_schedule_days denotes completed shared sleep days and does not assert schedule adherence.
+        Goals complete automatically when both participants reach the target. Unreached manual complete
+        returns 409. Paused goals stop counting at their pause time. No sharing grant is implied.
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: relationship_id, in: query, required: false, schema: { type: string } }
@@ -1244,25 +1789,119 @@ paths:
     get:
       operationId: frogSleepListSleepReports
       tags: [frogsleep, frogsleep-product-data]
-      summary: List sleep report snapshots
-      security:
-        - bearerAuth: []
+      summary: List all private reports with fixed-boundary database pagination
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PersonalLimit"
+        - $ref: "#/components/parameters/PersonalCursor"
+        - { name: since, in: query, required: false, description: Optional strict lower bound on report recorded_at; repeat the same value with its cursor, schema: { type: string, format: date-time } }
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
     post:
       operationId: frogSleepCreateSleepReport
       tags: [frogsleep, frogsleep-product-data]
-      summary: Create a sleep report snapshot
-      security:
-        - bearerAuth: []
+      summary: Idempotently create a private report using an account-scoped stable snapshot_id
+      description: Equal retries keep the same revision and sequence. Different content needs If-Match; tombstones reject recreation. Scope comes only from the bearer account.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/FrogSleepSleepReportRequest"
+            schema: { $ref: "#/components/schemas/FrogSleepSleepReportRequest" }
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
+        "410": { $ref: "#/components/responses/PersonalSyncError" }
+  /api/v1/frogsleep/product-data/sleep-reports/{snapshotId}:
+    parameters:
+      - name: snapshotId
+        in: path
+        required: true
+        schema: { type: string, minLength: 1, maxLength: 200 }
+    get:
+      operationId: frogSleepGetSleepReport
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Get the authenticated account's report by stable snapshot ID
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { $ref: "#/components/responses/PersonalSyncError" }
+    put:
+      operationId: frogSleepUpdateSleepReport
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Update a private report using the current revision
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FrogSleepSleepReportRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
+        "410": { $ref: "#/components/responses/PersonalSyncError" }
+    delete:
+      operationId: frogSleepDeleteSleepReport
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Atomically tombstone a private report; stale uploads cannot recreate it
+      description: data.resource contains the full tombstone and sync_epoch; metadata also retains top-level compatibility aliases.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { $ref: "#/components/responses/PersonalSyncError" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
+  /api/v1/frogsleep/product-data/personal-sync/state:
+    get:
+      operationId: frogSleepPersonalSyncState
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Read private sync state
+      description: Account-scoped epoch and commit-ordered sequence; restore pages retain a fixed historical view. Signed cursors expire after seven days. Changes include tombstones and use changes_cursor for the next poll.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
+        "503": { $ref: "#/components/responses/PersonalSyncError" }
+  /api/v1/frogsleep/product-data/personal-sync/restore:
+    get:
+      operationId: frogSleepPersonalSyncRestore
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Read private sync restore
+      description: Account-scoped epoch and commit-ordered sequence; restore pages retain a fixed historical view. Signed cursors expire after seven days. Changes include tombstones and use changes_cursor for the next poll.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PersonalLimit"
+        - $ref: "#/components/parameters/PersonalCursor"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
+        "503": { $ref: "#/components/responses/PersonalSyncError" }
+  /api/v1/frogsleep/product-data/personal-sync/changes:
+    get:
+      operationId: frogSleepPersonalSyncChanges
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Read private sync changes
+      description: Account-scoped epoch and commit-ordered sequence; restore pages retain a fixed historical view. Signed cursors expire after seven days. Changes include tombstones and use changes_cursor for the next poll.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PersonalLimit"
+        - $ref: "#/components/parameters/PersonalCursor"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
+        "503": { $ref: "#/components/responses/PersonalSyncError" }
   /api/v1/frogsleep/product-data/progress/{namespace}:
     get:
       operationId: frogSleepGetProgressSnapshot
@@ -1272,16 +1911,22 @@ paths:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/ProductDataNamespace"
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
     put:
       operationId: frogSleepPutProgressSnapshot
       tags: [frogsleep, frogsleep-product-data]
-      summary: Upsert progress snapshot by namespace
+      summary: Upsert progress snapshot; report_preferences participates in private revision sync
       security:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/ProductDataNamespace"
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
       requestBody:
         required: true
         content:
@@ -1293,11 +1938,14 @@ paths:
     patch:
       operationId: frogSleepPatchProgressSnapshot
       tags: [frogsleep, frogsleep-product-data]
-      summary: Upsert progress snapshot by namespace
+      summary: Upsert progress snapshot; report_preferences participates in private revision sync
       security:
         - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/ProductDataNamespace"
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
       requestBody:
         required: true
         content:
@@ -1306,6 +1954,20 @@ paths:
               $ref: "#/components/schemas/FrogSleepProgressSnapshotRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+    delete:
+      description: For report_preferences, data.resource contains the full tombstone with revision and sync_epoch; top-level metadata aliases remain.
+      operationId: frogSleepDeleteReportPreferences
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Tombstone report_preferences (other namespaces cannot be deleted through this operation)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ReportPreferencesNamespace"
+        - $ref: "#/components/parameters/PersonalEpoch"
+        - $ref: "#/components/parameters/PersonalOperationKey"
+        - $ref: "#/components/parameters/PersonalRevision"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "409": { $ref: "#/components/responses/PersonalSyncError" }
   /api/v1/frogsleep/product-data/entitlements/current:
     get:
       operationId: frogSleepCurrentEntitlement
@@ -1375,6 +2037,25 @@ components:
       scheme: bearer
       bearerFormat: JWT
   parameters:
+    RequiredPersonalEpoch:
+      name: X-Sync-Epoch
+      in: header
+      required: true
+      description: Current authenticated account epoch from personal-sync/state.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    RequiredPersonalOperationKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable random command ID, max 200 characters. Reuse only with identical
+        content.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
     DeviceId:
       name: deviceId
       in: path
@@ -1405,6 +2086,35 @@ components:
       in: path
       required: true
       schema: { type: string }
+    ReportPreferencesNamespace:
+      name: namespace
+      in: path
+      required: true
+      schema: { type: string, enum: [report_preferences] }
+    PersonalEpoch:
+      name: X-Sync-Epoch
+      in: header
+      description: Required after an account reset; old epochs never accept writes. First-generation legacy clients may omit this header.
+      schema: { type: string }
+    PersonalOperationKey:
+      name: Idempotency-Key
+      in: header
+      description: Stable command ID, scoped to the account; replay with different content returns conflict.
+      schema: { type: string, minLength: 1, maxLength: 200 }
+    PersonalRevision:
+      name: If-Match
+      in: header
+      description: Current numeric revision required to change or delete existing content; absent or zero creates a new resource.
+      schema: { type: string }
+    PersonalLimit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    PersonalCursor:
+      name: cursor
+      in: query
+      description: Opaque signed account/epoch/query cursor; expires after seven days.
+      schema: { type: string }
     ProductDataNamespace:
       name: namespace
       in: path
@@ -1423,6 +2133,11 @@ components:
       required: false
       schema: { type: string }
   responses:
+    PersonalSyncError:
+      description: Invalid sync revision, epoch, cursor or operation; deleted resources cannot be resurrected.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/FrogSleepPersonalSyncError" }
     FrogSleepOk:
       description: FrogSleep dual-compatible response envelope
       content:
@@ -1430,6 +2145,307 @@ components:
           schema:
             $ref: "#/components/schemas/FrogSleepEnvelope"
   schemas:
+    FrogSleepRawSleepEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - event_id
+      - type
+      - occurred_at
+      - data
+      properties:
+        event_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        type:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,63}$
+        occurred_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+    FrogSleepRawSleepSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      - schema_version
+      - status
+      - started_at
+      - ended_at
+      - sleep_intent
+      - timezone
+      - data
+      properties:
+        session_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        schema_version:
+          type: string
+          enum:
+          - '1'
+        status:
+          type: string
+          enum:
+          - completed
+          - cancelled
+          - interrupted
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+        scheduled_wake_at:
+          type: string
+          format: date-time
+        sleep_intent:
+          type: string
+          enum:
+          - night_sleep
+          - daytime_nap
+          - catch_up_sleep
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        data:
+          type: object
+          additionalProperties: true
+        events:
+          type: array
+          maxItems: 512
+          items:
+            $ref: '#/components/schemas/FrogSleepRawSleepEvent'
+        user_id:
+          type: string
+          description: Optional authenticated-owner assertion.
+        owner_user_id:
+          type: string
+          description: Optional authenticated-owner assertion.
+      description: Terminal history only; UTF-8 serialized request is at most 128 KiB, JSON nesting at most 32 levels and numbers must be finite. Event IDs must be unique and event times within started_at..ended_at.
+        Server normalizes timestamps to UTC. Device lock/timer state inside data is history, never an instruction to resume a lock.
+    FrogSleepRawSleepResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - sleep_session
+          properties:
+            sleep_session:
+              $ref: '#/components/schemas/FrogSleepPersonalVersion'
+      additionalProperties: true
+    FrogSleepPersonalPageResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/FrogSleepPersonalSyncPage'
+      additionalProperties: true
+    FrogSleepGuestSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - device_id
+      - device_secret
+      - platform
+      properties:
+        device_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        device_secret:
+          type: string
+          minLength: 43
+          maxLength: 128
+          pattern: ^[A-Za-z0-9_-]+$
+          description: Client-generated cryptographically random secret of at least 32 bytes; keep in secure storage. Never use a hardware
+            ID or password.
+        platform:
+          type: string
+          enum:
+          - ios
+          - android
+    FrogSleepGuestUpgradeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - guest_user_id
+      - guest_upgrade_token
+      - device_id
+      - confirmed
+      properties:
+        guest_user_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        guest_upgrade_token:
+          type: string
+          minLength: 40
+          maxLength: 128
+        device_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        confirmed:
+          type: boolean
+          enum:
+          - true
+    FrogSleepGuestUpgradeResult:
+      type: object
+      additionalProperties: false
+      required:
+      - user_id
+      - previous_guest_user_id
+      - migrated_data_count
+      - deduplicated_data_count
+      - sync_epoch
+      properties:
+        user_id:
+          type: string
+        previous_guest_user_id:
+          type: string
+        migrated_data_count:
+          type: integer
+          minimum: 0
+        deduplicated_data_count:
+          type: integer
+          minimum: 0
+        sync_epoch:
+          type: string
+    FrogSleepGuestUpgradeResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/FrogSleepGuestUpgradeResult'
+      additionalProperties: true
+    FrogSleepGuestSessionResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          required:
+          - access_token
+          - refresh_token
+          - user_id
+          - app_id
+          - guest_user_id
+          - guest_upgrade_token
+          - guest_expires_at
+          - is_guest
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            user_id:
+              type: string
+            app_id:
+              type: string
+              enum:
+              - frogsleep
+            guest_user_id:
+              type: string
+            guest_upgrade_token:
+              type: string
+              description: Independent upgrade credential; persist securely and send only to the upgrade endpoint.
+            guest_expires_at:
+              type: string
+              format: date-time
+            is_guest:
+              type: boolean
+              enum:
+              - true
+          additionalProperties: true
+      additionalProperties: true
+    FrogSleepPersonalVersion:
+      type: object
+      additionalProperties: false
+      required: [kind, id, revision, sequence, deleted, data, created_at, updated_at]
+      properties:
+        kind: { type: string, enum: [sleep_report, report_preferences, sleep_session] }
+        sync_epoch: { type: string, description: Included on direct resource responses. }
+        id: { type: string }
+        revision: { type: integer, minimum: 1 }
+        sequence: { type: integer, minimum: 1 }
+        deleted: { type: boolean }
+        data: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    FrogSleepPersonalSyncPage:
+      type: object
+      additionalProperties: false
+      required: [items, sync_epoch, boundary, changes_cursor, pagination]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/FrogSleepPersonalVersion" }
+        sync_epoch: { type: string }
+        boundary: { type: integer, minimum: 0 }
+        changes_cursor: { type: string }
+        pagination:
+          type: object
+          required: [limit, has_more, next_cursor]
+          properties:
+            limit: { type: integer }
+            has_more: { type: boolean }
+            next_cursor: { type: [string, 'null'] }
+    FrogSleepPersonalSyncState:
+      type: object
+      required: [sync_epoch, sequence, capabilities]
+      properties:
+        sync_epoch: { type: string }
+        sequence: { type: integer, minimum: 0 }
+        capabilities:
+          type: object
+          required: [read, write]
+          properties:
+            read: { type: boolean }
+            write: { type: boolean }
+    FrogSleepPersonalSyncError:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string, enum: [REQ_INVALID_BODY, REQ_INVALID_HEADER, FROGSLEEP_SYNC_IDEMPOTENCY_CONFLICT, FROGSLEEP_SYNC_REVISION_CONFLICT, FROGSLEEP_SYNC_EPOCH_MISMATCH, FROGSLEEP_SYNC_CURSOR_INVALID, FROGSLEEP_SYNC_RESOURCE_NOT_FOUND, FROGSLEEP_SYNC_RESOURCE_DELETED, FROGSLEEP_SYNC_DISABLED] }
+        message: { type: string }
+        requestId: { type: string }
     BuddyInvitationDomain:
       type: string
       enum: [sleep, focus, bundle]
@@ -1460,6 +2476,13 @@ components:
     BuddyReportState:
       type: string
       enum: [pending, ready, redacted, expired]
+    BuddyDomainAcceptRequest:
+      type: object
+      required: [expected_version, idempotency_key]
+      additionalProperties: false
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+        idempotency_key: { type: string, minLength: 1 }
     BuddyInvitationResponseRequest:
       type: object
       required: [expected_version, idempotency_key]
@@ -1502,6 +2525,35 @@ components:
         relationship_id: { type: [string, "null"] }
         status: { type: string, enum: [pending, accepted, declined, cancelled, expired] }
         error_code: { type: [string, "null"] }
+        decision_version:
+          type: integer
+          minimum: 1
+          description: Per-domain CAS version; absent for compatibility decisions. Never use aggregate version for domain commands.
+        viewer_actions:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [accept, decline, cancel] }
+          description: Empty after this domain becomes terminal, even when a sibling is pending.
+    BuddyInvitationDomainCommandRequest:
+      type: object
+      required: [expected_version, idempotency_key]
+      additionalProperties: false
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: Nonblank opaque command identity, scoped to authenticated actor, invitation, domain and action; reuse on retry.
+    BuddyInvitationDomainDecisionResponse:
+      type: object
+      required: [invitation_id, domain, decision_status, decision_version]
+      properties:
+        invitation_id: { type: string }
+        domain: { type: string, enum: [sleep, focus] }
+        decision_status: { type: string, enum: [accepted, declined, cancelled] }
+        decision_version: { type: integer, minimum: 2 }
+        relationship_id: { type: string }
+        relationship_status: { type: string, enum: [active, paused, revoked] }
     BuddyInvitationDelivery:
       type: object
       required: [channel, status, attempt_count]
@@ -1512,6 +2564,43 @@ components:
         provider_accepted_at: { type: string, format: date-time }
         delivered_at: { type: string, format: date-time }
         last_error_code: { type: string }
+    BuddyRelationshipSnapshot:
+      type: object
+      required: [id, viewer_user_id, partner_user_id, domain, status, version, paused_by_user_ids, is_muted]
+      properties:
+        id: { type: string }
+        viewer_user_id: { type: string }
+        partner_user_id: { type: string }
+        domain: { type: string, enum: [sleep, focus] }
+        status: { type: string, enum: [active, paused, revoked] }
+        version: { type: integer, minimum: 1 }
+        paused_by_user_ids: { type: array, uniqueItems: true, items: { type: string } }
+        is_muted: { type: boolean }
+    BuddyRelationshipCommandRequest:
+      type: object
+      required: [expected_version]
+      additionalProperties: false
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+    BuddySharingSelectionRequest:
+      type: object
+      required: [domain, categories, expected_versions]
+      additionalProperties: false
+      properties:
+        domain: { type: string, enum: [sleep, focus] }
+        categories:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [presence, daily_summary, weekly_trend, shared_activity] }
+        expected_versions:
+          type: object
+          required: [presence, daily_summary, weekly_trend, shared_activity]
+          additionalProperties: false
+          properties:
+            presence: { type: integer, minimum: 0 }
+            daily_summary: { type: integer, minimum: 0 }
+            weekly_trend: { type: integer, minimum: 0 }
+            shared_activity: { type: integer, minimum: 0 }
     BuddySharingGrantUpdateRequest:
       type: object
       required: [state, expected_version]
@@ -1798,11 +2887,11 @@ components:
         visibilityScope:
           type: string
           enum: [summary, detailed, private]
-        mute_for_tonight: { type: boolean }
+        mute_for_tonight: { type: boolean, description: Suppresses recipient sleep-session and morning push at enqueue and delivery time }
         muteForTonight: { type: boolean }
-        allow_morning_summary_push: { type: boolean }
+        allow_morning_summary_push: { type: boolean, description: Whether recipient morning summary push is allowed }
         allowMorningSummaryPush: { type: boolean }
-        allow_recovery_nudges: { type: boolean }
+        allow_recovery_nudges: { type: boolean, description: Whether recipient interrupted and returned push is allowed }
         allowRecoveryNudges: { type: boolean }
     FrogSleepSharedSleepSessionRequest:
       type: object
@@ -1815,16 +2904,42 @@ components:
       anyOf:
         - required: [relationship_id]
         - required: [relationshipId]
+    FrogSleepBuddyNotification:
+      type: object
+      required: [id, type, is_read, created_at]
+      properties:
+        id: { type: string, description: Stable opaque notification identity shared by feed and Push }
+        type: { type: string }
+        target_type: { type: string }
+        target_id: { type: string }
+        route: { type: object, additionalProperties: { type: string }, description: Historical safe identifiers; current route authorization is still required }
+        is_read: { type: boolean }
+        read_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+    FrogSleepSharedFocusMoment:
+      type: object
+      properties:
+        moment_id: { type: string, format: uuid }
+        server_moment_id: { type: string }
+        session_id: { type: string, description: Legacy originating server session reference }
+        buddy_session_id: { type: string, description: Legacy peer server session reference }
+        my_session_id: { type: string, description: The authenticated viewer's original client session identifier }
+        viewer_buddy_session_id: { type: string, description: The other participant's original client session identifier }
+        overlap_minutes: { type: integer, minimum: 0 }
+        start_time: { type: string, format: date-time }
+        room_id: { type: string }
+        room_ids: { type: array, items: { type: string } }
     FrogSleepSharedSleepEventRequest:
       type: object
       additionalProperties: true
       properties:
         event_type:
           type: string
-          enum: [interrupted, returned, paused_tonight, morning_completed]
+          enum: [sleep_started, ritual_completed, interrupted, returned, paused_tonight, morning_completed]
         eventType:
           type: string
-          enum: [interrupted, returned, paused_tonight, morning_completed]
+          enum: [sleep_started, ritual_completed, interrupted, returned, paused_tonight, morning_completed]
         occurred_at: { type: string, format: date-time }
         occurredAt: { type: string, format: date-time }
         metadata:
@@ -1861,7 +2976,10 @@ components:
     FrogSleepFocusSessionRequest:
       type: object
       additionalProperties: true
+      description: Optional client ID enables per-app/per-user replay deduplication; aliases must match. Normal unbound reports may correct the same record. Confirmed binding imports require stable ID and original timestamps, and changed content returns HTTP 409 even if a later request omits binding.
       properties:
+        session_id: { type: string, minLength: 1, maxLength: 128, pattern: '\S' }
+        sessionId: { type: string, minLength: 1, maxLength: 128, pattern: '\S' }
         started_at: { type: string, format: date-time }
         startedAt: { type: string, format: date-time }
         start_time: { type: string, format: date-time }
@@ -1918,10 +3036,22 @@ components:
             - required: [templateKey]
             - required: [custom_text]
             - required: [customText]
+    FrogSleepBindingUploadContext:
+      type: object
+      description: Metadata of a user-confirmed import job. Send only explicitly selected completed records; device and active locking state are not imported. The server derives ownership from authentication.
+      required: [owner_user_id, job_id, confirmed_at]
+      properties:
+        owner_user_id: { type: string }
+        job_id: { type: string, minLength: 1 }
+        confirmed_at: { type: string, format: date-time }
     FrogSleepSleepReportRequest:
       type: object
+      description: Immutable snapshot_id is scoped to the authenticated owner. Identical retries return the original record; conflicting content returns HTTP 409.
       additionalProperties: true
       properties:
+        owner_user_id: { type: string, description: Optional assertion; must match authenticated user. }
+        binding:
+          $ref: '#/components/schemas/FrogSleepBindingUploadContext'
         snapshot_id: { type: string }
         report_id: { type: string }
         id: { type: string }

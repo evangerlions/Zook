@@ -1,0 +1,67 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "plans": [
+      {
+        "title": "先读五分钟",
+        "period": "day",
+        "horizon": "short",
+        "start_date": "2026-10-20",
+        "end_date": "2026-10-20",
+        "timezone": "Asia/Shanghai",
+        "parent_id": null,
+        "target_minutes": 20,
+        "minimum_minutes": 5,
+        "target_count": 1,
+        "at": "21:00",
+        "reminder": true,
+        "reason": "",
+        "if_then": "",
+        "target": {
+          "kind": "library",
+          "course": "",
+          "plan_id": "",
+          "lesson_no": 1
+        },
+        "id": "action-a815c57b45a24599b4dd30be33958ab5",
+        "revision": 2,
+        "status": "active",
+        "created_at": "2026-10-20T12:00:00.000Z",
+        "updated_at": "2026-10-20T12:00:00.000Z",
+        "reminder_at": "2026-10-20T13:00:00.000Z",
+        "blocked": false,
+        "progress": {
+          "minutes": 0,
+          "completed": 0,
+          "minimum": 0,
+          "interrupted": 0
+        }
+      }
+    ],
+    "execution": {
+      "id": "execution-d4554005e63243c0a268e5172d31382b",
+      "plan_id": "action-a815c57b45a24599b4dd30be33958ab5",
+      "title": "先读五分钟",
+      "started_at": "2026-10-20T12:00:00.000Z",
+      "ended_at": null,
+      "variant": "minimum",
+      "planned_minutes": 5,
+      "actual_minutes": 0,
+      "outcome": "running",
+      "note": "",
+      "business_date": "2026-10-20",
+      "timezone": "Asia/Shanghai",
+      "target": {
+        "kind": "library",
+        "course": "",
+        "plan_id": "",
+        "lesson_no": 1
+      }
+    },
+    "server_time": "2026-10-20T12:00:00.000Z",
+    "workspace_version": 2,
+    "reminder_delivery": "native-foreground-and-calendar"
+  },
+  "requestId": "fixture-shared-action"
+}

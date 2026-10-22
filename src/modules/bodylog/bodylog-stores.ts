@@ -56,6 +56,9 @@ import type {
   UpdateGrowthMissionInput,
   UpdateGrowthPlanInput,
   UpdateGrowthRewardInput,
+  BodyLogGrowthDailyAggregate,
+  UpsertGrowthDailyAggregateInput,
+  ApplyGrowthDailyAggregateResult,
 } from "./bodylog-growth.types.ts";
 import type {
   NotificationPreferencesRecord,
@@ -202,6 +205,25 @@ export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {
   private readonly plans: BodyLogGrowthPlan[] = [];
   private readonly missions: BodyLogGrowthMission[] = [];
   private readonly rewards: BodyLogGrowthReward[] = [];
+  private readonly dailyAggregates: BodyLogGrowthDailyAggregate[] = [];
+
+  applyGrowthDailyAggregate(planId: string, day: number, input: UpsertGrowthDailyAggregateInput, completed: boolean, completedAt: string): ApplyGrowthDailyAggregateResult {
+    const plan = this.plans.find((item) => item.id === planId);
+    const mission = this.missions.find((item) => item.planId === planId && item.day === day && item.type === "localGoal");
+    if (!plan || !["active", "completed"].includes(plan.status) || !mission) return { aggregate: null, locked: false };
+    if (mission.completed !== completed && this.rewards.some((reward) => reward.planId === planId && reward.claimed)) return { aggregate: null, locked: true };
+    const index = this.dailyAggregates.findIndex((item) => item.userId === input.userId && item.localDate === input.localDate);
+    const record = { ...input, updatedAt: new Date().toISOString() };
+    if (index < 0) this.dailyAggregates.push(clone(record));
+    else this.dailyAggregates[index] = clone(record);
+    mission.completed = completed;
+    mission.completedAt = completed ? completedAt : null;
+    const completedMissions = this.missions.filter((item) => item.planId === planId && item.completed).length;
+    plan.completedMissions = completedMissions;
+    plan.status = completedMissions === plan.totalMissions ? "completed" : "active";
+    plan.updatedAt = new Date().toISOString();
+    return { aggregate: clone(record), locked: false };
+  }
 
   createGrowthPlan(input: CreateGrowthPlanInput): BodyLogGrowthPlan {
     const now = new Date().toISOString();
@@ -272,7 +294,8 @@ export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {
   }
   claimGrowthReward(rewardId: string, claimedAt: string): BodyLogGrowthReward | null {
     const existing = this.rewards.find((r) => r.id === rewardId);
-    if (!existing || existing.claimed) return null;
+    if (!existing) return null;
+    if (existing.claimed) return clone(existing);
     const updated = { ...existing, claimed: true, claimedAt };
     this.rewards[this.rewards.indexOf(existing)] = clone(updated);
     return updated;
@@ -337,7 +360,7 @@ export class InMemoryBodyLogNotificationStore implements BodyLogNotificationStor
 }
 
 export class InMemoryBodyLogFeatureFlagStore implements BodyLogFeatureFlagStore {
-  private readonly flags: FeatureFlagRecord[] = ['growth', 'friends', 'competition', 'challengeCreation'].map(key => ({
+  private readonly flags: FeatureFlagRecord[] = ['accountSocial', 'growth', 'friends', 'competition', 'challengeCreation'].map(key => ({
     id: `bodylog_flag_${key}`, key, enabled: false, description: null,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   }));

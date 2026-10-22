@@ -1,3 +1,4 @@
+import type { ActionRepository } from './actions/action.types.ts';
 import type { LightTickReflectionRow } from "./lighttick-reflection.service.ts";
 import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
@@ -15,7 +16,7 @@ export interface LightTickAtomicWrite {
 }
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
-export interface LightTickRepository {
+export interface LightTickRepository extends ActionRepository {
   lockPlanningOwner(owner: LightTickOwner): Promise<void>;
   getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined>;
   savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession>;

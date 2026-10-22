@@ -4,42 +4,22 @@ import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { LlmRouteCircuitRuntimeStatus } from "../shared/types.ts";
 import type { LlmRouteRef } from "./llm-health.service.ts";
+import type { CircuitFailure, CircuitState } from "./llm-route-circuit-state.ts";
 
 const SCOPE = "llm-route-circuit-breaker";
 const INDEX_KEY = "route-index";
-const FAILURE_WINDOW_MS = 2 * 60 * 1000;
+const FAILURE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const OPEN_AFTER_FAILURES = 4;
-const REQUIRED_DISTINCT_USERS = 2;
+const CONFIRM_AFTER_BALANCE_FAILURES = 2;
 const INITIAL_RECOVERY_DELAY_MS = 5 * 60 * 1000;
 const RECOVERY_DELAYS_MS = [10, 20, 60, 120].map((minutes) => minutes * 60 * 1000);
-const FAILURE_STATE_TTL_SECONDS = 3 * 60;
+const FAILURE_STATE_TTL_SECONDS = FAILURE_WINDOW_MS / 1000 + 60;
 const LOCK_TTL_SECONDS = 10;
 const LOCK_RETRY_COUNT = 50;
 const LOCK_RETRY_DELAY_MS = 5;
 const PROBE_LEASE_MS = 2 * 60 * 1000;
 const DIAGNOSTIC_LOG_INTERVAL_MS = 60 * 1000;
 const MAX_DIAGNOSTIC_THROTTLE_KEYS = 512;
-
-interface CircuitFailure {
-  userHash: string;
-  occurredAt: string;
-}
-
-interface CircuitState {
-  ref: Required<LlmRouteRef>;
-  state: "closed" | "confirming" | "open";
-  failures: CircuitFailure[];
-  confirmationStartedAt?: string;
-  confirmationLeaseId?: string;
-  confirmationLeaseUntil?: string;
-  openedAt?: string;
-  blockedUntil?: string;
-  nextRecoveryAt?: string;
-  recoverySuccessCount: number;
-  recoveryFailureCount: number;
-  probeLeaseId?: string;
-  probeLeaseUntil?: string;
-}
 
 export interface LlmRouteCircuitBreakerOptions {
   now?: () => Date;
@@ -123,6 +103,7 @@ export class LlmRouteCircuitBreakerService {
     userId: string | undefined,
     enabled: boolean,
     errorCode?: string,
+    balanceFailure = false,
   ): Promise<LlmRouteRef | undefined> {
     if (!enabled) {
       this.logIgnoredFailure(ref, "circuit_disabled", errorCode);
@@ -145,14 +126,13 @@ export class LlmRouteCircuitBreakerService {
       const now = this.getNow();
       const failures = (current?.failures ?? [])
         .filter((failure) => now.getTime() - Date.parse(failure.occurredAt) < FAILURE_WINDOW_MS)
-        .concat({ userHash: hashUserId(userId), occurredAt: now.toISOString() });
+        .concat({ userHash: hashUserId(userId), occurredAt: now.toISOString(), balanceFailure });
       const distinctUsers = new Set(failures.map((failure) => failure.userHash)).size;
-      const shouldOpen = failures.length >= OPEN_AFTER_FAILURES && distinctUsers >= REQUIRED_DISTINCT_USERS;
+      const balanceFailureCount = failures.filter((failure) => failure.balanceFailure).length;
+      const shouldOpen = failures.length >= OPEN_AFTER_FAILURES || balanceFailureCount >= CONFIRM_AFTER_BALANCE_FAILURES;
       const decision = shouldOpen
         ? "threshold_reached"
-        : failures.length >= OPEN_AFTER_FAILURES
-          ? "distinct_user_quorum_not_met"
-          : "failure_count_below_threshold";
+        : "failure_count_below_threshold";
       const state: CircuitState = shouldOpen
         ? {
             ref: normalizeRef(ref),
@@ -173,9 +153,10 @@ export class LlmRouteCircuitBreakerService {
       if (shouldOpen) {
         this.logTransition(ref, "confirmation_started", "warn", {
           failureCount: failures.length,
+          balanceFailureCount,
+          balanceFailureThreshold: CONFIRM_AFTER_BALANCE_FAILURES,
           distinctUserCount: distinctUsers,
           failureThreshold: OPEN_AFTER_FAILURES,
-          distinctUserThreshold: REQUIRED_DISTINCT_USERS,
           failureWindowMs: FAILURE_WINDOW_MS,
           errorCode,
         });
@@ -183,9 +164,10 @@ export class LlmRouteCircuitBreakerService {
         this.logOnce(ref, `failure_window_progress:${decision}`, "warn", "LLM route circuit failure window updated", {
           decision,
           failureCount: failures.length,
+          balanceFailureCount,
+          balanceFailureThreshold: CONFIRM_AFTER_BALANCE_FAILURES,
           distinctUserCount: distinctUsers,
           failureThreshold: OPEN_AFTER_FAILURES,
-          distinctUserThreshold: REQUIRED_DISTINCT_USERS,
           failureWindowMs: FAILURE_WINDOW_MS,
           errorCode,
         });

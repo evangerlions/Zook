@@ -6,6 +6,7 @@ import { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
 import { LlmRequestResolver, type ResolvedLlmRequest } from "./llm-request-resolver.ts";
 import { isLlmCallerCancelledError } from "./llm-caller-cancellation.ts";
 import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
+import { isLlmBalanceFailure } from "./llm-balance-failure.ts";
 import type {
   LLMCompleteViaStreamOptions,
   LLMCompletionRequest,
@@ -480,6 +481,7 @@ export class LLMManager {
         resolution.request.usageOwner?.userId,
         resolution.circuitBreakerEnabled,
         llmErrorDiagnosticCode(error),
+        isLlmBalanceFailure(resolution.routeRef.provider, error),
       );
       if (confirmation) {
         void Promise.resolve(

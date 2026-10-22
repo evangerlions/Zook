@@ -1,3 +1,7 @@
+import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
+import type { PersonalSyncRepository } from "../../modules/frogsleep/personal-sync/personal-sync.types.ts";
+import type { FrogSleepAdminStore } from "../../modules/frogsleep/admin/frogsleep-admin.types.ts";
+import type { FrogSleepFocusSessionWriteResult } from "../../shared/frogsleep-focus-session.ts";
 import type {
   AnalyticsEventRecord,
   AiNovelBillingMembershipRecord,
@@ -96,7 +100,11 @@ export abstract class ApplicationDatabase {
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;
   abstract readonly aiNovelCreditsStore: AiNovelCreditsStore;
+  abstract getSleepGuestStore(): SleepGuestStore;
+  abstract getPersonalSyncRepository(): PersonalSyncRepository;
+  abstract getFrogSleepAdminStore(): FrogSleepAdminStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
+  abstract withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],
     fn: () => Promise<T> | T,
@@ -235,11 +243,12 @@ export abstract class ApplicationDatabase {
     limit?: number;
   }): MaybePromise<EmailDeliveryEventRecord[]>;
 
+  abstract withFrogSleepNotificationLock<T>(key: string, operation: () => Promise<T> | T): Promise<T>;
   abstract insertNotificationJob(record: NotificationJobRecord): MaybePromise<void>;
   abstract findNotificationJob(jobId: string): MaybePromise<NotificationJobRecord | undefined>;
   abstract updateNotificationJob(
     jobId: string,
-    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
+    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount" | "payload">>,
   ): MaybePromise<NotificationJobRecord | undefined>;
 
   abstract upsertFrogSleepDevice(record: FrogSleepDeviceRecord): MaybePromise<FrogSleepDeviceRecord>;
@@ -251,8 +260,10 @@ export abstract class ApplicationDatabase {
     includeDeleted?: boolean;
   }): MaybePromise<FrogSleepDeviceRecord[]>;
 
+  abstract upsertFrogSleepFocusSession(record: FrogSleepEntityRecord): MaybePromise<FrogSleepFocusSessionWriteResult>;
   abstract insertFrogSleepEntity(record: FrogSleepEntityRecord): MaybePromise<void>;
   abstract findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract listFrogSleepEntities(filter: FrogSleepEntityFilter): MaybePromise<FrogSleepEntityRecord[]>;
@@ -315,6 +326,8 @@ export abstract class ApplicationDatabase {
     appId: string,
     deliveryId: string,
   ): MaybePromise<FrogSleepBuddyInvitationEmailAttemptRecord[]>;
+  lockFrogSleepBuddyDomainSlots(_keys: FrogSleepBuddyCommandSlotKey[]): MaybePromise<void> {}
+  lockFrogSleepBuddyInvitationBundle(_appId: string, _invitationId: string): MaybePromise<void> {}
   abstract upsertFrogSleepBuddyInvitationDomainDecision(
     record: FrogSleepBuddyInvitationDomainDecisionRecord,
   ): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord>;
@@ -330,7 +343,7 @@ export abstract class ApplicationDatabase {
   abstract compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: {
     appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
     expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
-    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; terminalReason?: string; updatedAt: string;
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; relationshipId?: string; terminalReason?: string; updatedAt: string;
   }): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   abstract ensureFrogSleepBuddyDomainSlot(input: {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
@@ -352,7 +365,7 @@ export abstract class ApplicationDatabase {
     appId: string, relationshipId: string,
   ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
   abstract listCurrentFrogSleepBuddyDomainRelationships(
-    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked?: boolean,
   ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord[]>;
   abstract compareAndUpdateFrogSleepBuddyDomainRelationship(input: {
     appId: string; id: string; expectedVersion: number;

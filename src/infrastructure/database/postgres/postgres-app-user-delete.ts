@@ -1,3 +1,5 @@
+import { deletePostgresFrogSleepBuddyUserData } from "./postgres-frogsleep-user-delete.ts";
+
 type QueryFn = (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
 
 const FROGSLEEP_USER_RUNTIME_TABLES = [
@@ -58,7 +60,7 @@ export async function deletePostgresAppUserRuntimeData(
   userId: string,
 ): Promise<void> {
   if (appId === 'bodylog') {
-    for (const table of ['bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices']) {
+    for (const table of ['bodylog_growth_daily_aggregates', 'bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices']) {
       await query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);
     }
   }
@@ -115,7 +117,14 @@ export async function deletePostgresAppUserRuntimeData(
   if (appId !== "frogsleep") {
     return;
   }
+  await query("SELECT id FROM zook_app_users WHERE app_id=$1 AND user_id=$2 FOR UPDATE", [appId,userId]);
+  await query(`INSERT INTO zook_frogsleep_personal_sync_state(app_id,user_id,legacy_allowed,deleted) VALUES($1,$2,FALSE,TRUE)
+    ON CONFLICT(app_id,user_id) DO UPDATE SET epoch=gen_random_uuid()::text,cursor_secret=gen_random_uuid()::text,sequence=0,legacy_allowed=FALSE,deleted=TRUE`, [appId,userId]);
+  await query("DELETE FROM zook_frogsleep_personal_legacy_aliases WHERE app_id=$1 AND user_id=$2", [appId,userId]);
+  await query("DELETE FROM zook_frogsleep_personal_versions WHERE app_id=$1 AND user_id=$2", [appId,userId]);
+  await query("DELETE FROM zook_frogsleep_personal_receipts WHERE app_id=$1 AND user_id=$2", [appId,userId]);
   await query("DELETE FROM zook_frogsleep_devices WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await deletePostgresFrogSleepBuddyUserData(query, appId, userId, FROGSLEEP_USER_RUNTIME_TABLES);
   for (const tableName of FROGSLEEP_USER_RUNTIME_TABLES) {
     await query(
       `DELETE FROM ${tableName} WHERE app_id = $1 AND (owner_user_id = $2 OR partner_user_id = $2)`,

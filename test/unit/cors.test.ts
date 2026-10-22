@@ -51,9 +51,9 @@ test("cors headers include credential and preflight metadata", () => {
     "Access-Control-Allow-Origin": "http://localhost:59986",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Expose-Headers": "X-Request-Id, Retry-After, X-Sentry-Rate-Limits",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, X-App-Id, X-Platform, X-App-Version, X-Request-Id, X-App-Locale, X-App-Country-Code, X-Did, X-Log-Claim-Token, X-Log-Key-Id, X-Log-Enc, X-Log-Nonce, X-Log-Content, X-Log-Task-Id, X-Log-Line-Count, X-Log-Plain-Bytes, X-Log-Compressed-Bytes, X-Sentry-Auth, Content-Encoding",
+      "Content-Type, Authorization, X-Sync-Epoch, Idempotency-Key, If-Match, X-App-Id, X-Platform, X-App-Version, X-Request-Id, X-App-Locale, X-App-Country-Code, X-Did, X-Log-Claim-Token, X-Log-Key-Id, X-Log-Enc, X-Log-Nonce, X-Log-Content, X-Log-Task-Id, X-Log-Line-Count, X-Log-Plain-Bytes, X-Log-Compressed-Bytes, X-Sentry-Auth, Content-Encoding",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
   });
@@ -69,11 +69,20 @@ test("cors preflight reflects requested headers when browser sends custom reques
       "Access-Control-Allow-Origin": "http://localhost:59986",
       "Access-Control-Allow-Credentials": "true",
       "Access-Control-Expose-Headers": "X-Request-Id, Retry-After, X-Sentry-Rate-Limits",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers":
         "authorization, content-type, x-did, x-log-enc, content-encoding",
       "Access-Control-Max-Age": "86400",
       Vary: "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
     },
   );
+});
+
+test("Sleep browser preflight authorizes raw-record PUT and private sync headers", () => {
+  const requested = "authorization, content-type, x-sync-epoch, idempotency-key, if-match";
+  const preflight = buildCorsPreflightHeaders("https://app-dev.youwoai.net", requested);
+  assert.ok(preflight["Access-Control-Allow-Methods"].split(/,\s*/).includes("PUT"));
+  assert.equal(preflight["Access-Control-Allow-Headers"], requested);
+  const defaults = buildCorsPreflightHeaders("https://app-dev.youwoai.net")["Access-Control-Allow-Headers"].toLowerCase().split(/,\s*/);
+  for (const header of ["x-sync-epoch", "idempotency-key", "if-match"]) assert.ok(defaults.includes(header), header);
 });

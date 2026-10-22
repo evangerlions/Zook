@@ -86,6 +86,7 @@ export class BuddyInvitationService {
     return this.database.withExclusiveSession(async () => {
       const invite = await this.findInvite(invitationId);
       if (!invite || !this.canView(invite, userId)) throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Buddy invitation is not available.");
+      this.assertActionActor(invite, userId, action);
       const previousKey = String(invite.payload.last_idempotency_key ?? "");
       const previousAction = String(invite.payload.last_response_action ?? "");
       if (invite.status !== "pending") {
@@ -96,7 +97,6 @@ export class BuddyInvitationService {
       }
       const currentVersion = Number(invite.payload.version ?? 1);
       if (currentVersion !== input.expectedVersion) conflict("REQ_INVALID_BODY", "Buddy invitation version conflict.");
-      this.assertActionActor(invite, userId, action);
       const domain = legacyInviteDomain(invite.kind);
       if (!domain || domain === "bundle") badRequest("REQ_INVALID_BODY", "Unsupported buddy invitation domain.");
 

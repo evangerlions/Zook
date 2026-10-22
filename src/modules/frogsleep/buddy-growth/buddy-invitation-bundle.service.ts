@@ -1,3 +1,5 @@
+import { assertAggregateCompatible, recordLegacyDecisions } from "./buddy-invitation-legacy-decision.ts";
+import { invitationDomainPreview } from "./buddy-invitation-domain-preview.ts";
 import { randomBytes } from "node:crypto";
 import { ApplicationError, badRequest, forbidden } from "../../../shared/errors.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
@@ -11,6 +13,8 @@ import { FrogSleepFocusBuddyService } from "../focus-buddy/focus-buddy.service.t
 import { BuddyInvitationService } from "./buddy-invitation.service.ts";
 import { enqueueBuddyInvitationEvent } from "./buddy-invitation-events.ts";
 import { limitBuddyPreview, limitBuddyResponse } from "./buddy-rate-limit.ts";
+
+import { buddyDomainDecisionPayload } from "./buddy-domain-decision-payload.ts";
 
 type BundleDomain = "sleep" | "focus";
 type BundleAction = "accept" | "decline" | "cancel";
@@ -110,8 +114,8 @@ export class BuddyInvitationBundleService {
   async preview(userId: string, bundleId: string) {
     limitBuddyPreview(userId);
     const bundle = await this.requireViewer(userId, bundleId);
-    return { ...await this.payload(bundle, userId), viewer_can_accept: bundle.inviterUserId !== userId &&
-      await this.canView(bundle, userId) && bundle.status === "pending" && !this.isExpired(bundle),
+    const payload = await this.payload(bundle, userId);
+    return { ...payload, viewer_can_accept: payload.domain_results.some((result) => result.viewer_actions.includes("accept")),
       proposed_sharing_categories: ["presence", "daily_summary"],
       never_shared_categories: ["raw_health_data", "app_usage_details", "personal_notes", "detailed_timeline"] };
   }
@@ -145,13 +149,19 @@ export class BuddyInvitationBundleService {
   ) {
     limitBuddyResponse(userId);
     return await this.database.withExclusiveSession(async () => {
+      const initial = await this.requireViewer(userId, bundleId);
+      await this.assertActor(initial, userId, action);
+      if (action === "accept") await this.database.lockFrogSleepBuddyDomainSlots(initial.domains.flatMap(domain =>
+        [initial.inviterUserId, userId].map(userId => ({ appId: FROGSLEEP_APP_ID, userId, domain }))));
+      await this.database.lockFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, bundleId);
       let bundle = await this.requireViewer(userId, bundleId);
       await this.assertActor(bundle, userId, action);
       if (bundle.lastIdempotencyKey === input.idempotencyKey && bundle.lastResponseAction === action && bundle.responsePayload) {
         return bundle.responsePayload;
       }
-      if (bundle.status !== "pending") throw new ApplicationError(409, "REQ_INVALID_BODY", "Buddy invitation is already terminal.");
+      if (bundle.status !== "pending" || this.isExpired(bundle)) throw new ApplicationError(409, "REQ_INVALID_BODY", "Buddy invitation is already terminal.");
       if (bundle.version !== input.expectedVersion) throw new ApplicationError(409, "REQ_INVALID_BODY", "Buddy invitation version conflict.");
+      await assertAggregateCompatible(this.database, bundle);
       if (action !== "cancel" && !bundle.inviteeUserId) {
         bundle = await this.database.upsertFrogSleepBuddyInvitationBundle({
           ...bundle, inviteeUserId: userId, updatedAt: new Date().toISOString(),
@@ -159,6 +169,7 @@ export class BuddyInvitationBundleService {
       }
       if (action === "accept") bundle = await this.retryMissingChildren(bundle);
       const results = await this.respondToDomains(bundle, userId, action, input);
+      await recordLegacyDecisions(this.database, bundle, userId, action, input.idempotencyKey, results);
       const terminal = results.every((item) => !item.error_code);
       const status = terminal ? this.terminalStatus(action) : "pending";
       const response = { invitation_id: bundle.id, results };
@@ -288,12 +299,15 @@ export class BuddyInvitationBundleService {
     const invitee = bundle.inviteeUserId
       ? await this.database.findUserById(bundle.inviteeUserId)
       : undefined;
+    const domainResults = await invitationDomainPreview(this.database, bundle, viewerUserId);
     return { invitation_id: bundle.id, domain: bundle.domains.length === 1 ? bundle.domains[0] : "bundle",
       domains: bundle.domains,
-      direction: bundle.inviterUserId === viewerUserId ? "outgoing" : "incoming", status: bundle.status,
+      direction: bundle.inviterUserId === viewerUserId ? "outgoing" : "incoming",
+      status: bundle.status === "pending" && this.isExpired(bundle) ? "expired" : bundle.status,
       version: bundle.version, inviter: { user_id: bundle.inviterUserId, display_name: inviter?.email?.split("@")[0] ?? "FrogSleep buddy" },
       invitee: bundle.inviteeUserId ? { user_id: bundle.inviteeUserId, display_name: invitee?.email?.split("@")[0] ?? "FrogSleep buddy" } : undefined,
-      viewer_actions: this.actions(bundle, viewerUserId), unread: true, expires_at: bundle.expiresAt,
+      viewer_actions: Array.from(new Set(["preview", ...domainResults.flatMap((item) => item.viewer_actions),
+        ...(bundle.inviterUserId === viewerUserId && domainResults.some((item) => item.status === "pending") ? ["share"] : [])])), unread: true, expires_at: bundle.expiresAt,
       created_at: bundle.createdAt, domain_invitation_ids: bundle.domainInvitationIds,
       domain_error_codes: bundle.domainErrorCodes,
       share_link: bundle.inviterUserId === viewerUserId
@@ -302,19 +316,13 @@ export class BuddyInvitationBundleService {
       delivery: bundle.inviterUserId === viewerUserId
         ? await this.deliveryPayload(bundle)
         : undefined,
-      domain_results: bundle.domains.map((domain) => ({ domain, relationship_id: null, status: bundle.status,
-        error_code: bundle.domainErrorCodes[domain] ?? null })) };
+      domain_results: domainResults };
   }
 
   private async requireViewer(userId: string, bundleId: string) {
     const bundle = await this.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, bundleId);
     if (!bundle || !await this.canView(bundle, userId)) {
       throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Buddy invitation is not available.");
-    }
-    if (bundle.status === "pending" && this.isExpired(bundle)) {
-      return await this.database.upsertFrogSleepBuddyInvitationBundle({
-        ...bundle, status: "expired", version: bundle.version + 1, updatedAt: new Date().toISOString(),
-      });
     }
     return bundle;
   }
@@ -354,7 +362,7 @@ export class BuddyInvitationBundleService {
 
   private async assertActor(bundle: FrogSleepBuddyInvitationBundleRecord, userId: string, action: BundleAction) {
     if (action === "cancel" && bundle.inviterUserId !== userId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the inviter can cancel this invite.");
-    if (action !== "cancel" && !await this.canView(bundle, userId)) {
+    if (action !== "cancel" && (bundle.inviterUserId === userId || !await this.canView(bundle, userId))) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the invitee can respond to this invite.");
     }
   }

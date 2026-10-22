@@ -9,7 +9,85 @@ import type {
   UpdateGrowthMissionInput,
   UpdateGrowthPlanInput,
   UpdateGrowthRewardInput,
+  BodyLogGrowthDailyAggregate,
+  UpsertGrowthDailyAggregateInput,
+  ApplyGrowthDailyAggregateResult,
 } from "../../../modules/bodylog/bodylog-growth.types.ts";
+
+type GrowthTransaction = <T>(operation: () => Promise<T>) => Promise<T>;
+type GrowthQueryClient = Pick<PoolClient, "query">;
+
+async function withGrowthTransaction<T>(pool: Pool, operation: (client: GrowthQueryClient) => Promise<T>,
+  execute?: GrowthTransaction): Promise<T> {
+  // The adapter's execute callback binds all query closures to its transaction.
+  if (execute) return await execute(() => operation(pool));
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await operation(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally { client.release(); }
+}
+
+export async function applyPostgresGrowthDailyAggregate(
+  pool: Pool,
+  planId: string,
+  day: number,
+  input: UpsertGrowthDailyAggregateInput,
+  completed: boolean,
+  completedAt: string,
+  execute?: GrowthTransaction,
+): Promise<ApplyGrowthDailyAggregateResult> {
+  return await withGrowthTransaction(pool, async (client) => {
+    const planResult = await client.query(`SELECT * FROM bodylog_seven_day_plans WHERE id = $1 FOR UPDATE`, [planId]);
+    const plan = planResult.rows[0];
+    const missionResult = await client.query(`SELECT * FROM bodylog_missions WHERE plan_id = $1 AND day = $2 AND type = 'localGoal' FOR UPDATE`, [planId, day]);
+    const mission = missionResult.rows[0];
+    if (!plan || !["active", "completed"].includes(plan.status) || !mission) {
+      return { aggregate: null, locked: false };
+    }
+    if (Boolean(mission.completed) !== completed) {
+      const claimed = await client.query(`SELECT 1 FROM bodylog_rewards WHERE plan_id = $1 AND claimed = TRUE LIMIT 1`, [planId]);
+      if (claimed.rows.length) return { aggregate: null, locked: true };
+    }
+    const result = await client.query(
+      `INSERT INTO bodylog_growth_daily_aggregates (
+        app_id, user_id, local_date, time_zone, completed_goal_count,
+        eligible_goal_count, definition_version, event_id
+      ) VALUES ('bodylog', $1, $2::date, $3, $4, $5, $6, $7::uuid)
+      ON CONFLICT (app_id, user_id, local_date) DO UPDATE SET
+        time_zone = EXCLUDED.time_zone,
+        completed_goal_count = EXCLUDED.completed_goal_count,
+        eligible_goal_count = EXCLUDED.eligible_goal_count,
+        definition_version = EXCLUDED.definition_version,
+        event_id = EXCLUDED.event_id,
+        updated_at = NOW()
+      RETURNING *, local_date::text AS local_date`,
+      [input.userId, input.localDate, input.timeZone, input.completedGoalCount,
+        input.eligibleGoalCount, input.definitionVersion, input.eventId],
+    );
+    const row = result.rows[0];
+    const aggregate: BodyLogGrowthDailyAggregate = {
+      userId: row.user_id,
+      localDate: String(row.local_date).slice(0, 10),
+      timeZone: row.time_zone,
+      completedGoalCount: row.completed_goal_count,
+      eligibleGoalCount: row.eligible_goal_count,
+      definitionVersion: row.definition_version,
+      eventId: row.event_id,
+      updatedAt: new Date(row.updated_at).toISOString(),
+    };
+    await client.query(`UPDATE bodylog_missions SET completed = $2, completed_at = $3, updated_at = NOW() WHERE id = $1`, [mission.id, completed, completed ? completedAt : null]);
+    const count = await client.query(`SELECT COUNT(*)::int AS completed FROM bodylog_missions WHERE plan_id = $1 AND completed = TRUE`, [planId]);
+    const completedMissions = count.rows[0].completed as number;
+    await client.query(`UPDATE bodylog_seven_day_plans SET completed_missions = $2, status = $3, updated_at = NOW() WHERE id = $1`, [planId, completedMissions, completedMissions >= Number(plan.total_missions) ? "completed" : "active"]);
+    return { aggregate, locked: false };
+  }, execute);
+}
 
 export async function createPostgresGrowthPlan(
   pool: Pool,
@@ -17,8 +95,8 @@ export async function createPostgresGrowthPlan(
 ): Promise<BodyLogGrowthPlan> {
   const result = await pool.query(
     `INSERT INTO bodylog_seven_day_plans (
-      user_id, start_date, end_date, status, completed_missions, total_missions, app_id
-    ) VALUES ($1, $2, $3, $4, $5, $6, 'bodylog')
+      user_id, start_date, end_date, status, completed_missions, total_missions, app_id, time_zone
+    ) VALUES ($1, $2, $3, $4, $5, $6, 'bodylog', $7)
     RETURNING *`,
     [
       input.userId,
@@ -27,6 +105,7 @@ export async function createPostgresGrowthPlan(
       input.status,
       input.completedMissions,
       input.totalMissions,
+      input.timeZone ?? "UTC",
     ],
   );
   return mapPlanRow(result.rows[0]);
@@ -252,15 +331,29 @@ export async function claimPostgresGrowthReward(
   pool: Pool,
   rewardId: string,
   claimedAt: string,
+  execute?: GrowthTransaction,
 ): Promise<BodyLogGrowthReward | null> {
-  const result = await pool.query(
-    `UPDATE bodylog_rewards
-     SET claimed = TRUE, claimed_at = $2
-     WHERE id = $1 AND claimed = FALSE
-     RETURNING *`,
-    [rewardId, claimedAt],
-  );
-  return result.rows[0] ? mapRewardRow(result.rows[0]) : null;
+  return await withGrowthTransaction(pool, async (client) => {
+    const rewardRef = await client.query(`SELECT plan_id FROM bodylog_rewards WHERE id = $1`, [rewardId]);
+    if (!rewardRef.rows[0]) {
+      return null;
+    }
+    const planResult = await client.query(`SELECT * FROM bodylog_seven_day_plans WHERE id = $1 FOR UPDATE`, [rewardRef.rows[0].plan_id]);
+    const plan = planResult.rows[0];
+    const rewardResult = await client.query(`SELECT * FROM bodylog_rewards WHERE id = $1 FOR UPDATE`, [rewardId]);
+    const reward = rewardResult.rows[0];
+    if (reward.claimed) {
+      return mapRewardRow(reward);
+    }
+    if (!plan || plan.status !== "completed" || Number(plan.completed_missions) < Number(plan.total_missions)) {
+      return null;
+    }
+    const result = await client.query(
+      `UPDATE bodylog_rewards SET claimed = TRUE, claimed_at = $2 WHERE id = $1 RETURNING *`,
+      [rewardId, claimedAt],
+    );
+    return result.rows[0] ? mapRewardRow(result.rows[0]) : null;
+  }, execute);
 }
 
 function mapPlanRow(row: any): BodyLogGrowthPlan {
@@ -274,6 +367,7 @@ function mapPlanRow(row: any): BodyLogGrowthPlan {
     totalMissions: row.total_missions,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    timeZone: row.time_zone ?? "UTC",
   };
 }
 

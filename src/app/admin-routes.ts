@@ -1,3 +1,4 @@
+import { tryHandleFrogSleepAdminRoutes } from "./frogsleep-admin-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { tryHandleAdminAppSettingsRoutes } from "./admin-app-settings-routes.ts";
@@ -17,6 +18,7 @@ import { tryHandleAdminAiNovelUsageRoutes } from "./admin-ai-novel-usage-routes.
 import { tryHandleBodyLogCheckinAdminRoutes } from "./bodylog-admin-checkin-routes.ts";
 
 const adminRouteHandlers = [
+  tryHandleFrogSleepAdminRoutes,
   tryHandleAdminCoreRoutes,
   tryHandleAdminEmailSmsRoutes,
   tryHandleAdminAuthGetuiRoutes,
