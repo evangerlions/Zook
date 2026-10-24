@@ -1,3 +1,4 @@
+import { sleepActivitySessionBinding } from "./sleep-activity-session-binding.ts";
 import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
 import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import { createHash } from "node:crypto";
@@ -154,7 +155,7 @@ export class FrogSleepSleepBuddyService {
     };
   }
 
-  async beginSession(userId: string, relationshipId: string, dateAnchor?: string) {
+  async beginSession(userId: string, relationshipId: string, dateAnchor?: string, jointActivityId?: string) {
     const initial = await this.requireRelationship(userId, relationshipId);
     return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(initial), async () => {
       const relationship = await this.requireRelationship(userId, relationshipId);
@@ -164,13 +165,15 @@ export class FrogSleepSleepBuddyService {
       await assertBuddyDataAuthorized(this.database, userId, relationshipId, "shared_activity");
       const createdAt = nowIso();
       const normalizedDateAnchor = dateAnchor || createdAt.slice(0, 10);
-      const existing = await this.findOpenSessionForDate(relationshipId, normalizedDateAnchor);
+      const binding = await sleepActivitySessionBinding(this.database, userId, relationship, jointActivityId);
+      const existing = binding?.existing ?? (jointActivityId ? undefined
+        : await this.findOpenSessionForDate(relationshipId, normalizedDateAnchor));
       if (existing) {
         return toSleepSessionResponse(existing, userId);
       }
       const partnerUserId = this.otherUserId(relationship, userId);
       const session: FrogSleepEntityRecord = {
-        id: randomId("sleep_session"),
+        id: binding?.id ?? randomId("sleep_session"),
         appId: FROGSLEEP_APP_ID,
         kind: "sleep_session",
         ownerUserId: userId,
@@ -179,6 +182,7 @@ export class FrogSleepSleepBuddyService {
         status: "pending",
         startsAt: createdAt,
         payload: {
+          ...(jointActivityId ? { joint_activity_id: jointActivityId } : {}),
           dateAnchor: normalizedDateAnchor,
           date_anchor: normalizedDateAnchor,
           participantStates: {
