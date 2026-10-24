@@ -270,27 +270,23 @@ test("bundle creation seeds one pending domain decision per requested domain wit
   assert.deepEqual([preserved?.status, preserved?.version, preserved?.decidedByUserId], ["accepted", 2, "user_bob"]);
 });
 
-test("bundled invitation exposes one-domain conflict and accepts eligible domain", async () => {
+test("bundled invitation reuses existing focus relationship while accepting sleep", async () => {
   const app = await runtime();
   const alice = await login(app, "alice@example.com");
   const bob = await login(app, "bob@example.com");
   const focus = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/focus-buddy/invites", headers: auth(alice), body: { target: "user_bob" }, requestId: "existing_focus" } as never);
-  const existingAccepted = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/focus-buddy/invites/accept-code", headers: auth(bob), body: { code: focus.body.data.invite_code }, requestId: "existing_focus_accept" } as never);
-
+  const existing = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/focus-buddy/invites/accept-code", headers: auth(bob), body: { code: focus.body.data.invite_code }, requestId: "existing_focus_accept" } as never);
+  assert.equal(existing.statusCode, 200);
   const created = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/invitations", headers: auth(alice), body: { target: "user_bob", domains: ["sleep", "focus"] }, requestId: "partial_bundle_create" } as never);
   assert.equal(created.statusCode, 200);
-  assert.equal(created.body.data.domain_error_codes.focus, "REQ_INVALID_BODY");
   assert.ok(created.body.data.domain_invitation_ids.sleep);
+  assert.equal(created.body.data.domain_error_codes.focus, undefined);
   const accepted = await app.app.handle({ method: "POST", path: `/api/v1/frogsleep/buddy/invitations/${created.body.data.invitation_id}/accept`, headers: auth(bob), body: { expected_version: 1, idempotency_key: "partial_accept", sharing_categories: ["presence"] }, requestId: "partial_accept" } as never);
   assert.equal(accepted.statusCode, 200);
-  assert.equal(accepted.body.data.results.find((item: any) => item.domain === "sleep").status, "accepted");
-  assert.equal(accepted.body.data.results.find((item: any) => item.domain === "focus").error_code, "REQ_INVALID_BODY");
-
-  await app.app.handle({ method: "POST", path: `/api/v1/frogsleep/focus-buddy/relationships/${existingAccepted.body.data.relationship_id}/revoke`, headers: auth(bob), body: {}, requestId: "existing_focus_revoke" } as never);
-  const recovered = await app.app.handle({ method: "POST", path: `/api/v1/frogsleep/buddy/invitations/${created.body.data.invitation_id}/accept`, headers: auth(bob), body: { expected_version: 2, idempotency_key: "partial_retry", sharing_categories: ["presence"] }, requestId: "partial_retry" } as never);
-  assert.equal(recovered.statusCode, 200);
-  assert.equal(recovered.body.data.results.find((item: any) => item.domain === "focus").status, "accepted");
-  assert.equal(recovered.body.data.results.every((item: any) => item.error_code == null), true);
+  const results = accepted.body.data.results;
+  assert.equal(results.find((item: any) => item.domain === "sleep").status, "accepted");
+  assert.equal(results.find((item: any) => item.domain === "focus").relationship_id, existing.body.data.relationship_id);
+  assert.equal(results.every((item: any) => item.status === "accepted" && item.error_code == null), true);
 });
 
 test("buddy notification worker materializes one safe feed item and read APIs are viewer scoped", async () => {
