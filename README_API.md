@@ -777,6 +777,10 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `GET /api/v1/frogsleep/sleep-buddy/invites/preview?token=...` 或 `?code=...` 需要 FrogSleep Bearer 鉴权，只用于登录后恢复邀请上下文，不会创建关系、不会消耗邀请。响应包含 `invite.domain = "sleep"`、`invite_id`、`raw_invite_id`、`status`、`inviter_user_id`、`invitee_user_id`、`viewer_can_accept`、`accept_method`、`expires_at`、`share_title`、`share_subtitle`。接受成功后，关系响应会带回 `source_invite_id`、`accept_source`、`accepted_at`；邀请内部会记录 `accepted_by_user_id`，便于统计邀请转化。
 
+邀请决定更新使用严格递增的持久化逻辑时间，已读时间追平最新决定；同毫秒操作或设备时钟回退不会吞掉新的未读状态，相同状态和版本的幂等重放保持已读。
+
+同一对用户已有 active/paused 的睡眠或专注关系时，重复组合邀请的对应领域只读显示已连接，复用原关系 ID；此规则同时覆盖旧聚合 `/accept` 与新逐域接受产生的关系。不会新建关系、占用新 slot 或扩大任一方授权；canonical 撤销记录仍覆盖旧关系事实。
+
 睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 可传 `joint_activity_id`（兼容 `jointActivityId`）绑定已接受的 `tonight_together` 活动；活动须属于当前关系的双方。携带活动 ID 时按活动复用唯一 session，跨日期、时区、双方并发及完成后重试均返回首次 session，保留首次 `date_anchor`；不存在、异关系、错误类型、未接受、拒绝、取消或无原 session 的已完成活动返回 4xx。未传活动 ID 时仍按 `relationship_id + date_anchor` 幂等：同一关系同一日期已有 pending/active session 时返回既有 session。
 
 `PATCH /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences` 成功响应包含 `preferences` 和当前 `relationship`，用于 iOS 在保存守护偏好后直接刷新关系状态。请求只接受 `guard_level`、`visibility_scope`、`mute_for_tonight`、`allow_morning_summary_push`、`allow_recovery_nudges`；未知字段或类型不匹配返回 `400 REQ_INVALID_BODY`。共同守护 session 响应包含 Zook canonical 字段 `session_id`、`relationship_id`、`status`、`participant_states`、`starts_at`、`ends_at`，并额外保留 iOS 兼容字段 `shared_session_id`、`initiator_user_id`、`invite_status`、`date_anchor`、`initiator_state`、`partner_state`、`started_at`、`ended_at`；其中 `initiator_state` / `partner_state` 会把后端内部 `pending` 映射为 iOS 已有枚举 `invited`。

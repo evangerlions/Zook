@@ -113,10 +113,12 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
 
   async markInvitationRead(appId: string, bundleId: string, userId: string) {
     const result = await this.pool.query(
-      `UPDATE zook_frogsleep_buddy_invitation_bundles SET
-       inviter_read_at=CASE WHEN inviter_user_id=$3 THEN clock_timestamp() ELSE inviter_read_at END,
-       invitee_read_at=CASE WHEN inviter_user_id<>$3 THEN clock_timestamp() ELSE invitee_read_at END
-       WHERE app_id=$1 AND id=$2 RETURNING *`, [appId, bundleId, userId]);
+      `UPDATE zook_frogsleep_buddy_invitation_bundles b SET
+       inviter_read_at=CASE WHEN inviter_user_id=$3 THEN GREATEST(clock_timestamp(), b.updated_at,
+         (SELECT MAX(updated_at) FROM zook_frogsleep_buddy_invitation_domain_decisions WHERE app_id=$1 AND invitation_id=$2)) ELSE inviter_read_at END,
+       invitee_read_at=CASE WHEN inviter_user_id<>$3 THEN GREATEST(clock_timestamp(), b.updated_at,
+         (SELECT MAX(updated_at) FROM zook_frogsleep_buddy_invitation_domain_decisions WHERE app_id=$1 AND invitation_id=$2)) ELSE invitee_read_at END
+       WHERE b.app_id=$1 AND b.id=$2 RETURNING *`, [appId, bundleId, userId]);
     return result.rows[0] ? mapBundle(result.rows[0]) : undefined;
   }
 
@@ -278,7 +280,13 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
        ON CONFLICT (app_id, invitation_id, domain) DO UPDATE SET
          status=EXCLUDED.status, version=EXCLUDED.version, decided_by_user_id=EXCLUDED.decided_by_user_id,
          decided_at=EXCLUDED.decided_at, idempotency_key_hash=EXCLUDED.idempotency_key_hash,
-         terminal_reason=EXCLUDED.terminal_reason, updated_at=EXCLUDED.updated_at, relationship_id=EXCLUDED.relationship_id
+         terminal_reason=EXCLUDED.terminal_reason, relationship_id=EXCLUDED.relationship_id,
+         updated_at=CASE WHEN (zook_frogsleep_buddy_invitation_domain_decisions.status, zook_frogsleep_buddy_invitation_domain_decisions.version)
+           IS DISTINCT FROM (EXCLUDED.status, EXCLUDED.version)
+         THEN GREATEST(EXCLUDED.updated_at, zook_frogsleep_buddy_invitation_domain_decisions.updated_at + interval '1 millisecond',
+           (SELECT GREATEST(updated_at, inviter_read_at, invitee_read_at) + interval '1 millisecond'
+            FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND id=$2))
+         ELSE zook_frogsleep_buddy_invitation_domain_decisions.updated_at END
        RETURNING *`,
       [record.appId, record.invitationId, record.domain, record.status, record.version,
         record.decidedByUserId, record.decidedAt, record.idempotencyKeyHash, record.terminalReason,
@@ -315,7 +323,10 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
     const result = await this.pool.query(
       `UPDATE zook_frogsleep_buddy_invitation_domain_decisions
        SET status=$5, version=version+1, decided_by_user_id=$6, decided_at=$7,
-           idempotency_key_hash=$8, terminal_reason=$9, updated_at=$10, relationship_id=$11
+           idempotency_key_hash=$8, terminal_reason=$9, relationship_id=$11,
+           updated_at=GREATEST($10::timestamptz, updated_at + interval '1 millisecond',
+             (SELECT GREATEST(updated_at, inviter_read_at, invitee_read_at) + interval '1 millisecond'
+              FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND id=$2))
        WHERE app_id=$1 AND invitation_id=$2 AND domain=$3 AND version=$4 AND status='pending'
        RETURNING *`,
       [input.appId, input.invitationId, input.domain, input.expectedVersion, input.status,
