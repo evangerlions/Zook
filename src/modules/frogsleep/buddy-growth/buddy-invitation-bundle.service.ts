@@ -1,4 +1,5 @@
 import { assertAggregateCompatible, recordLegacyDecisions } from "./buddy-invitation-legacy-decision.ts";
+import { existingInvitationRelationship, invitationAggregateStatus, invitationUnread } from "./buddy-invitation-presentation.ts";
 import { invitationDomainPreview } from "./buddy-invitation-domain-preview.ts";
 import { randomBytes } from "node:crypto";
 import { ApplicationError, badRequest, forbidden } from "../../../shared/errors.ts";
@@ -114,7 +115,8 @@ export class BuddyInvitationBundleService {
   async preview(userId: string, bundleId: string) {
     limitBuddyPreview(userId);
     const bundle = await this.requireViewer(userId, bundleId);
-    const payload = await this.payload(bundle, userId);
+    const viewed = await this.database.markFrogSleepBuddyInvitationRead(bundle.appId, bundle.id, userId);
+    const payload = await this.payload(viewed ?? bundle, userId);
     return { ...payload, viewer_can_accept: payload.domain_results.some((result) => result.viewer_actions.includes("accept")),
       proposed_sharing_categories: ["presence", "daily_summary"],
       never_shared_categories: ["raw_health_data", "app_usage_details", "personal_notes", "detailed_timeline"] };
@@ -202,6 +204,9 @@ export class BuddyInvitationBundleService {
     const ids: Partial<Record<BundleDomain, string>> = {};
     const errors: Partial<Record<BundleDomain, string>> = {};
     for (const domain of domains) {
+      const existing = await existingInvitationRelationship(this.database,
+        { appId: FROGSLEEP_APP_ID, inviterUserId: input.inviterUserId, inviteeUserId }, domain);
+      if (existing) continue;
       try { ids[domain] = await this.createChild(domain, input, inviteeUserId, bundleId); }
       catch (error) { errors[domain] = error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR"; }
     }
@@ -213,6 +218,10 @@ export class BuddyInvitationBundleService {
     const ids = { ...bundle.domainInvitationIds };
     const errors = { ...bundle.domainErrorCodes };
     for (const domain of bundle.domains.filter((item) => !ids[item])) {
+      if (await existingInvitationRelationship(this.database, bundle, domain)) {
+        delete errors[domain];
+        continue;
+      }
       try {
         ids[domain] = await this.createChild(domain, {
           inviterUserId: bundle.inviterUserId, target: bundle.inviteeUserId!,
@@ -261,7 +270,10 @@ export class BuddyInvitationBundleService {
     const results: Array<Record<string, unknown>> = [];
     for (const domain of bundle.domains) {
       const invitationId = bundle.domainInvitationIds[domain];
-      if (!invitationId) { results.push({ domain, status: "pending", error_code: bundle.domainErrorCodes[domain] }); continue; }
+      if (!invitationId) {
+        results.push(await this.missingChildResult(bundle, domain, action));
+        continue;
+      }
       try {
         const completed = await this.completedChildResult(domain, invitationId, action);
         if (completed) { results.push(completed); continue; }
@@ -274,6 +286,13 @@ export class BuddyInvitationBundleService {
       }
     }
     return results;
+  }
+
+  private async missingChildResult(bundle: FrogSleepBuddyInvitationBundleRecord, domain: BundleDomain, action: BundleAction) {
+    const existing = await existingInvitationRelationship(this.database, bundle, domain);
+    if (existing) return { domain, status: "accepted", relationship_id: existing.id, error_code: null };
+    if (action !== "accept") return { domain, status: this.terminalStatus(action), error_code: null };
+    return { domain, status: "pending", error_code: bundle.domainErrorCodes[domain] ?? "SYS_INTERNAL_ERROR" };
   }
 
   private async completedChildResult(domain: BundleDomain, invitationId: string, action: BundleAction) {
@@ -303,11 +322,11 @@ export class BuddyInvitationBundleService {
     return { invitation_id: bundle.id, domain: bundle.domains.length === 1 ? bundle.domains[0] : "bundle",
       domains: bundle.domains,
       direction: bundle.inviterUserId === viewerUserId ? "outgoing" : "incoming",
-      status: bundle.status === "pending" && this.isExpired(bundle) ? "expired" : bundle.status,
+      status: invitationAggregateStatus(domainResults.map(item => item.status)),
       version: bundle.version, inviter: { user_id: bundle.inviterUserId, display_name: inviter?.email?.split("@")[0] ?? "FrogSleep buddy" },
       invitee: bundle.inviteeUserId ? { user_id: bundle.inviteeUserId, display_name: invitee?.email?.split("@")[0] ?? "FrogSleep buddy" } : undefined,
       viewer_actions: Array.from(new Set(["preview", ...domainResults.flatMap((item) => item.viewer_actions),
-        ...(bundle.inviterUserId === viewerUserId && domainResults.some((item) => item.status === "pending") ? ["share"] : [])])), unread: true, expires_at: bundle.expiresAt,
+        ...(bundle.inviterUserId === viewerUserId && domainResults.some((item) => item.status === "pending") ? ["share"] : [])])), unread: await invitationUnread(this.database, bundle, viewerUserId), expires_at: bundle.expiresAt,
       created_at: bundle.createdAt, domain_invitation_ids: bundle.domainInvitationIds,
       domain_error_codes: bundle.domainErrorCodes,
       share_link: bundle.inviterUserId === viewerUserId

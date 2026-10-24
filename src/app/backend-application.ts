@@ -1,3 +1,4 @@
+import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
@@ -324,6 +325,8 @@ export class BackendApplication extends BackendRouteContext {
       }
     }
 
+    const actionResponse=await tryHandleLightTickActionRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(actionResponse)return actionResponse;
     const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if (planningResponse) return planningResponse;
     const lightTickResponse = await tryHandleLightTickV1Routes(

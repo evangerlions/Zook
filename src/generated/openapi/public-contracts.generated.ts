@@ -5572,6 +5572,2081 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickActionTargetSchema = {
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "library",
+        "book",
+        "renzhi",
+        "yingyu",
+        "biaoda",
+        "plan",
+        "article"
+      ]
+    },
+    "course": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "plan_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "lesson_no": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionTarget = {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+
+export const LightTickActionFieldsSchema = {
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "year",
+        "month",
+        "week",
+        "day"
+      ]
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "short",
+        "long"
+      ]
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "target_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "minimum_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "target_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "at": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "reminder": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "if_then": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "library",
+            "book",
+            "renzhi",
+            "yingyu",
+            "biaoda",
+            "plan",
+            "article"
+          ]
+        },
+        "course": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "title",
+    "period",
+    "start_date",
+    "end_date"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionFields = {
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date": string;
+  "end_date": string;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number;
+  "minimum_minutes"?: number;
+  "target_count"?: number;
+  "at"?: string;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+};
+
+export const LightTickActionCreateRequestSchema = {
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "year",
+        "month",
+        "week",
+        "day"
+      ]
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "short",
+        "long"
+      ]
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "target_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "minimum_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "target_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "at": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "reminder": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "if_then": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "library",
+            "book",
+            "renzhi",
+            "yingyu",
+            "biaoda",
+            "plan",
+            "article"
+          ]
+        },
+        "course": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "repeat_dates": {
+      "type": "array",
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    }
+  },
+  "required": [
+    "title",
+    "period",
+    "start_date",
+    "end_date",
+    "key"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionCreateRequest = {
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date": string;
+  "end_date": string;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number;
+  "minimum_minutes"?: number;
+  "target_count"?: number;
+  "at"?: string;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+  "key": string;
+  "repeat_dates"?: string[];
+};
+
+export const LightTickActionProgressSchema = {
+  "type": "object",
+  "properties": {
+    "minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "minimum": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "interrupted": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "minutes",
+    "completed",
+    "minimum",
+    "interrupted"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionProgress = {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+};
+
+export const LightTickActionPlanSchema = {
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "year",
+        "month",
+        "week",
+        "day"
+      ]
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "short",
+        "long"
+      ]
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "target_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "minimum_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "target_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "at": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "reminder": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "if_then": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "library",
+            "book",
+            "renzhi",
+            "yingyu",
+            "biaoda",
+            "plan",
+            "article"
+          ]
+        },
+        "course": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "completed",
+        "archived"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reminder_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "progress": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interrupted": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "minutes",
+        "completed",
+        "minimum",
+        "interrupted"
+      ],
+      "additionalProperties": false
+    },
+    "blocked": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "revision",
+    "status",
+    "title",
+    "period",
+    "horizon",
+    "start_date",
+    "end_date",
+    "timezone",
+    "target_minutes",
+    "minimum_minutes",
+    "target_count",
+    "at",
+    "reminder",
+    "reason",
+    "if_then",
+    "target",
+    "created_at",
+    "updated_at",
+    "reminder_at"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionPlan = {
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string;
+  "end_date": string;
+  "timezone": string;
+  "parent_id"?: string | null;
+  "target_minutes": number;
+  "minimum_minutes": number;
+  "target_count": number;
+  "at": string;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+};
+  "blocked"?: boolean;
+};
+
+export const LightTickActionExecutionSchema = {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "variant": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "minimum"
+      ]
+    },
+    "planned_minutes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "actual_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "minimum",
+        "partial",
+        "interrupted"
+      ]
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "library",
+            "book",
+            "renzhi",
+            "yingyu",
+            "biaoda",
+            "plan",
+            "article"
+          ]
+        },
+        "course": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "plan_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "id",
+    "plan_id",
+    "title",
+    "started_at",
+    "ended_at",
+    "variant",
+    "planned_minutes",
+    "actual_minutes",
+    "outcome",
+    "note",
+    "business_date",
+    "timezone",
+    "target"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionExecution = {
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+};
+
+export const LightTickActionMutationRequestSchema = {
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "edit",
+        "pause",
+        "resume",
+        "archive",
+        "complete",
+        "start",
+        "finish",
+        "snooze"
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "year",
+            "month",
+            "week",
+            "day"
+          ]
+        },
+        "horizon": {
+          "type": "string",
+          "enum": [
+            "short",
+            "long"
+          ]
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "target_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "minimum_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "target_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "at": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "reminder": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "if_then": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "library",
+                "book",
+                "renzhi",
+                "yingyu",
+                "biaoda",
+                "plan",
+                "article"
+              ]
+            },
+            "course": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "title",
+        "period",
+        "start_date",
+        "end_date"
+      ],
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "minimum"
+      ]
+    },
+    "execution_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "interrupted"
+      ]
+    },
+    "actual_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1440
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "snooze_minutes": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 120
+    }
+  },
+  "required": [
+    "key",
+    "revision",
+    "action"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionMutationRequest = {
+  "key": string;
+  "revision": number;
+  "action": "edit" | "pause" | "resume" | "archive" | "complete" | "start" | "finish" | "snooze";
+  "fields"?: {
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date": string;
+  "end_date": string;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number;
+  "minimum_minutes"?: number;
+  "target_count"?: number;
+  "at"?: string;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+};
+  "variant"?: "standard" | "minimum";
+  "execution_id"?: string;
+  "outcome"?: "completed" | "interrupted";
+  "actual_minutes"?: number;
+  "note"?: string;
+  "snooze_minutes"?: number;
+};
+
+export const LightTickActionWorkspaceSchema = {
+  "type": "object",
+  "properties": {
+    "plans": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "year",
+              "month",
+              "week",
+              "day"
+            ]
+          },
+          "horizon": {
+            "type": "string",
+            "enum": [
+              "short",
+              "long"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "target_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "minimum_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "target_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "at": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "reminder": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "if_then": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "library",
+                  "book",
+                  "renzhi",
+                  "yingyu",
+                  "biaoda",
+                  "plan",
+                  "article"
+                ]
+              },
+              "course": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "completed",
+              "archived"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reminder_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minimum": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "interrupted": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "minutes",
+              "completed",
+              "minimum",
+              "interrupted"
+            ],
+            "additionalProperties": false
+          },
+          "blocked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "status",
+          "title",
+          "period",
+          "horizon",
+          "start_date",
+          "end_date",
+          "timezone",
+          "target_minutes",
+          "minimum_minutes",
+          "target_count",
+          "at",
+          "reminder",
+          "reason",
+          "if_then",
+          "target",
+          "created_at",
+          "updated_at",
+          "reminder_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "execution": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "plan_id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "ended_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "variant": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "minimum"
+              ]
+            },
+            "planned_minutes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "actual_minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "outcome": {
+              "type": "string",
+              "enum": [
+                "running",
+                "completed",
+                "minimum",
+                "partial",
+                "interrupted"
+              ]
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "timezone": {
+              "type": "string"
+            },
+            "target": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "library",
+                    "book",
+                    "renzhi",
+                    "yingyu",
+                    "biaoda",
+                    "plan",
+                    "article"
+                  ]
+                },
+                "course": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "id",
+            "plan_id",
+            "title",
+            "started_at",
+            "ended_at",
+            "variant",
+            "planned_minutes",
+            "actual_minutes",
+            "outcome",
+            "note",
+            "business_date",
+            "timezone",
+            "target"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "workspace_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reminder_delivery": {
+      "type": "string"
+    },
+    "linked_source": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "plans",
+    "execution",
+    "server_time",
+    "workspace_version",
+    "reminder_delivery"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionWorkspace = {
+  "plans": (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string;
+  "end_date": string;
+  "timezone": string;
+  "parent_id"?: string | null;
+  "target_minutes": number;
+  "minimum_minutes": number;
+  "target_count": number;
+  "at": string;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+};
+  "blocked"?: boolean;
+}
+)[];
+  "execution": (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+}
+) | unknown;
+  "server_time": string;
+  "workspace_version": number;
+  "reminder_delivery": string;
+  "linked_source"?: {
+} | null;
+};
+
+export const LightTickActionReviewScopeSchema = {
+  "type": "object",
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "include_notes": {
+      "type": "boolean"
+    },
+    "include_review": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "plan_id",
+    "start_date",
+    "end_date"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionReviewScope = {
+  "plan_id": string;
+  "start_date": string;
+  "end_date": string;
+  "include_notes"?: boolean;
+  "include_review"?: boolean;
+};
+
+export const LightTickActionReviewRequestSchema = {
+  "type": "object",
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "worked": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "obstacles": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "next_action": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "plan_id",
+    "start_date",
+    "end_date",
+    "key"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionReviewRequest = {
+  "plan_id": string;
+  "start_date": string;
+  "end_date": string;
+  "key": string;
+  "worked"?: string;
+  "obstacles"?: string;
+  "next_action"?: string;
+};
+
+export const LightTickActionSummaryRequestSchema = {
+  "type": "object",
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "include_notes": {
+      "type": "boolean"
+    },
+    "include_review": {
+      "type": "boolean"
+    },
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "consent": {
+      "type": "boolean",
+      "const": true
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "ai_config": {
+      "type": "object",
+      "properties": {
+        "api_base_url": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "api_key": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "model_name": {
+          "type": "string",
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "api_base_url",
+        "api_key",
+        "model_name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "plan_id",
+    "start_date",
+    "end_date",
+    "key",
+    "consent",
+    "snapshot_hash",
+    "ai_config"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionSummaryRequest = {
+  "plan_id": string;
+  "start_date": string;
+  "end_date": string;
+  "include_notes"?: boolean;
+  "include_review"?: boolean;
+  "key": string;
+  "consent": boolean;
+  "snapshot_hash": string;
+  "ai_config": {
+  "api_base_url": string;
+  "api_key": string;
+  "model_name": string;
+};
+};
+
+export const LightTickActionReminderClaimSchema = {
+  "type": "object",
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 80
+    },
+    "reminder_at": {
+      "type": "string",
+      "maxLength": 80
+    }
+  },
+  "required": [
+    "device_id",
+    "reminder_at"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionReminderClaim = {
+  "device_id": string;
+  "reminder_at": string;
+};
+
+export const LightTickGrowBridgeRequestSchema = {
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "preview",
+        "claim",
+        "import",
+        "request"
+      ]
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "GET",
+        "POST"
+      ]
+    },
+    "path": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "body": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickGrowBridgeRequest = {
+  "action": "preview" | "claim" | "import" | "request";
+  "code"?: string;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+};
+
+export const LightTickActionWorkspaceEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "plans": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "period": {
+                "type": "string",
+                "enum": [
+                  "year",
+                  "month",
+                  "week",
+                  "day"
+                ]
+              },
+              "horizon": {
+                "type": "string",
+                "enum": [
+                  "short",
+                  "long"
+                ]
+              },
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "timezone": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "parent_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 80
+              },
+              "target_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "minimum_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "target_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "at": {
+                "type": "string",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+              },
+              "reminder": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "if_then": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "target": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "library",
+                      "book",
+                      "renzhi",
+                      "yingyu",
+                      "biaoda",
+                      "plan",
+                      "article"
+                    ]
+                  },
+                  "course": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "paused",
+                  "completed",
+                  "archived"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reminder_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "progress": {
+                "type": "object",
+                "properties": {
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "completed": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "minimum": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "interrupted": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "minutes",
+                  "completed",
+                  "minimum",
+                  "interrupted"
+                ],
+                "additionalProperties": false
+              },
+              "blocked": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "revision",
+              "status",
+              "title",
+              "period",
+              "horizon",
+              "start_date",
+              "end_date",
+              "timezone",
+              "target_minutes",
+              "minimum_minutes",
+              "target_count",
+              "at",
+              "reminder",
+              "reason",
+              "if_then",
+              "target",
+              "created_at",
+              "updated_at",
+              "reminder_at"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "execution": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "plan_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "ended_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "variant": {
+                  "type": "string",
+                  "enum": [
+                    "standard",
+                    "minimum"
+                  ]
+                },
+                "planned_minutes": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "actual_minutes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "running",
+                    "completed",
+                    "minimum",
+                    "partial",
+                    "interrupted"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "business_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "timezone": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "library",
+                        "book",
+                        "renzhi",
+                        "yingyu",
+                        "biaoda",
+                        "plan",
+                        "article"
+                      ]
+                    },
+                    "course": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "plan_id": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "lesson_no": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100000
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "plan_id",
+                "title",
+                "started_at",
+                "ended_at",
+                "variant",
+                "planned_minutes",
+                "actual_minutes",
+                "outcome",
+                "note",
+                "business_date",
+                "timezone",
+                "target"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "server_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "workspace_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reminder_delivery": {
+          "type": "string"
+        },
+        "linked_source": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "plans",
+        "execution",
+        "server_time",
+        "workspace_version",
+        "reminder_delivery"
+      ],
+      "additionalProperties": false
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionWorkspaceEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "plans": (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string;
+  "end_date": string;
+  "timezone": string;
+  "parent_id"?: string | null;
+  "target_minutes": number;
+  "minimum_minutes": number;
+  "target_count": number;
+  "at": string;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+};
+  "blocked"?: boolean;
+}
+)[];
+  "execution": (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": {
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+};
+}
+) | unknown;
+  "server_time": string;
+  "workspace_version": number;
+  "reminder_delivery": string;
+  "linked_source"?: {
+} | null;
+};
+  "requestId": string;
+};
+
 export const LightTickPlanningValueSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -19882,6 +21957,15 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
     "dateAnchor": {
       "type": "string",
       "format": "date"
+    },
+    "joint_activity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Accepted tonight_together activity. Both participants and terminal retries reuse one session across local dates."
+    },
+    "jointActivityId": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "anyOf": [
@@ -19904,6 +21988,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId"?: string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 ) | (
@@ -19912,6 +21998,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId": string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 );
@@ -22270,6 +24358,19 @@ export const GeneratedPublicContractNames = [
   "LightTickAccountUpgradeData",
   "LightTickAccountUpgradeEnvelope",
   "LightTickAccountUpgradeRequest",
+  "LightTickActionCreateRequest",
+  "LightTickActionExecution",
+  "LightTickActionFields",
+  "LightTickActionMutationRequest",
+  "LightTickActionPlan",
+  "LightTickActionProgress",
+  "LightTickActionReminderClaim",
+  "LightTickActionReviewRequest",
+  "LightTickActionReviewScope",
+  "LightTickActionSummaryRequest",
+  "LightTickActionTarget",
+  "LightTickActionWorkspace",
+  "LightTickActionWorkspaceEnvelope",
   "LightTickAvailabilityWindow",
   "LightTickChangeProposalData",
   "LightTickChangeProposalRunRequest",
@@ -22307,6 +24408,7 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalLifecycleRequest",
   "LightTickGoalStatus",
   "LightTickGoalUpdateRequest",
+  "LightTickGrowBridgeRequest",
   "LightTickGuestSessionData",
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",

@@ -1240,8 +1240,19 @@ export class InMemoryDatabase extends ApplicationDatabase {
     const index = this.frogSleepBuddyInvitationBundles.findIndex((item) =>
       item.appId === record.appId && item.id === record.id
     );
-    if (index >= 0) this.frogSleepBuddyInvitationBundles[index] = structuredClone(record);
-    else this.frogSleepBuddyInvitationBundles.push(structuredClone(record));
+    const previous = this.frogSleepBuddyInvitationBundles[index];
+    const updated = { ...record, inviterReadAt: previous?.inviterReadAt, inviteeReadAt: previous?.inviteeReadAt };
+    if (index >= 0) this.frogSleepBuddyInvitationBundles[index] = structuredClone(updated);
+    else this.frogSleepBuddyInvitationBundles.push(structuredClone(updated));
+    return structuredClone(updated);
+  }
+
+  markFrogSleepBuddyInvitationRead(appId: string, bundleId: string, userId: string) {
+    const record = this.frogSleepBuddyInvitationBundles.find(item => item.appId === appId && item.id === bundleId);
+    if (!record) return undefined;
+    const now = new Date().toISOString();
+    if (userId === record.inviterUserId) record.inviterReadAt = now;
+    else record.inviteeReadAt = now;
     return structuredClone(record);
   }
 

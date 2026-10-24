@@ -42,3 +42,15 @@ FROGSLEEP_DEV_EVIDENCE_FILE=.artifacts/frogsleep-dev/acceptance.json
 - 独立安全复核发现fetch默认重定向会转发POST正文；已对业务/预检禁用重定向，并限制dev默认HTTPS端口；本机307目标零请求回归通过。
 - feature全量1472项通过；原始游客/个人同步/账号删除3套PG共24项通过，另新增真实HTTP PG专项1项通过。CORS与验收脚本9项单独通过。公共合同check与diff检查通过。仓库既有行数门禁9项超限单独记录，不把专项成功表述为所有仓库门禁通过。
 - 真实dev第二轮修复后结果及正式可删账号旅程另记；可删注册QA凭据尚未提供时，不把该部分标为通过。
+
+## 修复合并与第二次 dev 发布
+
+- feature提交 `63d07cc`，合并main `2405765c8610541ed5c4150e9f0ebcc10ddced46`；合并后全量1472/1472通过，真实HTTP PG专项再次通过，生成合同check和diff检查通过。此前3套PG回归24项和新增HTTP PG1项共同覆盖本轮服务端修正。
+- 通过 `./release_dev.sh` 从已推送的origin/main发布 `version/20261018_002`，release commit `84b59f7678aa953d3726af9ed6a26c4904057551`，origin/gitee均更新。健康检查确认200/20261018_002；未运行online发布。
+- 修复后真实dev完整执行了当前可用账号范围内的80项检查，`passed:true`、清理失败0。覆盖浏览器PUT预检、原始同步/固定分页/增量/墓碑、正式目标游客升级与原回执重放、错误凭据拒绝、游客所有会话撤销、实际碰撞回滚（target sequence不变、partial资源404、来源两条记录完整），以及游客删号与新身份恢复隔离。
+- 额外恢复验证：删号前保存真正的restore分页游标；删号后新游客sequence=0且历史为空，旧epoch上传409、旧restore游标409；显式新建历史仅有自身一条revision1记录。证据 `.artifacts/frogsleep-dev/recovery-20261018_002.json`，早一轮70项证据 `.artifacts/frogsleep-dev/acceptance-20261018_002.json`；均去敏且不提交。
+- 后续仅增强本机验收脚本与记录，运行时代码src与上述dev版本一致；增强后9项本机HTTP/CORS测试和真实HTTP PG专项再次通过。所有本轮root及复核创建的一次性本机数据库已清理；合成活动记录/游客/本次QA会话已清理，逻辑墓碑按协议保留。
+
+## 尚缺的正式账号删号验收
+
+目前没有提供明确可销毁的正式注册QA账号。现有内置可写QA只用于本次合成数据，不对其删号。真实dev结果保留 `complete:false`、`registered_deletion:false`；游客删号恢复已通过，不能据此把正式注册身份的密码重新登录拒绝、双会话撤销及与其他账号隔离标为真实dev已验收。该正式旅程在本机真实HTTP+PG已通过；收到独立可删QA登录方式后，用同一脚本补齐最后一段。没有改库重新激活或新增自动恢复账号入口。

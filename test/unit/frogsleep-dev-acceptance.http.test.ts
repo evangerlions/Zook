@@ -23,7 +23,7 @@ test('guest-only evidence stays partial while testing its own deletion and clear
   const server=await createJourneyServer();
   try {
     const result=await runSleepDevAcceptance({baseUrl:server.url});
-    assert.equal(result.passed,true,result.failure??result.cleanup_failures.join('; '));assert.equal(result.complete,false);assert.equal(result.guest_upgrade,false);
+    assert.equal(result.passed,true,result.failure??result.cleanup_failures.join('; '));assert.equal(result.complete,false);assert.equal(result.guest_upgrade,false);assert.equal(result.guest_deletion_recovery,true);
     assert.ok(server.database().appUsers.filter(u=>u.userId.startsWith('sleep_guest_')).every(u=>u.status==='DELETED'));
   } finally {await server.close();}
 });

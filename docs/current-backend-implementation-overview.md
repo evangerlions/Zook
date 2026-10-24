@@ -750,3 +750,10 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 新增 product-data/sleep-sessions 的创建、详情、完整修正、固定边界列表和墓碑删除，复用私有 versions/receipts/epoch/restore/changes；072扩展kind。原始记录只接受终态，含有界事件与客户端历史JSON，不恢复设备锁或自动诊断。073保存云游客凭据哈希及创建/升级回执；account/guest-sessions 返回30天受限身份，中央鉴权限制平台/其他产品能力，refresh不续游客有效期。account/upgrade 要求正式目标、独立来源证明、确认、epoch与幂等key；最新原始记录/报告/偏好含墓碑同事务迁移，相同去重、冲突回滚、来源失效，回执支持响应丢失后重试。PG复用ambient事务，memory适配器匹配回滚语义。公共接入详见 docs/public-frogsleep-personal-sync.md、docs/public-frogsleep-guest-upgrade.md；双端凭据存储/恢复/真机与dev发布未在本轮执行。
 
 2026-10-18 dev 联调修正：CORS允许PUT及私人同步头；私人Sleep的报告/原始会话/报告偏好/恢复与游客端点由各自资源服务拥有事务，跳过会吞掉异常后仍提交的泛型请求事务，避免升级409留下部分迁入数据。其他业务路由未纳入该事务边界修复。新增真实HTTP dev验收入口，显式区分游客部分旅程、正式账号升级和独立可删QA账号的完整旅程，禁止重定向跨出dev、禁止使用相同账号兼任删号目标；本机真实PG还验证SQL提交先于KV清理。
+
+同日dev发布20261018_002（source main 2405765，release 84b59f7）完成80项真实HTTP私人数据检查，包含原始同步、正式目标游客升级/碰撞回滚、游客删号后新身份空历史与旧epoch/游标拒绝。正式注册账号删号仍缺独立可销毁QA凭据，未标为真实dev通过；详细边界与复验证据见 docs/frogsleep-dev-personal-sync-acceptance-2026-10-18.md。
+
+
+### LightTick 行动计划联动（功能开关）
+
+新增 PostgreSQL 074 迁移与账号事务锁，支持年/月/周/日层级、执行事实、复盘、请求回执和 Grow 单写者接管。canonical API 见 README_API.md 和 docs/public-lighttick-actions.md；现有 goal/plan/task API 独立。未启用生产或迁移真实账号。

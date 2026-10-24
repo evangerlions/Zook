@@ -1,3 +1,5 @@
+import {ActionService} from './actions/action.service.ts';
+import {ActionLinkService} from './actions/action-link.service.ts';
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import { LightTickGoalService } from "./lighttick-goal.service.ts";
 import { LightTickPlanService } from "./lighttick-plan.service.ts";
@@ -19,6 +21,9 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  actionsEnabled:boolean;
+  actions:ActionService;
+  actionLinks:ActionLinkService;
   planningEnabled: boolean;
   repository: LightTickRepository;
   profile: LightTickProfileService;
@@ -43,8 +48,12 @@ export interface LightTickRuntime {
 }
 
 export function createLightTickRuntime(repository: LightTickRepository): LightTickRuntime {
+  const actions=new ActionService(repository);
   const tasks = new LightTickTaskService(repository);
   return {
+    actionsEnabled:process.env.LIGHTTICK_ACTIONS_ENABLED==='1',
+    actions,
+    actionLinks:new ActionLinkService(actions,process.env.GROW_ACTION_BRIDGE_SECRET??''),
     planningEnabled: process.env.LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED === "1",
     repository,
     profile: new LightTickProfileService(repository),
