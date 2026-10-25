@@ -12,8 +12,6 @@ const LEGACY_OVERSIZED_ALLOWLIST = new Set([
   "src/services/local-ainovel-e2e-provider.ts",
 ]);
 const LEGACY_OVERSIZED_LIMITS = new Map([
-  // Legacy database delegator. New stores must stay focused; do not grow this file.
-  ["src/infrastructure/database/postgres/postgres-database.ts", 674],
   // Legacy shared record registry; split by domain when this registry is next refactored.
   ["src/shared/types/records.ts", 641],
 ]);

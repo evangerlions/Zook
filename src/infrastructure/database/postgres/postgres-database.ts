@@ -1,3 +1,5 @@
+import { PostgresUserStore } from "./postgres-users.ts";
+import { PostgresAuthorizationStore } from "./postgres-authorization.ts";
 import {PostgresAppRegistryStore} from "./postgres-app-registry.ts";
 import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
 import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
@@ -89,15 +91,13 @@ import { PostgresBodyLogCheckinStore } from "./postgres-bodylog-checkin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseAppConfig,
-  parsePermission,
-  parseRole,
-  parseUser,
-  parseUserRole,
 } from "./postgres-row-parsers.ts";
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly appRegistry:PostgresAppRegistryStore;
+  private readonly users: PostgresUserStore;
+  private readonly authorization: PostgresAuthorizationStore;
   private readonly appUsers: PostgresAppUserStore;
   private readonly feedback: PostgresFeedbackStore;
   private readonly frogSleep: PostgresFrogSleepStore;
@@ -120,6 +120,8 @@ export class PostgresDatabase extends ApplicationDatabase {
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
+    this.users = new PostgresUserStore((sql, values = []) => this.query(sql, values));
+    this.authorization = new PostgresAuthorizationStore((sql, values = []) => this.query(sql, values));
     this.appRegistry = new PostgresAppRegistryStore((sql,values=[])=>this.query(sql,values));
     this.appUsers = new PostgresAppUserStore(async (sql, values = []) => await this.query(sql, values));
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
@@ -280,140 +282,21 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): Promise<void> { await this.bodyLogChallenges.insertMembers(records); }
   override async updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): Promise<void> { await this.bodyLogChallenges.updateMember(record); }
   override async listBodyLogChallengeMembers(appId: string): Promise<BodyLogChallengeMemberRecord[]> { return await this.bodyLogChallenges.listMembers(appId); }
-  override async listRoles(appId?: string): Promise<RoleRecord[]> {
-    const result = appId
-      ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])
-      : await this.query("SELECT id, app_id, code, name, status FROM zook_roles ORDER BY id ASC");
-    return result.rows.map(parseRole);
-  }
-  override async findRole(appId: string, roleCode: string): Promise<RoleRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 AND code = $2 LIMIT 1",
-      [appId, roleCode],
-    );
-    return result.rows[0] ? parseRole(result.rows[0]) : undefined;
-  }
-  override async insertRoles(records: RoleRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_roles (id, app_id, code, name, status)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO UPDATE SET
-           app_id = EXCLUDED.app_id,
-           code = EXCLUDED.code,
-           name = EXCLUDED.name,
-           status = EXCLUDED.status,
-           updated_at = NOW()`,
-        [record.id, record.appId, record.code, record.name, record.status],
-      );
-    }
-  }
-  override async listPermissions(): Promise<PermissionRecord[]> {
-    const result = await this.query("SELECT id, code, name, status FROM zook_permissions ORDER BY id ASC");
-    return result.rows.map(parsePermission);
-  }
-  override async insertRolePermissions(records: RolePermissionRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_role_permissions (id, role_id, permission_id)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (id) DO UPDATE SET
-           role_id = EXCLUDED.role_id,
-           permission_id = EXCLUDED.permission_id,
-           updated_at = NOW()`,
-        [record.id, record.roleId, record.permissionId],
-      );
-    }
-  }
-  override async findUserRole(appId: string, userId: string, roleId: string): Promise<UserRoleRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, user_id, role_id FROM zook_user_roles WHERE app_id = $1 AND user_id = $2 AND role_id = $3 LIMIT 1",
-      [appId, userId, roleId],
-    );
-    return result.rows[0] ? parseUserRole(result.rows[0]) : undefined;
-  }
-  override async insertUserRole(record: UserRoleRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_user_roles (id, app_id, user_id, role_id)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (id) DO NOTHING`,
-      [record.id, record.appId, record.userId, record.roleId],
-    );
-  }
-  override async getPermissionCodes(appId: string, userId: string): Promise<string[]> {
-    const result = await this.query(
-      `SELECT DISTINCT p.code
-       FROM zook_user_roles ur
-       JOIN zook_role_permissions rp ON rp.role_id = ur.role_id
-       JOIN zook_permissions p ON p.id = rp.permission_id
-       WHERE ur.app_id = $1 AND ur.user_id = $2
-       ORDER BY p.code ASC`,
-      [appId, userId],
-    );
-    return result.rows.map((row) => String(row.code));
-  }
+  override async listRoles(appId?: string): Promise<RoleRecord[]> { return await this.authorization.listRoles(appId); }
+  override async findRole(appId: string, roleCode: string): Promise<RoleRecord | undefined> { return await this.authorization.findRole(appId, roleCode); }
+  override async insertRoles(records: RoleRecord[]): Promise<void> { return await this.authorization.insertRoles(records); }
+  override async listPermissions(): Promise<PermissionRecord[]> { return await this.authorization.listPermissions(); }
+  override async insertRolePermissions(records: RolePermissionRecord[]): Promise<void> { return await this.authorization.insertRolePermissions(records); }
+  override async findUserRole(appId: string, userId: string, roleId: string): Promise<UserRoleRecord | undefined> { return await this.authorization.findUserRole(appId, userId, roleId); }
+  override async insertUserRole(record: UserRoleRecord): Promise<void> { return await this.authorization.insertUserRole(record); }
+  override async getPermissionCodes(appId: string, userId: string): Promise<string[]> { return await this.authorization.getPermissionCodes(appId, userId); }
 
-  override async findUserById(userId: string): Promise<UserRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, email, phone, password_hash, password_algo, status, created_at FROM zook_users WHERE id = $1 LIMIT 1",
-      [userId],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByAccount(account: string): Promise<UserRecord | undefined> {
-    const normalized = account.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(email, '')) = $1 OR lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByPhone(phone: string): Promise<UserRecord | undefined> {
-    const normalized = phone.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async insertUser(record: UserRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_users (id, email, phone, password_hash, password_algo, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz)
-       ON CONFLICT (id) DO UPDATE SET
-         email = EXCLUDED.email,
-         phone = EXCLUDED.phone,
-         password_hash = EXCLUDED.password_hash,
-         password_algo = EXCLUDED.password_algo,
-         status = EXCLUDED.status,
-         created_at = EXCLUDED.created_at,
-         updated_at = NOW()`,
-      [record.id, record.email ?? null, record.phone ?? null, record.passwordHash, record.passwordAlgo, record.status, record.createdAt],
-    );
-  }
-
-  override async updateUserEmail(userId: string, email: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET email = $2, updated_at = NOW() WHERE id = $1",
-      [userId, email],
-    );
-  }
-
-  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET password_hash = $2, password_algo = $3, updated_at = NOW() WHERE id = $1",
-      [userId, passwordHash, passwordAlgo],
-    );
-  }
+  override async findUserById(userId: string): Promise<UserRecord | undefined> { return await this.users.findUserById(userId); }
+  override async findUserByAccount(account: string): Promise<UserRecord | undefined> { return await this.users.findUserByAccount(account); }
+  override async findUserByPhone(phone: string): Promise<UserRecord | undefined> { return await this.users.findUserByPhone(phone); }
+  override async insertUser(record: UserRecord): Promise<void> { return await this.users.insertUser(record); }
+  override async updateUserEmail(userId: string, email: string): Promise<void> { return await this.users.updateUserEmail(userId, email); }
+  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> { return await this.users.updateUserPassword(userId, passwordHash, passwordAlgo); }
 
   override async insertAuditLog(record: AuditLogRecord): Promise<void> {
     await this.query(
