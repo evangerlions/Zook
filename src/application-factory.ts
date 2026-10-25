@@ -1,3 +1,4 @@
+import {createApplicationInfrastructure} from "./application-infrastructure.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -96,65 +97,7 @@ import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 export async function createApplication(options: CreateApplicationOptions = {}) {
-  const passwordHasher = new DevelopmentPasswordHasher();
-  const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
-  const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
-  const kvManager =
-    options.kvManager ??
-    (options.kvBackend
-      ? await KVManager.create({ backend: options.kvBackend })
-      : resolveRuntimeRedisUrl()
-        ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
-        : await KVManager.create({ backend: new InMemoryKVBackend() }));
-  const shouldLoadManagedState = Boolean(
-    options.database || options.databaseFactory,
-  );
-  const managedStateStore = new ManagedStateStore(kvManager, {
-    enabled: shouldLoadManagedState,
-  });
-  const seed = shouldLoadManagedState
-    ? applyManagedState(baseSeed, await managedStateStore.load())
-    : baseSeed;
-  const database =
-    options.database ??
-    (options.databaseFactory
-      ? await options.databaseFactory(seed)
-      : await PostgresDatabase.create(
-          options.databaseUrl?.trim() ||
-            resolveRuntimeDatabaseUrl() ||
-            (() => {
-              throw new Error(
-                "DATABASE_URL must be configured before starting PostgreSQL.",
-              );
-            })(),
-          seed,
-          {
-            migrationConnectionString:
-              options.migrationDatabaseUrl?.trim() ||
-              resolveRuntimeMigrationDatabaseUrl(),
-          },
-        ));
-  const lighttickRepository = resolveApplicationLightTickRepository(database, options.lighttickRepository);
-  const cache = new InMemoryCache();
-  const defaultQueueBackend =
-    options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl()
-      ? "redis"
-      : "memory";
-  const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
-  const queue =
-    options.queue ??
-    (resolvedQueueBackend === "redis"
-      ? new RedisJobQueue(
-          options.queueRedisUrl?.trim() ||
-            resolveRuntimeRedisUrl() ||
-            (() => {
-              throw new Error(
-                "REDIS_URL must be configured before starting the Redis job queue backend.",
-              );
-            })(),
-        )
-      : new InMemoryJobQueue());
+  const {passwordHasher,frogsleepEnabled,lighttickEnabled,kvManager,managedStateStore,database,lighttickRepository,cache,queue}=await createApplicationInfrastructure(options);
   const lighttickRuntime = createApplicationLightTickRuntime(lighttickRepository, queue);
   const localRunFileLogSink = createLocalRunFileLogSink({
     service: options.serviceName ?? "api",
