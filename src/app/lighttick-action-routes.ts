@@ -1,3 +1,4 @@
+import {exchangePrivate,privateLearning} from '../modules/lighttick/learning/learning-private.ts';
 import {receiveLibrary,readLibrary} from '../modules/lighttick/learning/learning-library.ts';
 import type {BackendRouteContext} from './backend-route-context.ts';
 import type {LightTickRuntime} from '../modules/lighttick/lighttick-runtime.ts';
@@ -22,7 +23,7 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
  if(r.path==='/api/v1/lighttick/grow-bridge'){
   if(r.method!=='POST')reject(405,'Use POST for the signed bridge.');
   const data=object(r.body??{}),source=r.headers['x-grow-account-id']??'';
-  if(Buffer.byteLength(JSON.stringify(data))>5*1024*1024)reject(413,'Bridge request capacity exceeded.');
+  if(Buffer.byteLength(JSON.stringify(data))>7*1024*1024)reject(413,'Bridge request capacity exceeded.');
   runtime.actionLinks.verify(source,r.headers['x-grow-timestamp']??'',r.headers['x-grow-nonce']??'',r.headers['x-grow-signature']??'',data);
   if(data.action==='preview')result=await runtime.actionLinks.preview(text(data.code,80,true),source);
   else if(data.action==='claim'){
@@ -36,7 +37,9 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
     result=data.action==='import-preflight'?await handoff.preflight(source,data):await handoff.import(source,data);
    }else{
    if(data.action==='import')rejectConnectionWrite(runtime.actions.p0WriteEnabled);
-   if(data.action==='learning-library'){
+   if(data.action==='learning-private'){
+    rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await exchangePrivate(runtime.actions,link,data,()=>requireMember(context,link.userId));
+   }else if(data.action==='learning-library'){
     rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLibrary(runtime.actions,link,data,()=>requireMember(context,link.userId));
    }else {
    if(link.phase!=='active')reject(409,'Handoff is pending.');
@@ -70,8 +73,11 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
    result=await runtime.actionLinks.ticket(owner);
    return context.ok(result,r.requestId as string,{'Cache-Control':'no-store'});
   }
-  const data=object(r.body??{});if(Buffer.byteLength(JSON.stringify(data))>30000)reject(413,'Action request capacity exceeded.');
-  if(r.method==='GET'&&(r.path===learningPrefix||r.path.startsWith(learningPrefix+'/'))){
+  const data=object(r.body??{});if(Buffer.byteLength(JSON.stringify(data))>(r.path.endsWith('/private')?1024*1024:30000))reject(413,'Action request capacity exceeded.');
+  const privateMatch=r.path.match(/^\/api\/v1\/lighttick\/learning-library\/(lesson-[a-z0-9-]+)\/private$/);
+  if(privateMatch&&['GET','POST'].includes(r.method)){
+   result=await privateLearning(runtime.actions,owner,privateMatch[1],r.method==='POST'?data:undefined,()=>requireMember(context,owner.userId));
+  }else if(r.method==='GET'&&(r.path===learningPrefix||r.path.startsWith(learningPrefix+'/'))){
    result=await readLibrary(runtime.actions,owner,r.path===learningPrefix?undefined:r.path.slice((learningPrefix+'/').length));
   }else result=await runtime.actions.request(owner,r.method,r.path.slice(prefix.length),data,r.query??{},()=>requireMember(context,owner.userId));
  }

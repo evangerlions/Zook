@@ -5,8 +5,7 @@ info:
   license:
     name: Proprietary
     url: https://docs.zook.dev/legal/api-license
-  description: Canonical app-scoped API for the LightTick AI coaching core loop and
-    native clients.
+  description: Canonical app-scoped API for the LightTick AI coaching core loop and native clients.
 servers:
 - url: https://api.zook.dev
 security:
@@ -37,8 +36,7 @@ tags:
 - name: lighttick-devices
   description: Native device and push-token registration.
 - name: lighttick-account
-  description: LightTick guest sessions, account upgrade, session recovery, and app-scoped
-    deletion.
+  description: LightTick guest sessions, account upgrade, session recovery, and app-scoped deletion.
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
@@ -48,11 +46,9 @@ paths:
       tags:
       - lighttick-records
       summary: listLightTickRecords
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -106,11 +102,9 @@ paths:
       tags:
       - lighttick-records
       summary: exportLightTickRecords
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -134,11 +128,9 @@ paths:
       tags:
       - lighttick-records
       summary: getLightTickRecord
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -170,11 +162,9 @@ paths:
       tags:
       - lighttick-records
       summary: saveLightTickRecord
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -214,11 +204,9 @@ paths:
       tags:
       - lighttick-records
       summary: listLightTickRecordVersions
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -251,11 +239,9 @@ paths:
       tags:
       - lighttick-records
       summary: archiveLightTickRecord
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -295,11 +281,9 @@ paths:
       tags:
       - lighttick-records
       summary: restoreLightTickRecord
-      description: Registered LightTick owner only. No goal or AI call. Writes require
-        an immutable Idempotency-Key; same key with another body or resource returns
-        409. base_version protects edits, archive and restore. Optional adopted_summary
-        requires summary_basis_version <= base_version. Dates must be real calendar
-        dates.
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -339,9 +323,8 @@ paths:
       tags:
       - lighttick-planning
       summary: createLightTickPlanningSession
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
@@ -376,9 +359,8 @@ paths:
       tags:
       - lighttick-planning
       summary: getLightTickPlanningSession
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - name: session_id
@@ -413,9 +395,8 @@ paths:
       tags:
       - lighttick-planning
       summary: sendLightTickPlanningMessage
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - name: session_id
@@ -457,9 +438,8 @@ paths:
       tags:
       - lighttick-planning
       summary: updateLightTickPlanningContext
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - name: session_id
@@ -500,9 +480,8 @@ paths:
       tags:
       - lighttick-planning
       summary: Compatibility alias for context PATCH
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - name: session_id
@@ -551,9 +530,8 @@ paths:
       tags:
       - lighttick-planning
       summary: generateLightTickPlanningDraft
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - name: session_id
@@ -595,9 +573,8 @@ paths:
       tags:
       - lighttick-planning
       summary: confirmLightTickPlanningDraft
-      description: Registered LightTick membership required. Feature defaults off
-        (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 enables it). Mutations require
-        Idempotency-Key; stale versions require reload. Drafts are new planning cycles
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
         and do not rewrite existing active cycles.
       parameters:
       - name: session_id
@@ -639,9 +616,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Get windowed execution facts and feedback
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. from is inclusive and to exclusive; omitted bounds include all history.
-        Valid completions interrupt skip streaks. Reads append audit records.
+      description: Requires a registered LightTick membership; guest sessions receive 403. from is inclusive and
+        to exclusive; omitted bounds include all history. Valid completions interrupt skip streaks. Reads append
+        audit records.
       parameters:
       - in: query
         name: from
@@ -685,10 +662,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Read recent chat history
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. thread_id defaults to goal_id. Messages are scoped by owner, goal_id
-        and thread_id before applying limit, even when goals reuse a thread_id. Returns
-        the latest bounded messages in ascending created_at and id order.
+      description: Requires a registered LightTick membership; guest sessions receive 403. thread_id defaults to
+        goal_id. Messages are scoped by owner, goal_id and thread_id before applying limit, even when goals reuse
+        a thread_id. Returns the latest bounded messages in ascending created_at and id order.
       parameters:
       - in: query
         name: goal_id
@@ -738,8 +714,7 @@ paths:
       tags:
       - lighttick-phase2
       summary: List suggested chat prompts
-      description: 'Requires a registered LightTick membership; guest sessions receive
-        403. '
+      description: 'Requires a registered LightTick membership; guest sessions receive 403. '
       parameters: []
       responses:
         '200':
@@ -771,9 +746,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Synchronize and list DNA insights
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. Synchronizes deterministic rule outputs. Newly synchronized insights
-        have no goal_id; goal_id filters stored goal-specific insights only.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Synchronizes deterministic
+        rule outputs. Newly synchronized insights have no goal_id; goal_id filters stored goal-specific insights
+        only.
       parameters:
       - in: query
         name: goal_id
@@ -810,10 +785,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Confirm, deny, correct or dismiss an insight
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. Only proposed rules can be confirmed; hypotheses return LIGHTTICK_INSIGHT_NOT_ACTIONABLE
-        (409). correct requires 2–500 trimmed characters. dismiss permits proposed
-        or confirmed insights. Other decided states return 409.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Only proposed rules can
+        be confirmed; hypotheses return LIGHTTICK_INSIGHT_NOT_ACTIONABLE (409). correct requires 2–500 trimmed characters.
+        dismiss permits proposed or confirmed insights. Other decided states return 409.
       parameters:
       - in: path
         name: insightId
@@ -856,9 +830,8 @@ paths:
       tags:
       - lighttick-phase2
       summary: Propose adjustments from execution facts
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. Does not apply a plan change. An existing pending proposal or three rejections
-        in seven days suppresses proposals.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Does not apply a plan
+        change. An existing pending proposal or three rejections in seven days suppresses proposals.
       parameters: []
       responses:
         '200':
@@ -896,8 +869,7 @@ paths:
       tags:
       - lighttick-phase2
       summary: Read actionable review recommendations
-      description: 'Requires a registered LightTick membership; guest sessions receive
-        403. '
+      description: 'Requires a registered LightTick membership; guest sessions receive 403. '
       parameters:
       - in: path
         name: reviewId
@@ -933,12 +905,11 @@ paths:
       tags:
       - lighttick-phase2
       summary: Record a review decision atomically
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. accept_partial requires nonempty known recommendation_ids; ignore accepts
-        an optional ignore_reason (up to 500 characters); blank reasons are omitted.
-        Acceptance creates a proposed plan, not an active plan. Concurrent or repeated
-        decisions return 409 LIGHTTICK_VERSION_CONFLICT or LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED;
-        failed persistence rolls back the plan. proposed_plan retains camelCase fields.
+      description: Requires a registered LightTick membership; guest sessions receive 403. accept_partial requires
+        nonempty known recommendation_ids; ignore accepts an optional ignore_reason (up to 500 characters); blank
+        reasons are omitted. Acceptance creates a proposed plan, not an active plan. Concurrent or repeated decisions
+        return 409 LIGHTTICK_VERSION_CONFLICT or LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED; failed persistence rolls
+        back the plan. proposed_plan retains camelCase fields.
       parameters:
       - in: path
         name: reviewId
@@ -981,10 +952,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Get at most one direction-aware suggestion
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. Uses confirmed insights matching today's executable tasks. Positive numeric
-        deviation suggests increasing duration, negative suggests decreasing it; zero
-        or absent numeric evidence produces no directional suggestion. Top-level suggestion
+      description: Requires a registered LightTick membership; guest sessions receive 403. Uses confirmed insights
+        matching today's executable tasks. Positive numeric deviation suggests increasing duration, negative suggests
+        decreasing it; zero or absent numeric evidence produces no directional suggestion. Top-level suggestion
         fields retain camelCase.
       parameters: []
       responses:
@@ -1017,9 +987,8 @@ paths:
       tags:
       - lighttick-phase2
       summary: Accept or dismiss a rhythm suggestion
-      description: Requires a registered LightTick membership; guest sessions receive
-        403. accept records intent only and does not mutate tasks or plans; dismiss
-        retires the insight from the feed.
+      description: Requires a registered LightTick membership; guest sessions receive 403. accept records intent
+        only and does not mutate tasks or plans; dismiss retires the insight from the feed.
       parameters: []
       responses:
         '200':
@@ -1075,8 +1044,8 @@ paths:
       tags:
       - lighttick-account
       summary: Create or idempotently recover a device-bound restricted guest session
-      description: The returned upgrade token is an opaque, device-bound proof for
-        a later account upgrade and must be stored as securely as a refresh token.
+      description: The returned upgrade token is an opaque, device-bound proof for a later account upgrade and must
+        be stored as securely as a refresh token.
       security: []
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
@@ -1088,8 +1057,7 @@ paths:
               $ref: '#/components/schemas/LightTickGuestSessionRequest'
       responses:
         '201':
-          description: Guest session created or recovered for the same idempotency
-            key and payload
+          description: Guest session created or recovered for the same idempotency key and payload
           content:
             application/json:
               schema:
@@ -1108,8 +1076,8 @@ paths:
       tags:
       - lighttick-account
       summary: Recover the current guest or registered LightTick session metadata
-      description: Native clients refresh access credentials through the common auth
-        contract, then call this endpoint to recover product-scoped state.
+      description: Native clients refresh access credentials through the common auth contract, then call this endpoint
+        to recover product-scoped state.
       responses:
         '200':
           description: Current product-scoped account session
@@ -1128,11 +1096,9 @@ paths:
       operationId: upgradeLightTickGuestAccount
       tags:
       - lighttick-account
-      summary: Transfer guest-owned LightTick data into the authenticated registered
-        account
-      description: Requires a registered common-auth bearer token plus the guest session's
-        opaque, device-bound upgrade proof. The transfer is transactional and preserves
-        resource identifiers and sync continuity.
+      summary: Transfer guest-owned LightTick data into the authenticated registered account
+      description: Requires a registered common-auth bearer token plus the guest session's opaque, device-bound
+        upgrade proof. The transfer is transactional and preserves resource identifiers and sync continuity.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1233,8 +1199,7 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-ai
-      summary: Persist onboarding constraints and create a recoverable initial-plan
-        run
+      summary: Persist onboarding constraints and create a recoverable initial-plan run
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1260,8 +1225,7 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-tasks
-      summary: Create an action-first starter from a fuzzy wish using an always-available
-        deterministic fallback
+      summary: Create an action-first starter from a fuzzy wish using an always-available deterministic fallback
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1297,8 +1261,7 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-tasks
-      summary: Complete the first action and return factual feedback plus a three-day
-        preview
+      summary: Complete the first action and return factual feedback plus a three-day preview
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1309,8 +1272,7 @@ paths:
               $ref: '#/components/schemas/LightTickFirstActionRequest'
       responses:
         '200':
-          description: First action recorded with factual feedback and a three-day
-            preview
+          description: First action recorded with factual feedback and a three-day preview
           content:
             application/json:
               schema:
@@ -1327,8 +1289,8 @@ paths:
       tags:
       - lighttick-profile
       summary: Read account-wide saved commitment and current eligibility
-      description: Read-only. No profile returns a null mode. Counts use the same
-        effective-action rule as selection; deep planning does not change eligibility.
+      description: Read-only. No profile returns a null mode. Counts use the same effective-action rule as selection;
+        deep planning does not change eligibility.
       responses:
         '200':
           description: Saved preference and live eligibility
@@ -1345,8 +1307,7 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-goals
-      summary: Select a weekly commitment after two valid actions or an explicit deep-planning
-        request
+      summary: Select a weekly commitment after two valid actions or an explicit deep-planning request
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1589,8 +1550,7 @@ paths:
       - name: date
         in: query
         required: false
-        description: Optional business date for deterministic refresh; defaults to
-          the user's current local date.
+        description: Optional business date for deterministic refresh; defaults to the user's current local date.
         schema:
           type: string
           format: date
@@ -1694,8 +1654,7 @@ paths:
       operationId: switchLightTickTaskVariant
       tags:
       - lighttick-tasks
-      summary: Switch standard, light, or minimum intensity without changing task
-        lineage
+      summary: Switch standard, light, or minimum intensity without changing task lineage
       requestBody:
         required: true
         content:
@@ -1716,8 +1675,7 @@ paths:
       operationId: updateLightTickTaskStep
       tags:
       - lighttick-tasks
-      summary: Mark one task step complete or incomplete while versioning the parent
-        task
+      summary: Mark one task step complete or incomplete while versioning the parent task
       requestBody:
         required: true
         content:
@@ -1731,8 +1689,8 @@ paths:
       tags:
       - lighttick-reviews
       summary: List saved personal reflections for one goal without invoking AI
-      description: Registered account required. Owner-scoped journal; content is never
-        implicitly included in AI context.
+      description: Registered account required. Owner-scoped journal; content is never implicitly included in AI
+        context.
       parameters:
       - name: goal_id
         in: query
@@ -1768,9 +1726,9 @@ paths:
       tags:
       - lighttick-reviews
       summary: Create or edit a user-authored reflection with optimistic versioning
-      description: Registered account required. Client-generated stable ID. base_version=0
-        creates; edits require current version. Identical lost-response replay returns
-        saved version; stale edits return 409. Does not invoke AI or change tasks.
+      description: Registered account required. Client-generated stable ID. base_version=0 creates; edits require
+        current version. Identical lost-response replay returns saved version; stale edits return 409. Does not
+        invoke AI or change tasks.
       parameters:
       - name: reflectionId
         in: path
@@ -1808,12 +1766,10 @@ paths:
       tags:
       - lighttick-reviews
       - lighttick-ai
-      summary: Create a fresh daily, weekly or monthly review for selected dates or
-        a whole plan
-      description: Optional plan_id restricts facts to that plan and requires its
-        exact dates. Without it, dates select this goal. Each new idempotency key
-        creates an independent analysis; replay returns the same run. Private journal
-        content is not loaded automatically.
+      summary: Create a fresh daily, weekly or monthly review for selected dates or a whole plan
+      description: Optional plan_id restricts facts to that plan and requires its exact dates. Without it, dates
+        select this goal. Each new idempotency key creates an independent analysis; replay returns the same run.
+        Private journal content is not loaded automatically.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1837,16 +1793,13 @@ paths:
       tags:
       - lighttick-ai
       summary: Create a recoverable bounded Coach or multi-turn chat run
-      description: For scene=chat, message is required (trimmed, 1–4000 characters);
-        thread_id defaults to goal_id. All referenced resources must belong to the
-        requested goal; a task must also belong to plan_id when supplied. Invalid
-        or foreign-owner references return 404; same-owner goal or task-plan mismatches
-        return 422 before saving messages or queueing. Conversation and execution
-        facts are isolated by goal; thread_id may be reused across goals without sharing
-        history. The user message is persisted before queueing, and the response adds
-        thread_id and message_id. Poll the run and read chat/messages for the assistant
-        response. Registered accounts only; guests receive 403. Reusing Idempotency-Key
-        with a different body returns 409.
+      description: For scene=chat, message is required (trimmed, 1–4000 characters); thread_id defaults to goal_id.
+        All referenced resources must belong to the requested goal; a task must also belong to plan_id when supplied.
+        Invalid or foreign-owner references return 404; same-owner goal or task-plan mismatches return 422 before
+        saving messages or queueing. Conversation and execution facts are isolated by goal; thread_id may be reused
+        across goals without sharing history. The user message is persisted before queueing, and the response adds
+        thread_id and message_id. Poll the run and read chat/messages for the assistant response. Registered accounts
+        only; guests receive 403. Reusing Idempotency-Key with a different body returns 409.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1911,8 +1864,7 @@ paths:
       tags:
       - lighttick-ai
       - lighttick-plans
-      summary: Create a recoverable AI replan run that can produce a material-change
-        proposal
+      summary: Create a recoverable AI replan run that can produce a material-change proposal
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -2020,8 +1972,7 @@ paths:
       tags:
       - lighttick-ai
       - lighttick-plans
-      summary: Explain proposal conclusion, evidence, and changes without mutating
-        the plan
+      summary: Explain proposal conclusion, evidence, and changes without mutating the plan
       requestBody: *id003
       responses:
         '200':
@@ -2729,8 +2680,8 @@ paths:
       tags:
       - lighttick-records
       summary: createRecordLinkTicket
-      description: Registered owner creates a five minute records-only connection
-        code. Separate from action-plan consent.
+      description: Registered owner creates a five minute records-only connection code. Separate from action-plan
+        consent.
       responses:
         '200':
           description: Owner result.
@@ -2774,8 +2725,8 @@ paths:
       tags:
       - lighttick-records
       summary: freezeRecordHandoffForRecovery
-      description: Sets an active handoff read-only and returns the latest full export.
-        Source stays frozen; old source snapshots must never overwrite newer edits.
+      description: Sets an active handoff read-only and returns the latest full export. Source stays frozen; old
+        source snapshots must never overwrite newer edits.
       responses:
         '200':
           description: Owner result.
@@ -2797,15 +2748,12 @@ paths:
       tags:
       - lighttick-records
       summary: bridgeGrowRecords
-      description: Trusted Grow instance and authenticated subject are attested with
-        HMAC SHA256 over instance + LF + subject + LF + timestamp + LF + nonce + LF
-        + recursively key-sorted compact JSON body. Timestamp tolerance 120 seconds,
-        nonce one-time per source, secret >=32 characters. preview/claim/stage/activate/status/request
-        are records-only. Stage is invisible; activate requires a matching signed
-        frozen source receipt. Legacy AI history is read-only. Disabled by default.
-        cancel is allowed only before activation; its confirmed receipt permits the
-        source to resume local writes. A new operation requires a fresh ticket for
-        the same target.
+      description: Trusted Grow instance and authenticated subject are attested with HMAC SHA256 over instance +
+        LF + subject + LF + timestamp + LF + nonce + LF + recursively key-sorted compact JSON body. Timestamp tolerance
+        120 seconds, nonce one-time per source, secret >=32 characters. preview/claim/stage/activate/status/request
+        are records-only. Stage is invisible; activate requires a matching signed frozen source receipt. Legacy
+        AI history is read-only. Disabled by default. cancel is allowed only before activation; its confirmed receipt
+        permits the source to resume local writes. A new operation requires a fresh ticket for the same target.
       security: []
       parameters:
       - in: header
@@ -3011,7 +2959,85 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-
+  /api/v1/lighttick/learning-library/{lessonId}/private:
+    get:
+      operationId: lighttickReadPrivateLearning
+      tags:
+      - LightTick
+      summary: Read separately consented private learning state
+      description: Separately consented private state from Grow. Queued commands are pending until a source receipt;
+        reading and saving notes never imply completion.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^lesson-[a-z0-9-]{1,70}$
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningPrivateEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: lighttickWritePrivateLearning
+      tags:
+      - LightTick
+      summary: Queue explicit private learning command
+      description: Separately consented private state from Grow. Queued commands are pending until a source receipt;
+        reading and saving notes never imply completion.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^lesson-[a-z0-9-]{1,70}$
+      - name: X-Grow-Action-Schema
+        in: header
+        required: true
+        schema:
+          type: integer
+          const: 2
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningPrivateEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLearningPrivateCommand'
 components:
   securitySchemes:
     bearerAuth:
@@ -3023,8 +3049,7 @@ components:
       name: Idempotency-Key
       in: header
       required: true
-      description: Client-generated stable operation key. Reuse with a different canonical
-        payload is rejected.
+      description: Client-generated stable operation key. Reuse with a different canonical payload is rejected.
       schema:
         type: string
         minLength: 8
@@ -3338,9 +3363,8 @@ components:
                   source_history:
                     type: object
                     additionalProperties: true
-                    description: Owner-only immutable original source entry, observed
-                      versions, AI attempts and operation metadata; credentials are
-                      forbidden.
+                    description: Owner-only immutable original source entry, observed versions, AI attempts and
+                      operation metadata; credentials are forbidden.
                 required:
                 - record
                 - versions
@@ -4149,8 +4173,7 @@ components:
             oneOf:
             - type: string
             - type: object
-              description: Original AI recommendation; normalized recommendations
-                are returned separately.
+              description: Original AI recommendation; normalized recommendations are returned separately.
               additionalProperties: true
         data_sufficiency:
           type: string
@@ -4194,8 +4217,7 @@ components:
             type: string
         ignore_reason:
           type: string
-          description: Optional explanation; omitted or blank values are treated as
-            absent.
+          description: Optional explanation; omitted or blank values are treated as absent.
           maxLength: 500
     LightTickReviewProposedPlan:
       type: object
@@ -4872,8 +4894,7 @@ components:
           - standard
           - sprint
           - null
-          description: Account-wide saved selection, or null if never selected or
-            unrecognized legacy data.
+          description: Account-wide saved selection, or null if never selected or unrecognized legacy data.
         valid_action_count:
           type: integer
           minimum: 0
@@ -4882,8 +4903,7 @@ components:
           const: 2
         eligible:
           type: boolean
-          description: True when at least two effective actions exist; not a persisted
-            deep-planning bypass.
+          description: True when at least two effective actions exist; not a persisted deep-planning bypass.
       additionalProperties: false
     LightTickCommitmentStateEnvelope:
       type: object
@@ -5009,8 +5029,7 @@ components:
       additionalProperties: false
     LightTickGoalConstraints:
       type: object
-      description: Known constraints only; an empty object is valid before planning
-        clarification.
+      description: Known constraints only; an empty object is valid before planning clarification.
       properties:
         current_level:
           type: string
@@ -5184,13 +5203,11 @@ components:
           type: string
         source:
           type: string
-          description: ai, template, manual, or a provenance reference such as review:<id>
-            or proposal:<id>.
+          description: ai, template, manual, or a provenance reference such as review:<id> or proposal:<id>.
         proposal:
           type: object
-          description: Persisted plan preview including proposed tasks and non-secret
-            planning assumptions. Proposed tasks use camelCase fields; confirmed task
-            responses use snake_case.
+          description: Persisted plan preview including proposed tasks and non-secret planning assumptions. Proposed
+            tasks use camelCase fields; confirmed task responses use snake_case.
           properties:
             summary:
               type: string
@@ -5603,8 +5620,7 @@ components:
       properties:
         plan_id:
           $ref: '#/components/schemas/LightTickId'
-          description: Optional whole-plan scope; must belong to goal and match both
-            dates.
+          description: Optional whole-plan scope; must belong to goal and match both dates.
         goal_id:
           $ref: '#/components/schemas/LightTickId'
         period:
@@ -5621,8 +5637,7 @@ components:
         next_action:
           type: string
           maxLength: 1000
-          description: User explicitly supplied intended next action; not an instruction
-            to mutate tasks.
+          description: User explicitly supplied intended next action; not an instruction to mutate tasks.
         self_reflection:
           type: string
           maxLength: 4000
@@ -5927,8 +5942,7 @@ components:
           $ref: '#/components/schemas/LightTickId'
         source:
           type: string
-          description: ai, template, manual, or a provenance reference such as review:<id>
-            or proposal:<id>.
+          description: ai, template, manual, or a provenance reference such as review:<id> or proposal:<id>.
         error_code:
           $ref: '#/components/schemas/LightTickErrorCode'
         result:
@@ -6305,8 +6319,7 @@ components:
           type: string
           minLength: 32
           maxLength: 4096
-          description: Device-generated secret stored in Keychain or Keystore and
-            never logged by the server.
+          description: Device-generated secret stored in Keychain or Keystore and never logged by the server.
         platform:
           $ref: '#/components/schemas/LightTickDevicePlatform'
         timezone:
@@ -6515,8 +6528,7 @@ components:
           type: string
           minLength: 16
           maxLength: 4096
-          description: Opaque, short-lived one-time proof issued after recent common-auth
-            reauthentication.
+          description: Opaque, short-lived one-time proof issued after recent common-auth reauthentication.
       additionalProperties: false
     LightTickReauthenticationRequest:
       type: object
@@ -6774,8 +6786,8 @@ components:
       - period
       additionalProperties: false
       description: P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional
-        values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes cannot
-        exceed target_minutes (runtime validation).
+        values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes
+        cannot exceed target_minutes (runtime validation).
       allOf:
       - if:
           properties:
@@ -6967,8 +6979,8 @@ components:
       - key
       additionalProperties: false
       description: P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional
-        values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes cannot
-        exceed target_minutes (runtime validation).
+        values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes
+        cannot exceed target_minutes (runtime validation).
       allOf:
       - if:
           properties:
@@ -7489,10 +7501,10 @@ components:
       - revision
       - action
       additionalProperties: false
-      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums confirmed
-        session minutes; interrupted threshold requires complete-time. Content requires a durable private source receipt.
-        Running actions reject other mutations. Completed/archived actions are read-only except check reopen. HTTP writes
-        remain closed in this stage.
+      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums
+        confirmed session minutes; interrupted threshold requires complete-time. Content requires a durable private
+        source receipt. Running actions reject other mutations. Completed/archived actions are read-only except
+        check reopen. HTTP writes remain closed in this stage.
       allOf:
       - if:
           properties:
@@ -7675,6 +7687,7 @@ components:
           - source-reconcile
           - learning-progress
           - learning-library
+          - learning-private
         code:
           type: string
           maxLength: 80
@@ -7707,8 +7720,7 @@ components:
         action_schema_version:
           type: integer
           const: 2
-          description: Required for POST requests inside the signed bridge. Does not enable
-            writes.
+          description: Required for POST requests inside the signed bridge. Does not enable writes.
         binding_id:
           type: string
           minLength: 1
@@ -7743,7 +7755,34 @@ components:
           type: array
           maxItems: 200
           items:
-            $ref: '#/components/schemas/LightTickLearningLesson'
+            anyOf:
+            - $ref: '#/components/schemas/LightTickLearningLesson'
+            - $ref: '#/components/schemas/LightTickLearningPrivateState'
+        enabled:
+          type: boolean
+        results:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - status
+            - error
+            properties:
+              id:
+                type: string
+                maxLength: 80
+              status:
+                type: string
+                enum:
+                - applied
+                - conflict
+                - unavailable
+              error:
+                type: string
+                maxLength: 500
       allOf:
       - if:
           required:
@@ -7868,6 +7907,23 @@ components:
           - observed_at
           - consent_enabled
           - lessons
+      - if:
+          properties:
+            action:
+              const: learning-private
+        then:
+          required:
+          - binding_id
+          - source_revision
+          - enabled
+          - lessons
+          - results
+          properties:
+            binding_id: {}
+            source_revision: {}
+            enabled: {}
+            lessons: {}
+            results: {}
       required:
       - action
       additionalProperties: false
@@ -8045,9 +8101,8 @@ components:
                       source_history:
                         type: object
                         additionalProperties: true
-                        description: Owner-only immutable original source entry, observed
-                          versions, AI attempts and operation metadata; credentials
-                          are forbidden.
+                        description: Owner-only immutable original source entry, observed versions, AI attempts
+                          and operation metadata; credentials are forbidden.
                     required:
                     - record
                     - versions
@@ -8086,8 +8141,8 @@ components:
         additionalProperties: false
     LightTickActionSourceEvent:
       type: object
-      description: Server-generated after explicit source success. Never accepts body, notes, browser read flags, owner
-        IDs or consumed_by.
+      description: Server-generated after explicit source success. Never accepts body, notes, browser read flags,
+        owner IDs or consumed_by.
       properties:
         event_id:
           type: string
@@ -8351,9 +8406,9 @@ components:
       - date
       - key
       additionalProperties: false
-      description: Deduplicates non-archived content by normalized source, timezone and date (null uses its own bucket).
-        target_minutes is a legacy estimate alias only; conflicting estimates are rejected. Sources must exist in the
-        private verified owner inventory.
+      description: Deduplicates non-archived content by normalized source, timezone and date (null uses its own
+        bucket). target_minutes is a legacy estimate alias only; conflicting estimates are rejected. Sources must
+        exist in the private verified owner inventory.
     LightTickActionCreateResult:
       type: object
       properties:
@@ -8854,7 +8909,6 @@ components:
           $ref: '#/components/schemas/LightTickLearningProgressData'
         requestId:
           type: string
-
     LightTickLearningLessonSummary:
       type: object
       additionalProperties: false
@@ -9012,3 +9066,169 @@ components:
         properties:
           data:
             $ref: '#/components/schemas/LightTickChangeProposalData'
+    LightTickLearningAnswer:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - prompt
+      - answer
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 500
+        prompt:
+          type: string
+          maxLength: 1000
+        answer:
+          type: string
+          maxLength: 10000
+    LightTickLearningPrivateState:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - content_version
+      - draft_version
+      - revision
+      - notes
+      - answers
+      - completed
+      - completed_at
+      - position
+      - updated_at
+      properties:
+        id:
+          type: string
+          maxLength: 80
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        draft_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        revision:
+          type: integer
+          minimum: 1
+        notes:
+          type: string
+          maxLength: 10000
+        answers:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickLearningAnswer'
+        completed:
+          type: boolean
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        position:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        updated_at:
+          type: string
+          format: date-time
+    LightTickLearningPrivateOperation:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - error
+      properties:
+        id:
+          type: string
+          maxLength: 80
+        status:
+          type: string
+          enum:
+          - pending
+          - applied
+          - conflict
+          - unavailable
+        error:
+          type: string
+          maxLength: 500
+    LightTickLearningPrivateData:
+      type: object
+      additionalProperties: false
+      required:
+      - enabled
+      - state
+      - operations
+      properties:
+        enabled:
+          type: boolean
+        state:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickLearningPrivateState'
+          - type: 'null'
+        operations:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickLearningPrivateOperation'
+    LightTickLearningPrivateCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - content_version
+      - revision
+      - action
+      - notes
+      - answers
+      - position
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z0-9-]{8,80}$
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        revision:
+          type: integer
+          minimum: 1
+        action:
+          type: string
+          enum:
+          - save
+          - complete
+          - position
+        notes:
+          type: string
+          maxLength: 10000
+        answers:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickLearningAnswer'
+        position:
+          type: integer
+          minimum: 0
+          maximum: 100000
+    LightTickLearningPrivateEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          maxLength: 80
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickLearningPrivateData'
+        requestId:
+          type: string
+          maxLength: 100

@@ -26,6 +26,7 @@ export async function receiveLibrary(actions:ActionService,initial:ActionLink,in
   const previous=await actions.repository.getLearningLibrary(link);
   if(previous?.binding_id===link.binding_id&&(previous.source_revision>source_revision||previous.source_revision===source_revision&&previous.payload_hash!==payload_hash))reject(409,'Reading source revision changed.','REVISION_CONFLICT');
   if(!previous||previous.binding_id!==link.binding_id||previous.source_revision<source_revision)await actions.repository.saveLearningLibrary(link,{...value,binding_id:link.binding_id,payload_hash,received_at:actions.clock().toISOString()});
+  if(!input.consent_enabled)await actions.repository.saveLearningPrivate(link,{binding_id:link.binding_id,enabled:false,source_revision:0,lessons:[],requests:[]});
   return {accepted:true,binding_id:link.binding_id,target_user_id:link.userId,source_revision,payload_hash};
  });
 }

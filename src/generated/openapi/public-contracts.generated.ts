@@ -16658,6 +16658,294 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickLearningPrivateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "state",
+        "operations"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "content_version",
+                "draft_version",
+                "revision",
+                "notes",
+                "answers",
+                "completed",
+                "completed_at",
+                "position",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "draft_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 10000
+                },
+                "answers": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "prompt",
+                      "answer"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "answer": {
+                        "type": "string",
+                        "maxLength": 10000
+                      }
+                    }
+                  }
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "completed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operations": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "error"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "applied",
+                  "conflict",
+                  "unavailable"
+                ]
+              },
+              "error": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 100
+    }
+  }
+} as const;
+
+export type LightTickLearningPrivateEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "enabled": boolean;
+  "state": (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+) | unknown;
+  "operations": (
+{
+  "id": string;
+  "status": "pending" | "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickLearningPrivateCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "content_version",
+    "revision",
+    "action",
+    "notes",
+    "answers",
+    "position"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]{8,80}$"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "save",
+        "complete",
+        "position"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "answers": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "prompt",
+          "answer"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    }
+  }
+} as const;
+
+export type LightTickLearningPrivateCommand = {
+  "id": string;
+  "content_version": string;
+  "revision": number;
+  "action": "save" | "complete" | "position";
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "position": number;
+};
+
 export const LightTickLearningLibraryEnvelopeSchema = {
   "additionalProperties": false,
   "properties": {
@@ -17668,7 +17956,8 @@ export const LightTickGrowBridgeRequestSchema = {
         "source-receipt",
         "source-reconcile",
         "learning-progress",
-        "learning-library"
+        "learning-library",
+        "learning-private"
       ]
     },
     "code": {
@@ -18063,57 +18352,180 @@ export const LightTickGrowBridgeRequestSchema = {
       "type": "array",
       "maxItems": 200,
       "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "collection_id",
+              "collection_title",
+              "number",
+              "title",
+              "content_version",
+              "learning_state",
+              "source_url",
+              "content",
+              "references"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "collection_id": {
+                "type": "string"
+              },
+              "collection_title": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "learning_state": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "completed"
+                ]
+              },
+              "source_url": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 100000
+              },
+              "references": {
+                "type": "string",
+                "maxLength": 100000
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "content_version",
+              "draft_version",
+              "revision",
+              "notes",
+              "answers",
+              "completed",
+              "completed_at",
+              "position",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "draft_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "answers": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "prompt",
+                    "answer"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "answer": {
+                      "type": "string",
+                      "maxLength": 10000
+                    }
+                  }
+                }
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "id",
-          "collection_id",
-          "collection_title",
-          "number",
-          "title",
-          "content_version",
-          "learning_state",
-          "source_url",
-          "content",
-          "references"
+          "status",
+          "error"
         ],
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 80
           },
-          "collection_id": {
-            "type": "string"
-          },
-          "collection_title": {
-            "type": "string"
-          },
-          "number": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "title": {
-            "type": "string"
-          },
-          "content_version": {
-            "type": "string"
-          },
-          "learning_state": {
+          "status": {
             "type": "string",
             "enum": [
-              "unknown",
-              "completed"
+              "applied",
+              "conflict",
+              "unavailable"
             ]
           },
-          "source_url": {
-            "type": "string"
-          },
-          "content": {
+          "error": {
             "type": "string",
-            "maxLength": 100000
-          },
-          "references": {
-            "type": "string",
-            "maxLength": 100000
+            "maxLength": 500
           }
         }
       }
@@ -19430,6 +19842,31 @@ export const LightTickGrowBridgeRequestSchema = {
           "lessons"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "learning-private"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "binding_id",
+          "source_revision",
+          "enabled",
+          "lessons",
+          "results"
+        ],
+        "properties": {
+          "binding_id": {},
+          "source_revision": {},
+          "enabled": {},
+          "lessons": {},
+          "results": {}
+        }
+      }
     }
   ],
   "required": [
@@ -19440,7 +19877,7 @@ export const LightTickGrowBridgeRequestSchema = {
 
 export type LightTickGrowBridgeRequest = (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19552,6 +19989,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -19564,11 +20002,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19680,6 +20146,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -19692,11 +20159,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19808,6 +20303,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -19820,11 +20316,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19936,6 +20460,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -19948,11 +20473,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -20064,6 +20617,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -20076,11 +20630,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -20192,6 +20774,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -20204,11 +20787,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -20320,6 +20931,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -20332,11 +20944,39 @@ export type LightTickGrowBridgeRequest = (
   "content": string;
   "references": string;
 }
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
 )[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -20448,6 +21088,7 @@ export type LightTickGrowBridgeRequest = (
 )[];
   "consent_enabled"?: boolean;
   "lessons"?: (
+(
 {
   "id": string;
   "collection_id": string;
@@ -20459,6 +21100,191 @@ export type LightTickGrowBridgeRequest = (
   "source_url": string;
   "content": string;
   "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
 }
 )[];
 }
@@ -43206,6 +44032,8 @@ export const GeneratedPublicContractNames = [
   "LightTickLearningLessonEnvelope",
   "LightTickLearningLibraryEnvelope",
   "LightTickLearningPlanProgress",
+  "LightTickLearningPrivateCommand",
+  "LightTickLearningPrivateEnvelope",
   "LightTickLearningProgress",
   "LightTickLearningProgressEnvelope",
   "LightTickLearningStageProgress",

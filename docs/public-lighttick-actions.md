@@ -139,3 +139,5 @@ H5 制订、完善和发布计划，手机查看/执行、学习、记录及通�
 ## 2026-10-25 原生课程阅读
 
 另行确认的 reading scope 使用独立课程镜像，不扩大既有行动/记录 consent，不写另一份课程完成账。接口、限额、撤回与缓存规则见 README_API.md 的“Grow 原生课程只读接入”。
+
+I4 native private learning uses a separate Grow consent and source-confirmed command queue, not action completion writes. Phone save/complete/position commands retain UUIDs and revisions; signed `learning-private` exchanges apply existing Grow source APIs before returning terminal receipts. Pending is not saved/completed. Original course publishing and H5 private stores remain authoritative; conflicts, content changes and revoked scopes never silently overwrite phone drafts. Canonical endpoints and bounds are in README_API.md.

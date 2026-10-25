@@ -786,3 +786,5 @@ Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编
 新增异步模板/单朵小花、定向接收revision、跨sleep/focus滚动配额、持久操作resolution、单次收下和合并中心；PostgreSQL迁移075与独立Repository接入既有四slot根事务。无Push；默认flag关闭，内部受控关系enrollment默认不授予接收许可。公开方法、环境变量及回滚见[README_API](../README_API.md)。真实PostgreSQL并发验证使用隔离测试库，不代表dev/生产已验收。
 
 2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；全仓行数门禁仍失败，未发布。
+
+2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.

@@ -140,6 +140,8 @@ SPECS: dict[str, list[str]] = {
         'LightTickActionExecution',
         'LightTickActionMutationRequest',
         'LightTickActionWorkspace',
+        'LightTickLearningPrivateEnvelope',
+        'LightTickLearningPrivateCommand',
         'LightTickLearningLibraryEnvelope',
         'LightTickLearningLessonEnvelope',
         'LightTickLearningProgressEnvelope',

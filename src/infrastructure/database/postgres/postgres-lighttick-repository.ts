@@ -42,6 +42,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
   importRecord=this.recordTransferStore.importRecord.bind(this.recordTransferStore);
   recordSourceHistory=this.recordTransferStore.recordSourceHistory.bind(this.recordTransferStore);
   private readonly actionStore=new PostgresActionStore((sql,values)=>this.query(sql,values));
+  getLearningPrivate=this.actionStore.getLearningPrivate.bind(this.actionStore);
+  saveLearningPrivate=this.actionStore.saveLearningPrivate.bind(this.actionStore);
   getLearningLibrary=this.actionStore.getLearningLibrary.bind(this.actionStore);
   saveLearningLibrary=this.actionStore.saveLearningLibrary.bind(this.actionStore);
   lockActionOwner=this.actionStore.lockActionOwner.bind(this.actionStore);
@@ -568,7 +570,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["record_source_history","record_transfers","record_tickets","record_versions","records","learning_libraries","action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+    const tables = ["record_source_history","record_transfers","record_tickets","record_versions","records","learning_private","learning_libraries","action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {

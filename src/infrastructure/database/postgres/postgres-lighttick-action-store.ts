@@ -5,6 +5,8 @@ type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[
 const conflict=(id:string):never=>{throw new ApplicationError(409,'LIGHTTICK_VERSION_CONFLICT','账户已连接。',{resourceId:id});};
 export class PostgresActionStore {
  constructor(private readonly query:Query){}
+ async getLearningPrivate(owner:LightTickOwner):Promise<Json|undefined>{const r=await this.query('SELECT payload FROM zook_lighttick_learning_private WHERE app_id=$1 AND user_id=$2',[owner.appId,owner.userId]);return r.rows[0]?.payload as Json|undefined;}
+ async saveLearningPrivate(owner:LightTickOwner,data:Json){await this.query('INSERT INTO zook_lighttick_learning_private VALUES ($1,$2,$3::jsonb) ON CONFLICT(app_id,user_id) DO UPDATE SET payload=EXCLUDED.payload',[owner.appId,owner.userId,JSON.stringify(data)]);}
  async getLearningLibrary(owner:LightTickOwner):Promise<Json|undefined>{const r=await this.query('SELECT payload FROM zook_lighttick_learning_libraries WHERE app_id=$1 AND user_id=$2',[owner.appId,owner.userId]);return r.rows[0]?.payload as Json|undefined;}
  async saveLearningLibrary(owner:LightTickOwner,data:Json){await this.query('INSERT INTO zook_lighttick_learning_libraries VALUES ($1,$2,$3::jsonb) ON CONFLICT(app_id,user_id) DO UPDATE SET payload=EXCLUDED.payload',[owner.appId,owner.userId,JSON.stringify(data)]);}
 

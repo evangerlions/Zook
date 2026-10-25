@@ -419,6 +419,42 @@ data class LightTickLearningLessonData(
     val binding_id: String,
     val observed_at: String,
 )
+data class LightTickLearningAnswer(
+    val id: String,
+    val prompt: String,
+    val answer: String,
+)
+data class LightTickLearningPrivateState(
+    val id: String,
+    val content_version: String,
+    val draft_version: String,
+    val revision: Int,
+    val notes: String,
+    val answers: List<LightTickLearningAnswer>,
+    val completed: Boolean,
+    val completed_at: String? = null,
+    val position: Int,
+    val updated_at: String,
+)
+data class LightTickLearningPrivateOperation(
+    val id: String,
+    val status: String,
+    val error: String,
+)
+data class LightTickLearningPrivateData(
+    val enabled: Boolean,
+    val state: LightTickLearningPrivateState? = null,
+    val operations: List<LightTickLearningPrivateOperation>,
+)
+data class LightTickLearningPrivateCommand(
+    val id: String,
+    val content_version: String,
+    val revision: Int,
+    val action: String,
+    val notes: String,
+    val answers: List<LightTickLearningAnswer>,
+    val position: Int,
+)
 
 // Independent records: dates are calendar dates, versions protect every mutation.
 data class LightTickRecordSource(val instance:String,val id:String,val imported_at:String,val missing_versions:List<Int>)
