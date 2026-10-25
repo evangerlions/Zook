@@ -19415,6 +19415,13 @@ export const LightTickGrowBridgeRequestSchema = {
         }
       },
       "then": {
+        "properties": {
+          "binding_id": {},
+          "source_revision": {},
+          "observed_at": {},
+          "consent_enabled": {},
+          "lessons": {}
+        },
         "required": [
           "binding_id",
           "source_revision",
