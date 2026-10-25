@@ -1,0 +1,32 @@
+REDACTED_TEST_METADATA id=buddy_share_420c7ddccb3644bb82745e2eabfcb3f9 keys=id,artifact_type,redacted,unavailable_reason
+(node:58815) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ buddy hub consolidates same-person domains and separates different partners (950.262375ms)
+✖ structured shares, bounded reactions, joint activities, pagination, and redaction form a growth loop (519.944084ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2592.106375
+
+✖ failing tests:
+
+test at test/unit/frogsleep-buddy-growth-hub.api.test.ts:48:1
+✖ structured shares, bounded reactions, joint activities, pagination, and redaction form a growth loop (519.944084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (/Users/hao/Documents/project/Zook/test/unit/frogsleep-buddy-growth-hub.api.test.ts:101:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

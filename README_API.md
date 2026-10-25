@@ -777,6 +777,10 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `GET /api/v1/frogsleep/sleep-buddy/invites/preview?token=...` 或 `?code=...` 需要 FrogSleep Bearer 鉴权，只用于登录后恢复邀请上下文，不会创建关系、不会消耗邀请。响应包含 `invite.domain = "sleep"`、`invite_id`、`raw_invite_id`、`status`、`inviter_user_id`、`invitee_user_id`、`viewer_can_accept`、`accept_method`、`expires_at`、`share_title`、`share_subtitle`。接受成功后，关系响应会带回 `source_invite_id`、`accept_source`、`accepted_at`；邀请内部会记录 `accepted_by_user_id`，便于统计邀请转化。
 
+邀请决定更新使用严格递增的持久化逻辑时间，已读时间追平最新决定；同毫秒操作或设备时钟回退不会吞掉新的未读状态，相同状态和版本的幂等重放保持已读。
+
+同一对用户已有 active/paused 的睡眠或专注关系时，重复组合邀请的对应领域只读显示已连接，复用原关系 ID；此规则同时覆盖旧聚合 `/accept` 与新逐域接受产生的关系。不会新建关系、占用新 slot 或扩大任一方授权；canonical 撤销记录仍覆盖旧关系事实。
+
 睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 可传 `joint_activity_id`（兼容别名 `jointActivityId`），将已接受并开始的 `tonight_together` 活动固定到同一个共享会话；双方跨午夜、跨时区加入、并发重试以及活动完成后的恢复均返回原会话，不再按各自 `date_anchor` 新建。活动必须属于该关系及当前参与者；错误关系/活动返回 `403`，未接受、未开始或已过期且尚无绑定会话返回 `409`。共同活动仅使用绑定会话的真实完成事实。未传活动 ID 时保留 `relationship_id + date_anchor` 的 pending/active 会话复用规则；日期键接受有效日历日期及旧 ISO 时间戳并归一为其日期部分，非法日期返回 `400`。
 
 `PATCH /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences` 成功响应包含 `preferences` 和当前 `relationship`，用于 iOS 在保存守护偏好后直接刷新关系状态。请求只接受 `guard_level`、`visibility_scope`、`mute_for_tonight`、`allow_morning_summary_push`、`allow_recovery_nudges`；未知字段或类型不匹配返回 `400 REQ_INVALID_BODY`。共同守护 session 响应包含 Zook canonical 字段 `session_id`、`relationship_id`、`status`、`participant_states`、`starts_at`、`ends_at`，并额外保留 iOS 兼容字段 `shared_session_id`、`initiator_user_id`、`invite_status`、`date_anchor`、`initiator_state`、`partner_state`、`started_at`、`ended_at`；其中 `initiator_state` / `partner_state` 会把后端内部 `pending` 映射为 iOS 已有枚举 `invited`。
@@ -854,6 +858,10 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 群组搭子接口要求 FrogSleep Bearer 鉴权并受 `group_buddies` 能力开关控制，关闭时返回未命中路由。群组 `domain` 只允许 `sleep` 或 `focus`，`group_name` 为 1-40 字符，`group_description` 最长 160 字符，`sharing_baseline` 只允许 `presence`、`daily_summary`、`weekly_trend`、`shared_activity`。每组最多 5 名 active 成员；每个 owner 最多 5 个未解散群组。群组状态为 `forming`、`active`、`paused`、`dissolved`；首个成员创建后为 `forming`，第二名成员接受邀请后进入 `active`。owner 可更新、暂停、恢复、解散和改角色；owner/moderator 可邀请或移除普通成员；owner 不能直接离开最后一个 owner 身份。常见业务错误包括 `400 BUDDY_GROUP_LIMIT`、`400 BUDDY_GROUP_FULL`、`400 BUDDY_GROUP_INVITATION_NOT_FOUND`、`400 BUDDY_GROUP_INVITATION_EXPIRED`、`403 BUDDY_GROUP_FORBIDDEN`、`403 BUDDY_GROUP_NOT_MEMBER`、`403 BUDDY_GROUP_PAUSED` 和 `409 BUDDY_GROUP_CONFLICT`。
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
+
+统一邀请的列表与预览 `status` 按 `domain_results` 的有效状态聚合：只要仍有待处理领域即为 `pending`，全部接受后为 `accepted`，客户端不应继续对已处理领域展示接受按钮。同一对用户在某领域已有 active/paused 关系时，新邀请该领域返回只读 `accepted`、既有 `relationship_id` 和空 `viewer_actions`；不重复创建子邀请或关系，不重置既有授权，其它领域仍可独立操作。过期旧关系的原 decision 不会借用新关系恢复。
+
+邀请列表 `unread` 由当前查看者的持久化阅读时间与邀请/逐域决定更新时间比较生成。按 ID、code 或 token 成功预览后会标记当前查看者已读；随后产生的新决定会重新变为未读。发起者创建邀请时视为已读，另一方初次查看前为未读。预览只更新阅读状态，不接受、拒绝或取消邀请。
 
 `POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请绑定的收件用户，或当前邮箱与未认领邀请目标匹配的用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；同步该领域兼容子邀请的终态，保留另一领域及既有关系，不隐式开启任何分享授权。单域关系建立时在同一事务内初始化双方各四类、共八条 `revoked` grant；不会沿用旧关系的自动补授逻辑。随后可通过该 `relationship_id` 查询 grants，各用户仅可 PATCH 自己作为 grantor 的记录；授权失败只重试 grant 更新，不重新接受另一个域。Bundle 预览的 `domain_results` 按实际领域 decision 返回 `status`、`decision_version` 和匹配该次接受的 `relationship_id`，不能使用 Bundle 总版本代替领域 decision 版本。旧领域关系已不可用时返回空关系 ID 和 `BUDDY_RELATIONSHIP_UNAVAILABLE`，不会从新 slot 恢复旧关系。
 
@@ -1297,3 +1305,52 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 ## LightTick 共享行动计划
 
 新增 `/api/v1/lighttick/action-plans`、`/action-plans/{id}/operations`、执行记录、复盘及AI历史、日历、`/action-link-tickets` 和受信 `/grow-bridge`。正式账号公共登录鉴权；功能开关 `LIGHTTICK_ACTIONS_ENABLED=1`，未开启返回503。完整方法、字段、幂等、签名、接管恢复与错误语义见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+### LightTick 独立记录（Grow I1）
+
+注册 LightTick 成员以 Token 中的 app/user 归属访问，无需 goal/plan；游客仅在客户端暂存。记录不会自动进入 AI 上下文。
+
+| 方法 | Canonical 路径 | 结果 |
+|---|---|---|
+| GET | `/api/v1/lighttick/records` | `items,has_more,next_cursor`；q/date/archived=false,true,all/limit(1–200)/cursor；日期降序后按 ID 降序，游标固定 owner 与筛选 |
+| GET | `/api/v1/lighttick/records/{recordId}` | 当前记录，他人或未知 ID 为 404 |
+| PUT | `/api/v1/lighttick/records/{recordId}` | 客户端稳定 ID，base_version=0 创建；之后使用当前版本 |
+| GET | `/api/v1/lighttick/records/{recordId}/versions` | 含归档/恢复操作的不可变历史，版本倒序 |
+| POST | `/api/v1/lighttick/records/{recordId}/archive`、`/restore` | body: `{base_version}`，产生新版本 |
+| GET | `/api/v1/lighttick/records/export` | format_version=1、exported_at、records[{record,versions}]，含归档及全部历史 |
+
+PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_date 为真实 YYYY-MM-DD；prompt_kind 为 free/learning/difficulty/decision，guided_answers 可选（最多12项，每值2000字符），tags 可选（最多20项，每项50字符）。采用整理 adopted_summary 需提供 summary_basis_version（1至base_version）；本轮不生成 AI 整理。
+
+所有写请求必须携带 8–128 字符 Idempotency-Key；同键同请求返回原结果，不再增加版本或变化；同键更换正文、对象或操作返回 LIGHTTICK_IDEMPOTENCY_MISMATCH(409)。陈旧版本为 LIGHTTICK_VERSION_CONFLICT(409)，输入不得自动覆盖。写入、历史、请求结果与 sync change log 同事务；sync/pull 返回 entity_type=record 的完整快照，sync/push 仍仅承载已有任务事件。LightTick 应用删除覆盖新表、历史、操作及变化日志，其他产品保持原归属。无旧 Grow 数据迁移或账户自动合并。
+
+
+### Grow 独立记录交接（默认关闭）
+
+- `POST /api/v1/lighttick/record-link/tickets`：正式账户生成五分钟记录连接码；`GET /record-link/status` 返回该账户当前阶段。与 action-link 的计划授权分开。
+- `POST /api/v1/lighttick/record-bridge`：仅信任配置的 Grow 实例和服务端登录 subject。HMAC 签名覆盖实例、subject、秒级时间、nonce 和递归排序的紧凑 JSON；窗口 ±120 秒，nonce 入库防重放。原生端不能自行声明 Grow 身份。
+- 流程：preview → claim → stage（原生查询、同步和导出均不可见）→ 来源持久化写屏障和精确备份 → 签名 frozen 回执 → activate。binding、operation、快照 SHA256、目标 owner 必须一致；激活、历史和变更日志在同一个 owner 事务内提交。响应丢失使用相同操作和快照重试，不覆盖之后的新编辑。
+- `cancel` 仅允许 prepared/staged，取消确认后来源可恢复写入；active/readonly 禁止取消。已激活回退使用 `POST /record-link/readonly` 返回 `{phase, export}`：目标停止写入并导出最新完整状态，来源继续冻结，不能用交接前快照直接回写。
+- 交接包最大 4 MiB / 10000 条，包含所有归档记录、实际存在的版本、当前观察快照、AI 私人历史与安全的操作元数据。旧版未存下的版本须在 `source.missing_versions` 明列。原始结构保存在 owner-only `source_history`，完整导出一并返回；不会伪造缺失历史。凭据字段不得进入包。
+- 转入记录的 `source` 只由服务端写入；客户端编辑不得提交该字段。原文、日期、提问类型、回答、标签和已采用整理保持独立于目标。AI 历史在本阶段只读，桥接不能触发新 AI 生成。
+- 记录、版本、来源历史、stage 备份、连接码及绑定随 LightTick app-scoped 账户删除清理；原 Grow 只读备份的独立删除仍由 Grow 账户负责，删除目标不会重新开放旧来源。
+- 部署配置：Zook `LIGHTTICK_RECORD_HANDOFF_ENABLED=1`、`GROW_RECORDS_SOURCE_ID`、`GROW_RECORDS_BRIDGE_SECRET`（至少 32 字符）；Grow 使用相同来源 ID 和密钥，加 `LIGHTTICK_BRIDGE_URL`。只允许 HTTPS，localhost 合成验收可用 HTTP。密钥只留在服务端。未配置或网络错误时保持当前写入归属并保留输入。
+- 记录写入在 owner 锁内复核 ACTIVE user/membership，避免删除与在途写入交错后重建数据。桥接每次也在锁内复核正式账户访问资格。
+
+旧 Grow 历史版本未记录 `summary_basis_version` 时，不从最新记录推断旧依据；规范投影可省略该历史版本的整理字段，原始 `adopted_summary` 完整保存在 `source_history.private_history.versions`，被省略的版本号在 `private_history.normalization.summary_basis_missing_versions` 明列。当前观察快照使用其实际保存的依据。
+
+`/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`启用读取，另需显式 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 才开放写入、新连接码和 Grow v2 接管。行动POST须声明 `X-Grow-Action-Schema: 2`；默认关闭时仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED，旧版本始终拒写。原生消费者在本地候选适配，真机和生产发布另验。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+### LightTick：Grow 私有来源证明与可靠回执（C2）
+
+`POST /api/v1/lighttick/grow-bridge` 增加签名 source-context/source-confirmation/source-receipt/source-reconcile。仅已有 active 绑定和活跃注册会员可用；服务器生成的 article_read/lesson_completed 证明通过私有 outbox 投递，按不可变事件 ID/hash 去重，丢响应后查询/重放，running 结束后核对原事件完成。origin 证明保留原计划日期/时区；不复制正文/笔记。新增稳定错误 SOURCE_EVENT_CONFLICT、SOURCE_PROOF_INVALID、SOURCE_DELIVERY_UNAVAILABLE；详细字段、状态与恢复见 [共享行动协议](docs/public-lighttick-actions.md#c2-私有来源通道2026-10-21) 和唯一 OpenAPI 的 LightTickActionSource* schemas。
+
+默认不放行普通 action 写入、新配对或 v2 接管；2026-10-25 独立 v2 开关与消费者适配见行动协议当前接入节，生产尚未部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。
+
+### LightTick 行动接管快照 v2（默认关闭，显式启用）
+
+唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对默认关闭；显式 v2 开关启用后由三模式消费者接入，旧消费者仍拒写。私有切换协调、来源确认屏障、不可变备份与故障恢复已隔离验收；新增 LightTickActionHandoffReceipt 严格区分预检和导入回执，并将迁移事件接入既有 C2 完成核对。目标版本冲突用 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED 拒绝，pending 仅可对同一备份重预检；未恢复来源发布日志会阻断冻结。2026-10-25 已将同一内部服务接到显式启用的受信 bridge 预检/导入动作；默认门禁和旧客户端拒写仍保留。原生/真实双端与生产放行仍待完成，不能据内部通过迁移真实账号；最新证据见 docs/verification/lighttick-handoff-cutover/README.md。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
+
+
+### Grow 手机学习计划进度（本地候选）
+
+`GET /api/v1/lighttick/action-plans/learning-progress` 读取正式账号本人已绑定 Grow 来源的最近快照，无快照返回 `data.progress:null`。有快照包含来源修订/观察和接收时间、配置网页地址、正式计划及阶段的总课数/发布数/本人学完数/百分比；不含课程正文、笔记、反馈或模型输出。匿名与游客不能读取私人进度。源每30秒通过受信 `grow-bridge action=learning-progress` 检查并持久重试投递，绑定、修订、摘要及阶段数量必须匹配；不接受客户端自报完成数。协议、配置、H5分工与开关见 [行动协议当前接入](docs/public-lighttick-actions.md#2026-10-25-原生执行及学习计划进度)。

@@ -1,3 +1,4 @@
+import { existingInvitationRelationship } from "./buddy-invitation-presentation.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyInvitationDomainDecisionRecord } from "../../../shared/types.ts";
 
@@ -13,13 +14,15 @@ export async function invitationDomainPreview(database: ApplicationDatabase,
     const childId = bundle.domainInvitationIds[domain];
     const child = childId ? await database.findFrogSleepEntity(`${domain}_invite`, bundle.appId, childId) : undefined;
     const terminalChild = child && child.status !== "pending" ? child : undefined;
-    const status = effectiveStatus(bundle, decision, terminalChild?.status as Status | undefined);
+    const originalStatus = effectiveStatus(bundle, decision, terminalChild?.status as Status | undefined);
+    const connected = originalStatus === "pending" ? await existingInvitationRelationship(database, bundle, domain) : undefined;
+    const status = connected ? "accepted" : originalStatus;
     const canonical = decision && (decision.status !== "pending" || !terminalChild) && decision.terminalReason !== "legacy_aggregate";
     const pending = status === "pending";
     const actions = !pending ? [] : viewerUserId === bundle.inviterUserId ? ["cancel"] : ["accept", "decline"];
-    results.push({ domain, status, relationship_id: decision?.relationshipId ?? terminalChild?.relationshipId ?? null,
+    results.push({ domain, status, relationship_id: decision?.relationshipId ?? connected?.id ?? terminalChild?.relationshipId ?? null,
       decision_version: canonical ? decision.version : undefined, viewer_actions: actions,
-      error_code: canonical ? null : bundle.domainErrorCodes[domain] ?? null });
+      error_code: connected || canonical ? null : bundle.domainErrorCodes[domain] ?? null });
   }
   return results;
 }

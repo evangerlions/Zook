@@ -6,7 +6,21 @@
     "execution": null,
     "server_time": "2026-10-19T12:00:00.000Z",
     "workspace_version": 0,
-    "reminder_delivery": "native-foreground-and-calendar"
+    "reminder_delivery": "native-foreground-and-calendar",
+    "action_schema_version": 2,
+    "capabilities": {
+      "nullable_schedule": true,
+      "completion_modes": [
+        "time",
+        "content",
+        "check"
+      ],
+      "content_receipts": [],
+      "actual_fact_dates": true,
+      "connection_write_enabled": false,
+      "source_delivery_enabled": false,
+      "v2_import_enabled": false
+    }
   },
   "requestId": "action-contract-fixture"
 }

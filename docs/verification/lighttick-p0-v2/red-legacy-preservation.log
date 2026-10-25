@@ -1,0 +1,33 @@
+(node:58396) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ cross-midnight sessions, zero interruption, confirmation date and legacy read preservation (15.560584ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 186.935208
+
+✖ failing tests:
+
+test at test/unit/lighttick-action-p0-v2.test.ts:121:1
+✖ cross-midnight sessions, zero interruption, confirmation date and legacy read preservation (15.560584ms)
+  AssertionError [ERR_ASSERTION]: unrelated writes must not persist read-adapter fields into immutable legacy facts
+  + actual - expected
+
+  + '{"id":"execution-be7f437a4d88461ba59d509459b43a0a","plan_id":"action-e6adc2dcff0a4b9597f5cc3948e6d112","title":"P0 action","target":null,"started_at":"2026-10-19T15:58:00.000Z","ended_at":"2026-10-19T16:10:00.000Z","actual_minutes":12,"note":"","variant":"standard","planned_minutes":20,"timezone":"Asia/Shanghai","business_date":"2026-10-17","outcome":"partial","schema_version":1,"record_kind":"session","completion_mode":"time","completion_effect":"none","planned_date":"2026-10-17","date_basis":"legacy_planned"}'
+  - '{"id":"execution-be7f437a4d88461ba59d509459b43a0a","plan_id":"action-e6adc2dcff0a4b9597f5cc3948e6d112","title":"P0 action","target":null,"started_at":"2026-10-19T15:58:00.000Z","ended_at":"2026-10-19T16:10:00.000Z","actual_minutes":12,"note":"","variant":"standard","planned_minutes":20,"timezone":"Asia/Shanghai","business_date":"2026-10-17","outcome":"partial"}'
+
+      at TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:133:9)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '{"id":"execution-be7f437a4d88461ba59d509459b43a0a","plan_id":"action-e6adc2dcff0a4b9597f5cc3948e6d112","title":"P0 action","target":null,"started_at":"2026-10-19T15:58:00.000Z","ended_at":"2026-10-19T16:10:00.000Z","actual_minutes":12,"note":"","variant":"standard","planned_minutes":20,"timezone":"Asia/Shanghai","business_date":"2026-10-17","outcome":"partial","schema_version":1,"record_kind":"session","completion_mode":"time","completion_effect":"none","planned_date":"2026-10-17","date_basis":"legacy_planned"}',
+    expected: '{"id":"execution-be7f437a4d88461ba59d509459b43a0a","plan_id":"action-e6adc2dcff0a4b9597f5cc3948e6d112","title":"P0 action","target":null,"started_at":"2026-10-19T15:58:00.000Z","ended_at":"2026-10-19T16:10:00.000Z","actual_minutes":12,"note":"","variant":"standard","planned_minutes":20,"timezone":"Asia/Shanghai","business_date":"2026-10-17","outcome":"partial"}',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

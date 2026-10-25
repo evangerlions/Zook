@@ -1,0 +1,33 @@
+(node:54537) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ read-only receipt lookup and review preview never persist report recovery (17.366875ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 208.941042
+
+✖ failing tests:
+
+test at test/unit/lighttick-action-p0-v2.test.ts:148:1
+✖ read-only receipt lookup and review preview never persist report recovery (17.366875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + '{"appId":"lighttick","userId":"p0-owner","data":{"plans":[{"title":"P0 action","period":"day","horizon":"short","start_date":"2026-10-19","end_date":"2026-10-19","timezone":"Asia/Shanghai","parent_id":null,"target_minutes":null,"minimum_minutes":null,"estimated_minutes":null,"target_count":1,"at":null,"reminder":false,"reason":"","if_then":"","target":null,"completion_mode":"check","id":"action-6c6c47ba179940debda2bd51de015da8","schema_version":2,"revision":1,"status":"active","created_at":"2026-10-19T12:00:00.000Z","updated_at":"2026-10-19T12:00:00.000Z","reminder_at":null,"completed_at":null,"completion_record_id":null}],"records":[],"reviews":[],"reports":[{"id":"report-old-worker","state":"failed","created_at":"2026-10-19T11:00:00Z","error":"上次生成已中断，请主动重新生成。"}],"claims":{}},"version":2}'
+  - '{"appId":"lighttick","userId":"p0-owner","data":{"plans":[{"title":"P0 action","period":"day","horizon":"short","start_date":"2026-10-19","end_date":"2026-10-19","timezone":"Asia/Shanghai","parent_id":null,"target_minutes":null,"minimum_minutes":null,"estimated_minutes":null,"target_count":1,"at":null,"reminder":false,"reason":"","if_then":"","target":null,"completion_mode":"check","id":"action-6c6c47ba179940debda2bd51de015da8","schema_version":2,"revision":1,"status":"active","created_at":"2026-10-19T12:00:00.000Z","updated_at":"2026-10-19T12:00:00.000Z","reminder_at":null,"completed_at":null,"completion_record_id":null}],"records":[],"reviews":[],"reports":[{"id":"report-old-worker","state":"generating","created_at":"2026-10-19T11:00:00Z"}],"claims":{}},"version":1}'
+
+      at TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:154:9)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '{"appId":"lighttick","userId":"p0-owner","data":{"plans":[{"title":"P0 action","period":"day","horizon":"short","start_date":"2026-10-19","end_date":"2026-10-19","timezone":"Asia/Shanghai","parent_id":null,"target_minutes":null,"minimum_minutes":null,"estimated_minutes":null,"target_count":1,"at":null,"reminder":false,"reason":"","if_then":"","target":null,"completion_mode":"check","id":"action-6c6c47ba179940debda2bd51de015da8","schema_version":2,"revision":1,"status":"active","created_at":"2026-10-19T12:00:00.000Z","updated_at":"2026-10-19T12:00:00.000Z","reminder_at":null,"completed_at":null,"completion_record_id":null}],"records":[],"reviews":[],"reports":[{"id":"report-old-worker","state":"failed","created_at":"2026-10-19T11:00:00Z","error":"上次生成已中断，请主动重新生成。"}],"claims":{}},"version":2}',
+    expected: '{"appId":"lighttick","userId":"p0-owner","data":{"plans":[{"title":"P0 action","period":"day","horizon":"short","start_date":"2026-10-19","end_date":"2026-10-19","timezone":"Asia/Shanghai","parent_id":null,"target_minutes":null,"minimum_minutes":null,"estimated_minutes":null,"target_count":1,"at":null,"reminder":false,"reason":"","if_then":"","target":null,"completion_mode":"check","id":"action-6c6c47ba179940debda2bd51de015da8","schema_version":2,"revision":1,"status":"active","created_at":"2026-10-19T12:00:00.000Z","updated_at":"2026-10-19T12:00:00.000Z","reminder_at":null,"completed_at":null,"completion_record_id":null}],"records":[],"reviews":[],"reports":[{"id":"report-old-worker","state":"generating","created_at":"2026-10-19T11:00:00Z"}],"claims":{}},"version":1}',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,181 @@
+(node:50648) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ v2 nullable check fields and validation are atomic, with no fabricated time (2.441084ms)
+✖ time accumulates confirmed sessions, actual and planned dates stay distinct (13.289625ms)
+✖ interrupted threshold requires a zero-minute explicit completion, replayed atomically (1.1765ms)
+✖ check completion reversal preserves audit and counts the effective action once (0.187416ms)
+✖ running, stale versions, ancestor blocks and immutable fact configuration (1.602625ms)
+✖ content requires owner-scoped durable evidence and preserves a running timer (0.202792ms)
+✖ schedule deduplication, null bucket and conflicting reschedule do not overwrite (0.154875ms)
+✖ calendar and claims never fabricate a time or use a completion threshold for content (0.117584ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 0
+ℹ fail 8
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 187.921542
+
+✖ failing tests:
+
+test at test/unit/lighttick-action-p0-v2.test.ts:26:1
+✖ v2 nullable check fields and validation are atomic, with no fabricated time (2.441084ms)
+  Error [ApplicationError]: 当前共享行动首版仅支持计时计划；原网页日程保留，请勿转换后接管。
+      at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+      at fields (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:31:63)
+      at createPlans (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.commands.ts:5:10)
+      at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:30:24)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+      at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+      at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+      at async create (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:10:72)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:27:30) {
+    statusCode: 422,
+    code: 'REQ_FIELD_INVALID',
+    details: undefined,
+    headers: undefined
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:34:1
+✖ time accumulates confirmed sessions, actual and planned dates stay distinct (13.289625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'active'
+  - 'completed'
+
+      at TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:37:9)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'active',
+    expected: 'completed',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:45:1
+✖ interrupted threshold requires a zero-minute explicit completion, replayed atomically (1.1765ms)
+  Error [ApplicationError]: 操作类型无效。
+      at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+      at mutatePlan (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.commands.ts:44:9)
+      at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:31:69)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+      at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+      at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:49:15)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    statusCode: 422,
+    code: 'REQ_FIELD_INVALID',
+    details: undefined,
+    headers: undefined
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:54:1
+✖ check completion reversal preserves audit and counts the effective action once (0.187416ms)
+  Error [ApplicationError]: 当前共享行动首版仅支持计时计划；原网页日程保留，请勿转换后接管。
+      at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+      at fields (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:31:63)
+      at createPlans (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.commands.ts:5:10)
+      at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:30:24)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+      at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+      at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+      at async create (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:10:72)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:55:34) {
+    statusCode: 422,
+    code: 'REQ_FIELD_INVALID',
+    details: undefined,
+    headers: undefined
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:61:1
+✖ running, stale versions, ancestor blocks and immutable fact configuration (1.602625ms)
+  AssertionError [ERR_ASSERTION]: The validation function is expected to return "true". Received false
+
+  Caught error:
+
+  ApplicationError: 另一页面已更新计划，请刷新核对；你的输入仍保留。
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:64:2)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: ApplicationError: 另一页面已更新计划，请刷新核对；你的输入仍保留。
+        at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+        at mutatePlan (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.commands.ts:15:80)
+        at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:31:69)
+        at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+        at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+        at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+        at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+        at async waitForActual (node:assert:621:5)
+        at async strict.rejects (node:assert:744:25)
+        at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:64:2),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:73:1
+✖ content requires owner-scoped durable evidence and preserves a running timer (0.202792ms)
+  Error [ApplicationError]: 当前共享行动首版仅支持计时计划；原网页日程保留，请勿转换后接管。
+      at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+      at fields (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:31:63)
+      at createPlans (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.commands.ts:5:10)
+      at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:30:24)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+      at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+      at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+      at async create (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:10:72)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:74:70) {
+    statusCode: 422,
+    code: 'REQ_FIELD_INVALID',
+    details: undefined,
+    headers: undefined
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:83:1
+✖ schedule deduplication, null bucket and conflicting reschedule do not overwrite (0.154875ms)
+  Error [ApplicationError]: 行动接口不存在。
+      at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+      at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:37:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+      at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+      at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:86:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    statusCode: 404,
+    code: 'LIGHTTICK_RESOURCE_NOT_FOUND',
+    details: undefined,
+    headers: undefined
+  }
+
+test at test/unit/lighttick-action-p0-v2.test.ts:92:1
+✖ calendar and claims never fabricate a time or use a completion threshold for content (0.117584ms)
+  Error [ApplicationError]: 当前共享行动首版仅支持计时计划；原网页日程保留，请勿转换后接管。
+      at reject (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:4:66)
+      at fields (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.validation.ts:31:63)
+      at createPlans (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.commands.ts:5:10)
+      at <anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:30:24)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async InMemoryLightTickRepository.runTransaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:65:18)
+      at async InMemoryLightTickRepository.transaction (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/testing/in-memory-lighttick-repository.ts:54:18)
+      at async ActionService.request (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/src/modules/lighttick/actions/action.service.ts:14:15)
+      at async create (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:10:72)
+      at async TestContext.<anonymous> (/Users/hao/Documents/project/Zook/.worktrees/lighttick-p0-v2-backend/test/unit/lighttick-action-p0-v2.test.ts:93:30) {
+    statusCode: 422,
+    code: 'REQ_FIELD_INVALID',
+    details: undefined,
+    headers: undefined
+  }

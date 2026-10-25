@@ -1,0 +1,38 @@
+{
+  "scope": "P0 C2; no native changes or public write enablement",
+  "zook_unit": {
+    "pass": 1500,
+    "fail": 0,
+    "skip": 0
+  },
+  "source_contract_runtime_gate": {
+    "pass": 4,
+    "fail": 0,
+    "skip": 0
+  },
+  "postgres_regression": {
+    "compound_tests": 1,
+    "pass": 1
+  },
+  "openapi": {
+    "generate": "pass",
+    "check": "pass",
+    "lint_errors": 0,
+    "lint_warnings": 212
+  },
+  "source_line_gate": {
+    "status": "failed_existing_baseline",
+    "files": 8
+  },
+  "grow_commit": "110d36d",
+  "grow_original_regression": {
+    "pass": 139,
+    "fail": 0,
+    "skip": 0
+  },
+  "grow_source_acceptance": {
+    "pass": 12,
+    "fail": 0,
+    "skip": 0
+  }
+}

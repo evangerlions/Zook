@@ -79,6 +79,9 @@ export async function runPostgresMigrations(options: {
 
   try {
     await client.connect();
+    // Serialize idempotent DDL replays across concurrent API/worker starts. The dedicated
+    // connection holds this session lock through per-file COMMITs; end() releases it even on failure.
+    await client.query("SELECT pg_advisory_lock(hashtext('zook'), hashtext('schema-migrations'))");
     await ensureMigrationTable(client);
 
     for (const fileName of migrationFiles) {

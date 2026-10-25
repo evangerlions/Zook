@@ -1,3 +1,4 @@
+import { existingInvitationRelationship } from "./buddy-invitation-presentation.ts";
 import { assertInvitationSlotsAvailable } from "./buddy-invitation-slot-compatibility.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepBuddyDomainRelationshipRecord, FrogSleepBuddyInvitationBundleRecord,
@@ -49,11 +50,12 @@ export class BuddyDomainInvitationCommandService {
       conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
     }
     const relationship = await this.createIndependentRelationship(bundle, domain);
+    const updatedAt = new Date().toISOString();
     const accepted = await this.database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({
       appId: FROGSLEEP_APP_ID, invitationId, domain, expectedVersion: decision.version, status: "accepted",
       decidedByUserId: actorUserId, decidedAt: relationship.createdAt,
       idempotencyKeyHash: sha256(input.idempotencyKey), relationshipId: relationship.id,
-      updatedAt: relationship.createdAt,
+      updatedAt,
     });
     if (!accepted) conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
     await bindInvitationRecipient(this.database, bundle);
@@ -64,6 +66,8 @@ export class BuddyDomainInvitationCommandService {
   }
 
   private async createIndependentRelationship(bundle: FrogSleepBuddyInvitationBundleRecord, domain: Domain) {
+    const existing = await existingInvitationRelationship(this.database, bundle, domain);
+    if (existing) return existing;
     const slots = await this.availableSlots(bundle, domain);
     const relationship = this.relationship(bundle, domain);
     await this.database.insertFrogSleepBuddyDomainRelationship(relationship);

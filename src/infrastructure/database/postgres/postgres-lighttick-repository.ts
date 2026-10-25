@@ -1,3 +1,8 @@
+import {mapRow,timestampString} from "./postgres-lighttick-row-mappers.ts";
+import {readLightTickOperationalSummary} from "./postgres-lighttick-admin-summary.ts";
+import { PostgresRecordTransferStore } from "./postgres-lighttick-record-transfer-store.ts";
+import { PostgresRecordStore } from "./postgres-lighttick-record-store.ts";
+import type { LightTickRecordRow, RecordQuery } from "../../../modules/lighttick/lighttick-record.service.ts";
 import {PostgresActionStore} from './postgres-lighttick-action-store.ts';
 import {PostgresPlanningStore} from './postgres-lighttick-planning-store.ts';
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
@@ -15,28 +20,6 @@ import { ApplicationError } from "../../../shared/errors.ts";
 type QueryResult = { rows: Record<string, unknown>[]; rowCount?: number | null };
 type QueryClient = { query(sql: string, values?: unknown[]): Promise<QueryResult>; release?(): void };
 type Connector = QueryClient & { connect(): Promise<QueryClient> };
-function snakeToCamel(key: string): string {
-  return key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
-}
-
-function mapRow<T>(row: Record<string, unknown>): T {
-  const mapped = Object.fromEntries(Object.entries(row).map(([key, value]) => [
-    snakeToCamel(key), value instanceof Date ? value.toISOString() : value,
-  ]));
-  // pg decodes PostgreSQL DATE as local midnight, not an instant in UTC.
-  for (const key of ["period_start", "period_end", "target_date"]) {
-    const value = row[key];
-    if (value instanceof Date) mapped[snakeToCamel(key)] =
-      `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-    else if (typeof value === "string") mapped[snakeToCamel(key)] = value.slice(0, 10);
-  }
-  if (row.scheduled_business_date) mapped.scheduledFor = String(row.scheduled_business_date);
-  delete mapped.scheduledBusinessDate;
-  return mapped as T;
-}
-function timestampString(value: unknown): string {
-  return value instanceof Date ? value.toISOString() : String(value);
-}
 function versionConflict(resourceId: string): never {
   throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.", { resourceId });
 }
@@ -49,6 +32,15 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
   }
 
+  private readonly recordTransferStore=new PostgresRecordTransferStore((sql,values)=>this.query(sql,values));
+  lockRecordSource=this.recordTransferStore.lockRecordSource.bind(this.recordTransferStore);
+  getRecordTransfer=this.recordTransferStore.getRecordTransfer.bind(this.recordTransferStore);
+  getOwnerRecordTransfer=this.recordTransferStore.getOwnerRecordTransfer.bind(this.recordTransferStore);
+  saveRecordTransfer=this.recordTransferStore.saveRecordTransfer.bind(this.recordTransferStore);
+  getRecordTransferTicket=this.recordTransferStore.getRecordTransferTicket.bind(this.recordTransferStore);
+  saveRecordTransferTicket=this.recordTransferStore.saveRecordTransferTicket.bind(this.recordTransferStore);
+  importRecord=this.recordTransferStore.importRecord.bind(this.recordTransferStore);
+  recordSourceHistory=this.recordTransferStore.recordSourceHistory.bind(this.recordTransferStore);
   private readonly actionStore=new PostgresActionStore((sql,values)=>this.query(sql,values));
   lockActionOwner=this.actionStore.lockActionOwner.bind(this.actionStore);
   getActionWorkspace=this.actionStore.getActionWorkspace.bind(this.actionStore);
@@ -58,6 +50,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
   getActionLink=this.actionStore.getActionLink.bind(this.actionStore);
   getOwnerActionLink=this.actionStore.getOwnerActionLink.bind(this.actionStore);
   saveActionLink=this.actionStore.saveActionLink.bind(this.actionStore);
+  async lockRecordOwner(owner: LightTickOwner) {
+    await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`records:${owner.appId}:${owner.userId}`]);
+  }
+  private recordStore() { return new PostgresRecordStore(this.query.bind(this)); }
+  async getRecord(owner: LightTickOwner, id: string) { return this.recordStore().getRecord(owner, id); }
+  async listRecords(owner: LightTickOwner, query?: RecordQuery) { return this.recordStore().listRecords(owner, query); }
+  async recordVersions(owner: LightTickOwner, id: string) { return this.recordStore().recordVersions(owner, id); }
+  async saveRecord(row: LightTickRecordRow, baseVersion: number) {
+    return this.transaction(row, () => this.recordStore().saveRecord(row, baseVersion));
+  }
   async lockPlanningOwner(owner: LightTickOwner) {
     await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`planning:${owner.appId}:${owner.userId}`]);
     // Existing non-session mutations lock these same rows on write.
@@ -564,35 +566,15 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+    const tables = ["record_source_history","record_transfers","record_tickets","record_versions","records","action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
+      await this.lockRecordOwner(owner);
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1
         AND (guest_user_id=$2 OR target_user_id=$2)`, [owner.appId,owner.userId]);
       for (const suffix of tables) await this.query(`DELETE FROM zook_lighttick_${suffix} WHERE app_id=$1 AND user_id=$2`, [owner.appId,owner.userId]);
     });
   }
-  async getAdminOperationalSummary(): Promise<Record<string, number>> {
-    const result = await this.query(`SELECT
-      (SELECT COUNT(*) FROM zook_lighttick_profiles WHERE app_id='lighttick') AS profiles,
-      (SELECT COUNT(*) FROM zook_lighttick_profiles WHERE app_id='lighttick' AND onboarding_state='completed') AS onboarding_completed,
-      (SELECT COUNT(*) FROM zook_lighttick_goals WHERE app_id='lighttick') AS goals,
-      (SELECT COUNT(*) FROM zook_lighttick_plan_cycles WHERE app_id='lighttick') AS plans,
-      (SELECT COUNT(*) FROM zook_lighttick_execution_events WHERE app_id='lighttick' AND event_type='plan_confirmed') AS plan_confirmations,
-      (SELECT COUNT(*) FROM zook_lighttick_tasks WHERE app_id='lighttick') AS tasks,
-      (SELECT COUNT(*) FROM zook_lighttick_execution_events WHERE app_id='lighttick' AND aggregate_type='task' AND event_type LIKE 'task_%') AS task_actions,
-      (SELECT COUNT(*) FROM zook_lighttick_reviews WHERE app_id='lighttick') AS reviews,
-      (SELECT COUNT(*) FROM zook_lighttick_change_proposals WHERE app_id='lighttick' AND status='pending') AS pending_proposals,
-      (SELECT COUNT(*) FROM zook_lighttick_change_proposals WHERE app_id='lighttick' AND status='accepted') AS proposals_accepted,
-      (SELECT COUNT(*) FROM zook_lighttick_ai_runs WHERE app_id='lighttick') AS ai_runs,
-      (SELECT COUNT(*) FROM zook_lighttick_ai_runs WHERE app_id='lighttick' AND status='failed') AS ai_failures,
-      (SELECT COUNT(*) FROM zook_lighttick_ai_runs WHERE app_id='lighttick' AND error_code='LIGHTTICK_AI_RUN_FAILED') AS ai_schema_failures,
-      (SELECT COALESCE(ROUND(AVG(latency_ms)),0) FROM zook_lighttick_ai_runs WHERE app_id='lighttick' AND latency_ms IS NOT NULL) AS ai_average_latency_ms,
-      (SELECT COALESCE(SUM((usage->>'totalTokens')::BIGINT),0) FROM zook_lighttick_ai_runs WHERE app_id='lighttick') AS ai_total_tokens,
-      (SELECT COUNT(*) FROM zook_lighttick_operations WHERE app_id='lighttick' AND status='conflict') AS sync_conflicts,
-      (SELECT COUNT(*) FROM zook_lighttick_operations WHERE app_id='lighttick' AND entity_type='notification' AND status<>'accepted') AS notification_failures,
-      (SELECT COUNT(*) FROM zook_lighttick_devices WHERE app_id='lighttick' AND active=TRUE) AS active_devices`);
-    return Object.fromEntries(Object.entries(result.rows[0] ?? {}).map(([key, value]) => [key, Number(value)]));
-  }
+  async getAdminOperationalSummary():Promise<Record<string,number>> {return readLightTickOperationalSummary((sql,values=[])=>this.query(sql,values));}
 }
