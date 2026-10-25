@@ -10,7 +10,7 @@ test('private scope preserves source ownership, optimistic versions and durable 
  const lesson={id:'lesson-private',collection_id:'yingyu',collection_title:'English',number:1,title:'Read',content:'Read',references:'',learning_state:'unknown',source_url:'https://grow.example/',content_version:digest({content:'Read',references:''})};
  const library={action:'learning-library',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:'2026-10-25T12:00:00Z',consent_enabled:true,lessons:[lesson]};await receiveLibrary(a,link,library);
  assert.equal((await privateLearning(a,link,lesson.id)).enabled,false);
- const state={id:lesson.id,content_version:lesson.content_version,draft_version:lesson.content_version,revision:1,notes:'From H5',answers:[{id:'exercise:1',prompt:'Why?',answer:'Because'}],completed:false,completed_at:null,position:2,updated_at:'2026-10-25T12:00:00Z'};
+ const state={id:lesson.id,content_version:lesson.content_version,draft_version:lesson.content_version,revision:1,notes:'From H5',answers:[{id:'exercise:1',prompt:'Why?',answer:'Because'}],questions:[{id:'exercise:1',prompt:'Why?',answer:''}],completed:false,completed_at:null,position:2,updated_at:'2026-10-25T12:00:00Z'};
  const exchange={action:'learning-private',action_schema_version:2,binding_id:link.binding_id,source_revision:1,enabled:true,lessons:[state],results:[]};await exchangePrivate(a,link,exchange);
  const command={id:'request-private-1',content_version:lesson.content_version,revision:1,action:'save',notes:'On phone',answers:state.answers,position:3};
  const queued=await privateLearning(a,link,lesson.id,command);assert.equal(queued.state.notes,'From H5');assert.equal(queued.operations[0].status,'pending');

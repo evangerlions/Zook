@@ -435,6 +435,7 @@ data class LightTickLearningPrivateState(
     val completed_at: String? = null,
     val position: Int,
     val updated_at: String,
+    val questions: List<LightTickLearningAnswer>,
 )
 data class LightTickLearningPrivateOperation(
     val id: String,

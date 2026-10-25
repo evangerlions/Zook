@@ -16703,7 +16703,8 @@ export const LightTickLearningPrivateEnvelopeSchema = {
                 "completed",
                 "completed_at",
                 "position",
-                "updated_at"
+                "updated_at",
+                "questions"
               ],
               "properties": {
                 "id": {
@@ -16772,6 +16773,34 @@ export const LightTickLearningPrivateEnvelopeSchema = {
                 "updated_at": {
                   "type": "string",
                   "format": "date-time"
+                },
+                "questions": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "prompt",
+                      "answer"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "answer": {
+                        "type": "string",
+                        "maxLength": 10000
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -16844,6 +16873,13 @@ export type LightTickLearningPrivateEnvelope = {
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 ) | unknown;
   "operations": (
@@ -18421,7 +18457,8 @@ export const LightTickGrowBridgeRequestSchema = {
               "completed",
               "completed_at",
               "position",
-              "updated_at"
+              "updated_at",
+              "questions"
             ],
             "properties": {
               "id": {
@@ -18490,6 +18527,34 @@ export const LightTickGrowBridgeRequestSchema = {
               "updated_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "questions": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "prompt",
+                    "answer"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "answer": {
+                      "type": "string",
+                      "maxLength": 10000
+                    }
+                  }
+                }
               }
             }
           }
@@ -20020,6 +20085,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -20177,6 +20249,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -20334,6 +20413,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -20491,6 +20577,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -20648,6 +20741,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -20805,6 +20905,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -20962,6 +21069,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -21119,6 +21233,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];
@@ -21276,6 +21397,13 @@ export type LightTickGrowBridgeRequest = (
   "completed_at": string | null;
   "position": number;
   "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
 }
 )
 )[];

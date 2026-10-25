@@ -593,6 +593,7 @@ public struct LightTickLearningPrivateState: Codable, Equatable, Sendable, Ident
     public var completed_at: String?
     public var position: Int
     public var updated_at: String
+    public var questions: [LightTickLearningAnswer]
 }
 public struct LightTickLearningPrivateOperation: Codable, Equatable, Sendable, Identifiable {
     public var id: String

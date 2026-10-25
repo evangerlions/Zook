@@ -9,12 +9,12 @@ function answers(value:unknown){
  return value.map(v=>{const a=object(v);keys(a,['id','prompt','answer']);const id=text(a.id,500,true),prompt=text(a.prompt,1000),answer=text(a.answer,10000);size+=answer.length;if(ids.has(id)||size>60000)reject(422,'Invalid answers.');ids.add(id);return {id,prompt,answer};});
 }
 function snapshot(value:unknown):Json {
- const s=object(value);keys(s,['id','content_version','draft_version','revision','notes','answers','completed','completed_at','position','updated_at']);
+ const s=object(value);keys(s,['id','content_version','draft_version','revision','notes','answers','questions','completed','completed_at','position','updated_at']);
  if(typeof s.completed!=='boolean')reject(422,'Explicit completion state required.');
  const id=text(s.id,80,true),content_version=text(s.content_version,64,true),updated_at=text(s.updated_at,80,true);
  if(!/^[a-f0-9]{64}$/.test(s.draft_version)||!/^lesson-[a-z0-9-]+$/.test(id)||!/^([a-f0-9]{64})$/.test(content_version)||!Number.isFinite(Date.parse(updated_at)))reject(422,'Invalid private lesson version.');
  const completed_at=s.completed_at===null?null:text(s.completed_at,80,true);if(completed_at!==null&&!Number.isFinite(Date.parse(completed_at)))reject(422,'Invalid completion timestamp.');
- return {id,content_version,draft_version:text(s.draft_version,64,true),revision:integer(s.revision,1,2147483647),notes:text(s.notes,10000),answers:answers(s.answers),completed:s.completed,completed_at,position:integer(s.position,0,100000),updated_at};
+ return {id,content_version,draft_version:text(s.draft_version,64,true),revision:integer(s.revision,1,2147483647),notes:text(s.notes,10000),answers:answers(s.answers),questions:answers(s.questions),completed:s.completed,completed_at,position:integer(s.position,0,100000),updated_at};
 }
 async function scope(actions:ActionService,owner:LightTickOwner){
  const link=await actions.repository.getOwnerActionLink(owner),library=await actions.repository.getLearningLibrary(owner);

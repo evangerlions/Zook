@@ -9098,6 +9098,7 @@ components:
       - completed_at
       - position
       - updated_at
+      - questions
       properties:
         id:
           type: string
@@ -9133,6 +9134,11 @@ components:
         updated_at:
           type: string
           format: date-time
+        questions:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickLearningAnswer'
     LightTickLearningPrivateOperation:
       type: object
       additionalProperties: false
