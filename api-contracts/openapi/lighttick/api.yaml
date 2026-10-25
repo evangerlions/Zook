@@ -9176,7 +9176,7 @@ components:
           - type: 'null'
         operations:
           type: array
-          maxItems: 20
+          maxItems: 1000
           items:
             $ref: '#/components/schemas/LightTickLearningPrivateOperation'
     LightTickLearningPrivateCommand:

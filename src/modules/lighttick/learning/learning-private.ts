@@ -57,10 +57,11 @@ export async function privateLearning(actions:ActionService,owner:LightTickOwner
    if(old){if(old.hash!==hash)reject(409,'Request identity was reused.');}
    else {
     if(input.content_version!==lesson!.content_version||row!.lessons.find((l:Json)=>l.id===id)?.revision!==input.revision)reject(409,'Private state changed. Keep local input and compare the source.','REVISION_CONFLICT');
+    if(row!.requests.filter((r:Json)=>r.status==='pending').length>=20)reject(413,'Too many private commands are awaiting the source.');
     if(row!.requests.length>=1000)reject(413,'Private command history is at capacity.');
-    row!.requests.push({id:key,lesson_id:id,hash,status:'pending',error:'',body:input});await actions.repository.saveLearningPrivate(owner,row!);
+    row!.requests.push({id:key,lesson_id:id,hash,status:'pending',error:'',body:input});if(Buffer.byteLength(JSON.stringify(row))>12*1024*1024)reject(413,'Private workspace capacity exceeded.');await actions.repository.saveLearningPrivate(owner,row!);
    }
   }
-  return {enabled,state:enabled?row!.lessons.find((l:Json)=>l.id===id)??null:null,operations:enabled?row!.requests.filter((r:Json)=>r.lesson_id===id).slice(-20).map(({id,status,error}:Json)=>({id,status,error})):[]};
+  return {enabled,state:enabled?row!.lessons.find((l:Json)=>l.id===id)??null:null,operations:enabled?row!.requests.filter((r:Json)=>r.lesson_id===id).map(({id,status,error}:Json)=>({id,status,error})):[]};
  });
 }

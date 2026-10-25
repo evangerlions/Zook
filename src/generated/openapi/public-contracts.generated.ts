@@ -16811,7 +16811,7 @@ export const LightTickLearningPrivateEnvelopeSchema = {
         },
         "operations": {
           "type": "array",
-          "maxItems": 20,
+          "maxItems": 1000,
           "items": {
             "type": "object",
             "additionalProperties": false,

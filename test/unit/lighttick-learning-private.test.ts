@@ -19,6 +19,8 @@ test('private scope preserves source ownership, optimistic versions and durable 
  await exchangePrivate(a,link,{...exchange,source_revision:2,lessons:[{...state,revision:2,notes:'On phone'}],results:[{id:command.id,status:'applied',error:''}]});
  const accepted=await privateLearning(a,link,lesson.id,command);assert.equal(accepted.state.notes,'On phone');assert.equal(accepted.operations[0].status,'applied');
  await assert.rejects(privateLearning(a,link,lesson.id,{...command,id:'request-private-2'}));await assert.rejects(privateLearning(a,{appId:'lighttick',userId:'bob'},lesson.id));
+ const stored=(await repo.getLearningPrivate(link))!;for(let i=0;i<25;i++)stored.requests.push({id:'old-operation-'+i,lesson_id:lesson.id,hash:'synthetic',status:'applied',error:''});await repo.saveLearningPrivate(link,stored);assert.ok((await privateLearning(a,link,lesson.id)).operations.some((r:any)=>r.id===command.id),'offline devices must still recover old receipts');
+ for(let i=0;i<20;i++)await privateLearning(a,link,lesson.id,{...command,id:'queued-operation-'+i,revision:2});await assert.rejects(privateLearning(a,link,lesson.id,{...command,id:'queued-over-capacity',revision:2}));
  assert.equal((await a.readWorkspace(link)).data.records.length,0);
  await receiveLibrary(a,link,{...library,source_revision:2,consent_enabled:false,lessons:[]});await assert.rejects(privateLearning(a,link,lesson.id));assert.equal((await repo.getLearningPrivate(link))!.lessons.length,0);
  await repo.deleteOwnerData(link);assert.equal(await repo.getLearningPrivate(link),undefined);
