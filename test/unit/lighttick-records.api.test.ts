@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { buildDefaultSeed } from '../../src/infrastructure/database/prisma/default-seed.ts';
+import { createApplication } from '../support/create-test-application.ts';
+
+test('independent records: ownership, retry, CAS, versions, archive, export and change log', async () => {
+ const seed=buildDefaultSeed(undefined,{includeLightTick:true});
+ for (const userId of ['user_alice','user_bob']) seed.appUsers.push({id:'records-'+userId,appId:'lighttick',userId,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
+ const app=await createApplication({seed,lighttickEnabled:true});
+ const call=async(method:string,path:string,body?:unknown,key='records-create-001',user='user_alice',query?:Record<string,string>)=>app.app.handle({method,path:'/api/v1/lighttick/'+path,body,query,headers:{authorization:'Bearer '+app.services.tokenService.issueAccessToken(user,'lighttick'),'x-app-id':'lighttick','idempotency-key':key}} as any);
+ const input={raw_text:'今天有了一个想法',record_date:'2026-10-19',prompt_kind:'free',guided_answers:{},tags:[],base_version:0};
+ const first=await call('PUT','records/record-test-001',input); assert.equal(first.statusCode,200,JSON.stringify(first.body));assert.equal(first.body.data.version,1);
+ assert.deepEqual((await call('PUT','records/record-test-001',input)).body.data,first.body.data);
+ assert.equal((await call('PUT','records/record-test-001',{...input,raw_text:'改动'})).statusCode,409);
+ assert.equal((await call('PUT','records/record-test-002',input)).statusCode,409);
+ assert.equal((await call('PUT','records/record-test-001',{...input,raw_text:'新版本',base_version:1},'records-update-001')).body.data.version,2);
+ assert.equal((await call('PUT','records/record-test-001',{...input,base_version:1},'records-stale-001')).statusCode,409);
+ assert.equal((await call('GET','records/record-test-001',undefined,undefined,'user_bob')).statusCode,404);
+ assert.equal((await call('GET','records/record-test-001/versions')).body.data.items.length,2);
+ assert.equal((await call('POST','records/record-test-001/archive',{base_version:2},'records-archive-001')).body.data.version,3);
+ assert.equal((await call('GET','records')).body.data.items.length,0);
+ assert.equal((await call('GET','records',undefined,undefined,undefined,{archived:'true'})).body.data.items.length,1);
+ assert.equal((await call('POST','records/record-test-001/restore',{base_version:3},'records-restore-001')).body.data.version,4);
+ const exported=await call('GET','records/export');assert.equal(exported.body.data.records[0].versions.length,4);
+ const changes=(await call('GET','sync/pull')).body.data.changes.filter((x:any)=>x.entity_type==='record');assert.equal(changes.length,4);
+ assert.equal((await call('GET','goals')).body.data.items.length,0);
+ assert.equal((await call('PUT','records/record-test-003',{...input,record_date:'2026-02-30'},'records-invalid-001')).statusCode,400);
+ assert.equal((await call('PUT','records/record-test-003',{...input,record_date:'0000-01-01'},'records-invalid-year')).statusCode,400);
+ assert.equal((await call('PUT','records/record-test-003',{...input,raw_text:'x'.repeat(10001)},'records-invalid-002')).statusCode,400);
+});

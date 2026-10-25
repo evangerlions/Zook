@@ -286,3 +286,23 @@ data class LightTickActionExecution(
     val actual_minutes: Int, val outcome: String, val note: String, val business_date: String, val planned_minutes: Int,
 )
 data class LightTickActionWorkspace(val plans: List<LightTickActionPlan>, val execution: LightTickActionExecution?, val server_time: String, val workspace_version: Int)
+
+// Independent records: dates are calendar dates, versions protect every mutation.
+data class LightTickRecordSource(val instance:String,val id:String,val imported_at:String,val missing_versions:List<Int>)
+data class LightTickRecord(
+    val id: String,
+    val raw_text: String,
+    val record_date: String,
+    val prompt_kind: String = "free",
+    val guided_answers: Map<String, String> = emptyMap(),
+    val tags: List<String> = emptyList(),
+    val adopted_summary: String? = null,
+    val summary_basis_version: Int? = null,
+    val archived_at: String? = null,
+    val version: Int,
+    val created_at: String,
+    val updated_at: String,
+    val source:LightTickRecordSource? = null
+)
+data class LightTickRecordPage(val items: List<LightTickRecord>, val has_more: Boolean, val next_cursor: String? = null)
+data class LightTickRecordVersions(val items: List<LightTickRecord>)

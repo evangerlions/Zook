@@ -1305,3 +1305,35 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 ## LightTick 共享行动计划
 
 新增 `/api/v1/lighttick/action-plans`、`/action-plans/{id}/operations`、执行记录、复盘及AI历史、日历、`/action-link-tickets` 和受信 `/grow-bridge`。正式账号公共登录鉴权；功能开关 `LIGHTTICK_ACTIONS_ENABLED=1`，未开启返回503。完整方法、字段、幂等、签名、接管恢复与错误语义见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+### LightTick 独立记录（Grow I1）
+
+注册 LightTick 成员以 Token 中的 app/user 归属访问，无需 goal/plan；游客仅在客户端暂存。记录不会自动进入 AI 上下文。
+
+| 方法 | Canonical 路径 | 结果 |
+|---|---|---|
+| GET | `/api/v1/lighttick/records` | `items,has_more,next_cursor`；q/date/archived=false,true,all/limit(1–200)/cursor；日期降序后按 ID 降序，游标固定 owner 与筛选 |
+| GET | `/api/v1/lighttick/records/{recordId}` | 当前记录，他人或未知 ID 为 404 |
+| PUT | `/api/v1/lighttick/records/{recordId}` | 客户端稳定 ID，base_version=0 创建；之后使用当前版本 |
+| GET | `/api/v1/lighttick/records/{recordId}/versions` | 含归档/恢复操作的不可变历史，版本倒序 |
+| POST | `/api/v1/lighttick/records/{recordId}/archive`、`/restore` | body: `{base_version}`，产生新版本 |
+| GET | `/api/v1/lighttick/records/export` | format_version=1、exported_at、records[{record,versions}]，含归档及全部历史 |
+
+PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_date 为真实 YYYY-MM-DD；prompt_kind 为 free/learning/difficulty/decision，guided_answers 可选（最多12项，每值2000字符），tags 可选（最多20项，每项50字符）。采用整理 adopted_summary 需提供 summary_basis_version（1至base_version）；本轮不生成 AI 整理。
+
+所有写请求必须携带 8–128 字符 Idempotency-Key；同键同请求返回原结果，不再增加版本或变化；同键更换正文、对象或操作返回 LIGHTTICK_IDEMPOTENCY_MISMATCH(409)。陈旧版本为 LIGHTTICK_VERSION_CONFLICT(409)，输入不得自动覆盖。写入、历史、请求结果与 sync change log 同事务；sync/pull 返回 entity_type=record 的完整快照，sync/push 仍仅承载已有任务事件。LightTick 应用删除覆盖新表、历史、操作及变化日志，其他产品保持原归属。无旧 Grow 数据迁移或账户自动合并。
+
+
+### Grow 独立记录交接（默认关闭）
+
+- `POST /api/v1/lighttick/record-link/tickets`：正式账户生成五分钟记录连接码；`GET /record-link/status` 返回该账户当前阶段。与 action-link 的计划授权分开。
+- `POST /api/v1/lighttick/record-bridge`：仅信任配置的 Grow 实例和服务端登录 subject。HMAC 签名覆盖实例、subject、秒级时间、nonce 和递归排序的紧凑 JSON；窗口 ±120 秒，nonce 入库防重放。原生端不能自行声明 Grow 身份。
+- 流程：preview → claim → stage（原生查询、同步和导出均不可见）→ 来源持久化写屏障和精确备份 → 签名 frozen 回执 → activate。binding、operation、快照 SHA256、目标 owner 必须一致；激活、历史和变更日志在同一个 owner 事务内提交。响应丢失使用相同操作和快照重试，不覆盖之后的新编辑。
+- `cancel` 仅允许 prepared/staged，取消确认后来源可恢复写入；active/readonly 禁止取消。已激活回退使用 `POST /record-link/readonly` 返回 `{phase, export}`：目标停止写入并导出最新完整状态，来源继续冻结，不能用交接前快照直接回写。
+- 交接包最大 4 MiB / 10000 条，包含所有归档记录、实际存在的版本、当前观察快照、AI 私人历史与安全的操作元数据。旧版未存下的版本须在 `source.missing_versions` 明列。原始结构保存在 owner-only `source_history`，完整导出一并返回；不会伪造缺失历史。凭据字段不得进入包。
+- 转入记录的 `source` 只由服务端写入；客户端编辑不得提交该字段。原文、日期、提问类型、回答、标签和已采用整理保持独立于目标。AI 历史在本阶段只读，桥接不能触发新 AI 生成。
+- 记录、版本、来源历史、stage 备份、连接码及绑定随 LightTick app-scoped 账户删除清理；原 Grow 只读备份的独立删除仍由 Grow 账户负责，删除目标不会重新开放旧来源。
+- 部署配置：Zook `LIGHTTICK_RECORD_HANDOFF_ENABLED=1`、`GROW_RECORDS_SOURCE_ID`、`GROW_RECORDS_BRIDGE_SECRET`（至少 32 字符）；Grow 使用相同来源 ID 和密钥，加 `LIGHTTICK_BRIDGE_URL`。只允许 HTTPS，localhost 合成验收可用 HTTP。密钥只留在服务端。未配置或网络错误时保持当前写入归属并保留输入。
+- 记录写入在 owner 锁内复核 ACTIVE user/membership，避免删除与在途写入交错后重建数据。桥接每次也在锁内复核正式账户访问资格。
+
+旧 Grow 历史版本未记录 `summary_basis_version` 时，不从最新记录推断旧依据；规范投影可省略该历史版本的整理字段，原始 `adopted_summary` 完整保存在 `source_history.private_history.versions`，被省略的版本号在 `private_history.normalization.summary_basis_missing_versions` 明列。当前观察快照使用其实际保存的依据。

@@ -115,6 +115,18 @@ SPECS: dict[str, list[str]] = {
         "BodyLogChallengeData",
     ],
     "lighttick/api.yaml": [
+        "LightTickRecord",
+        "LightTickRecordSource",
+        "LightTickRecordLinkTicketEnvelope",
+        "LightTickRecordLinkStatusEnvelope",
+        "LightTickRecordRecoveryEnvelope",
+        "LightTickRecordWriteRequest",
+        "LightTickRecordVersionRequest",
+        "LightTickRecordEnvelope",
+        "LightTickRecordPageEnvelope",
+        "LightTickRecordVersionsEnvelope",
+        "LightTickRecordExportEnvelope",
+
         'LightTickActionTarget',
         'LightTickActionFields',
         'LightTickActionCreateRequest',

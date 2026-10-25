@@ -298,7 +298,7 @@ export class BodyLogGroupMembership {
   async getMyGroups(userId: string): Promise<CheckInGroup[]> {
     const groups = await this.context.store.listCheckInGroupsByUser(BODYLOG_APP_ID, userId);
     const activeGroups = groups.filter(group => group.status === "active");
-    
+
     if (activeGroups.length === 0) {
       return [];
     }

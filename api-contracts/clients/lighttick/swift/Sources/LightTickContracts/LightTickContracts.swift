@@ -451,3 +451,31 @@ public struct LightTickActionWorkspace: Codable, Equatable, Sendable {
     public var plans: [LightTickActionPlan]; public var execution: LightTickActionExecution?
     public var server_time: String; public var workspace_version: Int
 }
+
+// Independent personal records. Date strings represent business dates, not instants.
+public struct LightTickRecordSource: Codable, Equatable, Sendable {
+    public var instance: String; public var id: String; public var imported_at: String; public var missing_versions: [Int]
+}
+public struct LightTickRecord: Codable, Sendable, Identifiable, Equatable {
+    public var source: LightTickRecordSource? = nil
+    public var id: String
+    public var raw_text: String
+    public var record_date: String
+    public var prompt_kind: String
+    public var guided_answers: [String: String]
+    public var tags: [String]
+    public var adopted_summary: String?
+    public var summary_basis_version: Int?
+    public var archived_at: String?
+    public var version: Int
+    public var created_at: String
+    public var updated_at: String
+}
+public struct LightTickRecordPage: Codable, Sendable {
+    public let items: [LightTickRecord]
+    public let has_more: Bool
+    public let next_cursor: String?
+}
+public struct LightTickRecordVersions: Codable, Sendable {
+    public let items: [LightTickRecord]
+}

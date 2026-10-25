@@ -5572,6 +5572,1633 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "raw_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prompt_kind": {
+      "type": "string",
+      "enum": [
+        "free",
+        "learning",
+        "difficulty",
+        "decision"
+      ],
+      "default": "free"
+    },
+    "guided_answers": {
+      "type": "object",
+      "maxProperties": 12,
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      }
+    },
+    "adopted_summary": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "summary_basis_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archived_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "imported_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "missing_versions": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "required": [
+        "instance",
+        "id",
+        "imported_at",
+        "missing_versions"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "raw_text",
+    "record_date",
+    "prompt_kind",
+    "guided_answers",
+    "tags",
+    "version",
+    "created_at",
+    "updated_at"
+  ]
+} as const;
+
+export type LightTickRecord = {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+
+export const LightTickRecordSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "instance": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "imported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "missing_versions": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "required": [
+    "instance",
+    "id",
+    "imported_at",
+    "missing_versions"
+  ]
+} as const;
+
+export type LightTickRecordSource = {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+
+export const LightTickRecordLinkTicketEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "expires_at",
+        "user_id",
+        "scope"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{36}$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "const": "records"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickRecordLinkTicketEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "code": string;
+  "expires_at": string;
+  "user_id": string;
+  "scope": string;
+};
+  "requestId": string;
+};
+
+export const LightTickRecordLinkStatusEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "scope"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": [
+            "unlinked",
+            "prepared",
+            "staged",
+            "active",
+            "readonly",
+            "cancelled"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "const": "records"
+        },
+        "binding_id": {
+          "type": "string"
+        },
+        "target_user_id": {
+          "type": "string"
+        },
+        "operation_id": {
+          "type": "string"
+        },
+        "snapshot_hash": {
+          "type": "string"
+        },
+        "source_instance": {
+          "type": "string"
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickRecordLinkStatusEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "phase": "unlinked" | "prepared" | "staged" | "active" | "readonly" | "cancelled";
+  "scope": string;
+  "binding_id"?: string;
+  "target_user_id"?: string;
+  "operation_id"?: string;
+  "snapshot_hash"?: string;
+  "source_instance"?: string;
+  "receipt"?: {
+  [key: string]: unknown;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickRecordRecoveryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "export"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "const": "readonly"
+        },
+        "export": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "exported_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "record": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "raw_text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 10000
+                      },
+                      "record_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "prompt_kind": {
+                        "type": "string",
+                        "enum": [
+                          "free",
+                          "learning",
+                          "difficulty",
+                          "decision"
+                        ],
+                        "default": "free"
+                      },
+                      "guided_answers": {
+                        "type": "object",
+                        "maxProperties": 12,
+                        "additionalProperties": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 50
+                        }
+                      },
+                      "adopted_summary": {
+                        "type": "string",
+                        "maxLength": 10000
+                      },
+                      "summary_basis_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "archived_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "source": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "instance": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "imported_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "missing_versions": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          }
+                        },
+                        "required": [
+                          "instance",
+                          "id",
+                          "imported_at",
+                          "missing_versions"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "raw_text",
+                      "record_date",
+                      "prompt_kind",
+                      "guided_answers",
+                      "tags",
+                      "version",
+                      "created_at",
+                      "updated_at"
+                    ]
+                  },
+                  "versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "raw_text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 10000
+                        },
+                        "record_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "prompt_kind": {
+                          "type": "string",
+                          "enum": [
+                            "free",
+                            "learning",
+                            "difficulty",
+                            "decision"
+                          ],
+                          "default": "free"
+                        },
+                        "guided_answers": {
+                          "type": "object",
+                          "maxProperties": 12,
+                          "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 2000
+                          }
+                        },
+                        "tags": {
+                          "type": "array",
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          }
+                        },
+                        "adopted_summary": {
+                          "type": "string",
+                          "maxLength": 10000
+                        },
+                        "summary_basis_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "archived_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "source": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "instance": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "imported_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "missing_versions": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 1
+                              }
+                            }
+                          },
+                          "required": [
+                            "instance",
+                            "id",
+                            "imported_at",
+                            "missing_versions"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "raw_text",
+                        "record_date",
+                        "prompt_kind",
+                        "guided_answers",
+                        "tags",
+                        "version",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    }
+                  },
+                  "source_history": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Owner-only immutable original source entry, observed versions, AI attempts and operation metadata; credentials are forbidden."
+                  }
+                },
+                "required": [
+                  "record",
+                  "versions"
+                ]
+              }
+            }
+          },
+          "required": [
+            "format_version",
+            "exported_at",
+            "records"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickRecordRecoveryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "phase": string;
+  "export": {
+  "format_version": number;
+  "exported_at": string;
+  "records": (
+{
+  "record": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "versions": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "source_history"?: {
+  [key: string]: unknown;
+};
+}
+)[];
+};
+};
+};
+
+export const LightTickRecordWriteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "raw_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prompt_kind": {
+      "type": "string",
+      "enum": [
+        "free",
+        "learning",
+        "difficulty",
+        "decision"
+      ],
+      "default": "free"
+    },
+    "guided_answers": {
+      "type": "object",
+      "maxProperties": 12,
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      }
+    },
+    "adopted_summary": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "summary_basis_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "raw_text",
+    "record_date",
+    "base_version"
+  ]
+} as const;
+
+export type LightTickRecordWriteRequest = {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind"?: "free" | "learning" | "difficulty" | "decision";
+  "guided_answers"?: {
+  [key: string]: string;
+};
+  "tags"?: string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "base_version": number;
+};
+
+export const LightTickRecordVersionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "base_version"
+  ]
+} as const;
+
+export type LightTickRecordVersionRequest = {
+  "base_version": number;
+};
+
+export const LightTickRecordEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "prompt_kind": {
+          "type": "string",
+          "enum": [
+            "free",
+            "learning",
+            "difficulty",
+            "decision"
+          ],
+          "default": "free"
+        },
+        "guided_answers": {
+          "type": "object",
+          "maxProperties": 12,
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
+        },
+        "adopted_summary": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "summary_basis_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "archived_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "instance": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "imported_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "missing_versions": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "required": [
+            "instance",
+            "id",
+            "imported_at",
+            "missing_versions"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "raw_text",
+        "record_date",
+        "prompt_kind",
+        "guided_answers",
+        "tags",
+        "version",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "requestId": string;
+};
+
+export const LightTickRecordPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "raw_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "record_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "prompt_kind": {
+                "type": "string",
+                "enum": [
+                  "free",
+                  "learning",
+                  "difficulty",
+                  "decision"
+                ],
+                "default": "free"
+              },
+              "guided_answers": {
+                "type": "object",
+                "maxProperties": 12,
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                }
+              },
+              "adopted_summary": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "summary_basis_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "archived_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "imported_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "missing_versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                },
+                "required": [
+                  "instance",
+                  "id",
+                  "imported_at",
+                  "missing_versions"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raw_text",
+              "record_date",
+              "prompt_kind",
+              "guided_answers",
+              "tags",
+              "version",
+              "created_at",
+              "updated_at"
+            ]
+          }
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items",
+        "has_more"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordPageEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "has_more": boolean;
+  "next_cursor"?: string;
+};
+  "requestId": string;
+};
+
+export const LightTickRecordVersionsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "raw_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "record_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "prompt_kind": {
+                "type": "string",
+                "enum": [
+                  "free",
+                  "learning",
+                  "difficulty",
+                  "decision"
+                ],
+                "default": "free"
+              },
+              "guided_answers": {
+                "type": "object",
+                "maxProperties": 12,
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                }
+              },
+              "adopted_summary": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "summary_basis_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "archived_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "imported_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "missing_versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                },
+                "required": [
+                  "instance",
+                  "id",
+                  "imported_at",
+                  "missing_versions"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raw_text",
+              "record_date",
+              "prompt_kind",
+              "guided_answers",
+              "tags",
+              "version",
+              "created_at",
+              "updated_at"
+            ]
+          }
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordVersionsEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickRecordExportEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "exported_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "record": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "raw_text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "record_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "prompt_kind": {
+                    "type": "string",
+                    "enum": [
+                      "free",
+                      "learning",
+                      "difficulty",
+                      "decision"
+                    ],
+                    "default": "free"
+                  },
+                  "guided_answers": {
+                    "type": "object",
+                    "maxProperties": 12,
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 2000
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 50
+                    }
+                  },
+                  "adopted_summary": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "summary_basis_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "archived_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "instance": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "imported_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "missing_versions": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    },
+                    "required": [
+                      "instance",
+                      "id",
+                      "imported_at",
+                      "missing_versions"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "raw_text",
+                  "record_date",
+                  "prompt_kind",
+                  "guided_answers",
+                  "tags",
+                  "version",
+                  "created_at",
+                  "updated_at"
+                ]
+              },
+              "versions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "raw_text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 10000
+                    },
+                    "record_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "prompt_kind": {
+                      "type": "string",
+                      "enum": [
+                        "free",
+                        "learning",
+                        "difficulty",
+                        "decision"
+                      ],
+                      "default": "free"
+                    },
+                    "guided_answers": {
+                      "type": "object",
+                      "maxProperties": 12,
+                      "additionalProperties": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "maxItems": 20,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      }
+                    },
+                    "adopted_summary": {
+                      "type": "string",
+                      "maxLength": 10000
+                    },
+                    "summary_basis_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "archived_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "instance": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "imported_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "missing_versions": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 1
+                          }
+                        }
+                      },
+                      "required": [
+                        "instance",
+                        "id",
+                        "imported_at",
+                        "missing_versions"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "raw_text",
+                    "record_date",
+                    "prompt_kind",
+                    "guided_answers",
+                    "tags",
+                    "version",
+                    "created_at",
+                    "updated_at"
+                  ]
+                }
+              },
+              "source_history": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Owner-only immutable original source entry, observed versions, AI attempts and operation metadata; credentials are forbidden."
+              }
+            },
+            "required": [
+              "record",
+              "versions"
+            ]
+          }
+        }
+      },
+      "required": [
+        "format_version",
+        "exported_at",
+        "records"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordExportEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "format_version": number;
+  "exported_at": string;
+  "records": (
+{
+  "record": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "versions": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "source_history"?: {
+  [key: string]: unknown;
+};
+}
+)[];
+};
+  "requestId": string;
+};
+
 export const LightTickActionTargetSchema = {
   "type": "object",
   "properties": {
@@ -18192,11 +19819,12 @@ export const LightTickSyncEntityTypeSchema = {
     "task",
     "task_step",
     "review",
-    "change_proposal"
+    "change_proposal",
+    "record"
   ]
 } as const;
 
-export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
 
 export const LightTickSyncActionSchema = {
   "type": "string",
@@ -18250,7 +19878,8 @@ export const LightTickSyncOperationSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -18294,7 +19923,7 @@ export const LightTickSyncOperationSchema = {
 export type LightTickSyncOperation = {
   "operation_id": string;
   "device_id": string;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
   "base_version": number;
@@ -18348,7 +19977,8 @@ export const LightTickSyncPushRequestSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -18398,7 +20028,7 @@ export type LightTickSyncPushRequest = {
 {
   "operation_id": string;
   "device_id": string;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
   "base_version": number;
@@ -18455,7 +20085,8 @@ export const LightTickSyncOperationResultSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -18538,7 +20169,7 @@ export const LightTickSyncOperationResultSchema = {
 export type LightTickSyncOperationResult = {
   "operation_id": string;
   "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
-  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id"?: string;
   "version"?: number;
   "server_snapshot"?: {
@@ -18590,7 +20221,8 @@ export const LightTickSyncPushDataSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -18682,7 +20314,7 @@ export type LightTickSyncPushData = {
 {
   "operation_id": string;
   "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
-  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id"?: string;
   "version"?: number;
   "server_snapshot"?: {
@@ -18720,7 +20352,8 @@ export const LightTickSyncChangeSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -18752,7 +20385,7 @@ export const LightTickSyncChangeSchema = {
 
 export type LightTickSyncChange = {
   "sequence": number;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "version": number;
   "operation": "upsert" | "delete";
@@ -18797,7 +20430,8 @@ export const LightTickSyncPullDataSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -18844,7 +20478,7 @@ export type LightTickSyncPullData = {
   "changes": (
 {
   "sequence": number;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "version": number;
   "operation": "upsert" | "delete";
@@ -24442,6 +26076,17 @@ export const GeneratedPublicContractNames = [
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",
   "LightTickPushProvider",
+  "LightTickRecord",
+  "LightTickRecordEnvelope",
+  "LightTickRecordExportEnvelope",
+  "LightTickRecordLinkStatusEnvelope",
+  "LightTickRecordLinkTicketEnvelope",
+  "LightTickRecordPageEnvelope",
+  "LightTickRecordRecoveryEnvelope",
+  "LightTickRecordSource",
+  "LightTickRecordVersionRequest",
+  "LightTickRecordVersionsEnvelope",
+  "LightTickRecordWriteRequest",
   "LightTickReviewActionRequest",
   "LightTickReviewActionResult",
   "LightTickReviewActionState",

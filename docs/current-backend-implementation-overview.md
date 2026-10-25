@@ -757,3 +757,10 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 ### LightTick 行动计划联动（功能开关）
 
 新增 PostgreSQL 074 迁移与账号事务锁，支持年/月/周/日层级、执行事实、复盘、请求回执和 Grow 单写者接管。canonical API 见 README_API.md 和 docs/public-lighttick-actions.md；现有 goal/plan/task API 独立。未启用生产或迁移真实账号。
+
+Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编辑、归档恢复、导出与 sync/pull 变化；新表 zook_lighttick_records / record_versions。来源身份接管、旧 Grow 历史导入与 AI 不在本轮范围。未部署。
+
+
+2026-10-25 Grow G1：独立记录已与当前 shared action 主线整合；新增记录专用一对一绑定、私人暂存、来源冻结凭证、事务激活、防重放、激活前取消和只读恢复导出。PostgreSQL 076 为增量迁移；无真实用户搬迁、无环境发布。原生草稿转属和磁盘存储由客户端负责，后端只接受明确同步后的正式账户记录。
+
+迁移入口使用专用连接的会话级 advisory lock，串行多个 API/worker 实例的 DDL 重放，覆盖每个迁移文件的独立事务；连接结束/异常断开自动释放。并发 records + handoff PostgreSQL 验收实际复现过无锁 DDL 死锁，并已回归。

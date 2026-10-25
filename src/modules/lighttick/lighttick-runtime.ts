@@ -1,3 +1,4 @@
+import {RecordTransferService} from './records/record-transfer.service.ts';
 import {ActionService} from './actions/action.service.ts';
 import {ActionLinkService} from './actions/action-link.service.ts';
 import type { LightTickRepository } from "./lighttick.repository.ts";
@@ -21,6 +22,8 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  recordHandoffEnabled:boolean;
+  recordTransfers:RecordTransferService;
   actionsEnabled:boolean;
   actions:ActionService;
   actionLinks:ActionLinkService;
@@ -51,6 +54,8 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
   const actions=new ActionService(repository);
   const tasks = new LightTickTaskService(repository);
   return {
+    recordHandoffEnabled:process.env.LIGHTTICK_RECORD_HANDOFF_ENABLED==='1',
+    recordTransfers:new RecordTransferService(repository,{sourceInstance:process.env.GROW_RECORDS_SOURCE_ID??'',secret:process.env.GROW_RECORDS_BRIDGE_SECRET??''}),
     actionsEnabled:process.env.LIGHTTICK_ACTIONS_ENABLED==='1',
     actions,
     actionLinks:new ActionLinkService(actions,process.env.GROW_ACTION_BRIDGE_SECRET??''),

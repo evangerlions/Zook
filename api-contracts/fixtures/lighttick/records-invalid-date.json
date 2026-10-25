@@ -1,0 +1,6 @@
+{
+  "code": "REQ_FIELD_INVALID",
+  "message": "Invalid record date.",
+  "data": null,
+  "requestId": "fixture-records-date"
+}
