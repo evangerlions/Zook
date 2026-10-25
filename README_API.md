@@ -22,6 +22,12 @@
 - [docs/frogsleep-buddy-operations-runbook.md](docs/frogsleep-buddy-operations-runbook.md)
 - [docs/frogsleep-buddy-security-review.md](docs/frogsleep-buddy-security-review.md)
 
+### 2026-10-25 合同校验对齐
+
+公共合同补齐既有鉴权/参数错误响应，并将日志、文件、通知、配置、FrogSleep 私有同步与邀请、LightTick 资源响应接到对应的数据模型；未新增运行时接口。FrogSleep 通知类型继续允许兼容及未来字符串，邀请投递允许 `not_queued` 且该状态不要求尝试次数。邀请落地链接仍为 302 预览跳转，旧 BodyLog 手动完成接口仍返回 409。加密 AI 接口的 `x-decrypted-*` 引用只说明加密内层模型，不是明文网络载荷。
+
+规则检查和逐节点语义例外说明见 [OpenAPI 质量记录](docs/openapi-quality-20261025.md)，唯一合同来源仍为 `api-contracts/openapi/`。
+
 ## 2. 核心原则
 
 统一业务前缀：

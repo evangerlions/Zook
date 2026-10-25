@@ -26605,7 +26605,14 @@ export const LightTickCoachRunRequestSchema = {
   "then": {
     "required": [
       "message"
-    ]
+    ],
+    "properties": {
+      "message": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    }
   },
   "properties": {
     "scene": {
@@ -39123,6 +39130,7 @@ export type BuddyInvitationTarget = {
 export const BuddyInvitationDeliveryStatusSchema = {
   "type": "string",
   "enum": [
+    "not_queued",
     "queued",
     "processing",
     "provider_accepted",
@@ -39134,7 +39142,7 @@ export const BuddyInvitationDeliveryStatusSchema = {
   ]
 } as const;
 
-export type BuddyInvitationDeliveryStatus = "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
+export type BuddyInvitationDeliveryStatus = "not_queued" | "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
 
 export const BuddyInvitationDomainResultSchema = {
   "type": "object",
@@ -39287,8 +39295,7 @@ export const BuddyInvitationDeliverySchema = {
   "type": "object",
   "required": [
     "channel",
-    "status",
-    "attempt_count"
+    "status"
   ],
   "properties": {
     "channel": {
@@ -39300,6 +39307,7 @@ export const BuddyInvitationDeliverySchema = {
     "status": {
       "type": "string",
       "enum": [
+        "not_queued",
         "queued",
         "processing",
         "provider_accepted",
@@ -39330,8 +39338,8 @@ export const BuddyInvitationDeliverySchema = {
 
 export type BuddyInvitationDelivery = {
   "channel": "email";
-  "status": "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
-  "attempt_count": number;
+  "status": "not_queued" | "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
+  "attempt_count"?: number;
   "provider_accepted_at"?: string;
   "delivered_at"?: string;
   "last_error_code"?: string;
@@ -40322,7 +40330,32 @@ export const FrogSleepBuddyNotificationSchema = {
       "description": "Stable opaque notification identity shared by feed and Push"
     },
     "type": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "invitation_received",
+            "invitation_accepted",
+            "invitation_ended",
+            "interaction_received",
+            "joint_activity_invited",
+            "goal_updated",
+            "milestone_reached",
+            "weekly_report_ready",
+            "group_invitation_received",
+            "group_invitation_accepted",
+            "group_member_joined",
+            "group_member_left",
+            "group_goal_updated",
+            "group_weekly_report_ready",
+            "group_dissolved"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Known growth events plus compatibility and future notification types."
     },
     "target_type": {
       "type": "string"
@@ -40357,7 +40390,9 @@ export const FrogSleepBuddyNotificationSchema = {
 
 export type FrogSleepBuddyNotification = {
   "id": string;
-  "type": string;
+  "type": (
+"invitation_received" | "invitation_accepted" | "invitation_ended" | "interaction_received" | "joint_activity_invited" | "goal_updated" | "milestone_reached" | "weekly_report_ready" | "group_invitation_received" | "group_invitation_accepted" | "group_member_joined" | "group_member_left" | "group_goal_updated" | "group_weekly_report_ready" | "group_dissolved"
+) | string;
   "target_type"?: string;
   "target_id"?: string;
   "route"?: {

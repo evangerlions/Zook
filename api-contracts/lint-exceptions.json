@@ -1,0 +1,98 @@
+[
+  {
+    "source": "openapi/ainovel/ai.yaml",
+    "rule": "no-unused-components",
+    "pointer": "#/components/schemas/AiNovelAgentSkillManifest",
+    "reason": "Decrypted inner payload catalog: the wire response is AES-GCM, not this plaintext JSON. Explicit x-decrypted-* schema references document the encryption boundary without inventing transport fields."
+  },
+  {
+    "source": "openapi/ainovel/ai.yaml",
+    "rule": "no-unused-components",
+    "pointer": "#/components/schemas/AiNovelAgentSkillFetchRequest",
+    "reason": "Decrypted inner payload catalog: the wire response is AES-GCM, not this plaintext JSON. Explicit x-decrypted-* schema references document the encryption boundary without inventing transport fields."
+  },
+  {
+    "source": "openapi/ainovel/ai.yaml",
+    "rule": "no-unused-components",
+    "pointer": "#/components/schemas/AiNovelAgentSkillPackage",
+    "reason": "Decrypted inner payload catalog: the wire response is AES-GCM, not this plaintext JSON. Explicit x-decrypted-* schema references document the encryption boundary without inventing transport fields."
+  },
+  {
+    "source": "openapi/ainovel/ai.yaml",
+    "rule": "no-unused-components",
+    "pointer": "#/components/schemas/AiNovelChatSceneKey",
+    "reason": "Decrypted inner payload catalog: the wire response is AES-GCM, not this plaintext JSON. Explicit x-decrypted-* schema references document the encryption boundary without inventing transport fields."
+  },
+  {
+    "source": "openapi/ainovel/ai.yaml",
+    "rule": "no-unused-components",
+    "pointer": "#/components/schemas/AiNovelChatUsage",
+    "reason": "Decrypted inner payload catalog: the wire response is AES-GCM, not this plaintext JSON. Explicit x-decrypted-* schema references document the encryption boundary without inventing transport fields."
+  },
+  {
+    "source": "openapi/bodylog/api.yaml",
+    "rule": "operation-2xx-response",
+    "pointer": "#/paths/~1api~1v1~1bodylog~1seven-day-plan~1{planId}~1missions~1{missionId}~1complete/post/responses",
+    "reason": "Compatibility endpoint intentionally rejects manual mission completion with 409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED; no successful mutation response exists."
+  },
+  {
+    "source": "openapi/bodylog/api.yaml",
+    "rule": "no-unused-components",
+    "pointer": "#/components/responses/Mission",
+    "reason": "Retained named Mission response for contract consumers; the legacy manual completion route intentionally no longer returns it. Runtime mission reads use MissionList."
+  },
+  {
+    "source": "openapi/common/health.yaml",
+    "rule": "operation-4xx-response",
+    "pointer": "#/paths/~1api~1health/get/responses",
+    "reason": "Unauthenticated liveness probe accepts no body, parameters or app scope and always returns 200; no endpoint-defined 4xx response exists."
+  },
+  {
+    "source": "openapi/frogsleep/api.yaml",
+    "rule": "no-ambiguous-paths",
+    "pointer": "#/paths/~1api~1v1~1frogsleep~1buddy~1groups~1{groupId}~1members~1{userId}",
+    "reason": "Group invitation actions and member removal share POST templates but group IDs are server-generated buddy_group_* IDs, never the reserved invitations segment. Existing runtime dispatch must remain backward compatible."
+  },
+  {
+    "source": "openapi/frogsleep/api.yaml",
+    "rule": "operation-2xx-response",
+    "pointer": "#/paths/~1frogsleep~1sleep-buddy-invite/get/responses",
+    "reason": "Public invite landing links always issue a 302 preview deep-link redirect, including empty locators. Best-effort analytics failures are swallowed. No successful 2xx body or endpoint-defined 4xx exists."
+  },
+  {
+    "source": "openapi/frogsleep/api.yaml",
+    "rule": "operation-4xx-response",
+    "pointer": "#/paths/~1frogsleep~1sleep-buddy-invite/get/responses",
+    "reason": "Public invite landing links always issue a 302 preview deep-link redirect, including empty locators. Best-effort analytics failures are swallowed. No successful 2xx body or endpoint-defined 4xx exists."
+  },
+  {
+    "source": "openapi/frogsleep/api.yaml",
+    "rule": "operation-2xx-response",
+    "pointer": "#/paths/~1frogsleep~1focus-invite/get/responses",
+    "reason": "Public invite landing links always issue a 302 preview deep-link redirect, including empty locators. Best-effort analytics failures are swallowed. No successful 2xx body or endpoint-defined 4xx exists."
+  },
+  {
+    "source": "openapi/frogsleep/api.yaml",
+    "rule": "operation-4xx-response",
+    "pointer": "#/paths/~1frogsleep~1focus-invite/get/responses",
+    "reason": "Public invite landing links always issue a 302 preview deep-link redirect, including empty locators. Best-effort analytics failures are swallowed. No successful 2xx body or endpoint-defined 4xx exists."
+  },
+  {
+    "source": "openapi/lighttick/api.yaml",
+    "rule": "no-ambiguous-paths",
+    "pointer": "#/paths/~1api~1v1~1lighttick~1action-plans~1requests~1{key}",
+    "reason": "Request receipt GET uses /requests/{key}; mutation routes use POST with action-* IDs, calendar GET requires an action-* ID. Runtime dispatch distinguishes methods and the action- ID namespace; templates alone cannot express this."
+  },
+  {
+    "source": "openapi/lighttick/api.yaml",
+    "rule": "no-ambiguous-paths",
+    "pointer": "#/paths/~1api~1v1~1lighttick~1action-plans~1{planId}~1calendar.ics",
+    "reason": "Request receipt GET uses /requests/{key}; mutation routes use POST with action-* IDs, calendar GET requires an action-* ID. Runtime dispatch distinguishes methods and the action- ID namespace; templates alone cannot express this."
+  },
+  {
+    "source": "openapi/lighttick/api.yaml",
+    "rule": "no-ambiguous-paths",
+    "pointer": "#/paths/~1api~1v1~1lighttick~1action-plans~1{planId}~1reminder-claim",
+    "reason": "Request receipt GET uses /requests/{key}; mutation routes use POST with action-* IDs, calendar GET requires an action-* ID. Runtime dispatch distinguishes methods and the action- ID namespace; templates alone cannot express this."
+  }
+]
