@@ -15,7 +15,7 @@ if(!Number.isInteger(testPort)||testPort<1024||testPort>65535||!['user_alice','u
 const owner={appId:'lighttick' as const,userId:testUser};const seed=buildDefaultSeed(undefined,{includeLightTick:true});
 seed.appUsers.push({id:'record-ui-member',...owner,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
 const app=await createApplication({seed,lighttickEnabled:true,lighttickRepository:repository});
-const token=app.services.tokenService.issueAccessToken(owner.userId,'lighttick');let offline=false;
+let offline=false;
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url!,'http://localhost:3106');res.setHeader('Content-Type','application/json');
  if(url.pathname==='/__reset'){offline=false;await repository.deleteOwnerData(owner);res.end('{}');return;}
@@ -31,7 +31,7 @@ const server=createServer(async(req,res)=>{try{
  if(offline){res.statusCode=503;res.end('{"code":"UNAVAILABLE","data":null}');return;}
  const buffers=[];for await(const chunk of req)buffers.push(chunk);
  const headers=Object.fromEntries(Object.entries(req.headers).map(([k,v])=>[k,Array.isArray(v)?v[0]:v])) as Record<string,string>;
- if(headers.authorization==='Bearer record-ui-only')headers.authorization='Bearer '+token;
+ if(headers.authorization==='Bearer record-ui-only')headers.authorization='Bearer '+app.services.tokenService.issueAccessToken(owner.userId,'lighttick');
  const raw=Buffer.concat(buffers).toString();
  const result=await app.app.handle({method:req.method!,path:url.pathname,query:Object.fromEntries(url.searchParams),headers,body:raw?JSON.parse(raw):undefined} as any);
  res.statusCode=result.statusCode;res.end(JSON.stringify(result.body));
