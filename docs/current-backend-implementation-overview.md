@@ -776,3 +776,6 @@ Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编
 8 个超长文件已按现有职责拆分：基础设施装配、LightTick 响应投影、数据库 BodyLog 类型端口、RBAC 查询、成长后台查询、习惯模板 CRUD、小组查询/日记录/通知及后台 BodyLog/LLM API。外部方法、初始化顺序、SQL 查询和事务 query 回调保持不变；现有行数阈值/豁免名单未修改。详见 `docs/verification/lighttick-source-repair/README.md` 的回归与等价核对证据。本轮不实现 C3，不修改原生端或连接写入门禁。
 
 2026-10-21 LightTick C3 增量：内部八类快照 v2 的只读全图预检、原子导入和持久幂等接管回执可在隔离环境验证；公开配对/导入/普通写入继续关闭，未增加运行时预检路由。Grow 接管前后回执查询已衔接。私有协调与来源屏障已补齐：先等待在途来源、复核摘要、原子备份/冻结，再导入并核对回执；pending 暂停新确认，未完成来源日志阻断冻结，迁移事件延续 C2 outbox 核对。隔离 HTTP 与双方进程重启恢复见 `docs/verification/lighttick-handoff-cutover/README.md`。原生 C4/C5、真实环境与公开放行仍未完成，不能标记全部 P0 通过。
+
+
+2026-10-25 Grow 原生执行整合候选：records 与 P0 v2 三模式运行时共存；公共行动写入与完整接管通过独立 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 显式启用，默认关闭。新增正式账户本人学习计划进度读取及绑定来源签名投递，进度保存在既有 owner workspace，不新增第二套课程完成事实。H5 负责制订及完善，手机负责读取、学习、执行、记录和通知；真实账号、生产及真机验证仍待办。当前协议见 README_API.md 和 docs/public-lighttick-actions.md 2026-10-25 节。

@@ -9,9 +9,9 @@ export function requireActionSchema(value:unknown) {
  if(value!==2&&value!=='2')reject(409,'行动合同版本需升级。','CONTRACT_UPGRADE_REQUIRED',{reason:'CONTRACT_SCHEMA_VERSION'});
 }
 
-/** Deliberately not controlled by LIGHTTICK_ACTIONS_ENABLED or any new env switch. */
-export function rejectConnectionWrite():never {
- return reject(409,'P0连接写入尚未开放，输入已保留。','CONTRACT_UPGRADE_REQUIRED',{reason:'CONNECTION_WRITES_DISABLED'});
+/** A separate opt-in preserves the default closed behavior of earlier P0 releases. */
+export function rejectConnectionWrite(enabled=false):void {
+ if(!enabled)reject(409,'P0连接写入尚未开放，输入已保留。','CONTRACT_UPGRADE_REQUIRED',{reason:'CONNECTION_WRITES_DISABLED'});
 }
 
 export function actionErrorResponse(error:unknown,requestId:string):HttpResponse<unknown>|undefined {

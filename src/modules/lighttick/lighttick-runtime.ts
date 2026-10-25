@@ -51,7 +51,7 @@ export interface LightTickRuntime {
 }
 
 export function createLightTickRuntime(repository: LightTickRepository): LightTickRuntime {
-  const actions=new ActionService(repository);
+  const actions=new ActionService(repository,()=>new Date(),undefined,process.env.LIGHTTICK_ACTIONS_V2_ENABLED==='1');
   const tasks = new LightTickTaskService(repository);
   return {
     recordHandoffEnabled:process.env.LIGHTTICK_RECORD_HANDOFF_ENABLED==='1',

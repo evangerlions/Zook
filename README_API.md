@@ -1338,14 +1338,19 @@ PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_
 
 旧 Grow 历史版本未记录 `summary_basis_version` 时，不从最新记录推断旧依据；规范投影可省略该历史版本的整理字段，原始 `adopted_summary` 完整保存在 `source_history.private_history.versions`，被省略的版本号在 `private_history.normalization.summary_basis_missing_versions` 明列。当前观察快照使用其实际保存的依据。
 
-`/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`仅启用读取，**公共写入、新连接码与Grow claim/import保持关闭**。行动POST须声明 `X-Grow-Action-Schema: 2`，正确版本仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED原因；签名桥接同样不放行。原生端、真实来源投递与v2接管尚未完成。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+`/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`启用读取，另需显式 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 才开放写入、新连接码和 Grow v2 接管。行动POST须声明 `X-Grow-Action-Schema: 2`；默认关闭时仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED，旧版本始终拒写。原生消费者在本地候选适配，真机和生产发布另验。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
 
 ### LightTick：Grow 私有来源证明与可靠回执（C2）
 
 `POST /api/v1/lighttick/grow-bridge` 增加签名 source-context/source-confirmation/source-receipt/source-reconcile。仅已有 active 绑定和活跃注册会员可用；服务器生成的 article_read/lesson_completed 证明通过私有 outbox 投递，按不可变事件 ID/hash 去重，丢响应后查询/重放，running 结束后核对原事件完成。origin 证明保留原计划日期/时区；不复制正文/笔记。新增稳定错误 SOURCE_EVENT_CONFLICT、SOURCE_PROOF_INVALID、SOURCE_DELIVERY_UNAVAILABLE；详细字段、状态与恢复见 [共享行动协议](docs/public-lighttick-actions.md#c2-私有来源通道2026-10-21) 和唯一 OpenAPI 的 LightTickActionSource* schemas。
 
-此通道不放行普通 action 写入、新配对或 v2 接管，公共能力门槛保持关闭，未接入原生端或部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。
+默认不放行普通 action 写入、新配对或 v2 接管；2026-10-25 独立 v2 开关与消费者适配见行动协议当前接入节，生产尚未部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。
 
-### LightTick 行动接管内部快照 v2（受控，尚未开放）
+### LightTick 行动接管快照 v2（默认关闭，显式启用）
 
-唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对继续关闭，`CONTRACT_UPGRADE_REQUIRED / CONNECTION_WRITES_DISABLED` 行为不变，原生消费者也未修改。私有切换协调、来源确认屏障、不可变备份与故障恢复已隔离验收；新增 LightTickActionHandoffReceipt 严格区分预检和导入回执，并将迁移事件接入既有 C2 完成核对。目标版本冲突用 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED 拒绝，pending 仅可对同一备份重预检；未恢复来源发布日志会阻断冻结。实际 HTTP 驱动只存在于测试 fixture，未添加生产预检动作。原生/真实双端与生产放行仍待完成，不能据内部通过迁移真实账号；最新证据见 docs/verification/lighttick-handoff-cutover/README.md。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
+唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对默认关闭；显式 v2 开关启用后由三模式消费者接入，旧消费者仍拒写。私有切换协调、来源确认屏障、不可变备份与故障恢复已隔离验收；新增 LightTickActionHandoffReceipt 严格区分预检和导入回执，并将迁移事件接入既有 C2 完成核对。目标版本冲突用 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED 拒绝，pending 仅可对同一备份重预检；未恢复来源发布日志会阻断冻结。2026-10-25 已将同一内部服务接到显式启用的受信 bridge 预检/导入动作；默认门禁和旧客户端拒写仍保留。原生/真实双端与生产放行仍待完成，不能据内部通过迁移真实账号；最新证据见 docs/verification/lighttick-handoff-cutover/README.md。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
+
+
+### Grow 手机学习计划进度（本地候选）
+
+`GET /api/v1/lighttick/action-plans/learning-progress` 读取正式账号本人已绑定 Grow 来源的最近快照，无快照返回 `data.progress:null`。有快照包含来源修订/观察和接收时间、配置网页地址、正式计划及阶段的总课数/发布数/本人学完数/百分比；不含课程正文、笔记、反馈或模型输出。匿名与游客不能读取私人进度。源每30秒通过受信 `grow-bridge action=learning-progress` 检查并持久重试投递，绑定、修订、摘要及阶段数量必须匹配；不接受客户端自报完成数。协议、配置、H5分工与开关见 [行动协议当前接入](docs/public-lighttick-actions.md#2026-10-25-原生执行及学习计划进度)。

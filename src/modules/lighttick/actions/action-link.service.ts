@@ -17,7 +17,7 @@ export class ActionLinkService {
   await this.repository.saveActionTicket({...owner,hash,expires_at});const row=await this.actions.readWorkspace(owner);(row.data as Json).active_ticket_hash=hash;row.version++;await this.repository.saveActionWorkspace(row);
   return {code,expires_at,user_id:owner.userId};
  });}
- async preview(code:string,source:string){this.requireConfigured();const ticket=await this.requireTicket(code,source);return {target_user_id:ticket.userId,expires_at:ticket.expires_at,source_account_id:source};}
+ async preview(code:string,source:string){this.requireConfigured();const ticket=await this.requireTicket(code,source);return {target_user_id:ticket.userId,expires_at:ticket.expires_at,source_account_id:source,action_schema_version:2,v2_import_enabled:this.actions.p0WriteEnabled};}
  private async requireTicket(code:string,source:string){
   if(!/^[a-f0-9]{36}$/.test(code))reject(422,'连接码无效。');const t=await this.repository.getActionTicket(digest(code));
   if(!t||Date.parse(t.expires_at)<=this.clock().getTime()||t.source_account_id&&t.source_account_id!==source)reject(409,'连接码已过期或已被其他账号使用。');

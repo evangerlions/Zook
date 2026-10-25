@@ -3,6 +3,16 @@ import XCTest
 @testable import LightTickContracts
 
 final class ContractFixtureTests: XCTestCase {
+    func testMobileActionAndLearningProgressFixturesDecode() throws {
+        let decoder = LightTickContractDecoder.makeJSONDecoder()
+        let actions = try decoder.decode(LightTickEnvelope<LightTickActionWorkspace>.self, from: fixture("action-workspace-p0-v2.json")).data
+        XCTAssertEqual(Set(actions.plans.map(\.completion_mode)), Set(["time", "check", "content"]))
+        XCTAssertTrue(actions.plans.contains { $0.start_date == nil })
+        XCTAssertTrue(actions.plans.filter { $0.completion_mode != "time" }.allSatisfy { $0.target_minutes == nil })
+        let progress = try decoder.decode(LightTickEnvelope<LightTickLearningProgressData>.self, from: fixture("learning-progress-success.json")).data.progress
+        XCTAssertEqual(progress?.plans.first?.percent, 50)
+        XCTAssertEqual(progress?.plans.first?.stages.map(\.percent), [100, 0])
+    }
     private func fixture(_ name: String) throws -> Data {
         let packageRoot = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let fixtureURL = packageRoot

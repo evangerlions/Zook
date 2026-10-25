@@ -7,13 +7,14 @@ import {digest,object,text,integer,getPlan,reject,localParts,businessDay,activeA
 import {createPlans,mutatePlan,schedule} from './action.commands.ts';
 import {listing,reviewContext,calendar} from './action.projections.ts';
 import {normalizeWorkspace} from './action.facts.ts';
+import {publicLearningProgress} from './action-learning-progress.ts';
 export class ActionService {
- constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date(),readonly generator:SummaryGenerator=generateSummary){}
+ constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date(),readonly generator:SummaryGenerator=generateSummary,readonly p0WriteEnabled=false){}
  async readWorkspace(owner:LightTickOwner){return await this.repository.getActionWorkspace(owner)??{...owner,data:emptyWorkspace(),version:0};}
- async request(owner:LightTickOwner,method:string,path:string,body:unknown={},query:Json={}):Promise<Json|string>{
+ async request(owner:LightTickOwner,method:string,path:string,body:unknown={},query:Json={},authorize?:()=>Promise<void>):Promise<Json|string>{
   let fresh:{report:Json;config:Json}|undefined;
   const value=await this.repository.transaction(owner,async()=>{
-   await this.repository.lockActionOwner(owner);const stored=await this.readWorkspace(owner),row={...stored,data:normalizeWorkspace(stored.data)},w=row.data,now=this.clock(),b=object(body);
+   await this.repository.lockActionOwner(owner);if(method!=='GET')await authorize?.();const stored=await this.readWorkspace(owner),row={...stored,data:normalizeWorkspace(stored.data)},w=row.data,now=this.clock(),b=object(body);
    // The adapter is request-scoped. An unrelated write must not rewrite immutable
    // ended v1 facts; only a legacy running session can legitimately be settled.
    const legacyEnded=new Map(stored.data.records.filter(r=>r.schema_version!==2&&r.outcome!=='running').map(r=>[r.id,r]));
@@ -53,7 +54,8 @@ export class ActionService {
   return value;
  }
  private async read(w:ActionWorkspace,path:string,q:Json,now:Date,version:number,owner:LightTickOwner):Promise<Json|string>{
-  if(path==='')return listing(w,now,version);
+  if(path==='')return listing(w,now,version,this.p0WriteEnabled);
+  if(path==='/learning-progress')return {progress:publicLearningProgress(w)};
   if(path.startsWith('/requests/')){const key=text(path.slice(10),160,true),old=await this.repository.getOperation(owner,'action:'+key),legacy=w.legacy_operations&&Object.hasOwn(w.legacy_operations,key)?w.legacy_operations[key]:undefined;return {found:!!old||!!legacy,result:old?.resultPayload??legacy?.result??null};}
   if(path==='/records'){
    if(q.plan_id)getPlan(w.plans,q.plan_id);const page=integer(Number(q.page??1),1,100000),records=w.records.filter(r=>!q.plan_id||r.plan_id===q.plan_id).sort((a,b)=>(b.started_at+b.id).localeCompare(a.started_at+a.id));return {records:records.slice((page-1)*30,page*30),total:records.length,page};

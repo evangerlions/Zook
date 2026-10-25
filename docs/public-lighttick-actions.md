@@ -1,8 +1,8 @@
 # LightTick 共享行动计划
 
-业务 API 的唯一合同源为 `api-contracts/openapi/lighttick/api.yaml`，运行时使用同步生成的 `src/generated/openapi/**`。P0 v2 内部运行时已实现；**连接写入、新连接码、claim/import 均保持关闭**，原生端未在本轮修改。迁移074的账号 JSONB workspace 与事务锁继续使用，不新增第二套行动表，也不修改已有 goal/plan/task。
+业务 API 的唯一合同源为 `api-contracts/openapi/lighttick/api.yaml`，运行时使用同步生成的 `src/generated/openapi/**`。P0 v2 运行时和原生消费者已在本地整合候选中实施。连接写入、新连接码与完整 v2 接管默认关闭；本页 2026-10-25 节说明单独启用条件。迁移074的账号 JSONB workspace 与事务锁继续使用，不新增第二套行动表，也不修改已有 goal/plan/task。
 
-必须同时开启 LightTick 与 `LIGHTTICK_ACTIONS_ENABLED=1` 才提供读取；该既有开关不能打开P0写入。正式账号使用公共登录 Bearer 和 `X-App-Id: lighttick`，游客拒绝访问。
+必须同时开启 LightTick 与 `LIGHTTICK_ACTIONS_ENABLED=1` 才提供读取；该既有开关不能打开P0写入；还需显式 `LIGHTTICK_ACTIONS_V2_ENABLED=1`。正式账号使用公共登录 Bearer 和 `X-App-Id: lighttick`，游客拒绝访问。
 
 ## HTTP 接口
 
@@ -10,19 +10,19 @@
 
 | 方法与路径 | 含义 |
 | --- | --- |
-| GET/POST `/action-plans` | 全量计划快照/内部创建合同；公共POST保持关闭 |
-| POST `/action-plans/schedules` | 内容安排与来源/日期去重合同；公共POST保持关闭 |
-| POST `/action-plans/{id}/operations` | edit/pause/resume/archive/cancel/complete/start/finish/snooze/reschedule/complete-time/reopen/reconcile-content；revision与key必填；公共写入关闭 |
+| GET/POST `/action-plans` | 全量计划快照/内部创建合同；默认关闭，需v2开关及版本头 |
+| POST `/action-plans/schedules` | 内容安排与来源/日期去重合同；默认关闭，需v2开关及版本头 |
+| POST `/action-plans/{id}/operations` | edit/pause/resume/archive/cancel/complete/start/finish/snooze/reschedule/complete-time/reopen/reconcile-content；revision与key必填；默认关闭，需v2开关及版本头 |
 | GET `/action-plans/requests/{key}` | 查询提交回执，处理丢失响应 |
 | GET `/action-plans/records?page=1` | 每页30条，可加 plan_id |
 | GET `/action-plans/reviews?plan_id=...&page=1` | 每页20条手动复盘和AI历史，各自总数 |
 | POST `/action-plans/reviews` | 日期、plan_id、worked/obstacles/next_action 和 key |
 | POST `/action-plans/reviews/preview` | 精确预览日期范围，include_notes/include_review 默认关闭；返回 snapshot_hash |
 | POST `/action-plans/reviews/generate` | 同范围、snapshot_hash、consent=true、个人 ai_config 和 key；异步生成 |
-| POST `/action-plans/{id}/reminder-claim` | 内部资格与设备去重合同；公共领取保持关闭 |
+| POST `/action-plans/{id}/reminder-claim` | 内部资格与设备去重合同；默认关闭，需v2开关及版本头 |
 | GET `/action-plans/{id}/calendar.ics` | data 为 ICS 字符串，仅待执行日行动 |
-| POST `/action-link-tickets` | 新接管入口保持关闭 |
-| POST `/grow-bridge` | 保留受信签名读取/预览；claim/import及转发写入关闭，禁止浏览器直连 |
+| POST `/action-link-tickets` | 需v2开关及版本头；五分钟一次性连接码 |
+| POST `/grow-bridge` | 保留受信签名读取/预览；claim/import及转发写入默认关闭，显式v2开关开启后可用，禁止浏览器直连 |
 
 所有行动POST声明 `X-Grow-Action-Schema: 2`；签名桥接的内层POST使用 `action_schema_version:2`。认证先于版本检查；版本头不代替鉴权，也不启用写入。缺失/不支持版本返回409/CONTRACT_UPGRADE_REQUIRED；版本正确的写请求仍返回相同code，`data.reason=CONNECTION_WRITES_DISABLED`，且不创建行动、事实、回执或接管关系。没有新增可绕过此限制的环境变量。
 
@@ -47,7 +47,7 @@ time的finish只确认本次分钟，累计由服务端计算。5+15分钟可共
 
 content的计时结束为recorded，只计投入；完成必须消费当前账号、相同归一化target、合法发生日期的持久来源事件。事件一次只绑定一项行动，过去安排需明确origin；无origin只匹配确认当日安排，未来/未安排不能核对完成。running不被来源确认静默结束，先结算投入再核对。延迟核对使用原confirmed_at，记录写入时间另存recorded_at。
 
-**本轮不提供来源登记或事件注入的HTTP入口。** 运行时只消费内部受信数据，测试在隔离仓库明确装载这些数据；真实Grow来源证明、可靠投递和账号绑定校验属于下一阶段，不能把内部测试通过当作已接入来源。读取能力返回 `action_schema_version:2`，但 `content_receipts:[]`、`connection_write_enabled:false`、`source_delivery_enabled:false`、`v2_import_enabled:false`。
+**2026-10-20 内部切片的原边界（后续 C2/C3 和下述 2026-10-25 接入已扩展）：** 运行时只消费内部受信数据，测试在隔离仓库明确装载这些数据；真实Grow来源证明、可靠投递和账号绑定校验属于下一阶段，不能把内部测试通过当作已接入来源。读取能力返回 `action_schema_version:2`，但 `content_receipts:[]`、`connection_write_enabled:false`、`source_delivery_enabled:false`、`v2_import_enabled:false`。
 
 内容安排按账号、归一化来源、时区和日期桶（含null桶）去重；重复schedules返回同ID及existing=true，不覆盖已有配置/状态/revision。通用创建或改期冲突返回409/DUPLICATE_SCHEDULE；撤销日期清空时间与提醒，旧事实快照保留。
 
@@ -120,3 +120,18 @@ Grow 使用租户私表 action_source_contexts/action_source_outbox，启动即�
 Grow 的 GET `/api/action-plans/requests/{key}` 现在优先查询当前账号已有本地回执；active 下本地未知 key 查询 Zook；pending 下未知 key 返回 503，表示结果未确认。远端失败或非法回执不返回伪造的 found=false。写入能力检查同时要求版本、nullable、三种模式、实际日期、文章/课程来源回执和显式写入开关；当前公开能力仍关闭。
 
 `LightTickActionHandoffReceipt` 定义八类非负整数 source_counts、绑定/目标身份、hash 和 target_version；预检 validated=true 与导入 imported_at 为互斥阶段。导入事件使用完整快照的可信来源证明，生成与 C2 相同的持久 receipt；未消费事件后续仅走 source-reconcile，不伪造新的来源确认。只在测试 fixture 暴露带测试 token + Grow HMAC 的 localhost HTTP 驱动，生产路由没有预检动作。
+
+
+## 2026-10-25 原生执行及学习计划进度
+
+H5 制订、完善和发布计划，手机查看/执行、学习、记录及通知；手机可改期、暂停和完成确认，不另建复杂规划编辑器。App 的本机空间免登录；以下私人云端 API 仍要求正式账户。
+
+- 同时启用 LightTick、`LIGHTTICK_ACTIONS_ENABLED=1` 和独立的 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 才开放公共行动写入/新连接/v2 import。未启用时保持原默认拒写结果；旧版本头仍拒绝，不会把 content/check 转成 time。客户端按 `action_schema_version:2` 与 capabilities 判断可写范围。
+- `grow-bridge` 新支持已签名的 `import-preflight`/`import`，只允许同一 staged binding 的完整八类 v2 快照；预检不冻结源，源在明确 consent 后保存不可变备份并冻结，核对回执才 active。含日常节奏的源账号仍拒绝接管，R20 没有借此放行。
+- `GET /api/v1/lighttick/action-plans/learning-progress` 返回 `{progress:null}` 或 `LightTickLearningProgress`：`source_revision`、`observed_at`、`received_at`、配置的 `web_url`、至多100个正式计划及每个至多100个阶段的总课数/发布数/本人学完数/百分比。私人笔记、反馈正文、课程正文和 GitHub 凭证不传输。它是最近同步的来源快照，不声称是实时课程编辑器。
+- Grow 服务端通过签名 bridge `action=learning-progress` 推送：必须同一 active binding，`action_schema_version=2`、`source_revision>=1`、有效带时区 `observed_at`、HTTPS `web_url`（仅测试允许localhost HTTP）、`plans`。目标在 owner 锁内校验版本和数量；同版本相同内容返回原回执，同版本不同内容或倒退拒绝。回执含 `accepted/binding_id/target_user_id/source_revision/payload_hash`。
+- Grow 配置 `GROW_PUBLIC_URL` 后，既有来源 worker 每30秒检查新进度。来源持久保存待发快照与修订，丢响应重发同一包，收到匹配回执才标已送达；新进度不覆盖新账户。旧 v1 绑定不自动获得进度同步范围。
+- 原生只构造同一配置来源的 `#plans/detail/{planId}` 和 `#mobile/action/{actionId}`；不在 URL 放 token。Grow 仍核对自己的会话与对象权限，登录可保留上述受限片段。打开来源不自动确认学完。
+- time 累计已确认 session；check 产生零分钟完成/撤销事实；content 的 session 只记录投入，学完依赖绑定来源证明。未安排日期的行动保持未安排，手机可本人改期。分钟和勾选不计入课程阶段进度。
+
+验证使用合成账号、一次性localhost PostgreSQL和真实HTTP；生产发布、私人账号接管、真机/读屏及真实后台通知仍独立验收。

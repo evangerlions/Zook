@@ -2843,6 +2843,26 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickActionScheduleRequest'
+  /api/v1/lighttick/action-plans/learning-progress:
+    get:
+      operationId: lighttickReadLearningProgress
+      tags:
+      - LightTick
+      summary: 读取本人已绑定 Grow 正式学习计划的整体及阶段进度
+      description: 来源签名同步的最近快照；不含课程正文、笔记或模型输出。无已同步来源时 progress 为 null。
+      parameters: []
+      security: []
+      responses:
+        '200':
+          description: Bound source progress or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningProgressEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -7503,6 +7523,7 @@ components:
           - source-confirmation
           - source-receipt
           - source-reconcile
+          - learning-progress
         code:
           type: string
           maxLength: 80
@@ -7550,6 +7571,20 @@ components:
           pattern: ^source-[a-f0-9]{32}$
         event:
           $ref: '#/components/schemas/LightTickActionSourceEvent'
+        source_revision:
+          type: integer
+          minimum: 1
+        observed_at:
+          type: string
+          format: date-time
+        web_url:
+          type: string
+          format: uri
+        plans:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickLearningPlanProgress'
       allOf:
       - if:
           required:
@@ -7638,6 +7673,25 @@ components:
             normalized_target: false
             origin_action_id: false
             event_id: {}
+      - if:
+          properties:
+            action:
+              const: learning-progress
+        then:
+          required:
+          - action_schema_version
+          - binding_id
+          - source_revision
+          - observed_at
+          - web_url
+          - plans
+          properties:
+            action_schema_version: {}
+            binding_id: {}
+            source_revision: {}
+            observed_at: {}
+            web_url: {}
+            plans: {}
       required:
       - action
       additionalProperties: false
@@ -8486,3 +8540,141 @@ components:
         properties:
           validated: false
           imported_at: {}
+    LightTickLearningStageProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - number
+      - title
+      - total_lessons
+      - published_lessons
+      - completed_lessons
+      - percent
+      properties:
+        number:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 500
+        total_lessons:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        published_lessons:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        completed_lessons:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+    LightTickLearningPlanProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - version
+      - status
+      - total_lessons
+      - published_lessons
+      - completed_lessons
+      - percent
+      - stages
+      properties:
+        id:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]{1,70}$
+        name:
+          type: string
+          maxLength: 500
+        version:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - active
+          - paused
+          - archived
+        total_lessons:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        published_lessons:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        completed_lessons:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        stages:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickLearningStageProgress'
+    LightTickLearningProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - source_revision
+      - observed_at
+      - received_at
+      - web_url
+      - plans
+      properties:
+        source_revision:
+          type: integer
+          minimum: 1
+        observed_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        web_url:
+          type: string
+          format: uri
+          maxLength: 1000
+        plans:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickLearningPlanProgress'
+    LightTickLearningProgressData:
+      type: object
+      additionalProperties: false
+      required:
+      - progress
+      properties:
+        progress:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickLearningProgress'
+          - type: 'null'
+    LightTickLearningProgressEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningProgressData'
+        requestId:
+          type: string

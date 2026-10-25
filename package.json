@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "node --experimental-transform-types --env-file-if-exists=.env.local src/main.ts",
     "dev:stack": "bash ./scripts/dev-stack.sh",
-    "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts",
-    "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts",
+    "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts && python3 build_scripts/generate_action_clients.py",
+    "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts && python3 build_scripts/generate_action_clients.py --check",
     "lint:api-contracts": "npm --prefix api-contracts run openapi:lint",
     "generate:public-i18n": "python3 build_scripts/generate_public_i18n.py --out src/generated/i18n/public-api-messages.generated.ts",
     "admin": "node --experimental-transform-types apps/admin-web/server.ts",

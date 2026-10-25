@@ -16658,6 +16658,563 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickLearningProgressEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "progress"
+      ],
+      "properties": {
+        "progress": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_revision",
+                "observed_at",
+                "received_at",
+                "web_url",
+                "plans"
+              ],
+              "properties": {
+                "source_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "received_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "web_url": {
+                  "type": "string",
+                  "format": "uri",
+                  "maxLength": 1000
+                },
+                "plans": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "version",
+                      "status",
+                      "total_lessons",
+                      "published_lessons",
+                      "completed_lessons",
+                      "percent",
+                      "stages"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "paused",
+                          "archived"
+                        ]
+                      },
+                      "total_lessons": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "published_lessons": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "completed_lessons": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "percent": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "stages": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "number",
+                            "title",
+                            "total_lessons",
+                            "published_lessons",
+                            "completed_lessons",
+                            "percent"
+                          ],
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "total_lessons": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "published_lessons": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "completed_lessons": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "percent": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningProgressEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "progress": (
+{
+  "source_revision": number;
+  "observed_at": string;
+  "received_at": string;
+  "web_url": string;
+  "plans": (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+}
+) | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickLearningProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_revision",
+    "observed_at",
+    "received_at",
+    "web_url",
+    "plans"
+  ],
+  "properties": {
+    "source_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "web_url": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 1000
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "version",
+          "status",
+          "total_lessons",
+          "published_lessons",
+          "completed_lessons",
+          "percent",
+          "stages"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "total_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "published_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "number",
+                "title",
+                "total_lessons",
+                "published_lessons",
+                "completed_lessons",
+                "percent"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "total_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "published_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "completed_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "percent": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLearningProgress = {
+  "source_revision": number;
+  "observed_at": string;
+  "received_at": string;
+  "web_url": string;
+  "plans": (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickLearningPlanProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version",
+    "status",
+    "total_lessons",
+    "published_lessons",
+    "completed_lessons",
+    "percent",
+    "stages"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "archived"
+      ]
+    },
+    "total_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "published_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "completed_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "title",
+          "total_lessons",
+          "published_lessons",
+          "completed_lessons",
+          "percent"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "total_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "published_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLearningPlanProgress = {
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+};
+
+export const LightTickLearningStageProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "number",
+    "title",
+    "total_lessons",
+    "published_lessons",
+    "completed_lessons",
+    "percent"
+  ],
+  "properties": {
+    "number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "total_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "published_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "completed_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+} as const;
+
+export type LightTickLearningStageProgress = {
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+};
+
 export const LightTickActionReviewScopeSchema = {
   "type": "object",
   "properties": {
@@ -16872,7 +17429,8 @@ export const LightTickGrowBridgeRequestSchema = {
         "source-context",
         "source-confirmation",
         "source-receipt",
-        "source-reconcile"
+        "source-reconcile",
+        "learning-progress"
       ]
     },
     "code": {
@@ -17140,6 +17698,125 @@ export const LightTickGrowBridgeRequestSchema = {
           }
         }
       ]
+    },
+    "source_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "web_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "version",
+          "status",
+          "total_lessons",
+          "published_lessons",
+          "completed_lessons",
+          "percent",
+          "stages"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "total_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "published_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "number",
+                "title",
+                "total_lessons",
+                "published_lessons",
+                "completed_lessons",
+                "percent"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "total_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "published_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "completed_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "percent": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "allOf": [
@@ -18401,6 +19078,33 @@ export const LightTickGrowBridgeRequestSchema = {
           "event_id": {}
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "learning-progress"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "action_schema_version",
+          "binding_id",
+          "source_revision",
+          "observed_at",
+          "web_url",
+          "plans"
+        ],
+        "properties": {
+          "action_schema_version": {},
+          "binding_id": {},
+          "source_revision": {},
+          "observed_at": {},
+          "web_url": {},
+          "plans": {}
+        }
+      }
     }
   ],
   "required": [
@@ -18411,7 +19115,7 @@ export const LightTickGrowBridgeRequestSchema = {
 
 export type LightTickGrowBridgeRequest = (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -18496,10 +19200,35 @@ export type LightTickGrowBridgeRequest = (
 };
 }
 );
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -18584,10 +19313,35 @@ export type LightTickGrowBridgeRequest = (
 };
 }
 );
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -18672,10 +19426,35 @@ export type LightTickGrowBridgeRequest = (
 };
 }
 );
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -18760,10 +19539,35 @@ export type LightTickGrowBridgeRequest = (
 };
 }
 );
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -18848,10 +19652,35 @@ export type LightTickGrowBridgeRequest = (
 };
 }
 );
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -18936,6 +19765,144 @@ export type LightTickGrowBridgeRequest = (
 };
 }
 );
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
 }
 );
 
@@ -39959,6 +40926,10 @@ export const GeneratedPublicContractNames = [
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",
   "LightTickId",
+  "LightTickLearningPlanProgress",
+  "LightTickLearningProgress",
+  "LightTickLearningProgressEnvelope",
+  "LightTickLearningStageProgress",
   "LightTickMinimumClientVersions",
   "LightTickNotificationPreferences",
   "LightTickOnboardingRequest",

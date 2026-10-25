@@ -1,0 +1,43 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "progress": {
+      "source_revision": 1,
+      "observed_at": "2026-10-25T10:00:00Z",
+      "received_at": "2026-10-25T10:00:01Z",
+      "web_url": "https://grow.example/",
+      "plans": [
+        {
+          "id": "plan-mobile-fixture",
+          "name": "手机学习进度",
+          "version": 1,
+          "status": "active",
+          "total_lessons": 2,
+          "published_lessons": 1,
+          "completed_lessons": 1,
+          "percent": 50,
+          "stages": [
+            {
+              "number": 1,
+              "title": "基础",
+              "total_lessons": 1,
+              "published_lessons": 1,
+              "completed_lessons": 1,
+              "percent": 100
+            },
+            {
+              "number": 2,
+              "title": "应用",
+              "total_lessons": 1,
+              "published_lessons": 0,
+              "completed_lessons": 0,
+              "percent": 0
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "requestId": "synthetic_learning_progress"
+}
