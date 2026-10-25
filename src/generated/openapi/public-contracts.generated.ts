@@ -21957,6 +21957,16 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
     "dateAnchor": {
       "type": "string",
       "format": "date"
+    },
+    "joint_activity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Accepted and started tonight_together activity. Retries and participants on different dates return its original session, including after completion."
+    },
+    "jointActivityId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Compatibility alias for joint_activity_id"
     }
   },
   "anyOf": [
@@ -21979,6 +21989,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId"?: string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 ) | (
@@ -21987,6 +21999,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId": string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 );
