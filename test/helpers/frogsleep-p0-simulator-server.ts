@@ -71,6 +71,8 @@ async function completedFixture() {
     await call(actor, "POST", `/sleep-buddy/shared-sessions/${sessions[0].session_id}/events`, {
       event_type: "morning_completed", occurred_at: new Date().toISOString() });
   }
+  // Materialize the real in-app notification; queued APNs jobs are not dispatched by this local fixture process.
+  await runtime.services.buddyNotificationWorkerService.processBatch(500);
   const result = { ...value, activityID: activity.id, goalID: goal.id, sessionID: sessions[0].session_id };
   const output = process.env.FROGSLEEP_P0_FIXTURE_PATH;
   if (output) await writeFile(output, JSON.stringify(result), { mode: 0o600 });
