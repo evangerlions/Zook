@@ -30,7 +30,7 @@ const app=await createApplication({seed,lighttickEnabled:true,lighttickRepositor
 const actions=app.services.lighttickRuntime!.actions;
 let offline=false;
 const server=createServer(async(req,res)=>{try{
- const url=new URL(req.url!,'http://localhost:3106');res.setHeader('Content-Type','application/json');
+ const url=new URL(req.url!,'http://localhost:3106');res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
  if(url.pathname==='/__reset'){offline=false;await repository.deleteOwnerData(owner);res.end('{}');return;}
  if(url.pathname==='/__actions_reset'){
   offline=false;await repository.deleteOwnerData(owner);const day=new Date().toISOString().slice(0,10);
@@ -82,6 +82,7 @@ const server=createServer(async(req,res)=>{try{
  if(headers.authorization==='Bearer record-ui-only')headers.authorization='Bearer '+app.services.tokenService.issueAccessToken(owner.userId,'lighttick');
  const raw=Buffer.concat(buffers).toString();
  const result=await app.app.handle({method:req.method!,path:url.pathname,query:Object.fromEntries(url.searchParams),headers,body:raw?JSON.parse(raw):undefined} as any);
+ if(url.pathname.endsWith('/private')){const data=(result.body as any)?.data;console.log(JSON.stringify({method:req.method,status:result.statusCode,revision:data?.state?.revision,submitted_revision:raw?JSON.parse(raw).revision:undefined,operations:data?.operations?.map((o:any)=>o.status)}));}
  res.statusCode=result.statusCode;res.end(JSON.stringify(result.body));
 }catch(error){res.statusCode=500;res.end(JSON.stringify({error:String(error)}));}});
 server.listen(testPort,'127.0.0.1',()=>console.log('Grow records UI harness on 127.0.0.1:3106 (synthetic owner, isolated PG)'));
