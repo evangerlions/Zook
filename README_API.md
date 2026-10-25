@@ -1354,3 +1354,34 @@ PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_
 ### Grow 手机学习计划进度（本地候选）
 
 `GET /api/v1/lighttick/action-plans/learning-progress` 读取正式账号本人已绑定 Grow 来源的最近快照，无快照返回 `data.progress:null`。有快照包含来源修订/观察和接收时间、配置网页地址、正式计划及阶段的总课数/发布数/本人学完数/百分比；不含课程正文、笔记、反馈或模型输出。匿名与游客不能读取私人进度。源每30秒通过受信 `grow-bridge action=learning-progress` 检查并持久重试投递，绑定、修订、摘要及阶段数量必须匹配；不接受客户端自报完成数。协议、配置、H5分工与开关见 [行动协议当前接入](docs/public-lighttick-actions.md#2026-10-25-原生执行及学习计划进度)。
+
+### FrogSleep 异步搭子留言与小花（V1，本地实现，未部署）
+
+所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/request_id` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
+
+| 方法 / 子路径 | 输入与结果 |
+| --- | --- |
+| GET `/center` | `include_content` 默认true、`limit` 1–20、`cursor`；合并相同搭子，返回每域capabilities及最近收到的便签。保护个人活动时传false，只读元数据。 |
+| GET `/capabilities` | 必填`relationship_id`；返回`capability`，含本人接收开关、revision、can_send、can_read_history、本人静默及next_send_at。 |
+| PUT `/permissions/{relationshipId}` | `enabled`、`expected_revision`、`operation_id`；仅修改本人定向接收，返回permission。默认关闭，与数据共享独立。 |
+| POST `/notes` | `relationship_id`、`operation_id`、`template_key`（可null）、`flower`、可选`context`；至少模板或一朵花，返回note及operation_id。 |
+| GET `/notes` | 可选`partner_id`、`domain: sleep/focus`、`limit`1–50、`cursor`；返回notes/next_cursor。游标绑定账号与筛选。 |
+| GET `/notes/{noteId}` | 返回当前仍授权且未到期的note。 |
+| GET `/operations/{operationId}` | 仅本人操作回执，state为accepted/not_sent/not_found；not_found不能推断原发送失败。 |
+| PUT `/operations/{operationId}/resolution` | `relationship_id`和原始`submission`快照；与发送共享事务锁，返回`operation`终态。确认先获锁则持久化not_sent，迟到发送拒绝；发送已提交则accepted。 |
+| POST `/notes/{noteId}/acknowledgement` | `operation_id`；接收者单次显式收下，返回note_id/acknowledged，不创建反向留言。 |
+
+模板固定 `focus_start_small/focus_keep_pace/focus_effort_seen/focus_restart/sleep_goodnight/sleep_no_rush/sleep_morning/sleep_support`，同域匹配；发送不接受domain/template_version/custom_text等额外字段。context仅支持同关系`{type: buddy_share|buddy_joint_activity,id}`且双方仍有对应数据授权；查询时撤回上下文不影响普通模板与花。无context不要求摘要/活动共享。
+
+滚动24小时同一发送人→接收人跨两域最多3条成功留言；重试不重复扣额。配额429 `BUDDY_SUPPORT_LIMIT_REACHED`返回本人`next_send_at/retry_after_seconds`；revision和异载荷操作冲突409；已封口操作409 `BUDDY_SUPPORT_OPERATION_CLOSED`；暂停、拉黑、解除、跨对象或无接收许可统一404 `BUDDY_SUPPORT_UNAVAILABLE`。模板/自由文字错误400。本人已持久化的操作终态可在关系解除后通过resolution确认，仅返回state/resource_id，不恢复正文；尚未建立终态时仍需当前可用关系。旧focus messages及growth encouragement/praise/support在试点关系上409 `BUDDY_SUPPORT_UPDATE_REQUIRED`，不能绕过许可。
+
+启用需先应用迁移075并配置 `FROGSLEEP_BUDDY_SUPPORT_ENABLED=true`、生产 `FROGSLEEP_SUPPORT_CURSOR_SECRET`（独立随机密钥，所有实例一致）。开关关闭时center返回enabled=false，其余support资源404；持久policy仍阻断试点旧写。受控内部`BuddySupportCommand.enroll`选择已验证双端版本的关系，不提供公开自动enroll接口，GET不写policy；enroll不替用户开启许可。首次试点需运营明确选定关系并验证双方兼容，当前未执行生产enroll。
+
+内容30天到期即时不可读，worker每轮批量物理清理1000条及31天前操作；删除FrogSleep账号同时清理双方相关便签/许可/操作。V1发送和收下均不创建Push、邮件或interaction_received通知，客户端不得自动重发未知操作。原focus消息7天生命周期保持不变。
+
+
+2026-10-24 support补充：仅服务端记载去重的`frogsleep_support_sent/acknowledged/receive_changed`事实，客户端公共analytics入口不接受这三种事件。元数据仅domain、花/模板类别或本人enabled布尔值，不采集正文、template_key、搭子ID、当地观看事实或上下文。统计失败不回滚已提交业务；不会建立通知。邀请页勾选后仍须先建立关系，再单独提交接收许可；不符合已验证试点资格时保持关闭，显示关系已连接/留言授权待重试。
+
+留言契约的 Swift/Kotlin/Zook 同源测试 fixture 位于客户端仓库 `contracts/fixtures/buddy-support-v1.json`；通过 `scripts/sync-buddy-support-fixture.py --check --zook-root /Users/hao/Documents/project/Zook` 校验快照，Zook 回归 `test/unit/frogsleep-support-contract.test.ts` 验证模板、域和毫秒日期。
+
+试点观察准备：`node --experimental-transform-types scripts/frogsleep-support-observation.ts docs/frogsleep-support-observation-input.example.json` 仅处理离线聚合；五项护栏必须是显式有效值，每组需真实完整 14 日数据及匹配的合格展示来源。缺失/无效返回 `not_ready`（退出码 2、guardrail=null），不按 0 处理；样本不足为 `insufficient_sample`（2），完整输入护栏越界为 `stop`（3），`review`（0）也不是发布通过。当前可信展示来源目录为空，输入不能自行注册，空示例及历史无来源整数输入都未就绪。始终 releaseReady=false、improvementClaim=false，不上传浏览、不开放 cohort。输入字段、来源注册边界与人工复核要求见[观察工具说明](docs/frogsleep-support-observation.md)。

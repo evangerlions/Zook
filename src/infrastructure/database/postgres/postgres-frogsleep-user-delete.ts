@@ -1,3 +1,4 @@
+import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
 type QueryFn = (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
 
 export async function deletePostgresFrogSleepBuddyUserData(query: QueryFn, appId: string,
@@ -11,6 +12,7 @@ export async function deletePostgresFrogSleepBuddyUserData(query: QueryFn, appId
     WHERE app_id = $1 AND (user_id_low = $2 OR user_id_high = $2)`);
   const result = await query(owned.join(" UNION "), [appId, userId]);
   const ids = result.rows.map(row => String((row as { id: string }).id));
+  await new PostgresBuddySupportRepository(query).deleteUser(appId, userId, ids);
   await deleteDerivedNotifications(query, appId, userId, ids);
   await query(`UPDATE zook_frogsleep_buddy_domain_slots SET state = 'available',
     relationship_id = NULL, version = version + 1, updated_at = NOW()

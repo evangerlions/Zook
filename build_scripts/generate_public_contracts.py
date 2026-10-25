@@ -292,6 +292,23 @@ SPECS: dict[str, list[str]] = {
 
 FROGSLEEP_SPECS: dict[str, list[str]] = {
     "frogsleep/api.yaml": [
+        "BuddySupportContext",
+        "BuddySupportSendRequest",
+        "BuddySupportPermissionRequest",
+        "BuddySupportResolveRequest",
+        "BuddySupportAckRequest",
+        "BuddySupportNote",
+        "BuddySupportCapability",
+        "BuddySupportPartner",
+        "BuddySupportCenterData",
+        "BuddySupportPageData",
+        "BuddySupportOperation",
+        "BuddySupportOperationData",
+        "BuddySupportCapabilityData",
+        "BuddySupportNoteData",
+        "BuddySupportPermission",
+        "BuddySupportPermissionData",
+        "BuddySupportAckData",
         "FrogSleepPasswordLoginRequest",
         "FrogSleepEmailCodeRequest",
         "FrogSleepEmailLoginRequest",
