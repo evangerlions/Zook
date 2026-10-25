@@ -1,0 +1,18 @@
+(node:53783) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ safety admin offers Jev toggle without replacing the stored Qwen key or disabling Aliyun (1.286625ms)
+✔ statistics widget loads on entry, avoids duplicate requests and reloads on reentry (765.070875ms)
+✔ statistics UI only submits date filters and displays Redis counts (0.292708ms)
+✔ real moderation widget toggles Jev both ways, preserves Qwen, and disables only the model input (10.676625ms)
+✔ chart presentation excludes unfinished requests and preserves unknown categories/models (5.138625ms)
+✔ chart options use consistent outcome colors, ordered dates and descending block counts (12.2095ms)
+✔ real ECharts renders all safety chart options without a browser or network (116.931042ms)
+✔ statistics charts render empty states and collapsed details without extra API calls (10.55525ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1193.393916

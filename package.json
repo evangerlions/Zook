@@ -15,6 +15,7 @@
     "admin:dev": "npm --prefix apps/admin-web run dev",
     "admin:install": "npm --prefix apps/admin-web install --include=optional",
     "admin:typecheck": "npm --prefix apps/admin-web run typecheck",
+    "check:lighttick-actions-types": "node apps/admin-web/node_modules/typescript/bin/tsc --project tsconfig.lighttick-actions.json",
     "check:line-count": "node scripts/check-source-line-count.mjs",
     "acceptance:frogsleep-dev": "node scripts/frogsleep-dev-acceptance.mjs",
     "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",

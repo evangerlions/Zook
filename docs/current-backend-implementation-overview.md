@@ -764,3 +764,15 @@ Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编
 2026-10-25 Grow G1：独立记录已与当前 shared action 主线整合；新增记录专用一对一绑定、私人暂存、来源冻结凭证、事务激活、防重放、激活前取消和只读恢复导出。PostgreSQL 076 为增量迁移；无真实用户搬迁、无环境发布。原生草稿转属和磁盘存储由客户端负责，后端只接受明确同步后的正式账户记录。
 
 迁移入口使用专用连接的会话级 advisory lock，串行多个 API/worker 实例的 DDL 重放，覆盖每个迁移文件的独立事务；连接结束/异常断开自动释放。并发 records + handoff PostgreSQL 验收实际复现过无锁 DDL 死锁，并已回归。
+
+沿用 PostgreSQL 074 JSONB workspace及账号事务锁；P0 v2内部运行时已支持nullable日程、time/content/check、累计分钟、completion/reversal、实际日期、来源证据消费与稳定错误码。公共写入与新接管硬关闭，既有开关仅提供读取；实际来源登记/投递和v2快照接管仍未完成，不声明可用content_receipts。canonical API见README_API.md和docs/public-lighttick-actions.md；现有goal/plan/task独立。原生未改，未发布或迁移真实账号。
+
+### 2026-10-21 LightTick 连接 P0 C2
+
+新增已绑定 Grow 私有来源证明、HMAC 行动上下文、确认事件 inbox/幂等回执和完成核对。复用现有 owner JSONB workspace/事务锁；没有新增独立后端。Grow 使用租户 publication journal + outbox 恢复投递，私密内容不进入事件载荷。普通连接写入、配对、v2 接管及公开消费者能力仍关闭。C3 接管与原生消费者、生产部署待后续验证；详见 docs/public-lighttick-actions.md 与 docs/verification/lighttick-source-delivery/README.md。
+
+### 2026-10-21 C2 验收工程门禁修复
+
+8 个超长文件已按现有职责拆分：基础设施装配、LightTick 响应投影、数据库 BodyLog 类型端口、RBAC 查询、成长后台查询、习惯模板 CRUD、小组查询/日记录/通知及后台 BodyLog/LLM API。外部方法、初始化顺序、SQL 查询和事务 query 回调保持不变；现有行数阈值/豁免名单未修改。详见 `docs/verification/lighttick-source-repair/README.md` 的回归与等价核对证据。本轮不实现 C3，不修改原生端或连接写入门禁。
+
+2026-10-21 LightTick C3 增量：内部八类快照 v2 的只读全图预检、原子导入和持久幂等接管回执可在隔离环境验证；公开配对/导入/普通写入继续关闭，未增加运行时预检路由。Grow 接管前后回执查询已衔接。私有协调与来源屏障已补齐：先等待在途来源、复核摘要、原子备份/冻结，再导入并核对回执；pending 暂停新确认，未完成来源日志阻断冻结，迁移事件延续 C2 outbox 核对。隔离 HTTP 与双方进程重启恢复见 `docs/verification/lighttick-handoff-cutover/README.md`。原生 C4/C5、真实环境与公开放行仍未完成，不能标记全部 P0 通过。

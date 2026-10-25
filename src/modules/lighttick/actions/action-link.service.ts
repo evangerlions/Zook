@@ -5,7 +5,7 @@ import {canonical,digest,fields,validateParent,object,text,date,integer,reject} 
 export class ActionLinkService {
  constructor(readonly actions:ActionService,readonly secret:string,readonly clock=()=>new Date()){}
  get repository():LightTickRepository{return this.actions.repository;}
- requireConfigured(){if(this.secret.length<32)reject(503,'网页联动服务尚未配置。');}
+ requireConfigured(){if(this.secret.length<32)reject(503,'网页联动服务尚未配置。','SOURCE_DELIVERY_UNAVAILABLE');}
  verify(source:string,timestamp:string,nonce:string,signature:string,body:unknown){
   this.requireConfigured();text(source,160,true);
   if(!/^\d{10}$/.test(timestamp)||Math.abs(this.clock().getTime()/1000-Number(timestamp))>120||!/^[a-zA-Z0-9-]{16,100}$/.test(nonce)||!/^[a-f0-9]{64}$/.test(signature))reject(403,'联动请求已过期或签名无效。');
@@ -37,11 +37,14 @@ export class ActionLinkService {
    await this.repository.lockActionOwner(link);const current=await this.linked(source),snapshot=object(input.snapshot),hash=text(input.snapshot_hash,64,true);
    if(digest(snapshot)!==hash)reject(422,'导入快照校验失败。');
    if(current.import_hash){if(current.import_hash!==hash)reject(409,'这个连接已经接管其他快照，禁止覆盖。');return current.receipt!;}
+   for(const name of ['plans','records','reviews','reports','operations','claims'])if(!Array.isArray(snapshot[name]))reject(422,'导入对象列表无效。');
+   for(const item of [...snapshot.plans,...snapshot.records])object(item);
+   if(snapshot.snapshot_version!==undefined&&snapshot.snapshot_version!==1||snapshot.schema_version!==undefined&&snapshot.schema_version!==1||snapshot.content_sources||snapshot.content_events||snapshot.events||snapshot.plans.some((p:Json)=>p.schema_version!==undefined&&p.schema_version!==1||p.completion_mode&&p.completion_mode!=='time')||snapshot.records.some((r:Json)=>r.schema_version!==undefined&&r.schema_version!==1||r.record_kind||r.source_event_id))
+    reject(409,'P0快照接管仍待事件和双端合同验证。','CONTRACT_UPGRADE_REQUIRED');
    if(Buffer.byteLength(canonical(snapshot))>4*1024*1024)reject(422,'快照超过首版导入上限，原始数据保留。');
    const row=await this.actions.readWorkspace(current),w=row.data;
-   for(const name of ['plans','records','reviews','reports','operations','claims'])if(!Array.isArray(snapshot[name]))reject(422,'导入对象列表无效。');
    const plans:ActionPlan[]=snapshot.plans.map((v:Json)=>{
-    const p={...fields(v),id:text(v.id,80,true),revision:integer(v.revision,1,2147483647),status:v.status,created_at:text(v.created_at,80,true),updated_at:text(v.updated_at,80,true),reminder_at:text(v.reminder_at,80,true)};
+    const p={...fields(v),id:text(v.id,80,true),schema_version:1 as const,completed_at:null,completion_record_id:null,revision:integer(v.revision,1,2147483647),status:v.status,created_at:text(v.created_at,80,true),updated_at:text(v.updated_at,80,true),reminder_at:text(v.reminder_at,80,true)};
     if(!/^action-[a-zA-Z0-9-]+$/.test(p.id)||!['active','paused','completed','archived'].includes(p.status)||![p.created_at,p.updated_at,p.reminder_at].every(t=>Number.isFinite(Date.parse(t))))reject(422,'计划快照无效。');return p;
    });
    const merge=(old:Json[],incoming:Json[])=>{const ids=new Set<string>();for(const item of incoming){const id=text(item.id,160,true);if(ids.has(id))reject(422,'快照含重复对象。');ids.add(id);const previous=old.find(p=>p.id===id);if(previous&&digest(previous)!==digest(item))reject(409,'源对象与现有对象冲突。');if(!previous)old.push(structuredClone(item));}};

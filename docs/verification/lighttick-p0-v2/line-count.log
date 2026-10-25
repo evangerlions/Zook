@@ -1,0 +1,13 @@
+
+> zook-backend-scaffold@0.1.0 check:line-count
+> node scripts/check-source-line-count.mjs
+
+source line-count gate failed: 8 files exceed their limit or legacy baseline
+  873  src/modules/bodylog/bodylog-group.service.ts
+  820  src/infrastructure/database/postgres/postgres-bodylog-admin.ts
+  746  src/infrastructure/database/application-database.ts
+  712  src/infrastructure/database/postgres/postgres-database.ts
+  669  apps/admin-web/app/lib/admin-api.ts
+  646  src/application-factory.ts
+  644  src/infrastructure/database/postgres/postgres-bodylog-checkin.ts
+  605  src/app/lighttick-v1-routes.ts
