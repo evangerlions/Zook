@@ -1,3 +1,6 @@
+import {receiveLibrary} from '../../src/modules/lighttick/learning/learning-library.ts';
+import {digest} from '../../src/modules/lighttick/actions/action.validation.ts';
+import {readFileSync} from 'node:fs';
 /** Local-only native acceptance harness. Never deploy: uses synthetic identity and a disposable PostgreSQL URL. */
 import {createServer} from 'node:http';
 import {Pool} from 'pg';
@@ -41,6 +44,18 @@ const server=createServer(async(req,res)=>{try{
   const link={...owner,source_account_id:'native-ui-'+testUser,binding_id:'native-ui-binding-'+testUser,phase:'active' as const};await repository.saveActionLink(link);
   const first={total_lessons:1,published_lessons:1,completed_lessons:1,percent:100},second={total_lessons:1,published_lessons:0,completed_lessons:0,percent:0};
   await receiveLearningProgress(actions,link,{action:'learning-progress',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:new Date().toISOString(),web_url:'http://127.0.0.1:61500/',plans:[{id:'plan-native-ui',name:'手机学习进度',version:1,status:'active',total_lessons:2,published_lessons:1,completed_lessons:1,percent:50,stages:[{number:1,title:'基础',...first},{number:2,title:'应用',...second}]}]});res.end('{}');return;
+ }
+ if(['/__learning_seed','/__learning_update','/__learning_revoke'].includes(url.pathname)){
+  offline=false;
+  const source='reading-ui-'+testUser,binding='reading-ui-binding-'+testUser;
+  if(url.pathname==='/__learning_seed'){await repository.deleteOwnerData(owner);await repository.saveActionLink({...owner,source_account_id:source,binding_id:binding,phase:'staged'});}
+  const link=await repository.getActionLink(source);if(!link)throw Error('Seed the synthetic reading binding first');
+  const old=await repository.getLearningLibrary(owner),revision=Number(old?.source_revision??0)+1;
+  const lessons=[1,2].map(n=>{const l=JSON.parse(readFileSync(new URL('../../api-contracts/fixtures/lighttick/learning-lesson-sample-'+n+'.json',import.meta.url),'utf8')).data.lesson;
+   l.id='lesson-private-'+n;l.collection_id='yingyu';l.collection_title='UI 来源英文课程';l.source_url='http://127.0.0.1:61500/#mobile/learn/'+l.id;
+   if(url.pathname==='/__learning_update')l.content+='\n\n## Published revision two\n\nPlease review this updated source.';
+   l.content_version=digest({content:l.content,references:l.references});return l;});
+  res.end(JSON.stringify(await receiveLibrary(actions,link,{action:'learning-library',action_schema_version:2,binding_id:binding,source_revision:revision,observed_at:new Date().toISOString(),consent_enabled:url.pathname!='/__learning_revoke',lessons:url.pathname==='/__learning_revoke'?[]:lessons})));return;
  }
  if(url.pathname==='/__offline'){offline=true;res.end('{}');return;}
  if(url.pathname==='/__online'){offline=false;res.end('{}');return;}

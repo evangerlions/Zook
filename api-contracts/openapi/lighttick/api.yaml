@@ -2870,7 +2870,8 @@ paths:
       - LightTick
       summary: 读取经本人单独授权的绑定来源课程目录
       description: 只读，不改变学习完成；未授权目录为空，正文404。撤回后在线设备清理镜像；离线旧缓存须在设备清理。
-      security: []
+      security:
+      - bearerAuth: []
       parameters: []
       responses:
         '200':
@@ -2894,7 +2895,8 @@ paths:
       - LightTick
       summary: 读取经本人单独授权的绑定来源课程正文
       description: 只读，不改变学习完成；未授权目录为空，正文404。撤回后在线设备清理镜像；离线旧缓存须在设备清理。
-      security: []
+      security:
+      - bearerAuth: []
       parameters:
       - name: lessonId
         in: path
