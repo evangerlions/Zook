@@ -28,6 +28,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
 components:
   schemas:
     AnalyticsBatchRequest:
@@ -64,6 +66,5 @@ components:
         code: { type: string, example: OK }
         message: { type: string, example: success }
         data:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/AnalyticsAcceptedData'
         requestId: { type: string }

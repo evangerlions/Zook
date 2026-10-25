@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "templates": [
+    "focus_start_small",
+    "focus_keep_pace",
+    "focus_effort_seen",
+    "focus_restart",
+    "sleep_goodnight",
+    "sleep_no_rush",
+    "sleep_morning",
+    "sleep_support"
+  ],
+  "operation": {
+    "operation_id": "fixture-operation",
+    "state": "not_sent",
+    "resource_id": null
+  },
+  "error": {
+    "code": "BUDDY_SUPPORT_LIMIT_REACHED",
+    "data": {
+      "next_send_at": "2026-10-25T10:00:00Z",
+      "retry_after_seconds": 120
+    }
+  },
+  "center": {
+    "enabled": true,
+    "partners": [
+      {
+        "partner_id": "alice",
+        "display_name": "Alice",
+        "relationships": [
+          {
+            "relationship_id": "fixture-focus",
+            "domain": "focus",
+            "enabled": true,
+            "can_send": true,
+            "can_read_history": true,
+            "own_receive_enabled": false,
+            "permission_revision": 0,
+            "next_send_at": null,
+            "is_muted": false
+          }
+        ],
+        "has_note": true,
+        "latest_received_note": {
+          "id": "fixture-note",
+          "relationship_id": "fixture-focus",
+          "domain": "focus",
+          "sender_id": "alice",
+          "recipient_id": "bob",
+          "template_key": "focus_start_small",
+          "template_version": 1,
+          "flower": true,
+          "created_at": "2026-10-24T10:00:00.123Z",
+          "expires_at": "2026-11-23T10:00:00.123Z",
+          "acknowledged": false,
+          "can_acknowledge": true
+        }
+      }
+    ],
+    "next_cursor": null,
+    "server_time": "2026-10-24T10:00:00.123Z"
+  }
+}

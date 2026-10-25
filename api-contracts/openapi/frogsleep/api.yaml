@@ -11,10 +11,15 @@ servers:
 security: []
 tags:
   - name: frogsleep
+    description: FrogSleep account-scoped application capabilities.
   - name: frogsleep-auth
+    description: Account authentication, session renewal and recovery.
   - name: frogsleep-sleep-buddy
+    description: Shared sleep invitations, relationships and sessions.
   - name: frogsleep-focus-buddy
+    description: Shared focus invitations, relationships and sessions.
   - name: frogsleep-product-data
+    description: Private sleep data, synchronization and entitlements.
 paths:
   /api/v1/frogsleep/product-data/sleep-sessions:
     get:
@@ -296,6 +301,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailCodeRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/email/auth-code:
     post:
       operationId: frogSleepSendEmailCodeAlias
@@ -309,6 +316,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailCodeRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/email/change-code:
     post:
       operationId: frogSleepSendEmailChangeCode
@@ -324,6 +333,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailCodeRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/auth/email/login:
     post:
       operationId: frogSleepEmailLogin
@@ -337,6 +348,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/email/complete:
     post:
       operationId: frogSleepEmailLoginCompleteAlias
@@ -350,6 +363,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/email/verify:
     post:
       operationId: frogSleepEmailLoginVerifyAlias
@@ -363,6 +378,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/email/register:
     post:
       operationId: frogSleepEmailRegister
@@ -376,6 +393,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailRegisterRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/password/register:
     post:
       operationId: frogSleepPasswordRegister
@@ -389,6 +408,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailRegisterRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/password/login:
     post:
       operationId: frogSleepPasswordLogin
@@ -402,6 +423,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepPasswordLoginRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/password/reset/request:
     post:
       operationId: frogSleepRequestPasswordReset
@@ -415,6 +438,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepPasswordResetRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/password/reset/confirm:
     post:
       operationId: frogSleepConfirmPasswordReset
@@ -428,6 +453,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepPasswordResetConfirmRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/password/change:
     post:
       operationId: frogSleepChangePassword
@@ -443,6 +470,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepPasswordChangeRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/auth/token/refresh:
     post:
       operationId: frogSleepRefreshToken
@@ -456,6 +485,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepTokenRefreshRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/frogsleep/auth/logout:
     post:
       operationId: frogSleepLogout
@@ -465,6 +496,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/me:
     get:
       operationId: frogSleepCurrentUser
@@ -474,6 +507,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/me/account:
     delete:
       operationId: frogSleepDeleteAccount
@@ -483,6 +518,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/auth/email/bind:
     post:
       operationId: frogSleepBindEmail
@@ -498,6 +535,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/auth/email/change:
     post:
       operationId: frogSleepChangeEmail
@@ -513,6 +552,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/devices:
     post:
       operationId: frogSleepRegisterDevice
@@ -529,6 +570,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepDeviceRegisterRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/devices/{deviceId}:
     delete:
       operationId: frogSleepDeleteDevice
@@ -540,6 +583,8 @@ paths:
         - $ref: "#/components/parameters/DeviceId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites:
     post:
       operationId: frogSleepCreateSleepInvite
@@ -555,6 +600,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepInviteCreateRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/preview:
     get:
       operationId: frogSleepPreviewSleepInvite
@@ -567,6 +614,8 @@ paths:
         - $ref: "#/components/parameters/InviteCode"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/pending:
     get:
       operationId: frogSleepListPendingSleepInvites
@@ -576,6 +625,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/accept-code:
     post:
       operationId: frogSleepAcceptSleepInviteByCode
@@ -591,6 +642,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/accept-token:
     post:
       operationId: frogSleepAcceptSleepInviteByToken
@@ -606,6 +659,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/accept:
     post:
       operationId: frogSleepAcceptSleepInviteById
@@ -617,6 +672,8 @@ paths:
         - $ref: "#/components/parameters/InviteId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/decline:
     post:
       operationId: frogSleepDeclineSleepInvite
@@ -628,6 +685,8 @@ paths:
         - $ref: "#/components/parameters/InviteId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/cancel:
     post:
       operationId: frogSleepCancelSleepInvite
@@ -639,6 +698,8 @@ paths:
         - $ref: "#/components/parameters/InviteId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/relationships/current:
     get:
       operationId: frogSleepCurrentSleepRelationship
@@ -648,6 +709,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/pause:
     post:
       operationId: frogSleepPauseSleepRelationship
@@ -659,6 +722,8 @@ paths:
         - $ref: "#/components/parameters/RelationshipId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/resume:
     post:
       operationId: frogSleepResumeSleepRelationship
@@ -670,6 +735,8 @@ paths:
         - $ref: "#/components/parameters/RelationshipId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/revoke:
     post:
       operationId: frogSleepRevokeSleepRelationship
@@ -681,6 +748,8 @@ paths:
         - $ref: "#/components/parameters/RelationshipId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences:
     patch:
       operationId: frogSleepUpdateGuardianshipPreferences
@@ -698,6 +767,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepSleepPreferencesRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/guardianship/status:
     get:
       operationId: frogSleepGuardianshipStatus
@@ -707,6 +778,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-sessions:
     post:
       operationId: frogSleepCreateSharedSleepSession
@@ -722,6 +795,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepSharedSleepSessionRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-sessions/active:
     get:
       operationId: frogSleepActiveSharedSleepSession
@@ -731,6 +806,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/accept:
     post:
       operationId: frogSleepAcceptSharedSleepSession
@@ -742,6 +819,8 @@ paths:
         - $ref: "#/components/parameters/SessionId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/events:
     post:
       description: >-
@@ -764,6 +843,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepSharedSleepEventRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/pause-tonight:
     post:
       operationId: frogSleepPauseSharedSleepSessionTonight
@@ -775,6 +856,8 @@ paths:
         - $ref: "#/components/parameters/SessionId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-summaries/latest:
     get:
       operationId: frogSleepLatestSharedSleepSummary
@@ -784,6 +867,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/sleep-buddy/shared-recaps/latest:
     get:
       operationId: frogSleepLatestSharedSleepRecap
@@ -793,6 +878,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/sessions:
     get:
       operationId: frogSleepListFocusSessions
@@ -802,6 +889,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     post:
       operationId: frogSleepReportFocusSession
       tags: [frogsleep, frogsleep-focus-buddy]
@@ -837,6 +926,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/achievements:
     get:
       operationId: frogSleepFocusAchievements
@@ -846,6 +937,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/achievements/notify:
     post:
       operationId: frogSleepNotifyFocusAchievement
@@ -861,6 +954,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepFocusAchievementNotifyRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/match-profile:
     delete:
       operationId: frogSleepDeleteFocusProfile
@@ -872,6 +967,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     post:
       operationId: frogSleepSaveFocusProfile
       tags: [frogsleep, frogsleep-focus-buddy]
@@ -888,6 +985,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepFocusProfileRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/match-profile/me:
     get:
       operationId: frogSleepGetFocusProfile
@@ -899,6 +998,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/matches/search:
     post:
       operationId: frogSleepSearchFocusMatches
@@ -910,6 +1011,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/matches/{userId}/invite:
     post:
       operationId: frogSleepInviteFocusMatch
@@ -923,6 +1026,8 @@ paths:
         - $ref: "#/components/parameters/UserId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/matches/{userId}/dismiss:
     post:
       operationId: frogSleepDismissFocusMatch
@@ -936,6 +1041,8 @@ paths:
         - $ref: "#/components/parameters/UserId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/matches/{userId}/report:
     post:
       operationId: frogSleepReportFocusMatch
@@ -949,6 +1056,8 @@ paths:
         - $ref: "#/components/parameters/UserId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites:
     post:
       operationId: frogSleepCreateFocusInvite
@@ -964,6 +1073,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepInviteCreateRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites/preview:
     get:
       operationId: frogSleepPreviewFocusInvite
@@ -976,6 +1087,8 @@ paths:
         - $ref: "#/components/parameters/InviteCode"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites/pending:
     get:
       operationId: frogSleepListPendingFocusInvites
@@ -984,6 +1097,8 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites/{inviteId}/decline:
     post:
       operationId: frogSleepDeclineFocusInvite
@@ -993,6 +1108,8 @@ paths:
       parameters: [{ $ref: "#/components/parameters/InviteId" }]
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites/{inviteId}/cancel:
     post:
       operationId: frogSleepCancelFocusInvite
@@ -1002,6 +1119,8 @@ paths:
       parameters: [{ $ref: "#/components/parameters/InviteId" }]
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites/accept-code:
     post:
       operationId: frogSleepAcceptFocusInviteByCode
@@ -1017,6 +1136,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/invites/accept-token:
     post:
       operationId: frogSleepAcceptFocusInviteByToken
@@ -1032,6 +1153,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/relationships/current:
     get:
       operationId: frogSleepCurrentFocusRelationship
@@ -1041,6 +1164,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/accept:
     post:
       operationId: frogSleepAcceptFocusRelationship
@@ -1052,6 +1177,8 @@ paths:
         - $ref: "#/components/parameters/RelationshipId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/decline:
     post:
       operationId: frogSleepDeclineFocusRelationship
@@ -1063,6 +1190,8 @@ paths:
         - $ref: "#/components/parameters/RelationshipId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/revoke:
     post:
       operationId: frogSleepRevokeFocusRelationship
@@ -1074,6 +1203,8 @@ paths:
         - $ref: "#/components/parameters/RelationshipId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/messages:
     get:
       operationId: frogSleepListFocusMessages
@@ -1083,6 +1214,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     post:
       operationId: frogSleepSendFocusMessage
       tags: [frogsleep, frogsleep-focus-buddy]
@@ -1097,6 +1230,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepFocusMessageRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/presence:
     get:
       operationId: frogSleepFocusPresence
@@ -1106,6 +1241,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/comparison:
     get:
       operationId: frogSleepFocusComparison
@@ -1115,6 +1252,8 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/focus-buddy/shared:
     get:
       operationId: frogSleepFocusSharedMoments
@@ -1149,6 +1288,8 @@ paths:
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationCreateRequest" } } }
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     get:
       operationId: frogSleepListBuddyInvitations
       tags: [frogsleep]
@@ -1168,7 +1309,10 @@ paths:
           required: false
           schema: { type: string }
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200": {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {data: {
+                               type: object, properties: {invitations: {type: array, items: {$ref: '#/components/schemas/BuddyInvitationView'}}}}}}]}}}}
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/buddy/invitations/{inviteId}:
     get:
       operationId: frogSleepPreviewBuddyInvitationById
@@ -1178,7 +1322,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/InviteId"
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200": {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {data: {
+                               $ref: '#/components/schemas/BuddyInvitationView'}}}]}}}}
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/buddy/invitations/{inviteId}/delivery:
     get:
       operationId: frogSleepGetBuddyInvitationDelivery
@@ -1188,7 +1335,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/InviteId"
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200": {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {data: {
+                               type: object, required: [invitation_id, delivery], properties: {invitation_id: {type: string}, delivery: {$ref: '#/components/schemas/BuddyInvitationDelivery'}}}}}]}}}}
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/buddy/invitations/preview:
     get:
       operationId: frogSleepPreviewBuddyInvitation
@@ -1201,7 +1351,10 @@ paths:
         - { name: code, in: query, required: false, schema: { type: string } }
         - { name: notification_id, in: query, required: false, schema: { type: string } }
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200": {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {data: {
+                               $ref: '#/components/schemas/BuddyInvitationView'}}}]}}}}
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/buddy/invitations/{inviteId}/accept:
     post:
       operationId: frogSleepAcceptBuddyInvitation
@@ -1212,7 +1365,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/invitations/{inviteId}/decline:
     post:
       operationId: frogSleepDeclineBuddyInvitation
@@ -1223,7 +1376,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/invitations/{inviteId}/cancel:
     post:
       operationId: frogSleepCancelBuddyInvitation
@@ -1234,7 +1387,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept:
     post:
       operationId: frogSleepAcceptBuddyInvitationDomain
@@ -1445,7 +1598,7 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: relationshipId, in: path, required: true, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
     put:
       operationId: frogSleepReplaceOwnBuddySharingGrants
       tags: [frogsleep]
@@ -1473,14 +1626,14 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddySharingGrantUpdateRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups:
     get:
       operationId: frogSleepListBuddyGroups
       tags: [frogsleep]
       summary: List the authenticated viewer's active buddy groups
       security: [{ bearerAuth: [] }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
     post:
       operationId: frogSleepCreateBuddyGroup
       tags: [frogsleep]
@@ -1489,7 +1642,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupCreateRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}:
     get:
       operationId: frogSleepGetBuddyGroup
@@ -1497,7 +1650,7 @@ paths:
       summary: Get a buddy group detail visible to an active member
       security: [{ bearerAuth: [] }]
       parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
     patch:
       operationId: frogSleepUpdateBuddyGroup
       tags: [frogsleep]
@@ -1507,7 +1660,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupUpdateRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}/hub:
     get:
       operationId: frogSleepGetBuddyGroupHub
@@ -1515,7 +1668,7 @@ paths:
       summary: Get member presence, recent activity, and viewer actions for one buddy group
       security: [{ bearerAuth: [] }]
       parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}/invitations:
     get:
       operationId: frogSleepListBuddyGroupInvitations
@@ -1523,7 +1676,7 @@ paths:
       summary: List invitations for a buddy group visible to an active member
       security: [{ bearerAuth: [] }]
       parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
     post:
       operationId: frogSleepCreateBuddyGroupInvitation
       tags: [frogsleep]
@@ -1533,7 +1686,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupInviteRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/invitations/{invitationId}/{action}:
     post:
       operationId: frogSleepRespondBuddyGroupInvitation
@@ -1543,7 +1696,7 @@ paths:
       parameters:
         - { name: invitationId, in: path, required: true, schema: { type: string } }
         - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel] } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}:
     post:
       operationId: frogSleepRemoveBuddyGroupMember
@@ -1553,7 +1706,7 @@ paths:
       parameters:
         - { name: groupId, in: path, required: true, schema: { type: string } }
         - { name: userId, in: path, required: true, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}/role:
     patch:
       operationId: frogSleepUpdateBuddyGroupMemberRole
@@ -1566,7 +1719,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupRoleUpdateRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}/{action}:
     post:
       operationId: frogSleepActOnBuddyGroup
@@ -1576,7 +1729,7 @@ paths:
       parameters:
         - { name: groupId, in: path, required: true, schema: { type: string } }
         - { name: action, in: path, required: true, schema: { type: string, enum: [leave, pause, resume, dissolve] } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/groups/{groupId}/grants:
     get:
       operationId: frogSleepListBuddyGroupGrants
@@ -1584,7 +1737,7 @@ paths:
       summary: List the group sharing baseline grants for active members
       security: [{ bearerAuth: [] }]
       parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/notifications:
     get:
       operationId: frogSleepListBuddyNotifications
@@ -1616,7 +1769,7 @@ paths:
       tags: [frogsleep]
       summary: Get buddy notification categories, quiet hours, cooldown, and daily budget
       security: [{ bearerAuth: [] }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
     patch:
       operationId: frogSleepUpdateBuddyNotificationPreferences
       tags: [frogsleep]
@@ -1625,14 +1778,14 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyNotificationPreferencesRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/hub:
     get:
       operationId: frogSleepGetBuddyGrowthHub
       tags: [frogsleep]
       summary: Get a viewer-filtered buddy growth snapshot
       security: [{ bearerAuth: [] }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/activity:
     get:
       operationId: frogSleepListBuddyGrowthActivity
@@ -1642,7 +1795,7 @@ paths:
       parameters:
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
         - { name: cursor, in: query, required: false, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/shares:
     post:
       operationId: frogSleepCreateBuddyStructuredShare
@@ -1652,7 +1805,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyStructuredShareRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/interactions:
     post:
       operationId: frogSleepCreateBuddyInteraction
@@ -1662,7 +1815,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInteractionRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/joint-activities:
     post:
       operationId: frogSleepCreateBuddyJointActivity
@@ -1672,7 +1825,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyJointActivityRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/joint-activities/{activityId}/{action}:
     post:
       operationId: frogSleepRespondBuddyJointActivity
@@ -1689,7 +1842,7 @@ paths:
       parameters:
         - { name: activityId, in: path, required: true, schema: { type: string } }
         - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, start, complete] } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/goals:
     get:
       operationId: frogSleepListBuddyJointGoals
@@ -1705,7 +1858,7 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: relationship_id, in: query, required: false, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
     post:
       operationId: frogSleepCreateBuddyJointGoal
       tags: [frogsleep]
@@ -1714,7 +1867,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyJointGoalCreateRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/goals/{goalId}/{action}:
     post:
       operationId: frogSleepActOnBuddyJointGoal
@@ -1727,7 +1880,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyJointGoalActionRequest" } } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/milestones:
     get:
       operationId: frogSleepListBuddyMilestones
@@ -1736,7 +1889,7 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: relationship_id, in: query, required: false, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/weekly-reports:
     get:
       operationId: frogSleepListBuddyWeeklyReports
@@ -1745,7 +1898,9 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: relationship_id, in: query, required: false, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {
+                                 data: {type: object, properties: {reports: {type: array, items: {$ref: '#/components/schemas/BuddyWeeklyReportView'}}}}}}]}}}}, '401': {description: 'Missing,
+                       invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/weekly-reports/{reportId}:
     get:
       operationId: frogSleepGetBuddyWeeklyReport
@@ -1754,21 +1909,22 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: reportId, in: path, required: true, schema: { type: string } }
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {
+                                 data: {$ref: '#/components/schemas/BuddyWeeklyReportView'}}}]}}}}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/notifications/unread-count:
     get:
       operationId: frogSleepBuddyNotificationUnreadCount
       tags: [frogsleep]
       summary: Get the authenticated viewer's buddy notification unread count
       security: [{ bearerAuth: [] }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/notifications/mark-all-read:
     post:
       operationId: frogSleepMarkAllBuddyNotificationsRead
       tags: [frogsleep]
       summary: Mark all viewer-owned buddy notifications read
       security: [{ bearerAuth: [] }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/notifications/{notificationId}/read:
     post:
       operationId: frogSleepMarkBuddyNotificationRead
@@ -1776,7 +1932,7 @@ paths:
       summary: Mark one viewer-owned buddy notification read
       security: [{ bearerAuth: [] }]
       parameters: [{ name: notificationId, in: path, required: true, schema: { type: string } }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/buddy/notifications/{notificationId}/route:
     get:
       operationId: frogSleepResolveBuddyNotificationRoute
@@ -1784,7 +1940,7 @@ paths:
       summary: Resolve a viewer-owned buddy notification to a still-valid safe route
       security: [{ bearerAuth: [] }]
       parameters: [{ name: notificationId, in: path, required: true, schema: { type: string } }]
-      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+      responses: {'200': {$ref: '#/components/responses/FrogSleepOk'}, '401': {description: 'Missing, invalid or expired bearer credentials.'}}
   /api/v1/frogsleep/product-data/sleep-reports:
     get:
       operationId: frogSleepListSleepReports
@@ -1871,7 +2027,8 @@ paths:
       description: Account-scoped epoch and commit-ordered sequence; restore pages retain a fixed historical view. Signed cursors expire after seven days. Changes include tombstones and use changes_cursor for the next poll.
       security: [{ bearerAuth: [] }]
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200": {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {data: {
+                               $ref: '#/components/schemas/FrogSleepPersonalSyncState'}}}]}}}}
         "409": { $ref: "#/components/responses/PersonalSyncError" }
         "503": { $ref: "#/components/responses/PersonalSyncError" }
   /api/v1/frogsleep/product-data/personal-sync/restore:
@@ -1916,6 +2073,8 @@ paths:
         - $ref: "#/components/parameters/PersonalRevision"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     put:
       operationId: frogSleepPutProgressSnapshot
       tags: [frogsleep, frogsleep-product-data]
@@ -1935,6 +2094,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepProgressSnapshotRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     patch:
       operationId: frogSleepPatchProgressSnapshot
       tags: [frogsleep, frogsleep-product-data]
@@ -1954,6 +2115,8 @@ paths:
               $ref: "#/components/schemas/FrogSleepProgressSnapshotRequest"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
     delete:
       description: For report_preferences, data.resource contains the full tombstone with revision and sync_epoch; top-level metadata aliases remain.
       operationId: frogSleepDeleteReportPreferences
@@ -1976,7 +2139,10 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "200": {description: Successful response, content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/FrogSleepEnvelope'}, {type: object, properties: {data: {
+                               $ref: '#/components/schemas/FrogSleepEntitlementData'}}}]}}}}
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/buddy/users/{targetUserId}/block:
     post:
       operationId: frogSleepBlockBuddyUser
@@ -1997,6 +2163,8 @@ paths:
                 note: { type: string, maxLength: 1000 }
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/frogsleep/buddy/users/{targetUserId}/unblock:
     post:
       operationId: frogSleepUnblockBuddyUser
@@ -2008,6 +2176,8 @@ paths:
         - $ref: "#/components/parameters/TargetUserId"
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /frogsleep/sleep-buddy-invite:
     get:
       operationId: frogSleepSleepInviteRedirect
@@ -2030,6 +2200,496 @@ paths:
       responses:
         "302":
           description: Redirects to a FrogSleep deep link with mode=preview; never encodes consent
+  /api/v1/frogsleep/buddy-support/center:
+    get:
+      operationId: frogSleepSupportCenter
+      tags:
+      - frogsleep
+      summary: frogSleepSupportCenter
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportCenterData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 20
+      - in: query
+        name: include_content
+        required: false
+        schema:
+          type: boolean
+  /api/v1/frogsleep/buddy-support/capabilities:
+    get:
+      operationId: frogSleepSupportCapabilities
+      tags:
+      - frogsleep
+      summary: frogSleepSupportCapabilities
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportCapabilityData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: query
+        name: relationship_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/permissions/{relationship_id}:
+    put:
+      operationId: frogSleepSupportReceiving
+      tags:
+      - frogsleep
+      summary: frogSleepSupportReceiving
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportPermissionData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportPermissionRequest'
+      parameters:
+      - in: path
+        name: relationship_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/notes:
+    post:
+      operationId: frogSleepSendSupportNote
+      tags:
+      - frogsleep
+      summary: frogSleepSendSupportNote
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportNoteData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportSendRequest'
+    get:
+      operationId: frogSleepSupportHistory
+      tags:
+      - frogsleep
+      summary: frogSleepSupportHistory
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportPageData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: query
+        name: partner_id
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      - in: query
+        name: domain
+        required: false
+        schema:
+          type: string
+          enum:
+          - sleep
+          - focus
+      - in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+  /api/v1/frogsleep/buddy-support/notes/{note_id}:
+    get:
+      operationId: frogSleepSupportDetail
+      tags:
+      - frogsleep
+      summary: frogSleepSupportDetail
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportNoteData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: path
+        name: note_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/operations/{operation_id}:
+    get:
+      operationId: frogSleepSupportOperation
+      tags:
+      - frogsleep
+      summary: frogSleepSupportOperation
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportOperationData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: path
+        name: operation_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/operations/{operation_id}/resolution:
+    put:
+      operationId: frogSleepSupportResolve
+      tags:
+      - frogsleep
+      summary: frogSleepSupportResolve
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportOperationData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportResolveRequest'
+      parameters:
+      - in: path
+        name: operation_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/notes/{note_id}/acknowledgement:
+    post:
+      operationId: frogSleepSupportAcknowledge
+      tags:
+      - frogsleep
+      summary: frogSleepSupportAcknowledge
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportAckData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportAckRequest'
+      parameters:
+      - in: path
+        name: note_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
 components:
   securitySchemes:
     bearerAuth:
@@ -2145,6 +2805,405 @@ components:
           schema:
             $ref: "#/components/schemas/FrogSleepEnvelope"
   schemas:
+    BuddySupportContext:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - buddy_share
+          - buddy_joint_activity
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - type
+      - id
+      additionalProperties: false
+    BuddySupportSendRequest:
+      type: object
+      properties:
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        template_key:
+          type:
+          - string
+          - 'null'
+          enum:
+          - focus_start_small
+          - focus_keep_pace
+          - focus_effort_seen
+          - focus_restart
+          - sleep_goodnight
+          - sleep_no_rush
+          - sleep_morning
+          - sleep_support
+          - null
+        flower:
+          type: boolean
+        context:
+          anyOf:
+          - $ref: '#/components/schemas/BuddySupportContext'
+          - type: 'null'
+      required:
+      - relationship_id
+      - operation_id
+      additionalProperties: false
+    BuddySupportPermissionRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        expected_revision:
+          type: integer
+          minimum: 0
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - enabled
+      - expected_revision
+      - operation_id
+      additionalProperties: false
+    BuddySupportResolveRequest:
+      type: object
+      properties:
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        submission:
+          $ref: '#/components/schemas/BuddySupportSendRequest'
+      required:
+      - relationship_id
+      - submission
+      additionalProperties: false
+    BuddySupportAckRequest:
+      type: object
+      properties:
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - operation_id
+      additionalProperties: false
+    BuddySupportNote:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        domain:
+          type: string
+          enum:
+          - sleep
+          - focus
+        sender_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        recipient_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        template_key:
+          type:
+          - string
+          - 'null'
+          enum:
+          - focus_start_small
+          - focus_keep_pace
+          - focus_effort_seen
+          - focus_restart
+          - sleep_goodnight
+          - sleep_no_rush
+          - sleep_morning
+          - sleep_support
+          - null
+        template_version:
+          type: integer
+          const: 1
+        flower:
+          type: boolean
+        context:
+          anyOf:
+          - $ref: '#/components/schemas/BuddySupportContext'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        acknowledged:
+          type: boolean
+        can_acknowledge:
+          type: boolean
+      required:
+      - id
+      - relationship_id
+      - domain
+      - sender_id
+      - recipient_id
+      - template_key
+      - template_version
+      - flower
+      - context
+      - created_at
+      - expires_at
+      - acknowledged
+      - can_acknowledge
+      additionalProperties: true
+    BuddySupportCapability:
+      type: object
+      properties:
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        domain:
+          type: string
+          enum:
+          - sleep
+          - focus
+        enabled:
+          type: boolean
+        can_send:
+          type: boolean
+        can_read_history:
+          type: boolean
+        own_receive_enabled:
+          type: boolean
+        permission_revision:
+          type: integer
+          minimum: 0
+        next_send_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        is_muted:
+          type: boolean
+      required:
+      - relationship_id
+      - domain
+      - enabled
+      - can_send
+      - can_read_history
+      - own_receive_enabled
+      - permission_revision
+      - next_send_at
+      - is_muted
+      additionalProperties: false
+    BuddySupportPartner:
+      type: object
+      properties:
+        partner_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        display_name:
+          type: string
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddySupportCapability'
+        has_note:
+          type: boolean
+        latest_received_note:
+          anyOf:
+          - $ref: '#/components/schemas/BuddySupportNote'
+          - type: 'null'
+      required:
+      - partner_id
+      - display_name
+      - relationships
+      - has_note
+      - latest_received_note
+      additionalProperties: false
+    BuddySupportCenterData:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        partners:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddySupportPartner'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - enabled
+      - partners
+      - next_cursor
+      - server_time
+      additionalProperties: false
+    BuddySupportPageData:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddySupportNote'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - notes
+      - next_cursor
+      - server_time
+      additionalProperties: false
+    BuddySupportOperation:
+      type: object
+      properties:
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        command_type:
+          type: string
+          enum:
+          - send
+          - permission
+          - ack
+        state:
+          type: string
+          enum:
+          - accepted
+          - not_sent
+          - not_found
+        resource_id:
+          type:
+          - string
+          - 'null'
+      required:
+      - operation_id
+      - state
+      - resource_id
+      additionalProperties: false
+    BuddySupportOperationData:
+      type: object
+      properties:
+        operation:
+          $ref: '#/components/schemas/BuddySupportOperation'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - operation
+      - server_time
+      additionalProperties: false
+    BuddySupportCapabilityData:
+      type: object
+      properties:
+        capability:
+          $ref: '#/components/schemas/BuddySupportCapability'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - capability
+      - server_time
+      additionalProperties: false
+    BuddySupportNoteData:
+      type: object
+      properties:
+        note:
+          $ref: '#/components/schemas/BuddySupportNote'
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - note
+      - server_time
+      additionalProperties: false
+    BuddySupportPermission:
+      type: object
+      properties:
+        app_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        recipient_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        enabled:
+          type: boolean
+        revision:
+          type: integer
+          minimum: 1
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - app_id
+      - relationship_id
+      - recipient_id
+      - enabled
+      - revision
+      - updated_at
+      additionalProperties: false
+    BuddySupportPermissionData:
+      type: object
+      properties:
+        permission:
+          $ref: '#/components/schemas/BuddySupportPermission'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - permission
+      - server_time
+      additionalProperties: false
+    BuddySupportAckData:
+      type: object
+      properties:
+        note_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        acknowledged:
+          type: boolean
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - note_id
+      - acknowledged
+      - server_time
+      additionalProperties: false
     FrogSleepRawSleepEvent:
       type: object
       additionalProperties: false
@@ -2457,7 +3516,7 @@ components:
       enum: [pending, accepted, declined, cancelled, expired]
     BuddyInvitationDeliveryStatus:
       type: string
-      enum: [queued, processing, provider_accepted, delivered, bounced, suppressed, retryable_failed, dead_letter]
+      enum: [not_queued, queued, processing, provider_accepted, delivered, bounced, suppressed, retryable_failed, dead_letter]
     BuddyInvitationAction:
       type: string
       enum: [preview, accept, decline, cancel, share]
@@ -2482,7 +3541,7 @@ components:
       additionalProperties: false
       properties:
         expected_version: { type: integer, minimum: 1 }
-        idempotency_key: { type: string, minLength: 1 }
+        idempotency_key: {type: string, minLength: 1, description: 'Nonblank opaque command identity, scoped to authenticated actor, invitation, domain and action; reuse on retry.'}
     BuddyInvitationResponseRequest:
       type: object
       required: [expected_version, idempotency_key]
@@ -2523,7 +3582,7 @@ components:
       properties:
         domain: { type: string, enum: [sleep, focus] }
         relationship_id: { type: [string, "null"] }
-        status: { type: string, enum: [pending, accepted, declined, cancelled, expired] }
+        status: {$ref: '#/components/schemas/BuddyInvitationStatus'}
         error_code: { type: [string, "null"] }
         decision_version:
           type: integer
@@ -2535,15 +3594,7 @@ components:
           items: { type: string, enum: [accept, decline, cancel] }
           description: Empty after this domain becomes terminal, even when a sibling is pending.
     BuddyInvitationDomainCommandRequest:
-      type: object
-      required: [expected_version, idempotency_key]
-      additionalProperties: false
-      properties:
-        expected_version: { type: integer, minimum: 1 }
-        idempotency_key:
-          type: string
-          minLength: 1
-          description: Nonblank opaque command identity, scoped to authenticated actor, invitation, domain and action; reuse on retry.
+      $ref: '#/components/schemas/BuddyDomainAcceptRequest'
     BuddyInvitationDomainDecisionResponse:
       type: object
       required: [invitation_id, domain, decision_status, decision_version]
@@ -2556,7 +3607,7 @@ components:
         relationship_status: { type: string, enum: [active, paused, revoked] }
     BuddyInvitationDelivery:
       type: object
-      required: [channel, status, attempt_count]
+      required: [channel, status]
       properties:
         channel: { type: string, enum: [email] }
         status: { $ref: "#/components/schemas/BuddyInvitationDeliveryStatus" }
@@ -2711,7 +3762,7 @@ components:
       additionalProperties: false
       properties:
         relationship_id: { type: string, minLength: 1 }
-        type: { type: string, enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement] }
+        type: {allOf: [{$ref: '#/components/schemas/BuddyGoalType'}, {type: string, enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement]}]}
         target: { type: integer, minimum: 1, maximum: 10080 }
         timezone: { type: string, minLength: 1, maxLength: 128 }
         idempotency_key: { type: string, minLength: 1, maxLength: 128 }
@@ -2722,7 +3773,7 @@ components:
       properties:
         expected_version: { type: integer, minimum: 1 }
         idempotency_key: { type: string, minLength: 1, maxLength: 128 }
-        type: { type: string, enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement] }
+        type: {allOf: [{$ref: '#/components/schemas/BuddyGoalType'}, {type: string, enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement]}]}
         target: { type: integer, minimum: 1, maximum: 10080 }
     FrogSleepEnvelope:
       type: object
@@ -2914,7 +3965,8 @@ components:
       required: [id, type, is_read, created_at]
       properties:
         id: { type: string, description: Stable opaque notification identity shared by feed and Push }
-        type: { type: string }
+        type: {anyOf: [{$ref: '#/components/schemas/BuddyGrowthNotificationType'}, {type: string}], description: Known growth events plus compatibility and future notification
+                  types.}
         target_type: { type: string }
         target_id: { type: string }
         route: { type: object, additionalProperties: { type: string }, description: Historical safe identifiers; current route authorization is still required }
@@ -3118,3 +4170,29 @@ components:
         source: { type: string }
         verified_at: { type: string, format: date-time }
         expires_at: { type: string, format: date-time }
+    BuddyInvitationView:
+      type: object
+      properties:
+        invitation_id:
+          type: string
+        domain:
+          $ref: '#/components/schemas/BuddyInvitationDomain'
+        status:
+          $ref: '#/components/schemas/BuddyInvitationStatus'
+        viewer_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyInvitationAction'
+        domain_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyInvitationDomainResult'
+        delivery:
+          $ref: '#/components/schemas/BuddyInvitationDelivery'
+    BuddyWeeklyReportView:
+      type: object
+      properties:
+        id:
+          type: string
+        state:
+          $ref: '#/components/schemas/BuddyReportState'

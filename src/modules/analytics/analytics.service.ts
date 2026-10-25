@@ -1,3 +1,4 @@
+import { supportServerEvents } from "../frogsleep/buddy-support/buddy-support-telemetry.ts";
 import { badRequest } from "../../shared/errors.ts";
 import type { AnalyticsEventInput, EventName, MetricsOverviewItem, PageMetricItem, Platform } from "../../shared/types.ts";
 import { enumerateDateKeys, toDateKey, randomId, sha256 } from "../../shared/utils.ts";
@@ -67,7 +68,7 @@ export class AnalyticsService {
   async recordServerEvent(event: { appId: string; userId: string; eventName: EventName; dedupeKey: string;
     pageKey: string; platform: Platform; occurredAt: string; metadata?: Record<string, unknown> }): Promise<void> {
     await this.appRegistryService.getAppOrThrow(event.appId);
-    if (!SUPPORTED_EVENTS.has(event.eventName)) badRequest("REQ_INVALID_EVENT", `Unsupported event name: ${event.eventName}.`);
+    if (!SUPPORTED_EVENTS.has(event.eventName) && !supportServerEvents.has(event.eventName)) badRequest("REQ_INVALID_EVENT", `Unsupported event name: ${event.eventName}.`);
     const id = `analytics_${sha256(`${event.appId}:${event.userId}:${event.dedupeKey}`).slice(0, 40)}`;
     await this.database.insertAnalyticsEvents([{ id, appId: event.appId, userId: event.userId, platform: event.platform,
       sessionId: `server:${event.userId}`, pageKey: event.pageKey, eventName: event.eventName,

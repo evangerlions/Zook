@@ -1213,7 +1213,16 @@ paths:
               $ref: '#/components/schemas/LightTickProfileUpdateRequest'
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickProfileData'
         '400':
           $ref: '#/components/responses/LightTickError'
         '409':
@@ -1263,7 +1272,21 @@ paths:
               $ref: '#/components/schemas/LightTickStarterRequest'
       responses:
         '201':
-          $ref: '#/components/responses/LightTickCreated'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        alternatives:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/LightTickStarterCandidate'
         '400':
           $ref: '#/components/responses/LightTickError'
         '409':
@@ -1398,7 +1421,16 @@ paths:
       summary: Get an owner-scoped goal
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickGoalData'
         '404':
           $ref: '#/components/responses/LightTickError'
     patch:
@@ -1485,6 +1517,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/LightTickOk'
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/lighttick/plans/{planId}:
     parameters:
     - $ref: '#/components/parameters/PlanId'
@@ -1495,7 +1529,16 @@ paths:
       summary: Get an owner-scoped plan and its hierarchy
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickPlanData'
         '404':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/plans/{planId}/confirm:
@@ -1553,7 +1596,16 @@ paths:
           format: date
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickTodayData'
         '400':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/tasks/{taskId}/start:
@@ -1841,7 +1893,16 @@ paths:
       summary: Get a persisted review and optional linked proposal
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickReviewData'
         '404':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/change-proposal-runs:
@@ -1897,7 +1958,11 @@ paths:
       summary: Get a structured plan-change diff, reason, and impact
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Persisted change proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickChangeProposalEnvelope'
         '404':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/change-proposals/{proposalId}/accept:
@@ -1977,7 +2042,16 @@ paths:
               $ref: '#/components/schemas/LightTickSyncPushRequest'
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickSyncPushData'
         '400':
           $ref: '#/components/responses/LightTickError'
         '413':
@@ -2000,7 +2074,16 @@ paths:
           default: 100
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickSyncPullData'
         '400':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/devices:
@@ -2019,7 +2102,16 @@ paths:
               $ref: '#/components/schemas/LightTickDeviceUpsertRequest'
       responses:
         '200':
-          $ref: '#/components/responses/LightTickOk'
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/LightTickDeviceData'
         '400':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/devices/{deviceId}:
@@ -5602,6 +5694,9 @@ components:
       then:
         required:
         - message
+        properties:
+          message:
+            $ref: '#/components/schemas/LightTickCoachMessage'
       properties:
         scene:
           enum:
@@ -5611,9 +5706,7 @@ components:
           - review_explanation
           - chat
         message:
-          type: string
-          minLength: 1
-          maxLength: 4000
+          $ref: '#/components/schemas/LightTickCoachMessage'
         thread_id:
           type: string
           maxLength: 128
@@ -8908,3 +9001,14 @@ components:
       - data
       - requestId
       type: object
+    LightTickCoachMessage:
+      type: string
+      minLength: 1
+      maxLength: 4000
+    LightTickChangeProposalEnvelope:
+      allOf:
+      - $ref: '#/components/schemas/LightTickEnvelope'
+      - type: object
+        properties:
+          data:
+            $ref: '#/components/schemas/LightTickChangeProposalData'

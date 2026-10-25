@@ -1,3 +1,4 @@
+import { assertLegacySupportAllowed } from "../buddy-support/buddy-support-access.ts";
 import { buddyRelationshipSlotKeys, currentBuddyRelationships } from "./buddy-relationship-facts.ts";
 import { BuddyJointActivityService } from "./buddy-joint-activity.service.ts";
 import { buddyRelationships } from "./buddy-relationships.ts";
@@ -99,6 +100,7 @@ export class BuddyGrowthHubService {
     const idempotencyKey = requiredIdempotencyKey(input.idempotency_key);
     return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
       await this.authorizedRelationship(userId, relationship.id, "shared_activity", false);
+      if (["encouragement", "praise", "support"].includes(type)) await assertLegacySupportAllowed(this.database, relationship.id);
       const existing = await this.existingByKey("buddy_interaction", userId, relationship.id, idempotencyKey);
       if (existing) return toActivity(existing);
       const now = new Date().toISOString();

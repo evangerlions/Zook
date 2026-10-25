@@ -1,3 +1,5 @@
+import { InMemoryBuddySupportRepository } from "./in-memory-buddy-support.ts";
+import type { SupportNote, SupportPermission, SupportOperation } from "../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import { InMemorySleepGuestStore } from "./in-memory-sleep-guest.ts";
 import { InMemoryPersonalSyncRepository } from "./in-memory-personal-sync.ts";
 import { InMemoryFrogSleepAdminStore } from "./in-memory-frogsleep-admin.ts";
@@ -105,6 +107,12 @@ function normalizeListLimit(limit?: number): number {
  * InMemoryDatabase is a test-only database double.
  */
 export class InMemoryDatabase extends ApplicationDatabase {
+  supportNotes: SupportNote[] = [];
+  supportPermissions: SupportPermission[] = [];
+  supportOperations: SupportOperation[] = [];
+  supportPolicies: { app: string; relationship: string }[] = [];
+  supportAcks: { app: string; id: string; recipient: string }[] = [];
+  getBuddySupportRepository() { return new InMemoryBuddySupportRepository(this); }
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
   private readonly aiNovelStatistics: InMemoryAiNovelStatisticsStore;

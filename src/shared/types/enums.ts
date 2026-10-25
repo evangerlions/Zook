@@ -17,6 +17,7 @@ export type NotificationStatus =
   | "SUPPRESSED";
 export type ClientType = "web" | "app";
 export type EventName =
+  | "frogsleep_support_sent" | "frogsleep_support_acknowledged" | "frogsleep_support_receive_changed"
   | "page_view"
   | "page_leave"
   | "page_heartbeat"
@@ -307,6 +308,12 @@ export type ErrorCode =
   | "LOG_PAYLOAD_TOO_LARGE"
   | "REQ_INVALID_BODY"
   | "REQ_ROUTE_NOT_FOUND"
+  | "BUDDY_SUPPORT_UNAVAILABLE"
+  | "BUDDY_SUPPORT_REVISION_CONFLICT"
+  | "BUDDY_SUPPORT_OPERATION_CONFLICT"
+  | "BUDDY_SUPPORT_OPERATION_CLOSED"
+  | "BUDDY_SUPPORT_UPDATE_REQUIRED"
+  | "BUDDY_SUPPORT_LIMIT_REACHED"
   | "REQ_INVALID_HEADER"
   | "REQ_INVALID_QUERY"
   | "REQ_INVALID_EVENT"

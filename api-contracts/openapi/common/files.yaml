@@ -29,6 +29,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FilePresignResponse"
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/files/confirm:
     post:
       operationId: confirmFileUpload
@@ -47,6 +49,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '401':
+          description: Missing, invalid or expired bearer credentials.
 components:
   securitySchemes:
     bearerAuth:
@@ -77,8 +81,7 @@ components:
         message: { type: string }
         requestId: { type: string }
         data:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/FilePresignData'
     FileConfirmRequest:
       type: object
       required: [appId, storageKey, mimeType, sizeBytes]
@@ -100,6 +103,5 @@ components:
         code: { type: string, example: OK }
         message: { type: string, example: success }
         data:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/FileConfirmData'
         requestId: { type: string }
