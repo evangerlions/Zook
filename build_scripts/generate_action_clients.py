@@ -7,7 +7,7 @@ import yaml
 ROOT=Path(__file__).resolve().parents[1]
 NAMES=['LightTickActionTarget','LightTickActionProgress','LightTickActionCapabilities','LightTickActionPlan',
        'LightTickActionExecution','LightTickActionWorkspace','LightTickLearningStageProgress',
-       'LightTickLearningPlanProgress','LightTickLearningProgress','LightTickLearningProgressData']
+       'LightTickLearningPlanProgress','LightTickLearningProgress','LightTickLearningProgressData','LightTickLearningLessonSummary','LightTickLearningLesson','LightTickLearningLibraryData','LightTickLearningLessonData']
 
 
 def wire_type(value,language):

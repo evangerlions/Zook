@@ -23,6 +23,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private recordTransfers=new Map<string,RecordTransferRow>();
   private recordTickets=new Map<string,RecordTransferTicket>();
   private sourceHistories=new Map<string,Record<string,unknown>>();
+  private learningLibraries = new Map<string,Record<string,any>>();
   private actionWorkspaces = new Map<string,ActionWorkspaceRow>();
   private actionTickets = new Map<string,ActionTicket>();
   private actionLinks = new Map<string,ActionLink>();
@@ -64,7 +65,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -74,6 +75,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     catch (error) {
       this.recordTransfers=new Map(snapshot.recordTransfers);this.recordTickets=new Map(snapshot.recordTickets);this.sourceHistories=new Map(snapshot.sourceHistories);
       this.records=new Map(snapshot.records);this.recordHistory=new Map(snapshot.recordHistory);
+      this.learningLibraries=new Map(snapshot.learningLibraries);
       this.actionWorkspaces=new Map(snapshot.actionWorkspaces);this.actionTickets=new Map(snapshot.actionTickets);this.actionLinks=new Map(snapshot.actionLinks);
       this.reflections = new Map(snapshot.reflections);
       this.planningSessions = new Map(snapshot.planningSessions);
@@ -108,6 +110,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   async lockActionOwner(owner:LightTickOwner){this.assertOwner(owner);}
+  async getLearningLibrary(owner:LightTickOwner){return clone(this.learningLibraries.get(ownerKey(owner)));}
+  async saveLearningLibrary(owner:LightTickOwner,data:Record<string,any>){this.learningLibraries.set(ownerKey(owner),clone(data));}
   async getActionWorkspace(owner:LightTickOwner){return clone(this.actionWorkspaces.get(ownerKey(owner)));}
   async saveActionWorkspace(row:ActionWorkspaceRow){this.actionWorkspaces.set(ownerKey(row),clone(row));}
   async getActionTicket(hash:string){return clone(this.actionTickets.get(hash));}
@@ -371,6 +375,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     for(const [key,row] of this.recordTickets)if(ownerKey(row)===ownerKey(owner))this.recordTickets.delete(key);
     for(const key of this.sourceHistories.keys())if(key.startsWith(ownerKey(owner)+":"))this.sourceHistories.delete(key);
     const prefix = `${ownerKey(owner)}:`;
+    this.learningLibraries.delete(ownerKey(owner));
     this.actionWorkspaces.delete(ownerKey(owner));
     for(const store of [this.actionTickets,this.actionLinks])for(const [key,row] of store)if(ownerKey(row)===ownerKey(owner))store.delete(key);
     this.profiles.delete(ownerKey(owner));

@@ -122,4 +122,13 @@ final class ContractFixtureTests: XCTestCase {
         ])
         XCTAssertEqual(envelope.data.primaryTask?.version, 2)
     }
+    func testNativeReadingWireFixturesPreserveContentAndSourceIdentity() throws {
+        let index = try JSONDecoder().decode(LightTickEnvelope<LightTickLearningLibraryData>.self, from: fixture("learning-library-success.json"))
+        XCTAssertEqual(index.data.lessons.count, 2)
+        let page = try JSONDecoder().decode(LightTickEnvelope<LightTickLearningLessonData>.self, from: fixture("learning-lesson-sample-1.json"))
+        XCTAssertEqual(page.data.lesson.id, index.data.lessons[0].id)
+        XCTAssertTrue(page.data.lesson.content.contains("main idea"))
+        XCTAssertEqual(page.data.lesson.learning_state, "unknown")
+    }
+
 }

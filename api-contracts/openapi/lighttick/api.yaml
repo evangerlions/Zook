@@ -2863,6 +2863,61 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '403':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning-library:
+    get:
+      operationId: lighttickReadLearningLibrary
+      tags:
+      - LightTick
+      summary: 读取经本人单独授权的绑定来源课程目录
+      description: 只读，不改变学习完成；未授权目录为空，正文404。撤回后在线设备清理镜像；离线旧缓存须在设备清理。
+      security: []
+      parameters: []
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningLibraryEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning-library/{lessonId}:
+    get:
+      operationId: lighttickReadLearningLesson
+      tags:
+      - LightTick
+      summary: 读取经本人单独授权的绑定来源课程正文
+      description: 只读，不改变学习完成；未授权目录为空，正文404。撤回后在线设备清理镜像；离线旧缓存须在设备清理。
+      security: []
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^lesson-[a-z0-9-]{1,70}$
+      responses:
+        '200':
+          description: Bound published course projection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLearningLessonEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -7524,6 +7579,7 @@ components:
           - source-receipt
           - source-reconcile
           - learning-progress
+          - learning-library
         code:
           type: string
           maxLength: 80
@@ -7556,7 +7612,8 @@ components:
         action_schema_version:
           type: integer
           const: 2
-          description: Required for POST requests inside the signed bridge. Does not enable writes.
+          description: Required for POST requests inside the signed bridge. Does not enable
+            writes.
         binding_id:
           type: string
           minLength: 1
@@ -7585,6 +7642,13 @@ components:
           maxItems: 100
           items:
             $ref: '#/components/schemas/LightTickLearningPlanProgress'
+        consent_enabled:
+          type: boolean
+        lessons:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/LightTickLearningLesson'
       allOf:
       - if:
           required:
@@ -7692,6 +7756,17 @@ components:
             observed_at: {}
             web_url: {}
             plans: {}
+      - if:
+          properties:
+            action:
+              const: learning-library
+        then:
+          required:
+          - binding_id
+          - source_revision
+          - observed_at
+          - consent_enabled
+          - lessons
       required:
       - action
       additionalProperties: false
@@ -8678,3 +8753,150 @@ components:
           $ref: '#/components/schemas/LightTickLearningProgressData'
         requestId:
           type: string
+
+    LightTickLearningLessonSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - collection_id
+      - collection_title
+      - number
+      - title
+      - content_version
+      - learning_state
+      - source_url
+      properties:
+        id:
+          type: string
+        collection_id:
+          type: string
+        collection_title:
+          type: string
+        number:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        content_version:
+          type: string
+        learning_state:
+          type: string
+          enum:
+          - unknown
+          - completed
+        source_url:
+          type: string
+    LightTickLearningLesson:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - collection_id
+      - collection_title
+      - number
+      - title
+      - content_version
+      - learning_state
+      - source_url
+      - content
+      - references
+      properties:
+        id:
+          type: string
+        collection_id:
+          type: string
+        collection_title:
+          type: string
+        number:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        content_version:
+          type: string
+        learning_state:
+          type: string
+          enum:
+          - unknown
+          - completed
+        source_url:
+          type: string
+        content:
+          type: string
+          maxLength: 100000
+        references:
+          type: string
+          maxLength: 100000
+    LightTickLearningLibraryData:
+      type: object
+      additionalProperties: false
+      required:
+      - consent_enabled
+      - binding_id
+      - observed_at
+      - lessons
+      properties:
+        consent_enabled:
+          type: boolean
+        binding_id:
+          type:
+          - string
+          - 'null'
+        observed_at:
+          type:
+          - string
+          - 'null'
+        lessons:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/LightTickLearningLessonSummary'
+    LightTickLearningLessonData:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson
+      - binding_id
+      - observed_at
+      properties:
+        lesson:
+          $ref: '#/components/schemas/LightTickLearningLesson'
+        binding_id:
+          type: string
+        observed_at:
+          type: string
+    LightTickLearningLibraryEnvelope:
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningLibraryData'
+        message:
+          type: string
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      type: object
+    LightTickLearningLessonEnvelope:
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLearningLessonData'
+        message:
+          type: string
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      type: object

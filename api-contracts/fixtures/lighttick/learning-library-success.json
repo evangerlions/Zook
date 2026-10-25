@@ -1,0 +1,32 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "consent_enabled": true,
+    "binding_id": "fixture-binding",
+    "observed_at": "2026-10-25T12:00:00Z",
+    "lessons": [
+      {
+        "id": "lesson-sample-1",
+        "collection_id": "sample",
+        "collection_title": "本机体验课程",
+        "number": 1,
+        "title": "Day001 · Read for the main idea",
+        "content_version": "94c654ed08c082e168de4f445e2a3a7301a2177f63c488f65e9dfa5dd20ebe72",
+        "learning_state": "unknown",
+        "source_url": "https://example.org/"
+      },
+      {
+        "id": "lesson-sample-2",
+        "collection_id": "sample",
+        "collection_title": "本机体验课程",
+        "number": 2,
+        "title": "Day002 · Explain with evidence",
+        "content_version": "e3c81ac7ff380a8767364fd62d336dfb107d1649ed688e30c4b279d05b8e4436",
+        "learning_state": "unknown",
+        "source_url": "https://example.org/"
+      }
+    ]
+  },
+  "requestId": "synthetic_learning_progress"
+}

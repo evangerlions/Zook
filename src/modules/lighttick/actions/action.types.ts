@@ -35,6 +35,8 @@ export interface ActionWorkspaceRow extends LightTickOwner { data:ActionWorkspac
 export interface ActionTicket extends LightTickOwner { hash:string;expires_at:string;source_account_id?:string; }
 export interface ActionLink extends LightTickOwner { source_account_id:string;binding_id:string;phase:'staged'|'active';import_hash?:string;receipt?:Json; }
 export interface ActionRepository {
+ getLearningLibrary(owner:LightTickOwner):Promise<Json|undefined>;
+ saveLearningLibrary(owner:LightTickOwner,data:Json):Promise<void>;
  lockActionOwner(owner:LightTickOwner):Promise<void>;
  getActionWorkspace(owner:LightTickOwner):Promise<ActionWorkspaceRow|undefined>;
  saveActionWorkspace(row:ActionWorkspaceRow):Promise<void>;

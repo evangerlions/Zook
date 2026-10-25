@@ -386,6 +386,39 @@ data class LightTickLearningProgress(
 data class LightTickLearningProgressData(
     val progress: LightTickLearningProgress? = null,
 )
+data class LightTickLearningLessonSummary(
+    val id: String,
+    val collection_id: String,
+    val collection_title: String,
+    val number: Int,
+    val title: String,
+    val content_version: String,
+    val learning_state: String,
+    val source_url: String,
+)
+data class LightTickLearningLesson(
+    val id: String,
+    val collection_id: String,
+    val collection_title: String,
+    val number: Int,
+    val title: String,
+    val content_version: String,
+    val learning_state: String,
+    val source_url: String,
+    val content: String,
+    val references: String,
+)
+data class LightTickLearningLibraryData(
+    val consent_enabled: Boolean,
+    val binding_id: String? = null,
+    val observed_at: String? = null,
+    val lessons: List<LightTickLearningLessonSummary>,
+)
+data class LightTickLearningLessonData(
+    val lesson: LightTickLearningLesson,
+    val binding_id: String,
+    val observed_at: String,
+)
 
 // Independent records: dates are calendar dates, versions protect every mutation.
 data class LightTickRecordSource(val instance:String,val id:String,val imported_at:String,val missing_versions:List<Int>)

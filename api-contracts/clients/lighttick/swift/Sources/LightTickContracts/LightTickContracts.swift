@@ -544,6 +544,39 @@ public struct LightTickLearningProgress: Codable, Equatable, Sendable {
 public struct LightTickLearningProgressData: Codable, Equatable, Sendable {
     public var progress: LightTickLearningProgress?
 }
+public struct LightTickLearningLessonSummary: Codable, Equatable, Sendable, Identifiable {
+    public var id: String
+    public var collection_id: String
+    public var collection_title: String
+    public var number: Int
+    public var title: String
+    public var content_version: String
+    public var learning_state: String
+    public var source_url: String
+}
+public struct LightTickLearningLesson: Codable, Equatable, Sendable, Identifiable {
+    public var id: String
+    public var collection_id: String
+    public var collection_title: String
+    public var number: Int
+    public var title: String
+    public var content_version: String
+    public var learning_state: String
+    public var source_url: String
+    public var content: String
+    public var references: String
+}
+public struct LightTickLearningLibraryData: Codable, Equatable, Sendable {
+    public var consent_enabled: Bool
+    public var binding_id: String?
+    public var observed_at: String?
+    public var lessons: [LightTickLearningLessonSummary]
+}
+public struct LightTickLearningLessonData: Codable, Equatable, Sendable {
+    public var lesson: LightTickLearningLesson
+    public var binding_id: String
+    public var observed_at: String
+}
 
 // Independent personal records. Date strings represent business dates, not instants.
 public struct LightTickRecordSource: Codable, Equatable, Sendable {

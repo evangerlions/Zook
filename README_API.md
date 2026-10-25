@@ -1354,3 +1354,9 @@ PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_
 ### Grow 手机学习计划进度（本地候选）
 
 `GET /api/v1/lighttick/action-plans/learning-progress` 读取正式账号本人已绑定 Grow 来源的最近快照，无快照返回 `data.progress:null`。有快照包含来源修订/观察和接收时间、配置网页地址、正式计划及阶段的总课数/发布数/本人学完数/百分比；不含课程正文、笔记、反馈或模型输出。匿名与游客不能读取私人进度。源每30秒通过受信 `grow-bridge action=learning-progress` 检查并持久重试投递，绑定、修订、摘要及阶段数量必须匹配；不接受客户端自报完成数。协议、配置、H5分工与开关见 [行动协议当前接入](docs/public-lighttick-actions.md#2026-10-25-原生执行及学习计划进度)。
+
+### 2026-10-25 Grow 原生课程只读接入
+
+`GET /api/v1/lighttick/learning-library` 返回本人当前绑定且已另行授权的课程目录；`GET /api/v1/lighttick/learning-library/{lessonId}` 返回正文、来源参考、内容版本和来源学完状态。需要 lighttick 正式账户 Bearer 与有效成员身份，禁用服务返回503；未授权目录为空，正文404。仅投影已发布内容，不含笔记/作答，不产生完成。正文版本绑定 content+references 的 canonical SHA256，课程ID不随标题改名变化。
+
+可信 Grow 源通过既有签名桥接 `action=learning-library` 推送，需 schema 2、相同 active binding、单调 source_revision、observed_at、consent_enabled 和有界 lessons。授权单独在 Grow 确认，旧行动/记录授权不扩大。重放同版本同摘要幂等；篡改、过期绑定和乱序拒绝。最多200节、每正文/参考100000字符、整包4MiB。独立可重建投影表不膨胀行动工作区，产品账户删除覆盖镜像。原生每账户有界缓存、同版本阅读位置；撤回后在线清理，离线旧缓存须设备清理。默认 v2 写开关不变，不推送私人正文到未授权账户。

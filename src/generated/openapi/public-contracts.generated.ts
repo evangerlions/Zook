@@ -16658,6 +16658,243 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickLearningLibraryEnvelopeSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consent_enabled",
+        "binding_id",
+        "observed_at",
+        "lessons"
+      ],
+      "properties": {
+        "consent_enabled": {
+          "type": "boolean"
+        },
+        "binding_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lessons": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "collection_id",
+              "collection_title",
+              "number",
+              "title",
+              "content_version",
+              "learning_state",
+              "source_url"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "collection_id": {
+                "type": "string"
+              },
+              "collection_title": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "learning_state": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "completed"
+                ]
+              },
+              "source_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "type": "object"
+} as const;
+
+export type LightTickLearningLibraryEnvelope = {
+  "code": string;
+  "data": {
+  "consent_enabled": boolean;
+  "binding_id": string | null;
+  "observed_at": string | null;
+  "lessons": (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+}
+)[];
+};
+  "message": string;
+  "requestId": string;
+};
+
+export const LightTickLearningLessonEnvelopeSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson",
+        "binding_id",
+        "observed_at"
+      ],
+      "properties": {
+        "lesson": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "collection_id",
+            "collection_title",
+            "number",
+            "title",
+            "content_version",
+            "learning_state",
+            "source_url",
+            "content",
+            "references"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "collection_id": {
+              "type": "string"
+            },
+            "collection_title": {
+              "type": "string"
+            },
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "content_version": {
+              "type": "string"
+            },
+            "learning_state": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "completed"
+              ]
+            },
+            "source_url": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "references": {
+              "type": "string",
+              "maxLength": 100000
+            }
+          }
+        },
+        "binding_id": {
+          "type": "string"
+        },
+        "observed_at": {
+          "type": "string"
+        }
+      }
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "type": "object"
+} as const;
+
+export type LightTickLearningLessonEnvelope = {
+  "code": string;
+  "data": {
+  "lesson": {
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+};
+  "binding_id": string;
+  "observed_at": string;
+};
+  "message": string;
+  "requestId": string;
+};
+
 export const LightTickLearningProgressEnvelopeSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -17430,7 +17667,8 @@ export const LightTickGrowBridgeRequestSchema = {
         "source-confirmation",
         "source-receipt",
         "source-reconcile",
-        "learning-progress"
+        "learning-progress",
+        "learning-library"
       ]
     },
     "code": {
@@ -17814,6 +18052,68 @@ export const LightTickGrowBridgeRequestSchema = {
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "consent_enabled": {
+      "type": "boolean"
+    },
+    "lessons": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "collection_id",
+          "collection_title",
+          "number",
+          "title",
+          "content_version",
+          "learning_state",
+          "source_url",
+          "content",
+          "references"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "collection_id": {
+            "type": "string"
+          },
+          "collection_title": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "content_version": {
+            "type": "string"
+          },
+          "learning_state": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "completed"
+            ]
+          },
+          "source_url": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "references": {
+            "type": "string",
+            "maxLength": 100000
           }
         }
       }
@@ -19105,6 +19405,24 @@ export const LightTickGrowBridgeRequestSchema = {
           "plans": {}
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "learning-library"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "binding_id",
+          "source_revision",
+          "observed_at",
+          "consent_enabled",
+          "lessons"
+        ]
+      }
     }
   ],
   "required": [
@@ -19115,7 +19433,7 @@ export const LightTickGrowBridgeRequestSchema = {
 
 export type LightTickGrowBridgeRequest = (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19225,10 +19543,25 @@ export type LightTickGrowBridgeRequest = (
 )[];
 }
 )[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19338,10 +19671,25 @@ export type LightTickGrowBridgeRequest = (
 )[];
 }
 )[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19451,10 +19799,25 @@ export type LightTickGrowBridgeRequest = (
 )[];
 }
 )[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19564,10 +19927,25 @@ export type LightTickGrowBridgeRequest = (
 )[];
 }
 )[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19677,10 +20055,25 @@ export type LightTickGrowBridgeRequest = (
 )[];
 }
 )[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19790,10 +20183,25 @@ export type LightTickGrowBridgeRequest = (
 )[];
 }
 )[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
 }
 ) & (
 {
-  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress";
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
   "code"?: string;
   "target_version"?: number;
   "snapshot_hash"?: string;
@@ -19901,6 +20309,149 @@ export type LightTickGrowBridgeRequest = (
   "percent": number;
 }
 )[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
 }
 )[];
 }
@@ -40927,6 +41478,8 @@ export const GeneratedPublicContractNames = [
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",
   "LightTickId",
+  "LightTickLearningLessonEnvelope",
+  "LightTickLearningLibraryEnvelope",
   "LightTickLearningPlanProgress",
   "LightTickLearningProgress",
   "LightTickLearningProgressEnvelope",

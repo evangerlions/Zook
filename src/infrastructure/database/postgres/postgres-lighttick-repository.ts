@@ -42,6 +42,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
   importRecord=this.recordTransferStore.importRecord.bind(this.recordTransferStore);
   recordSourceHistory=this.recordTransferStore.recordSourceHistory.bind(this.recordTransferStore);
   private readonly actionStore=new PostgresActionStore((sql,values)=>this.query(sql,values));
+  getLearningLibrary=this.actionStore.getLearningLibrary.bind(this.actionStore);
+  saveLearningLibrary=this.actionStore.saveLearningLibrary.bind(this.actionStore);
   lockActionOwner=this.actionStore.lockActionOwner.bind(this.actionStore);
   getActionWorkspace=this.actionStore.getActionWorkspace.bind(this.actionStore);
   saveActionWorkspace=this.actionStore.saveActionWorkspace.bind(this.actionStore);
@@ -566,11 +568,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["record_source_history","record_transfers","record_tickets","record_versions","records","action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+    const tables = ["record_source_history","record_transfers","record_tickets","record_versions","records","learning_libraries","action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
       await this.lockRecordOwner(owner);
+      await this.lockActionOwner(owner);
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1
         AND (guest_user_id=$2 OR target_user_id=$2)`, [owner.appId,owner.userId]);
       for (const suffix of tables) await this.query(`DELETE FROM zook_lighttick_${suffix} WHERE app_id=$1 AND user_id=$2`, [owner.appId,owner.userId]);

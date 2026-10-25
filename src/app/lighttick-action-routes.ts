@@ -1,3 +1,4 @@
+import {receiveLibrary,readLibrary} from '../modules/lighttick/learning/learning-library.ts';
 import type {BackendRouteContext} from './backend-route-context.ts';
 import type {LightTickRuntime} from '../modules/lighttick/lighttick-runtime.ts';
 import type {HttpRequest,HttpResponse} from '../shared/types.ts';
@@ -7,10 +8,10 @@ import {requireActionSchema,rejectConnectionWrite,actionErrorResponse} from '../
 import {ActionHandoffService} from '../modules/lighttick/actions/action-handoff.service.ts';
 import {ActionSourceService} from '../modules/lighttick/actions/action-source.service.ts';
 import {receiveLearningProgress} from '../modules/lighttick/actions/action-learning-progress.ts';
-const prefix='/api/v1/lighttick/action-plans';
+const prefix='/api/v1/lighttick/action-plans',learningPrefix='/api/v1/lighttick/learning-library';
 
 export async function tryHandleLightTickActionRoutes(context:BackendRouteContext,enabled:boolean,runtime:LightTickRuntime|undefined,r:HttpRequest):Promise<HttpResponse<unknown>|undefined>{
- if(![prefix,'/api/v1/lighttick/action-link-tickets','/api/v1/lighttick/grow-bridge'].some(p=>r.path===p||r.path.startsWith(p+'/')))return;
+ if(![prefix,learningPrefix,'/api/v1/lighttick/action-link-tickets','/api/v1/lighttick/grow-bridge'].some(p=>r.path===p||r.path.startsWith(p+'/')))return;
  try{return await handle(context,enabled,runtime,r);}
  catch(error){const response=actionErrorResponse(error,r.requestId??'');if(response)return response;throw error;}
 }
@@ -36,7 +37,9 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
    }else{
    if(data.action==='import')rejectConnectionWrite(runtime.actions.p0WriteEnabled);
    if(link.phase!=='active')reject(409,'Handoff is pending.');
-   if(data.action==='learning-progress'){
+   if(data.action==='learning-library'){
+    rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLibrary(runtime.actions,link,data,()=>requireMember(context,link.userId));
+   }else if(data.action==='learning-progress'){
     rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLearningProgress(runtime.actions,link,data);
    }else if(['source-context','source-confirmation','source-receipt','source-reconcile'].includes(data.action)){
     if(Buffer.byteLength(JSON.stringify(data))>16000)reject(413,'Source event capacity exceeded.');
@@ -66,7 +69,9 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
    return context.ok(result,r.requestId as string,{'Cache-Control':'no-store'});
   }
   const data=object(r.body??{});if(Buffer.byteLength(JSON.stringify(data))>30000)reject(413,'Action request capacity exceeded.');
-  result=await runtime.actions.request(owner,r.method,r.path.slice(prefix.length),data,r.query??{},()=>requireMember(context,owner.userId));
+  if(r.method==='GET'&&(r.path===learningPrefix||r.path.startsWith(learningPrefix+'/'))){
+   result=await readLibrary(runtime.actions,owner,r.path===learningPrefix?undefined:r.path.slice((learningPrefix+'/').length));
+  }else result=await runtime.actions.request(owner,r.method,r.path.slice(prefix.length),data,r.query??{},()=>requireMember(context,owner.userId));
  }
  return context.ok(result,r.requestId as string,{'Cache-Control':'no-store'});
 }

@@ -779,3 +779,5 @@ Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编
 
 
 2026-10-25 Grow 原生执行整合候选：records 与 P0 v2 三模式运行时共存；公共行动写入与完整接管通过独立 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 显式启用，默认关闭。新增正式账户本人学习计划进度读取及绑定来源签名投递，进度保存在既有 owner workspace，不新增第二套课程完成事实。H5 负责制订及完善，手机负责读取、学习、执行、记录和通知；真实账号、生产及真机验证仍待办。当前协议见 README_API.md 和 docs/public-lighttick-actions.md 2026-10-25 节。
+
+2026-10-25：Grow 原生阅读新增独立课程只读镜像、单独授权与来源版本/绑定校验；正式学习写入和学完确认仍归 Grow。详情见 README_API.md 的原生课程只读接入。
