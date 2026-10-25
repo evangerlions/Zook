@@ -66,6 +66,7 @@ const server=createServer(async(req,res)=>{try{
   for(const request of row.requests.filter((r:any)=>r.status==='pending')){const body=request.body,l=lessons.find((s:any)=>s.id===body.lesson_id);const conflict=url.pathname==='/__private_conflict';if(l){l.revision++;l.updated_at=new Date().toISOString();if(conflict)l.notes='H5 changed in another page';else{if(body.action==='save'){l.notes=body.notes;l.answers=body.answers};if(body.action==='complete'){l.completed=true;l.completed_at=new Date().toISOString()};if(body.action==='save'||body.action==='position')l.position=body.position;}}results.push({id:request.id,status:conflict?'conflict':'applied',error:conflict?'Source changed':''});}
   res.end(JSON.stringify(await exchangePrivate(actions,link,{action:'learning-private',action_schema_version:2,binding_id:link.binding_id,source_revision:row.source_revision+1,enabled:url.pathname!='/__private_revoke',lessons:url.pathname==='/__private_revoke'?[]:lessons,results:url.pathname==='/__private_revoke'?[]:results})));return;
  }
+ if(url.pathname==='/__private_snapshot'){const row=await repository.getLearningPrivate(owner);res.end(JSON.stringify({pending:row?.requests.filter((r:any)=>r.status==='pending').length??0}));return;}
  if(url.pathname==='/__offline'){offline=true;res.end('{}');return;}
  if(url.pathname==='/__online'){offline=false;res.end('{}');return;}
  if(url.pathname==='/__health'){res.end(JSON.stringify({ok:true,offline}));return;}
