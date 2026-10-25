@@ -36,10 +36,11 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
     result=data.action==='import-preflight'?await handoff.preflight(source,data):await handoff.import(source,data);
    }else{
    if(data.action==='import')rejectConnectionWrite(runtime.actions.p0WriteEnabled);
-   if(link.phase!=='active')reject(409,'Handoff is pending.');
    if(data.action==='learning-library'){
     rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLibrary(runtime.actions,link,data,()=>requireMember(context,link.userId));
-   }else if(data.action==='learning-progress'){
+   }else {
+   if(link.phase!=='active')reject(409,'Handoff is pending.');
+   if(data.action==='learning-progress'){
     rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLearningProgress(runtime.actions,link,data);
    }else if(['source-context','source-confirmation','source-receipt','source-reconcile'].includes(data.action)){
     if(Buffer.byteLength(JSON.stringify(data))>16000)reject(413,'Source event capacity exceeded.');
@@ -53,6 +54,7 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
     if(method==='POST'){requireActionSchema(data.action_schema_version);if(path!=='/reviews/preview')rejectConnectionWrite(runtime.actions.p0WriteEnabled);}
     else if(method!=='GET')reject(405,'Unsupported request method.');
     result=await runtime.actions.request(link,method,path,data.body??{},object(data.query??{}),()=>requireMember(context,link.userId));
+   }
    }
    }
   }

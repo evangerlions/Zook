@@ -5,7 +5,7 @@ import {receiveLibrary,readLibrary} from '../../src/modules/lighttick/learning/l
 import {digest} from '../../src/modules/lighttick/actions/action.validation.ts';
 test('reading is separately consented, bound, versioned, private and read-only; revoke and delete clear it',async()=>{
  const repo=new InMemoryLightTickRepository(),actions=new ActionService(repo,()=>new Date('2026-10-25T12:00:00Z'));
- const link={appId:'lighttick',userId:'alice',source_account_id:'grow-a',binding_id:'binding-a',phase:'active'} as const;await repo.saveActionLink(link);
+ const link={appId:'lighttick',userId:'alice',source_account_id:'grow-a',binding_id:'binding-a',phase:'staged'} as const;await repo.saveActionLink(link);
  const lesson={id:'lesson-abcdef',collection_id:'yingyu',collection_title:'英文阅读',number:1,title:'Day001',content:'# Course\n\nRead it.',references:'https://example.org',learning_state:'unknown',source_url:'https://grow.example/#mobile/learn/lesson-abcdef',content_version:''};lesson.content_version=digest({content:lesson.content,references:lesson.references});
  const body={action:'learning-library',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:'2026-10-25T12:00:00Z',consent_enabled:true,lessons:[lesson]};
  assert.equal((await readLibrary(actions,link)).consent_enabled,false);

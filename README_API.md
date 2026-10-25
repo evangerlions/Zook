@@ -1359,4 +1359,6 @@ PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_
 
 `GET /api/v1/lighttick/learning-library` 返回本人当前绑定且已另行授权的课程目录；`GET /api/v1/lighttick/learning-library/{lessonId}` 返回正文、来源参考、内容版本和来源学完状态。需要 lighttick 正式账户 Bearer 与有效成员身份，禁用服务返回503；未授权目录为空，正文404。仅投影已发布内容，不含笔记/作答，不产生完成。正文版本绑定 content+references 的 canonical SHA256，课程ID不随标题改名变化。
 
-可信 Grow 源通过既有签名桥接 `action=learning-library` 推送，需 schema 2、相同 active binding、单调 source_revision、observed_at、consent_enabled 和有界 lessons。授权单独在 Grow 确认，旧行动/记录授权不扩大。重放同版本同摘要幂等；篡改、过期绑定和乱序拒绝。最多200节、每正文/参考100000字符、整包4MiB。独立可重建投影表不膨胀行动工作区，产品账户删除覆盖镜像。原生每账户有界缓存、同版本阅读位置；撤回后在线清理，离线旧缓存须设备清理。默认 v2 写开关不变，不推送私人正文到未授权账户。
+可信 Grow 源通过既有签名桥接 `action=learning-library` 推送，需 schema 2、相同已认领的 binding（可处于只读 staged 阶段）、单调 source_revision、observed_at、consent_enabled 和有界 lessons。授权单独在 Grow 确认，旧行动/记录授权不扩大。重放同版本同摘要幂等；篡改、过期绑定和乱序拒绝。最多200节、每正文/参考100000字符、整包4MiB。独立可重建投影表不膨胀行动工作区，产品账户删除覆盖镜像。原生每账户有界缓存、同版本阅读位置；撤回后在线清理，离线旧缓存须设备清理。默认 v2 写开关不变，不推送私人正文到未授权账户。
+
+只读课程连接允许使用已认领但未接管行动的 staged binding：只有显式阅读 scope 可读写课程镜像，其他行动/来源操作仍要求 active，不能因此绕过 R20 或行动冻结/接管门禁。

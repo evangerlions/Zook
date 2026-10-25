@@ -22,7 +22,7 @@ export async function receiveLibrary(actions:ActionService,initial:ActionLink,in
  if(Buffer.byteLength(JSON.stringify(value))>4*1024*1024)reject(413,'Reading library exceeds its current capacity.');
  return actions.repository.transaction(initial,async()=>{
   await actions.repository.lockActionOwner(initial);await authorize?.();const link=await actions.repository.getActionLink(initial.source_account_id);
-  if(!link||link.phase!=='active'||link.binding_id!==initial.binding_id||link.userId!==initial.userId)reject(409,'Reading requires the current active binding.');
+  if(!link||link.binding_id!==initial.binding_id||link.userId!==initial.userId)reject(409,'Reading requires the current active binding.');
   const previous=await actions.repository.getLearningLibrary(link);
   if(previous?.binding_id===link.binding_id&&(previous.source_revision>source_revision||previous.source_revision===source_revision&&previous.payload_hash!==payload_hash))reject(409,'Reading source revision changed.','REVISION_CONFLICT');
   if(!previous||previous.binding_id!==link.binding_id||previous.source_revision<source_revision)await actions.repository.saveLearningLibrary(link,{...value,binding_id:link.binding_id,payload_hash,received_at:actions.clock().toISOString()});
@@ -31,7 +31,7 @@ export async function receiveLibrary(actions:ActionService,initial:ActionLink,in
 }
 export async function readLibrary(actions:ActionService,owner:LightTickOwner,id?:string):Promise<Json>{
  const link=await actions.repository.getOwnerActionLink(owner),row=await actions.repository.getLearningLibrary(owner);
- const active=link?.phase==='active'&&row?.binding_id===link.binding_id&&row?.consent_enabled===true;
+ const active=!!link&&row?.binding_id===link.binding_id&&row?.consent_enabled===true;
  if(id){const lesson=active&&row?.lessons.find((l:Json)=>l.id===id);if(!lesson)reject(404,'Course is unavailable or reading consent was withdrawn.');return {lesson,observed_at:row!.observed_at,binding_id:link!.binding_id};}
  return {consent_enabled:!!active,binding_id:active?link!.binding_id:null,observed_at:active?row!.observed_at:null,lessons:active?row!.lessons.map(({content,references,...l}:Json)=>l):[]};
 }
