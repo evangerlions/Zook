@@ -1,3 +1,4 @@
+import {exchangePrivate} from '../../src/modules/lighttick/learning/learning-private.ts';
 import {receiveLibrary} from '../../src/modules/lighttick/learning/learning-library.ts';
 import {digest} from '../../src/modules/lighttick/actions/action.validation.ts';
 import {readFileSync} from 'node:fs';
@@ -45,17 +46,25 @@ const server=createServer(async(req,res)=>{try{
   const first={total_lessons:1,published_lessons:1,completed_lessons:1,percent:100},second={total_lessons:1,published_lessons:0,completed_lessons:0,percent:0};
   await receiveLearningProgress(actions,link,{action:'learning-progress',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:new Date().toISOString(),web_url:'http://127.0.0.1:61500/',plans:[{id:'plan-native-ui',name:'手机学习进度',version:1,status:'active',total_lessons:2,published_lessons:1,completed_lessons:1,percent:50,stages:[{number:1,title:'基础',...first},{number:2,title:'应用',...second}]}]});res.end('{}');return;
  }
- if(['/__learning_seed','/__learning_update','/__learning_revoke'].includes(url.pathname)){
+ if(['/__learning_seed','/__learning_update','/__learning_revoke','/__private_seed'].includes(url.pathname)){
   offline=false;
   const source='reading-ui-'+testUser,binding='reading-ui-binding-'+testUser;
-  if(url.pathname==='/__learning_seed'){await repository.deleteOwnerData(owner);await repository.saveActionLink({...owner,source_account_id:source,binding_id:binding,phase:'staged'});}
+  if(['/__learning_seed','/__private_seed'].includes(url.pathname)){await repository.deleteOwnerData(owner);await repository.saveActionLink({...owner,source_account_id:source,binding_id:binding,phase:'staged'});}
   const link=await repository.getActionLink(source);if(!link)throw Error('Seed the synthetic reading binding first');
   const old=await repository.getLearningLibrary(owner),revision=Number(old?.source_revision??0)+1;
   const lessons=[1,2].map(n=>{const l=JSON.parse(readFileSync(new URL('../../api-contracts/fixtures/lighttick/learning-lesson-sample-'+n+'.json',import.meta.url),'utf8')).data.lesson;
    l.id='lesson-private-'+n;l.collection_id='yingyu';l.collection_title='UI 来源英文课程';l.source_url='http://127.0.0.1:61500/#mobile/learn/'+l.id;
    if(url.pathname==='/__learning_update')l.content+='\n\n## Published revision two\n\nPlease review this updated source.';
    l.content_version=digest({content:l.content,references:l.references});return l;});
-  res.end(JSON.stringify(await receiveLibrary(actions,link,{action:'learning-library',action_schema_version:2,binding_id:binding,source_revision:revision,observed_at:new Date().toISOString(),consent_enabled:url.pathname!='/__learning_revoke',lessons:url.pathname==='/__learning_revoke'?[]:lessons})));return;
+  const receipt=await receiveLibrary(actions,link,{action:'learning-library',action_schema_version:2,binding_id:binding,source_revision:revision,observed_at:new Date().toISOString(),consent_enabled:url.pathname!='/__learning_revoke',lessons:url.pathname==='/__learning_revoke'?[]:lessons});
+  if(url.pathname==='/__private_seed')await exchangePrivate(actions,link,{action:'learning-private',action_schema_version:2,binding_id:binding,source_revision:1,enabled:true,lessons:lessons.map(l=>({id:l.id,content_version:l.content_version,draft_version:l.content_version,revision:1,notes:'Synthetic H5 note',answers:[{id:'exercise:1',prompt:'Explain the main idea',answer:'Synthetic H5 answer'}],questions:[{id:'exercise:1',prompt:'Explain the main idea',answer:''}],completed:false,completed_at:null,position:1,updated_at:new Date().toISOString()})),results:[]});
+  res.end(JSON.stringify(receipt));return;
+ }
+ if(['/__private_apply','/__private_conflict','/__private_revoke'].includes(url.pathname)){
+  const link=await repository.getOwnerActionLink(owner),row=await repository.getLearningPrivate(owner);if(!link||!row)throw Error('Seed private learning first');
+  const lessons=structuredClone(row.lessons),results=[];
+  for(const request of row.requests.filter((r:any)=>r.status==='pending')){const body=request.body,l=lessons.find((s:any)=>s.id===body.lesson_id);const conflict=url.pathname==='/__private_conflict';if(l){l.revision++;l.updated_at=new Date().toISOString();if(conflict)l.notes='H5 changed in another page';else{if(body.action==='save'){l.notes=body.notes;l.answers=body.answers};if(body.action==='complete'){l.completed=true;l.completed_at=new Date().toISOString()};if(body.action==='save'||body.action==='position')l.position=body.position;}}results.push({id:request.id,status:conflict?'conflict':'applied',error:conflict?'Source changed':''});}
+  res.end(JSON.stringify(await exchangePrivate(actions,link,{action:'learning-private',action_schema_version:2,binding_id:link.binding_id,source_revision:row.source_revision+1,enabled:url.pathname!='/__private_revoke',lessons:url.pathname==='/__private_revoke'?[]:lessons,results:url.pathname==='/__private_revoke'?[]:results})));return;
  }
  if(url.pathname==='/__offline'){offline=true;res.end('{}');return;}
  if(url.pathname==='/__online'){offline=false;res.end('{}');return;}

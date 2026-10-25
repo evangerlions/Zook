@@ -23,3 +23,7 @@ test('private scope preserves source ownership, optimistic versions and durable 
  await receiveLibrary(a,link,{...library,source_revision:2,consent_enabled:false,lessons:[]});await assert.rejects(privateLearning(a,link,lesson.id));assert.equal((await repo.getLearningPrivate(link))!.lessons.length,0);
  await repo.deleteOwnerData(link);assert.equal(await repo.getLearningPrivate(link),undefined);
 });
+
+import Ajv2020 from 'ajv/dist/2020.js';import {readFileSync} from 'node:fs';import addFormats from 'ajv-formats';
+import {LightTickLearningPrivateEnvelopeSchema} from '../../src/generated/openapi/public-contracts.generated.ts';
+test('private fixture retains unknown legacy completion time and stable question identity',()=>{const ajv=new Ajv2020({strict:false});addFormats(ajv);const value=JSON.parse(readFileSync(new URL('../../api-contracts/fixtures/lighttick/learning-private-success.json',import.meta.url),'utf8'));const valid=ajv.compile(LightTickLearningPrivateEnvelopeSchema);assert.equal(valid(value),true,JSON.stringify(valid.errors));assert.equal(value.data.state.completed_at,null);assert.equal(value.data.state.answers[0].id,value.data.state.questions[0].id);});

@@ -131,4 +131,11 @@ final class ContractFixtureTests: XCTestCase {
         XCTAssertEqual(page.data.lesson.learning_state, "unknown")
     }
 
+    func testPrivateLearningFixturePreservesUnknownCompletionTime() throws {
+        let value = try JSONDecoder().decode(LightTickEnvelope<LightTickLearningPrivateData>.self, from: fixture("learning-private-success.json"))
+        XCTAssertTrue(value.data.state?.completed == true)
+        XCTAssertNil(value.data.state?.completed_at)
+        XCTAssertEqual(value.data.state?.answers.first?.id, value.data.state?.questions.first?.id)
+    }
+
 }
