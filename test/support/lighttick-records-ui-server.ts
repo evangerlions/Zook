@@ -6,6 +6,7 @@ import {buildDefaultSeed} from '../../src/infrastructure/database/prisma/default
 import {PostgresLightTickRepository} from '../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts';
 import {runPostgresMigrations} from '../../src/infrastructure/database/postgres/migrate.ts';
 import {LightTickRecordService} from '../../src/modules/lighttick/lighttick-record.service.ts';
+import {ActionService} from '../../src/modules/lighttick/actions/action.service.ts';
 const connectionString=process.env.GROW_RECORDS_UI_DATABASE_URL;
 if(!connectionString||!['localhost','127.0.0.1'].includes(new URL(connectionString).hostname))throw new Error('Explicit disposable localhost GROW_RECORDS_UI_DATABASE_URL required');
 await runPostgresMigrations({connectionString,log:()=>{}});
@@ -13,12 +14,22 @@ const pool=new Pool({connectionString}),repository=new PostgresLightTickReposito
 const testPort=Number(process.env.GROW_RECORDS_UI_PORT??3106),testUser=process.env.GROW_RECORDS_UI_OWNER??'user_alice';
 if(!Number.isInteger(testPort)||testPort<1024||testPort>65535||!['user_alice','user_bob'].includes(testUser))throw Error('Synthetic fixture configuration invalid');
 const owner={appId:'lighttick' as const,userId:testUser};const seed=buildDefaultSeed(undefined,{includeLightTick:true});
+process.env.LIGHTTICK_ACTIONS_ENABLED='1';
+process.env.LIGHTTICK_RECORD_HANDOFF_ENABLED='1';
+process.env.GROW_RECORDS_SOURCE_ID='synthetic-records-ui';
+process.env.GROW_RECORDS_BRIDGE_SECRET='synthetic-records-ui-secret-1234567890';
 seed.appUsers.push({id:'record-ui-member',...owner,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
 const app=await createApplication({seed,lighttickEnabled:true,lighttickRepository:repository});
+const actions=new ActionService(repository);
 let offline=false;
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url!,'http://localhost:3106');res.setHeader('Content-Type','application/json');
  if(url.pathname==='/__reset'){offline=false;await repository.deleteOwnerData(owner);res.end('{}');return;}
+ if(url.pathname==='/__actions_reset'){
+  offline=false;await repository.deleteOwnerData(owner);const day=new Date().toISOString().slice(0,10);
+  await actions.request(owner,'POST','',{key:'synthetic-action-seed-'+Date.now(),title:'UI计时行动',period:'day',start_date:day,end_date:day,timezone:'UTC',target_minutes:20,minimum_minutes:5});res.end('{}');return;
+ }
+ if(url.pathname==='/__actions_snapshot'){res.end(JSON.stringify(await actions.request(owner,'GET','')));return;}
  if(url.pathname==='/__offline'){offline=true;res.end('{}');return;}
  if(url.pathname==='/__online'){offline=false;res.end('{}');return;}
  if(url.pathname==='/__health'){res.end(JSON.stringify({ok:true,offline}));return;}
