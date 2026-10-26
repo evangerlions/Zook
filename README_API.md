@@ -818,7 +818,11 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `GET /api/v1/frogsleep/sleep-buddy/invites/preview?token=...` 或 `?code=...` 需要 FrogSleep Bearer 鉴权，只用于登录后恢复邀请上下文，不会创建关系、不会消耗邀请。响应包含 `invite.domain = "sleep"`、`invite_id`、`raw_invite_id`、`status`、`inviter_user_id`、`invitee_user_id`、`viewer_can_accept`、`accept_method`、`expires_at`、`share_title`、`share_subtitle`。接受成功后，关系响应会带回 `source_invite_id`、`accept_source`、`accepted_at`；邀请内部会记录 `accepted_by_user_id`，便于统计邀请转化。
 
-睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 按 `relationship_id + date_anchor` 幂等：同一关系同一日期已有 pending/active session 时返回既有 session，不再创建重复 session。
+邀请决定更新使用严格递增的持久化逻辑时间，已读时间追平最新决定；同毫秒操作或设备时钟回退不会吞掉新的未读状态，相同状态和版本的幂等重放保持已读。
+
+同一对用户已有 active/paused 的睡眠或专注关系时，重复组合邀请的对应领域只读显示已连接，复用原关系 ID；此规则同时覆盖旧聚合 `/accept` 与新逐域接受产生的关系。不会新建关系、占用新 slot 或扩大任一方授权；canonical 撤销记录仍覆盖旧关系事实。
+
+睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 可传 `joint_activity_id`（兼容 `jointActivityId`）绑定已接受的 `tonight_together` 活动；活动须属于当前关系的双方。携带活动 ID 时按活动复用唯一 session，跨日期、时区、双方并发及完成后重试均返回首次 session，保留首次 `date_anchor`；不存在、异关系、错误类型、未接受、拒绝、取消或无原 session 的已完成活动返回 4xx。未传活动 ID 时仍按 `relationship_id + date_anchor` 幂等：同一关系同一日期已有 pending/active session 时返回既有 session。
 
 `PATCH /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences` 成功响应包含 `preferences` 和当前 `relationship`，用于 iOS 在保存守护偏好后直接刷新关系状态。请求只接受 `guard_level`、`visibility_scope`、`mute_for_tonight`、`allow_morning_summary_push`、`allow_recovery_nudges`；未知字段或类型不匹配返回 `400 REQ_INVALID_BODY`。共同守护 session 响应包含 Zook canonical 字段 `session_id`、`relationship_id`、`status`、`participant_states`、`starts_at`、`ends_at`，并额外保留 iOS 兼容字段 `shared_session_id`、`initiator_user_id`、`invite_status`、`date_anchor`、`initiator_state`、`partner_state`、`started_at`、`ended_at`；其中 `initiator_state` / `partner_state` 会把后端内部 `pending` 映射为 iOS 已有枚举 `invited`。
 
@@ -895,6 +899,10 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 群组搭子接口要求 FrogSleep Bearer 鉴权并受 `group_buddies` 能力开关控制，关闭时返回未命中路由。群组 `domain` 只允许 `sleep` 或 `focus`，`group_name` 为 1-40 字符，`group_description` 最长 160 字符，`sharing_baseline` 只允许 `presence`、`daily_summary`、`weekly_trend`、`shared_activity`。每组最多 5 名 active 成员；每个 owner 最多 5 个未解散群组。群组状态为 `forming`、`active`、`paused`、`dissolved`；首个成员创建后为 `forming`，第二名成员接受邀请后进入 `active`。owner 可更新、暂停、恢复、解散和改角色；owner/moderator 可邀请或移除普通成员；owner 不能直接离开最后一个 owner 身份。常见业务错误包括 `400 BUDDY_GROUP_LIMIT`、`400 BUDDY_GROUP_FULL`、`400 BUDDY_GROUP_INVITATION_NOT_FOUND`、`400 BUDDY_GROUP_INVITATION_EXPIRED`、`403 BUDDY_GROUP_FORBIDDEN`、`403 BUDDY_GROUP_NOT_MEMBER`、`403 BUDDY_GROUP_PAUSED` 和 `409 BUDDY_GROUP_CONFLICT`。
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
+
+统一邀请的列表与预览 `status` 按 `domain_results` 的有效状态聚合：只要仍有待处理领域即为 `pending`，全部接受后为 `accepted`，客户端不应继续对已处理领域展示接受按钮。同一对用户在某领域已有 active/paused 关系时，新邀请该领域返回只读 `accepted`、既有 `relationship_id` 和空 `viewer_actions`；不重复创建子邀请或关系，不重置既有授权，其它领域仍可独立操作。过期旧关系的原 decision 不会借用新关系恢复。
+
+邀请列表 `unread` 由当前查看者的持久化阅读时间与邀请/逐域决定更新时间比较生成。按 ID、code 或 token 成功预览后会标记当前查看者已读；随后产生的新决定会重新变为未读。发起者创建邀请时视为已读，另一方初次查看前为未读。预览只更新阅读状态，不接受、拒绝或取消邀请。
 
 `POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请绑定的收件用户，或当前邮箱与未认领邀请目标匹配的用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；同步该领域兼容子邀请的终态，保留另一领域及既有关系，不隐式开启任何分享授权。单域关系建立时在同一事务内初始化双方各四类、共八条 `revoked` grant；不会沿用旧关系的自动补授逻辑。随后可通过该 `relationship_id` 查询 grants，各用户仅可 PATCH 自己作为 grantor 的记录；授权失败只重试 grant 更新，不重新接受另一个域。Bundle 预览的 `domain_results` 按实际领域 decision 返回 `status`、`decision_version` 和匹配该次接受的 `relationship_id`，不能使用 Bundle 总版本代替领域 decision 版本。旧领域关系已不可用时返回空关系 ID 和 `BUDDY_RELATIONSHIP_UNAVAILABLE`，不会从新 slot 恢复旧关系。
 

@@ -24508,6 +24508,15 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
     "dateAnchor": {
       "type": "string",
       "format": "date"
+    },
+    "joint_activity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Accepted tonight_together activity. Both participants and terminal retries reuse one session across local dates."
+    },
+    "jointActivityId": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "anyOf": [
@@ -24530,6 +24539,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId"?: string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 ) | (
@@ -24538,6 +24549,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId": string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 );

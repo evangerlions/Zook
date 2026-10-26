@@ -124,6 +124,7 @@ export async function handleSleepSessionBegin(context: BackendRouteContext, requ
     auth.userId,
     requireStringField(body, "relationship_id", "relationshipId"),
     stringField(body, "date_anchor", "dateAnchor"),
+    stringField(body, "joint_activity_id", "jointActivityId"),
   );
   emitSleepAnalytics(context, {
     name: "frogsleep_session_started",
