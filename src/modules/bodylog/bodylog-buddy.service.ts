@@ -1,3 +1,4 @@
+import { encourageBodyLogBuddy } from "./bodylog-buddy-encouragement.ts";
 import { createHash, randomBytes } from "node:crypto";
 import type { BodyLogBuddyStore, BodyLogSocialAccess } from "../../infrastructure/bodylog-store-ports.ts";
 import { ApplicationError } from "../../shared/errors.ts";
@@ -459,97 +460,10 @@ export class BodyLogBuddyService {
    * 发送鼓励
    */
   async encourage(userId: string, req: EncourageBuddyRequest): Promise<BuddyEncouragement> {
-    const { pairId, emoji, isSameAction, targetHabitId } = req;
-    if (req.operationId !== undefined && !/^[A-Za-z0-9_-]{1,128}$/.test(req.operationId)) {
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "A valid stable operation ID is required.");
-    }
-    if (!["💪", "👏", "🔥", "😊"].includes(emoji)) {
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "Unsupported encouragement emoji.");
-    }
-
-    const pair = await this.store.findBodyLogBuddyPair(pairId);
-    if (!pair) {
-      throw new ApplicationError(404, "BUDDY_PAIR_NOT_FOUND", "Buddy pair not found.");
-    }
-
-    if (pair.userId !== userId && pair.partnerUserId !== userId) {
-      throw new ApplicationError(403, "BUDDY_NOT_AUTHORIZED", "Not authorized.");
-    }
-
-    if (pair.status !== "active") {
-      throw new ApplicationError(409, "BUDDY_NOT_ACTIVE", "Buddy pair is not active.");
-    }
-
-    const toUserId = pair.userId === userId ? pair.partnerUserId : pair.userId;
-    const blocks = await this.social.listBodyLogBlocks(BODYLOG_APP_ID);
-    if (blocks.some(item => (item.blockerUserId === userId && item.blockedUserId === toUserId) ||
-      (item.blockerUserId === toUserId && item.blockedUserId === userId))) {
-      throw new ApplicationError(403, "BUDDY_NOT_AUTHORIZED", "This buddy relationship is unavailable.");
-    }
-    const encouragementId = req.operationId
-      ? "buddy_encouragement_" + createHash("sha256").update(JSON.stringify([pairId, userId, req.operationId])).digest("hex")
-      : randomId("buddy_encouragement");
-    const activityId = `buddy_activity_${encouragementId}`;
-    const prior = req.operationId
-      ? (await this.store.listBodyLogBuddyEncouragements(pairId)).find(item => item.id === encouragementId)
-      : undefined;
-    if (prior) {
-      const activity = (await this.store.listBodyLogBuddyActivities(pairId)).find(item => item.id === activityId);
-      if (prior.emoji !== emoji || prior.isSameAction !== isSameAction || !activity ||
-        activity.targetHabitId !== (targetHabitId ?? null)) {
-        throw new ApplicationError(409, "BODYLOG_EVENT_CONFLICT", "Operation ID was used with different content.");
-      }
-      const profile = await this.social.findBodyLogProfile(BODYLOG_APP_ID, userId);
-      return { ...prior, fromNickname: profile?.nickname ?? "Unknown" };
-    }
-    const now = new Date();
-
-    // 创建鼓励记录
-    const encouragement: BuddyEncouragementRecord = {
-      id: encouragementId,
-      pairId,
-      fromUserId: userId,
-      toUserId,
-      emoji,
-      isSameAction,
-      createdAt: now.toISOString(),
-    };
-
-    await this.store.insertBodyLogBuddyEncouragement(encouragement);
-
-    // 发送鼓励通知
-    await this.sendBuddyNotification(toUserId, "buddy_encouraged", pairId, userId, targetHabitId);
-
-    // 如果是"同款"鼓励，自动完成打卡
-    if (isSameAction && targetHabitId) {
-      await this.recordCheckin(userId, targetHabitId, 1);
-    }
-
-    // 创建活动记录
-    const activity: BuddyActivityRecord = {
-      id: activityId,
-      pairId,
-      actorUserId: userId,
-      type: "encouraged",
-      targetHabitId: targetHabitId ?? null,
-      payload: { emoji, isSameAction },
-      createdAt: now.toISOString(),
-    };
-
-    await this.store.insertBodyLogBuddyActivity(activity);
-
-    const fromProfile = await this.social.findBodyLogProfile(BODYLOG_APP_ID, userId);
-
-    return {
-      id: encouragement.id,
-      pairId,
-      fromUserId: userId,
-      fromNickname: fromProfile?.nickname ?? "Unknown",
-      toUserId,
-      emoji,
-      isSameAction,
-      createdAt: now.toISOString(),
-    };
+    return encourageBodyLogBuddy({ store: this.store, social: this.social,
+      notify: (recipient, pairId, actor, habitId) => this.sendBuddyNotification(recipient, "buddy_encouraged", pairId, actor, habitId),
+      recordCheckin: (actor, habitId, count) => this.recordCheckin(actor, habitId, count),
+    }, userId, req);
   }
 
   async dailySettlement(): Promise<void> {
