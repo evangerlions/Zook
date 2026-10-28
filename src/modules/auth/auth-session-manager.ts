@@ -1,6 +1,7 @@
 import { assertSleepGuestActive } from "../frogsleep/guest/guest-access.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import {
+  ApplicationError,
   badRequest,
   forbidden,
   unauthorized,
@@ -12,6 +13,7 @@ import type {
   ClientType,
   LogoutCommand,
   RefreshCommand,
+  RefreshTokenRecord,
 } from "../../shared/types.ts";
 import { createOpaqueToken, randomId, sha256 } from "../../shared/utils.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
@@ -38,6 +40,7 @@ export class AuthSessionManager {
   async refresh(
     command: RefreshCommand,
     now = new Date(),
+    prepareResponse?: (session: AuthSession) => Promise<void>,
   ): Promise<AuthSession> {
     const rawRefreshToken = command.cookieRefreshToken ?? command.refreshToken;
     if (!rawRefreshToken) {
@@ -56,9 +59,9 @@ export class AuthSessionManager {
         "Refresh token app scope does not match the request.",
       );
     }
-    if (!await this.refreshTokenStore.claimRotation(existingRecord.tokenHash, existingRecord.expiresAt, now)) {
+    const credentialVersion = await this.getCredentialVersion(existingRecord.userId);
+    if ((existingRecord.credentialVersion ?? 1) !== credentialVersion)
       unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
-    }
     const user = await this.userService.getById(existingRecord.userId);
     await assertSleepGuestActive(this.database,user,existingRecord.appId,now);
     await this.appRegistryService.getAppOrThrow(existingRecord.appId);
@@ -71,22 +74,25 @@ export class AuthSessionManager {
       existingRecord.appId,
       await this.getAccessTokenVersion(user.id, existingRecord.appId),
       now,
+      credentialVersion,
     );
-    const { rawToken: refreshToken, recordId } = await this.issueRefreshToken(
-      user.id,
-      existingRecord.appId,
-      now,
-    );
-    existingRecord.revokedAt = now.toISOString();
-    existingRecord.replacedBy = recordId;
-    await this.refreshTokenStore.update(existingRecord);
-    return {
+    const { rawToken: refreshToken, record } = this.prepareRefreshToken(user.id, existingRecord.appId, credentialVersion, now);
+    const session = {
       userId: user.id,
       appId: existingRecord.appId,
       accessToken,
       refreshToken,
       expiresIn: this.tokenService.expiresInSeconds,
     };
+    try { await prepareResponse?.(session); }
+    catch (error) {
+      if (error instanceof ApplicationError && error.code === "AUTH_LOGIN_FORBIDDEN")
+        await this.refreshTokenStore.rotate(existingRecord, { ...record, revokedAt: now.toISOString() }, now);
+      throw error;
+    }
+    if (!await this.refreshTokenStore.rotate(existingRecord, record, now))
+      unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
+    return session;
   }
 
   async logout(
@@ -186,16 +192,19 @@ export class AuthSessionManager {
     appId: string,
     now = new Date(),
   ): Promise<AuthSession> {
+    const credentialVersion = await this.getCredentialVersion(userId);
     const accessToken = this.tokenService.issueAccessToken(
       userId,
       appId,
       await this.getAccessTokenVersion(userId, appId),
       now,
+      credentialVersion,
     );
     const { rawToken: refreshToken } = await this.issueRefreshToken(
       userId,
       appId,
       now,
+      credentialVersion,
     );
     return {
       userId,
@@ -207,6 +216,8 @@ export class AuthSessionManager {
   }
 
   async assertAccessTokenActive(auth: AuthContext): Promise<void> {
+    if ((auth.credentialVersion ?? 1) !== await this.getCredentialVersion(auth.userId))
+      unauthorized("AUTH_INVALID_TOKEN", "Bearer token is revoked or out of date.");
     const currentVersion = await this.getAccessTokenVersion(
       auth.userId,
       auth.appId,
@@ -217,6 +228,10 @@ export class AuthSessionManager {
         "Bearer token is revoked or out of date.",
       );
     }
+  }
+
+  private async getCredentialVersion(userId: string): Promise<number> {
+    return (await this.userService.getById(userId)).credentialVersion ?? 1;
   }
 
   async revokeAllSessions(
@@ -251,19 +266,25 @@ export class AuthSessionManager {
     userId: string,
     appId: string,
     now = new Date(),
+    credentialVersion = 1,
   ): Promise<{ rawToken: string; recordId: string }> {
+    const { rawToken, record } = this.prepareRefreshToken(userId, appId, credentialVersion, now);
+    await this.refreshTokenStore.create(record);
+    return { rawToken, recordId: record.id };
+  }
+
+  private prepareRefreshToken(userId: string, appId: string, credentialVersion: number, now: Date): { rawToken: string; record: RefreshTokenRecord } {
     const rawToken = createOpaqueToken("rt");
-    const recordId = randomId("rft");
-    await this.refreshTokenStore.create({
-      id: recordId,
+    return { rawToken, record: {
+      id: randomId("rft"),
       appId,
       userId,
       tokenHash: sha256(rawToken),
+      credentialVersion,
       expiresAt: new Date(now.getTime() + this.refreshTokenTtlMs).toISOString(),
       revokedAt: undefined,
       replacedBy: undefined,
-    });
-    return { rawToken, recordId };
+    } };
   }
 
   private async getRefreshTokenRecord(rawToken: string) {

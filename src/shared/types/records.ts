@@ -33,6 +33,7 @@ export interface AppNameI18n {
 }
 
 export interface UserRecord {
+  credentialVersion?: number;
   id: string;
   email?: string;
   phone?: string;
@@ -80,6 +81,7 @@ export interface UserRoleRecord {
 }
 
 export interface RefreshTokenRecord {
+  credentialVersion?: number;
   id: string;
   appId: string;
   userId: string;

@@ -192,6 +192,19 @@ export class PostgresDatabase extends ApplicationDatabase {
       client.release();
     }
   }
+  override async withNewUserTransaction<T>(_userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      await this.query("SAVEPOINT auth_registration");
+      try {
+        const result = await fn();
+        await this.query("RELEASE SAVEPOINT auth_registration");
+        return result;
+      } catch (error) {
+        await this.query("ROLLBACK TO SAVEPOINT auth_registration");
+        throw error;
+      }
+    });
+  }
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
   override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
   override async close(): Promise<void> {
@@ -328,7 +341,7 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async findUserById(userId: string): Promise<UserRecord | undefined> {
     const result = await this.query(
-      "SELECT id, email, phone, password_hash, password_algo, status, created_at FROM zook_users WHERE id = $1 LIMIT 1",
+      "SELECT id, email, phone, password_hash, password_algo, credential_version, status, created_at FROM zook_users WHERE id = $1 LIMIT 1",
       [userId],
     );
     return result.rows[0] ? parseUser(result.rows[0]) : undefined;
@@ -337,7 +350,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async findUserByAccount(account: string): Promise<UserRecord | undefined> {
     const normalized = account.trim().toLowerCase();
     const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
+      `SELECT id, email, phone, password_hash, password_algo, credential_version, status, created_at
        FROM zook_users
        WHERE lower(coalesce(email, '')) = $1 OR lower(coalesce(phone, '')) = $1
        LIMIT 1`,
@@ -349,7 +362,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async findUserByPhone(phone: string): Promise<UserRecord | undefined> {
     const normalized = phone.trim().toLowerCase();
     const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
+      `SELECT id, email, phone, password_hash, password_algo, credential_version, status, created_at
        FROM zook_users
        WHERE lower(coalesce(phone, '')) = $1
        LIMIT 1`,
@@ -383,7 +396,7 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> {
     await this.query(
-      "UPDATE zook_users SET password_hash = $2, password_algo = $3, updated_at = NOW() WHERE id = $1",
+      "UPDATE zook_users SET password_hash = $2, password_algo = $3, credential_version = credential_version + 1, updated_at = NOW() WHERE id = $1",
       [userId, passwordHash, passwordAlgo],
     );
   }

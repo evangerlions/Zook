@@ -1,6 +1,7 @@
 import type { AdminSessionRecord } from "./records.ts";
 
 export interface AccessTokenPayload {
+  credential_ver?: number;
   sub: string;
   app_id: string;
   type: "access";
@@ -11,6 +12,7 @@ export interface AccessTokenPayload {
 }
 
 export interface AuthContext {
+  credentialVersion?: number;
   userId: string;
   appId: string;
   tokenId: string;

@@ -215,6 +215,7 @@ paths:
     post:
       operationId: setPassword
       summary: Set password for logged-in email-code-only account
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       security:
         - bearerAuth: []
@@ -243,6 +244,7 @@ paths:
     post:
       operationId: resetPassword
       summary: Reset password with email code
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       requestBody:
         required: true
@@ -263,6 +265,7 @@ paths:
     post:
       operationId: resetPasswordBySms
       summary: Reset password with SMS code
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       requestBody:
         required: true
@@ -283,6 +286,7 @@ paths:
     post:
       operationId: changePassword
       summary: Change password for current user
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       security:
         - bearerAuth: []

@@ -420,6 +420,7 @@ paths:
       operationId: frogSleepConfirmPasswordReset
       tags: [frogsleep, frogsleep-auth]
       summary: Reset password using a verification code
+      description: Updates the shared Zook password and invalidates prior access and refresh tokens in every app. Save the newly issued FrogSleep session.
       requestBody:
         required: true
         content:
@@ -433,6 +434,7 @@ paths:
       operationId: frogSleepChangePassword
       tags: [frogsleep, frogsleep-auth]
       summary: Change password for the current FrogSleep user
+      description: Updates the shared Zook password and invalidates prior access and refresh tokens in every app. Save the newly issued FrogSleep session.
       security:
         - bearerAuth: []
       requestBody:

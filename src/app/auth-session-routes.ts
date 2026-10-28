@@ -170,14 +170,14 @@ export async function handleRefresh(this: BackendRouteContext,
     request,
   );
   const clientType = this.getClientType(validated);
-  const session = await this.authService.refresh({
+  const { session, payload } = await this.authService.refreshWithPayload({
     appId: validated.appId?.trim(),
     refreshToken: validated.refreshToken?.trim(),
     cookieRefreshToken: request.cookies?.refreshToken,
-  });
+  }, candidate => this.toAuthPayload(candidate, clientType, request));
 
   return this.ok(
-    await this.toAuthPayload(session, clientType, request),
+    payload,
     request.requestId as string,
     this.buildAuthHeaders(session.refreshToken, clientType),
   );

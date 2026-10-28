@@ -49,11 +49,6 @@ export class AuthSmsFlow {
       appId: string,
       now: Date,
     ) => Promise<AuthSession>,
-    private readonly revokeAllSessions: (
-      appId: string,
-      userId: string,
-      now: Date,
-    ) => Promise<number>,
     private readonly registrationCodeGenerator: () => string,
     private readonly publicSmsTestBypassEnabled = false,
   ) {}
@@ -62,29 +57,32 @@ export class AuthSmsFlow {
     command: RegisterSmsCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.assertSelfRegistrationAllowed(command.appId);
-    const phone = this.normalizePhone(command.phone, command.phoneNa);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumeRegistrationCodeLimits(
-      app.id,
-      phone,
-      ipAddress,
-      rateLimit,
-      now,
-      "sms",
-    );
-    return await this.issueSmsCode({
-      app,
-      phone,
-      phoneNa: command.phoneNa,
-      ipAddress,
-      cacheKey: this.verificationLimiter.buildRegistrationCodeKey(app.id, phone, "sms"),
-      scene: "register",
-      rateLimit,
-      now,
-      test: this.shouldUsePublicSmsTestBypass(command.test),
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.assertSelfRegistrationAllowed(command.appId);
+      const phone = this.normalizePhone(command.phone, command.phoneNa);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumeRegistrationCodeLimits(
+        app.id,
+        phone,
+        ipAddress,
+        rateLimit,
+        now,
+        "sms",
+      );
+      return await this.issueSmsCode({
+        app,
+        phone,
+        phoneNa: command.phoneNa,
+        ipAddress,
+        cacheKey: this.verificationLimiter.buildRegistrationCodeKey(app.id, phone, "sms"),
+        scene: "register",
+        rateLimit,
+        now,
+        test: this.shouldUsePublicSmsTestBypass(command.test),
+      });
     });
+    return await deliver();
   }
 
   async registerWithSms(
@@ -134,32 +132,35 @@ export class AuthSmsFlow {
     command: SmsLoginCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.appRegistryService.getAppOrThrow(command.appId);
-    const phone = this.normalizePhone(command.phone, command.phoneNa);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumeEmailLoginCodeLimits(
-      app.id,
-      phone,
-      ipAddress,
-      rateLimit,
-      now,
-      "sms",
-    );
-    if (await this.commonTestAccountService.hasEnabledAccount(app.id, phone)) {
-      return this.buildAcceptedResult(rateLimit);
-    }
-    return await this.issueSmsCode({
-      app,
-      phone,
-      phoneNa: command.phoneNa,
-      ipAddress,
-      cacheKey: this.verificationLimiter.buildEmailLoginCodeKey(app.id, phone, "sms"),
-      scene: "login",
-      rateLimit,
-      now,
-      test: this.shouldUsePublicSmsTestBypass(command.test),
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.appRegistryService.getAppOrThrow(command.appId);
+      const phone = this.normalizePhone(command.phone, command.phoneNa);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumeEmailLoginCodeLimits(
+        app.id,
+        phone,
+        ipAddress,
+        rateLimit,
+        now,
+        "sms",
+      );
+      if (await this.commonTestAccountService.hasEnabledAccount(app.id, phone)) {
+        return async () => this.buildAcceptedResult(rateLimit);
+      }
+      return await this.issueSmsCode({
+        app,
+        phone,
+        phoneNa: command.phoneNa,
+        ipAddress,
+        cacheKey: this.verificationLimiter.buildEmailLoginCodeKey(app.id, phone, "sms"),
+        scene: "login",
+        rateLimit,
+        now,
+        test: this.shouldUsePublicSmsTestBypass(command.test),
+      });
     });
+    return await deliver();
   }
 
   async loginWithSmsCode(
@@ -222,39 +223,42 @@ export class AuthSmsFlow {
     command: PasswordSmsCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.appRegistryService.getAppOrThrow(command.appId);
-    const phone = this.normalizePhone(command.phone, command.phoneNa);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumePasswordCodeLimits(
-      app.id,
-      phone,
-      ipAddress,
-      rateLimit,
-      now,
-      "sms",
-    );
-    const cacheKey = this.verificationLimiter.buildPasswordResetCodeKey(app.id, phone, "sms");
-    await this.assertResendCooldown(cacheKey, rateLimit, now);
-    const user = await this.database.findUserByPhone(phone);
-    if (
-      !user ||
-      user.status === "BLOCKED" ||
-      !(await this.canUsePasswordFlow(app.id, user.id))
-    ) {
-      return this.buildAcceptedResult(rateLimit);
-    }
-    return await this.issueSmsCode({
-      app,
-      phone,
-      phoneNa: command.phoneNa,
-      ipAddress,
-      cacheKey,
-      scene: "password-reset",
-      rateLimit,
-      now,
-      test: this.shouldUsePublicSmsTestBypass(command.test),
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.appRegistryService.getAppOrThrow(command.appId);
+      const phone = this.normalizePhone(command.phone, command.phoneNa);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumePasswordCodeLimits(
+        app.id,
+        phone,
+        ipAddress,
+        rateLimit,
+        now,
+        "sms",
+      );
+      const cacheKey = this.verificationLimiter.buildPasswordResetCodeKey(app.id, phone, "sms");
+      await this.assertResendCooldown(cacheKey, rateLimit, now);
+      const user = await this.database.findUserByPhone(phone);
+      if (
+        !user ||
+        user.status === "BLOCKED" ||
+        !(await this.canUsePasswordFlow(app.id, user.id))
+      ) {
+        return async () => this.buildAcceptedResult(rateLimit);
+      }
+      return await this.issueSmsCode({
+        app,
+        phone,
+        phoneNa: command.phoneNa,
+        ipAddress,
+        cacheKey,
+        scene: "password-reset",
+        rateLimit,
+        now,
+        test: this.shouldUsePublicSmsTestBypass(command.test),
+      });
     });
+    return await deliver();
   }
 
   async resetPasswordBySms(
@@ -303,7 +307,6 @@ export class AuthSmsFlow {
       this.passwordHasher.hash(command.password),
       this.passwordHasher.algorithm,
     );
-    await this.revokeAllSessions(app.id, user.id, now);
     await this.appRegistryService.ensureMembership(app.id, user.id, now);
     return await this.issueSession(user.id, app.id, now);
   }
@@ -318,7 +321,7 @@ export class AuthSmsFlow {
     rateLimit: AuthRateLimitRuntimeConfig;
     now: Date;
     test: boolean;
-  }): Promise<RegisterEmailCodeResult> {
+  }): Promise<() => Promise<RegisterEmailCodeResult>> {
     const existingCode = await this.verificationLimiter.getVerificationCodeEntry(input.cacheKey, input.now);
     if (
       existingCode &&
@@ -353,33 +356,39 @@ export class AuthSmsFlow {
       sentAt: verificationEntry.sentAt,
       expiresAt: verificationEntry.expiresAt,
     });
-    if (!input.test) {
-      try {
-        const sendResult =
-          await this.smsVerificationSender.sendVerificationCode({
-            phoneNumber: input.phone,
-            code: rawCode,
-            expireMinutes: Math.floor(
-              input.rateLimit.verificationCodeTtlMs / (60 * 1000),
-            ),
+    return async () => {
+      if (!input.test) {
+        try {
+          const sendResult =
+            await this.smsVerificationSender.sendVerificationCode({
+              phoneNumber: input.phone,
+              code: rawCode,
+              expireMinutes: Math.floor(
+                input.rateLimit.verificationCodeTtlMs / (60 * 1000),
+              ),
+            });
+          await this.smsVerificationRecordService.markProviderAccepted(
+            smsRecord.id,
+            {
+              providerRequestId: sendResult.requestId,
+              providerSerialNo: sendResult.sendSerialNo,
+            },
+          );
+        } catch (error) {
+          await this.database.withExclusiveSession(async () => {
+            const current = await this.verificationLimiter.getVerificationCodeEntry(input.cacheKey, input.now);
+            if (current?.codeHash === verificationEntry.codeHash && current.sentAt === verificationEntry.sentAt)
+              await this.verificationLimiter.deleteVerificationCodeEntry(input.cacheKey);
           });
-        await this.smsVerificationRecordService.markProviderAccepted(
-          smsRecord.id,
-          {
-            providerRequestId: sendResult.requestId,
-            providerSerialNo: sendResult.sendSerialNo,
-          },
-        );
-      } catch (error) {
-        await this.verificationLimiter.deleteVerificationCodeEntry(input.cacheKey);
-        await this.smsVerificationRecordService.markProviderFailed(
-          smsRecord.id,
-          buildSmsProviderFailure(error),
-        );
-        throw error;
+          await this.smsVerificationRecordService.markProviderFailed(
+            smsRecord.id,
+            buildSmsProviderFailure(error),
+          );
+          throw error;
+        }
       }
-    }
-    return this.buildAcceptedResult(input.rateLimit);
+      return this.buildAcceptedResult(input.rateLimit);
+    };
   }
 
   private async loginWithVerifiedPhone(input: {
