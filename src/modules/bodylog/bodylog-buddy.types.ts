@@ -30,6 +30,7 @@ export interface BuddyPairRecord {
 
 // API 返回类型
 export interface BuddyPair {
+  canAcceptInvitation: boolean;
   id: string;
   partnerUserId: string;
   partnerNickname: string;
