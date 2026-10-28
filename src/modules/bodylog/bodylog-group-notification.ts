@@ -1,3 +1,7 @@
+import { BODYLOG_APP_ID } from "./bodylog-profile.types.ts";
+
+import type { NotificationService } from "../../services/notification.service.ts";
+
 export type GroupNotificationType =
   | "group_invite"
   | "group_accepted"
@@ -75,5 +79,41 @@ function defaultCopy(type: GroupNotificationType): { title: string; body: string
       return { title: "已被移出小组", body: "你已被组长或管理员移出打卡小组。" };
     case "group_leader_changed":
       return { title: "组长变更", body: "你们的小组选出了新组长。" };
+  }
+}
+
+/**
+ * 辅助方法：发送小组通知
+ */
+export async function sendGroupNotification(notificationService: NotificationService | undefined,
+  recipientUserId: string,
+  type: GroupNotificationType,
+  groupId: string,
+  userId?: string,
+  habitId?: string,
+  tier?: string,
+  invitationToken?: string,
+): Promise<void> {
+  if (!notificationService) return;
+
+  const payload = buildGroupNotificationPayload({
+    type,
+    groupId,
+    userId,
+    habitId,
+    tier,
+    data: invitationToken ? { invitation_url: `https://bodylog.app/g/${groupId}?token=${invitationToken}` } : undefined,
+  });
+
+  try {
+    await notificationService.queueNotification({
+      appId: BODYLOG_APP_ID,
+      recipientUserId,
+      channel: "push",
+      payload: payload as unknown as Record<string, unknown>,
+    });
+  } catch (error) {
+    // 通知发送失败不应影响主流程
+    console.error("Failed to send group notification:", error);
   }
 }

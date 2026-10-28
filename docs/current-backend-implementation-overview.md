@@ -757,3 +757,8 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 ### LightTick 行动计划联动（功能开关）
 
 新增 PostgreSQL 074 迁移与账号事务锁，支持年/月/周/日层级、执行事实、复盘、请求回执和 Grow 单写者接管。canonical API 见 README_API.md 和 docs/public-lighttick-actions.md；现有 goal/plan/task API 独立。未启用生产或迁移真实账号。
+
+
+### 2026-10-28 Sleep 发布基线工程门禁
+
+为消除 origin/main 既有 8 个超长源码阻断，按原职责提取基础设施装配、响应投影、数据库类型端口、RBAC、BodyLog 查询/通知及后台 API 模块；保留原外部方法、初始化顺序、SQL 和事务回调。未引入其他产品待发布功能，未调整行数阈值或豁免名单。Sleep 业务、合同与发布结果另行记录。
