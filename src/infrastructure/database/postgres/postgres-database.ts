@@ -150,6 +150,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   getGrowthStore(): BodyLogGrowthStore { return this.bodyLogStores.growth; }
   getBodyLogNotificationStore(): BodyLogNotificationStore { return this.bodyLogStores.notification; }
   getBodyLogFeatureFlagStore(): BodyLogFeatureFlagStore { return this.bodyLogStores.flags; }
+  getBodyLogRetentionStore(): BodyLogStores['retention'] { return this.bodyLogStores.retention; }
   getBodyLogJobStore(): BodyLogStores['jobs'] { return this.bodyLogStores.jobs; }
   getBodyLogAdminStore(): BodyLogAdminStore { return this.bodyLogStores.admin; }
   static async create(
@@ -304,6 +305,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
   override async findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByTokenHash(appId, tokenHash); }
   override async findBodyLogInvitationByCode(appId: string, code: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByCode(appId, code); }
+  override async updateBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.updateInvitation(record); }
   override async insertBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.insertInvitation(record); }
   override async listBodyLogInvitations(appId: string, inviterUserId: string): Promise<BodyLogInvitationRecord[]> { return await this.bodyLogInvitations.listInvitations(appId, inviterUserId); }
   override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }

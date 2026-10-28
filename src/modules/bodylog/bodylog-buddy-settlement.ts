@@ -100,8 +100,8 @@ export class BodyLogBuddySettlement {
           // 奖励Premium天数（如果是金牌及以上）
           const rewardDays = BUDDY_TIER_REWARDS[newTier];
           if (rewardDays > 0) {
-            await this.grantPremiumReward(pair.userId, rewardDays);
-            await this.grantPremiumReward(pair.partnerUserId, rewardDays);
+            await this.grantPremiumReward(pair.userId, rewardDays, `${pair.id}:${newTier}`);
+            await this.grantPremiumReward(pair.partnerUserId, rewardDays, `${pair.id}:${newTier}`);
           }
         }
       } else {
@@ -180,13 +180,9 @@ export class BodyLogBuddySettlement {
   /**
    * 辅助方法：授予Premium奖励
    */
-  private async grantPremiumReward(userId: string, days: number): Promise<void> {
+  private async grantPremiumReward(userId: string, days: number, sourceId: string): Promise<void> {
     if (!this.subscriptionService) return;
-    try {
-      await this.subscriptionService.grantReward(BODYLOG_APP_ID, userId, SubscriptionTier.PLUS, days, "BodyLog buddy tier reward");
-    } catch (error) {
-      console.error("Failed to grant buddy premium reward:", error);
-    }
+    await this.subscriptionService.grantReward(BODYLOG_APP_ID, userId, SubscriptionTier.PLUS, days, "BodyLog buddy tier reward", { source: "buddy", id: sourceId });
   }
 
   /**

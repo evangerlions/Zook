@@ -1,3 +1,4 @@
+import type { BodyLogRetentionService } from "./bodylog-retention.service.ts";
 import type { BodyLogAdminStore } from "../../infrastructure/bodylog-store-ports.ts";
 import type { BodyLogFeatureFlagStore } from "../../infrastructure/bodylog-store-ports.ts";
 import type {
@@ -45,6 +46,7 @@ export class BodyLogAdminService {
   constructor(
     private readonly adminStore: BodyLogAdminStore,
     private readonly featureFlagStore: BodyLogFeatureFlagStore,
+    readonly retention?: BodyLogRetentionService,
   ) {}
 
   // ===== Operations Dashboard =====

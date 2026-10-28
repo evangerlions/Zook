@@ -764,6 +764,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
       item.appId === appId && item.code === code));
   }
 
+  updateBodyLogInvitation(record: BodyLogInvitationRecord): void {
+    const index = this.bodyLogInvitations.findIndex(item => item.id === record.id);
+    if (index >= 0) this.bodyLogInvitations[index] = structuredClone(record);
+  }
+
   insertBodyLogInvitation(record: BodyLogInvitationRecord): void {
     this.bodyLogInvitations.push(structuredClone(record));
   }

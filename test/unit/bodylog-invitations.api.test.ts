@@ -22,7 +22,7 @@ function seed(): DatabaseSeed {
   return value;
 }
 
-test("invitation binds once and qualifies after three distinct current-or-recorded plan days", async () => {
+test("invitation binds once and rejects dates without recorded qualifying plan goals", async () => {
   const runtime = await createApplication({ seed: seed() });
   await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
@@ -63,16 +63,15 @@ test("invitation binds once and qualifies after three distinct current-or-record
     method: "POST", path: "/api/v1/bodylog/invitations/progress", headers: headers(bob),
     body: { date: today, timezone: "UTC" },
   });
-  assert.equal(progress.body.data.progressDays, 3);
-  assert.equal(progress.body.data.qualified, true);
-  assert.equal(typeof progress.body.data.premiumUntil, "string");
+  assert.equal(progress.statusCode, 409);
+  assert.equal(progress.body.code, "BODYLOG_INVITATION_PROGRESS_INVALID");
 
   const status = await runtime.app.handle({
     method: "GET", path: "/api/v1/bodylog/invitations", headers: headers(alice),
   });
-  assert.equal(status.body.data.qualifiedCount, 1);
-  assert.equal(status.body.data.rewardedCount, 1);
-  assert.equal(typeof status.body.data.premiumUntil, "string");
+  assert.equal(status.body.data.qualifiedCount, 0);
+  assert.equal(status.body.data.rewardedCount, 0);
+  assert.equal(status.body.data.premiumUntil, null);
 });
 
 test("self invitation is rejected", async () => {

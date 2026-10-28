@@ -188,6 +188,10 @@ export class BackendRouteContext {
     await this.adminSensitiveOperationService.assertGranted(session, operation);
   }
 
+  public async recordAdminMutationAudit(entry: Parameters<AuditInterceptor["record"]>[0]): Promise<void> {
+    await this.routeAuditInterceptor.record(entry);
+  }
+
   public async recordAdminReadAudit(adminUser: string, action: string, resourceType: string,
     resourceId: string, requestId?: string, privacy: "aggregates_only" | "metadata_only" = "aggregates_only"): Promise<void> {
     await this.routeAuditInterceptor.record({ appId: resourceId, actorUserId: adminUser, action, resourceType,
