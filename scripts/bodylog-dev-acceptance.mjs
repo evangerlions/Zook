@@ -9,9 +9,11 @@ async function request(path,body,token,key){const r=await fetch(new URL(path,bas
 let cleanupPair,aliceToken;
 try {
  const health=await request('/api/health');check('expected deployed version',health.status===200&&health.value?.data?.version===expected);
+ if(!checks.at(-1).passed)throw new Error('Expected release version was not confirmed; acceptance stopped before login or mutation.');
  const flags=await request('/api/v1/bodylog/public/config');
  for(const name of ['buddyDeliveryV2','invitationManagement','retentionLedger'])check(`capability ${name}`,flags.status===200&&flags.value?.data?.[name]===true);
  for(const path of ['/entitlements','/missions','/rewards','/retention/assignment'])check(`Bearer required ${path}`,(await request('/api/v1/bodylog'+path)).status===401);
+ if(!checks.every(row=>row.passed))throw new Error('Public capability or authentication preflight failed.');
  const tokens=[];
  for(const name of ['A','B']){
   const account=process.env[`QA_${name}_EMAIL`],password=process.env[`QA_${name}_PASSWORD`];
@@ -24,19 +26,22 @@ try {
  }
  check('distinct authenticated accounts',tokens[0].user!==tokens[1].user);
  const assignment=await request('/api/v1/bodylog/retention/assignment',undefined,tokens[0].token);
- check('no unreviewed experiment enabled',assignment.value?.data?.experimentId==='disabled');
+ check('no unreviewed experiment enabled',assignment.status===200&&assignment.value?.data?.experimentId==='disabled');
  if(process.env.BODYLOG_QA_MUTATIONS==='1'){
+  if(!checks.every(row=>row.passed))throw new Error('Account or experiment checks failed; no mutation was dispatched.');
   if(!['localhost','127.0.0.1','app-dev.youwoai.net'].includes(base.hostname))throw new Error('Mutation gate is limited to loopback and the named dev slot.');
   aliceToken=tokens[0].token;
   const prior=await request('/api/v1/bodylog/buddies',undefined,aliceToken);
+  if(prior.status!==200||!Array.isArray(prior.value?.data?.buddies))throw new Error('Existing pair state could not be confirmed; no pair was created.');
   if(prior.value?.data?.buddies?.some(row=>row.partnerUserId===tokens[1].user))throw new Error('Existing pair preserved. Use reserved accounts without an active/pending pair.');
   const made=await request('/api/v1/bodylog/buddies',{partnerUserId:tokens[1].user,sharedHabitIds:['habit-read']},aliceToken);
   cleanupPair=made.value?.data?.pair?.id;check('create addressed pair',made.status===200&&Boolean(cleanupPair));
   if(!cleanupPair)throw new Error('Pair was not confirmed.');
   check('recipient accepts pair',(await request(`/api/v1/bodylog/buddies/${cleanupPair}/accept`,{},tokens[1].token)).status===200);
+  if(!checks.at(-1).passed)throw new Error('Recipient acceptance was not confirmed.');
   const key=crypto.randomUUID(),body={pairId:cleanupPair,emoji:'💪',isSameAction:false};
   const first=await request('/api/v1/bodylog/buddies/encouragements',body,aliceToken,key),again=await request('/api/v1/bodylog/buddies/encouragements',body,aliceToken,key);
-  check('durable encouragement confirmation',first.status===200&&again.status===200&&first.value?.data?.id===again.value?.data?.id);
+  check('durable encouragement confirmation',first.status===200&&again.status===200&&typeof first.value?.data?.id==='string'&&first.value.data.id.length>0&&first.value.data.id===again.value?.data?.id);
  }
 }catch(error){checks.push({name:'acceptance completed',passed:false,detail:error instanceof Error?error.message:'Acceptance failed.'});}
 finally{if(cleanupPair&&aliceToken){try{check('only this run pair dissolved',(await request(`/api/v1/bodylog/buddies/${cleanupPair}/dissolve`,{},aliceToken)).status===200);}catch{check('only this run pair dissolved',false);}}}

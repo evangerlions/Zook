@@ -22,7 +22,7 @@ BODYLOG_ACCEPTANCE_REPORT=/tmp/bodylog-dev-acceptance.json \
 npm run acceptance:bodylog-dev
 ```
 
-默认只登录并读取两账号资料、邀请、搭子、权益、任务、奖励和活动，同时检查匿名访问拒绝、关键能力版本及实验保持 disabled。版本不匹配即失败，不能只看 health 200。
+默认只登录并读取两账号资料、邀请、搭子、权益、任务、奖励和活动，同时检查匿名访问拒绝、关键能力版本及实验保持 disabled。版本不匹配会在登录或变更之前立即停止；公开能力/匿名鉴权失败也中止。任何账号读取或实验预期失败都禁止变更，不能只看 health 200。
 
 显式设置 BODYLOG_QA_MUTATIONS=1 时，仅允许 loopback 或 app-dev.youwoai.net：确认两账号没有现存活跃/待接受搭子后，创建本次配对、由收件人接受、用同一 operation ID 两次鼓励并验证只回同一确认，最后只解除本次创建的关系。已有关系会保留并中止；不会删除账号、本地目标、报名或奖励。报告不包含密码、Bearer、邀请 token 或用户 ID。默认实验关闭检查不能替代正式实验审批；将来启用实验后须单独调整经审阅的验收预期。
 
@@ -30,7 +30,7 @@ npm run acceptance:bodylog-dev
 
 `npm run dev:bodylog-acceptance` 在 127.0.0.1:3138 启动临时内存库，使用生产 application factory、实际鉴权及业务路由。仅包含仓库已有测试账号 alice@example.com / bob@example.com、Password1234，和隔离后台 reviewer / ReviewPass123!；这些是公开测试夹具，禁止作为真实环境凭据。内存状态随进程退出丢弃，无外部通知供应商。不要暴露端口到局域网。
 
-iOS Debug 需同时设置 --uitesting 及 BODYLOG_QA_API_ORIGIN=http://127.0.0.1:3138，覆盖认证、业务和配置 origin；只允许干净 loopback origin，Release 忽略该覆盖。BuddyPairUITests 通过正式页面执行计划报名/本地目标记录/返回刷新、邀请创建/服务端撤销/重新创建、两账号搭子流程。模拟器结果不能替代 APNs、系统安装链接回跳、WatchConnectivity 真机或连续七天到账。
+iOS Debug 需同时设置 --uitesting 及 BODYLOG_QA_API_ORIGIN=http://127.0.0.1:3138，覆盖认证、业务和配置 origin；只允许干净 loopback origin，Release 忽略该覆盖。BuddyPairUITests 通过正式页面执行计划报名/本地目标记录/返回刷新、邀请创建/服务端撤销/重新创建、两账号搭子流程。同一内存服务不要同时跑可变更脚本和页面测试：解除关系保留服务端冷却期；独立 suite 前重启临时服务，或为脚本另设 BODYLOG_QA_PORT。模拟器结果不能替代 APNs、系统安装链接回跳、WatchConnectivity 真机或连续七天到账。
 
 ## 邀请域名
 
