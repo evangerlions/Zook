@@ -73,6 +73,7 @@ export interface ApplicationBodyLogDatabasePort {
 
   findBodyLogInvitationByCode(appId: string, code: string): MaybePromise<BodyLogInvitationRecord | undefined>;
 
+  updateBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
   insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
 
   listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;

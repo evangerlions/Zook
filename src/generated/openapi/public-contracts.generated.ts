@@ -4150,6 +4150,1047 @@ export type AiNovelStatisticsSnapshotResponse = {
   "requestId"?: string;
 };
 
+export const BodyLogInvitationPreviewDataSchema = {
+  "type": "object",
+  "required": [
+    "intent",
+    "code",
+    "expiresAt"
+  ],
+  "properties": {
+    "intent": {
+      "type": "string",
+      "enum": [
+        "general",
+        "buddy",
+        "group"
+      ]
+    },
+    "code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogInvitationPreviewData = {
+  "intent": "general" | "buddy" | "group";
+  "code": string | null;
+  "expiresAt": string;
+};
+
+export const BodyLogEffectiveEntitlementSchema = {
+  "type": "object",
+  "required": [
+    "isPremium",
+    "sources",
+    "premiumUntil"
+  ],
+  "properties": {
+    "isPremium": {
+      "type": "boolean"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "premiumUntil": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogEffectiveEntitlement = {
+  "isPremium": boolean;
+  "sources": string[];
+  "premiumUntil": string | null;
+};
+
+export const BodyLogPromotionalEntitlementSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "userId",
+    "source",
+    "sourceId",
+    "type",
+    "value",
+    "startsAt",
+    "endsAt",
+    "createdAt",
+    "campaignId",
+    "participationId",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "invitation",
+        "campaign",
+        "buddy",
+        "group"
+      ]
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "const": "premium"
+    },
+    "value": {
+      "type": "string"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "campaignId": {
+      "type": "string"
+    },
+    "participationId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "queued",
+        "expired"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogPromotionalEntitlement = {
+  "id": string;
+  "userId": string;
+  "source": "invitation" | "campaign" | "buddy" | "group";
+  "sourceId": string;
+  "type": string;
+  "value": string;
+  "startsAt": string;
+  "endsAt": string;
+  "createdAt": string;
+  "campaignId": string;
+  "participationId": string;
+  "status": "active" | "queued" | "expired";
+};
+
+export const BodyLogAccountEntitlementsDataSchema = {
+  "type": "object",
+  "required": [
+    "effective",
+    "promotional"
+  ],
+  "properties": {
+    "effective": {
+      "type": "object",
+      "required": [
+        "isPremium",
+        "sources",
+        "premiumUntil"
+      ],
+      "properties": {
+        "isPremium": {
+          "type": "boolean"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "premiumUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "promotional": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "source",
+          "sourceId",
+          "type",
+          "value",
+          "startsAt",
+          "endsAt",
+          "createdAt",
+          "campaignId",
+          "participationId",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "invitation",
+              "campaign",
+              "buddy",
+              "group"
+            ]
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "const": "premium"
+          },
+          "value": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "campaignId": {
+            "type": "string"
+          },
+          "participationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "queued",
+              "expired"
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogAccountEntitlementsData = {
+  "effective": {
+  "isPremium": boolean;
+  "sources": string[];
+  "premiumUntil": string | null;
+};
+  "promotional": (
+{
+  "id": string;
+  "userId": string;
+  "source": "invitation" | "campaign" | "buddy" | "group";
+  "sourceId": string;
+  "type": string;
+  "value": string;
+  "startsAt": string;
+  "endsAt": string;
+  "createdAt": string;
+  "campaignId": string;
+  "participationId": string;
+  "status": "active" | "queued" | "expired";
+}
+)[];
+};
+
+export const BodyLogUnifiedMissionSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "source",
+    "planId",
+    "day",
+    "completed",
+    "target",
+    "completedUnits",
+    "completedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "sevenDayPlan",
+        "invitation"
+      ]
+    },
+    "planId": {
+      "type": "string"
+    },
+    "day": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "target": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completedUnits": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogUnifiedMission = {
+  "id": string;
+  "source": "sevenDayPlan" | "invitation";
+  "planId": string;
+  "day": number;
+  "completed": boolean;
+  "target": number;
+  "completedUnits": number;
+  "completedAt": string | null;
+};
+
+export const BodyLogUnifiedRewardSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "source",
+    "type",
+    "value",
+    "status",
+    "createdAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "sevenDayPlan",
+        "invitation",
+        "campaign",
+        "buddy",
+        "group"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "badge",
+        "premium"
+      ]
+    },
+    "value": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "claimed",
+        "claimable",
+        "progressing"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "planId": {
+      "type": "string"
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "claimedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogUnifiedReward = {
+  "id": string;
+  "source": "sevenDayPlan" | "invitation" | "campaign" | "buddy" | "group";
+  "type": "badge" | "premium";
+  "value": string;
+  "status": "claimed" | "claimable" | "progressing";
+  "createdAt": string;
+  "planId"?: string;
+  "sourceId"?: string;
+  "startsAt"?: string;
+  "endsAt"?: string | null;
+  "claimedAt"?: string | null;
+};
+
+export const BodyLogCampaignParticipationSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "campaignId",
+    "status",
+    "verificationLevel",
+    "rewardClaimStatus",
+    "retryRemaining",
+    "reviewTargetHours",
+    "expiresAt"
+  ],
+  "properties": {
+    "id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "campaignId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "created",
+        "manual_review",
+        "verified",
+        "rejected",
+        "claimed"
+      ]
+    },
+    "verificationLevel": {
+      "type": "string",
+      "enum": [
+        "none",
+        "manual_review_required",
+        "public_link_verified",
+        "rejected"
+      ]
+    },
+    "rewardClaimStatus": {
+      "type": "string",
+      "enum": [
+        "not_eligible",
+        "ready_to_claim",
+        "claimed"
+      ]
+    },
+    "retryRemaining": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reviewTargetHours": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "claimCode": {
+      "type": "string"
+    },
+    "submittedUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "normalizedUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "rejection": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryAllowed": {
+          "type": "boolean"
+        },
+        "retryRemaining": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "shareCopy": {
+      "type": "object",
+      "required": [
+        "title",
+        "text",
+        "requiredCode"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "requiredCode": {
+          "type": "string"
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogCampaignParticipation = {
+  "id": string | null;
+  "campaignId": string;
+  "status": "none" | "created" | "manual_review" | "verified" | "rejected" | "claimed";
+  "verificationLevel": "none" | "manual_review_required" | "public_link_verified" | "rejected";
+  "rewardClaimStatus": "not_eligible" | "ready_to_claim" | "claimed";
+  "retryRemaining": number;
+  "reviewTargetHours": number;
+  "expiresAt": string;
+  "updatedAt"?: string;
+  "claimCode"?: string;
+  "submittedUrl"?: string;
+  "normalizedUrl"?: string;
+  "platform"?: string;
+  "rejection"?: {
+} | null;
+  "shareCopy"?: {
+  "title": string;
+  "text": string;
+  "requiredCode": string;
+};
+};
+
+export const BodyLogCampaignSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "status",
+    "title",
+    "subtitle",
+    "startsAt",
+    "endsAt",
+    "reward",
+    "rules",
+    "platformPolicy",
+    "participation"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "const": "active"
+    },
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reward": {
+      "type": "object",
+      "required": [
+        "type",
+        "durationDays",
+        "displayText"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "premium"
+        },
+        "durationDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31
+        },
+        "displayText": {
+          "type": "string"
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "platformPolicy": {
+      "type": "object",
+      "required": [
+        "allowedPlatforms",
+        "freeFormAllowed",
+        "oauthPlatforms",
+        "manualReviewPlatforms"
+      ],
+      "properties": {
+        "allowedPlatforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "freeFormAllowed": {
+          "type": "boolean"
+        },
+        "oauthPlatforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manualReviewPlatforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "participation": {
+      "type": "object",
+      "required": [
+        "id",
+        "campaignId",
+        "status",
+        "verificationLevel",
+        "rewardClaimStatus",
+        "retryRemaining",
+        "reviewTargetHours",
+        "expiresAt"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "campaignId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "none",
+            "created",
+            "manual_review",
+            "verified",
+            "rejected",
+            "claimed"
+          ]
+        },
+        "verificationLevel": {
+          "type": "string",
+          "enum": [
+            "none",
+            "manual_review_required",
+            "public_link_verified",
+            "rejected"
+          ]
+        },
+        "rewardClaimStatus": {
+          "type": "string",
+          "enum": [
+            "not_eligible",
+            "ready_to_claim",
+            "claimed"
+          ]
+        },
+        "retryRemaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviewTargetHours": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "claimCode": {
+          "type": "string"
+        },
+        "submittedUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "normalizedUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "rejection": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAllowed": {
+              "type": "boolean"
+            },
+            "retryRemaining": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "shareCopy": {
+          "type": "object",
+          "required": [
+            "title",
+            "text",
+            "requiredCode"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "requiredCode": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogCampaign = {
+  "id": string;
+  "status": string;
+  "title": string;
+  "subtitle": string;
+  "startsAt": string;
+  "endsAt": string;
+  "reward": {
+  "type": string;
+  "durationDays": number;
+  "displayText": string;
+};
+  "rules": string[];
+  "platformPolicy": {
+  "allowedPlatforms": string[];
+  "freeFormAllowed": boolean;
+  "oauthPlatforms": string[];
+  "manualReviewPlatforms": string[];
+};
+  "participation": {
+  "id": string | null;
+  "campaignId": string;
+  "status": "none" | "created" | "manual_review" | "verified" | "rejected" | "claimed";
+  "verificationLevel": "none" | "manual_review_required" | "public_link_verified" | "rejected";
+  "rewardClaimStatus": "not_eligible" | "ready_to_claim" | "claimed";
+  "retryRemaining": number;
+  "reviewTargetHours": number;
+  "expiresAt": string;
+  "updatedAt"?: string;
+  "claimCode"?: string;
+  "submittedUrl"?: string;
+  "normalizedUrl"?: string;
+  "platform"?: string;
+  "rejection"?: {
+} | null;
+  "shareCopy"?: {
+  "title": string;
+  "text": string;
+  "requiredCode": string;
+};
+};
+};
+
+export const BodyLogCampaignClaimDataSchema = {
+  "type": "object",
+  "required": [
+    "reward",
+    "effectiveEntitlement"
+  ],
+  "properties": {
+    "reward": {
+      "type": "object",
+      "required": [
+        "claimStatus",
+        "entitlementId",
+        "entitlementStatus",
+        "startsAt",
+        "endsAt"
+      ],
+      "properties": {
+        "claimStatus": {
+          "type": "string",
+          "const": "claimed"
+        },
+        "entitlementId": {
+          "type": "string"
+        },
+        "entitlementStatus": {
+          "type": "string",
+          "enum": [
+            "active",
+            "queued",
+            "expired"
+          ]
+        },
+        "startsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endsAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "effectiveEntitlement": {
+      "type": "object",
+      "required": [
+        "isPremium",
+        "sources",
+        "premiumUntil"
+      ],
+      "properties": {
+        "isPremium": {
+          "type": "boolean"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "premiumUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogCampaignClaimData = {
+  "reward": {
+  "claimStatus": string;
+  "entitlementId": string;
+  "entitlementStatus": "active" | "queued" | "expired";
+  "startsAt": string;
+  "endsAt": string;
+};
+  "effectiveEntitlement": {
+  "isPremium": boolean;
+  "sources": string[];
+  "premiumUntil": string | null;
+};
+};
+
+export const BodyLogRetentionEventRequestSchema = {
+  "type": "object",
+  "required": [
+    "eventId",
+    "name",
+    "properties",
+    "timestamp",
+    "consent"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "enum": [
+        "growth_card_opened",
+        "local_goal_completed",
+        "invitation_created",
+        "invitation_opened",
+        "invitation_attributed",
+        "buddy_encouragement_sent",
+        "seven_day_plan_opened",
+        "seven_day_plan_completed",
+        "reward_claimed"
+      ]
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "dashboard",
+            "home",
+            "invitation",
+            "buddy",
+            "plan"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "active",
+            "completed",
+            "queued"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "open",
+            "complete",
+            "retry",
+            "claim"
+          ]
+        }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "consent": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type BodyLogRetentionEventRequest = {
+  "eventId": string;
+  "name": "growth_card_opened" | "local_goal_completed" | "invitation_created" | "invitation_opened" | "invitation_attributed" | "buddy_encouragement_sent" | "seven_day_plan_opened" | "seven_day_plan_completed" | "reward_claimed";
+  "properties": {
+  "source"?: "dashboard" | "home" | "invitation" | "buddy" | "plan";
+  "state"?: "active" | "completed" | "queued";
+  "action"?: "open" | "complete" | "retry" | "claim";
+};
+  "timestamp": string;
+  "consent": boolean;
+};
+
+export const BodyLogRetentionAssignmentSchema = {
+  "type": "object",
+  "required": [
+    "experimentId",
+    "variant"
+  ],
+  "properties": {
+    "experimentId": {
+      "type": "string"
+    },
+    "variant": {
+      "type": "string",
+      "enum": [
+        "control",
+        "treatment"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogRetentionAssignment = {
+  "experimentId": string;
+  "variant": "control" | "treatment";
+};
+
 export const BodyLogProfileUpdateRequestSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -4367,13 +5408,29 @@ export const BodyLogInvitationAttributeRequestSchema = {
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "token",
     "installId"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "token"
+      ]
+    },
+    {
+      "required": [
+        "code"
+      ]
+    }
   ],
   "properties": {
     "token": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z2-9]{6}$"
     },
     "installId": {
       "type": "string",
@@ -4382,10 +5439,7 @@ export const BodyLogInvitationAttributeRequestSchema = {
   }
 } as const;
 
-export type BodyLogInvitationAttributeRequest = {
-  "token": string;
-  "installId": string;
-};
+export type BodyLogInvitationAttributeRequest = unknown | unknown;
 
 export const BodyLogInvitationProgressRequestSchema = {
   "type": "object",
@@ -25918,14 +26972,19 @@ export const GeneratedPublicContractNames = [
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BodyLogAccountEntitlementsData",
   "BodyLogAvatarKey",
   "BodyLogBlockListItem",
+  "BodyLogCampaign",
+  "BodyLogCampaignClaimData",
+  "BodyLogCampaignParticipation",
   "BodyLogChallengeCreateRequest",
   "BodyLogChallengeData",
   "BodyLogChallengeMemberData",
   "BodyLogChallengeProgressRequest",
   "BodyLogChallengeResponseRequest",
   "BodyLogChallengeTheme",
+  "BodyLogEffectiveEntitlement",
   "BodyLogFriendData",
   "BodyLogFriendRequestListItem",
   "BodyLogFriendRequestRecordData",
@@ -25935,6 +26994,7 @@ export const GeneratedPublicContractNames = [
   "BodyLogInvitationCreateData",
   "BodyLogInvitationCreateRequest",
   "BodyLogInvitationListItem",
+  "BodyLogInvitationPreviewData",
   "BodyLogInvitationProgressData",
   "BodyLogInvitationProgressRequest",
   "BodyLogInvitationStatusData",
@@ -25947,9 +27007,14 @@ export const GeneratedPublicContractNames = [
   "BodyLogLeaderboardMembership",
   "BodyLogProfileData",
   "BodyLogProfileUpdateRequest",
+  "BodyLogPromotionalEntitlement",
   "BodyLogReportReason",
   "BodyLogReportRequest",
+  "BodyLogRetentionAssignment",
+  "BodyLogRetentionEventRequest",
   "BodyLogTargetUserRequest",
+  "BodyLogUnifiedMission",
+  "BodyLogUnifiedReward",
   "BuddyGroupCreateRequest",
   "BuddyGroupInviteRequest",
   "BuddyGroupRoleUpdateRequest",

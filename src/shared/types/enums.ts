@@ -17,6 +17,7 @@ export type NotificationStatus =
   | "SUPPRESSED";
 export type ClientType = "web" | "app";
 export type EventName =
+  | "bodylog_growth_card_opened" | "bodylog_local_goal_completed" | "bodylog_invitation_created" | "bodylog_invitation_opened" | "bodylog_invitation_attributed" | "bodylog_buddy_encouragement_sent" | "bodylog_seven_day_plan_opened" | "bodylog_seven_day_plan_completed" | "bodylog_reward_claimed"
   | "frogsleep_support_sent" | "frogsleep_support_acknowledged" | "frogsleep_support_receive_changed"
   | "page_view"
   | "page_leave"
@@ -91,6 +92,17 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "BODYLOG_EVENT_CONFLICT"
+  | "BODYLOG_INVITATION_NOT_FOUND"
+  | "BODYLOG_RETENTION_UNAVAILABLE"
+  | "BODYLOG_CAMPAIGN_UNAVAILABLE"
+  | "BODYLOG_CAMPAIGN_CONFIG_INVALID"
+  | "BODYLOG_CAMPAIGN_NOT_FOUND"
+  | "BODYLOG_CAMPAIGN_STATE_CONFLICT"
+  | "BODYLOG_CAMPAIGN_SUBMISSION_INVALID"
+  | "BODYLOG_CAMPAIGN_REWARD_UNCONFIRMED"
+  | "BODYLOG_CAMPAIGN_REWARD_NOT_ELIGIBLE"
+  | "BODYLOG_RETENTION_EVENT_INVALID"
   | "FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED"
   | "FROGSLEEP_JOB_NOT_FOUND"
   | "FROGSLEEP_RETRY_NOT_ALLOWED"

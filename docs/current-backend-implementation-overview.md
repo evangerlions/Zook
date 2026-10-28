@@ -769,3 +769,7 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 新增异步模板/单朵小花、定向接收revision、跨sleep/focus滚动配额、持久操作resolution、单次收下和合并中心；PostgreSQL迁移075与独立Repository接入既有四slot根事务。无Push；默认flag关闭，内部受控关系enrollment默认不授予接收许可。公开方法、环境变量及回滚见[README_API](../README_API.md)。真实PostgreSQL并发验证使用隔离测试库，不代表dev/生产已验收。
 
 2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；行数门禁已在本次隔离发布基线修复；真实环境与生产放行仍待验证。
+
+### 2026-10-28 BodyLog retention source completion
+
+The `feature/bodylog-retention-completion` worktree adds persistent encouragement idempotency, invitation preview/revocation and confirmable attribution, growth-evidence qualification, separate promotional/reward ledger, effective quota entitlement, authenticated manually reviewed campaign operations and opt-in retention measurement. Migration `079_bodylog_retention_integrity.sql` adds revocation and scoped retention documents. Canonical app-data deletion clears those documents. OpenAPI and generated public contracts are updated together. PostgreSQL multi-instance/restart/rollback and local HTTP/password-auth journeys are verified separately from production deployment and physical Watch acceptance; this entry makes no production readiness claim.
