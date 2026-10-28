@@ -20195,6 +20195,1672 @@ export type LogNoDataAckResult = LogNoDataAckData;
 export type LogFailResult = LogFailData;
 
 // BEGIN FROGSLEEP GENERATED CONTRACTS
+export const BuddySupportContextSchema = {
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "buddy_share",
+        "buddy_joint_activity"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "type",
+    "id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportContext = {
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+};
+
+export const BuddySupportSendRequestSchema = {
+  "type": "object",
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "template_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "focus_start_small",
+        "focus_keep_pace",
+        "focus_effort_seen",
+        "focus_restart",
+        "sleep_goodnight",
+        "sleep_no_rush",
+        "sleep_morning",
+        "sleep_support",
+        null
+      ]
+    },
+    "flower": {
+      "type": "boolean"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "buddy_share",
+                "buddy_joint_activity"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "relationship_id",
+    "operation_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportSendRequest = {
+  "relationship_id": string;
+  "operation_id": string;
+  "template_key"?: "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "flower"?: boolean;
+  "context"?: (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+};
+
+export const BuddySupportPermissionRequestSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "enabled",
+    "expected_revision",
+    "operation_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPermissionRequest = {
+  "enabled": boolean;
+  "expected_revision": number;
+  "operation_id": string;
+};
+
+export const BuddySupportResolveRequestSchema = {
+  "type": "object",
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "submission": {
+      "type": "object",
+      "properties": {
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "template_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "focus_start_small",
+            "focus_keep_pace",
+            "focus_effort_seen",
+            "focus_restart",
+            "sleep_goodnight",
+            "sleep_no_rush",
+            "sleep_morning",
+            "sleep_support",
+            null
+          ]
+        },
+        "flower": {
+          "type": "boolean"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "buddy_share",
+                    "buddy_joint_activity"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "required": [
+                "type",
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "relationship_id",
+        "operation_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "relationship_id",
+    "submission"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportResolveRequest = {
+  "relationship_id": string;
+  "submission": {
+  "relationship_id": string;
+  "operation_id": string;
+  "template_key"?: "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "flower"?: boolean;
+  "context"?: (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+};
+};
+
+export const BuddySupportAckRequestSchema = {
+  "type": "object",
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "operation_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportAckRequest = {
+  "operation_id": string;
+};
+
+export const BuddySupportNoteSchema = {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "sender_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "recipient_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "template_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "focus_start_small",
+        "focus_keep_pace",
+        "focus_effort_seen",
+        "focus_restart",
+        "sleep_goodnight",
+        "sleep_no_rush",
+        "sleep_morning",
+        "sleep_support",
+        null
+      ]
+    },
+    "template_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "flower": {
+      "type": "boolean"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "buddy_share",
+                "buddy_joint_activity"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "acknowledged": {
+      "type": "boolean"
+    },
+    "can_acknowledge": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "relationship_id",
+    "domain",
+    "sender_id",
+    "recipient_id",
+    "template_key",
+    "template_version",
+    "flower",
+    "context",
+    "created_at",
+    "expires_at",
+    "acknowledged",
+    "can_acknowledge"
+  ],
+  "additionalProperties": true
+} as const;
+
+export type BuddySupportNote = {
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+};
+
+export const BuddySupportCapabilitySchema = {
+  "type": "object",
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "can_send": {
+      "type": "boolean"
+    },
+    "can_read_history": {
+      "type": "boolean"
+    },
+    "own_receive_enabled": {
+      "type": "boolean"
+    },
+    "permission_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "next_send_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "is_muted": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "relationship_id",
+    "domain",
+    "enabled",
+    "can_send",
+    "can_read_history",
+    "own_receive_enabled",
+    "permission_revision",
+    "next_send_at",
+    "is_muted"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportCapability = {
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+};
+
+export const BuddySupportPartnerSchema = {
+  "type": "object",
+  "properties": {
+    "partner_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "relationship_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "focus"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "can_send": {
+            "type": "boolean"
+          },
+          "can_read_history": {
+            "type": "boolean"
+          },
+          "own_receive_enabled": {
+            "type": "boolean"
+          },
+          "permission_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "next_send_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "is_muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "relationship_id",
+          "domain",
+          "enabled",
+          "can_send",
+          "can_read_history",
+          "own_receive_enabled",
+          "permission_revision",
+          "next_send_at",
+          "is_muted"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "has_note": {
+      "type": "boolean"
+    },
+    "latest_received_note": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "relationship_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "domain": {
+              "type": "string",
+              "enum": [
+                "sleep",
+                "focus"
+              ]
+            },
+            "sender_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "recipient_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "template_key": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "focus_start_small",
+                "focus_keep_pace",
+                "focus_effort_seen",
+                "focus_restart",
+                "sleep_goodnight",
+                "sleep_no_rush",
+                "sleep_morning",
+                "sleep_support",
+                null
+              ]
+            },
+            "template_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "flower": {
+              "type": "boolean"
+            },
+            "context": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "buddy_share",
+                        "buddy_joint_activity"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "acknowledged": {
+              "type": "boolean"
+            },
+            "can_acknowledge": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "relationship_id",
+            "domain",
+            "sender_id",
+            "recipient_id",
+            "template_key",
+            "template_version",
+            "flower",
+            "context",
+            "created_at",
+            "expires_at",
+            "acknowledged",
+            "can_acknowledge"
+          ],
+          "additionalProperties": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "partner_id",
+    "display_name",
+    "relationships",
+    "has_note",
+    "latest_received_note"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPartner = {
+  "partner_id": string;
+  "display_name": string;
+  "relationships": (
+{
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+}
+)[];
+  "has_note": boolean;
+  "latest_received_note": (
+{
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+}
+) | unknown;
+};
+
+export const BuddySupportCenterDataSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "partners": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "partner_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "relationship_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "domain": {
+                  "type": "string",
+                  "enum": [
+                    "sleep",
+                    "focus"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "can_send": {
+                  "type": "boolean"
+                },
+                "can_read_history": {
+                  "type": "boolean"
+                },
+                "own_receive_enabled": {
+                  "type": "boolean"
+                },
+                "permission_revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "next_send_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "is_muted": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "relationship_id",
+                "domain",
+                "enabled",
+                "can_send",
+                "can_read_history",
+                "own_receive_enabled",
+                "permission_revision",
+                "next_send_at",
+                "is_muted"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "has_note": {
+            "type": "boolean"
+          },
+          "latest_received_note": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "relationship_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "domain": {
+                    "type": "string",
+                    "enum": [
+                      "sleep",
+                      "focus"
+                    ]
+                  },
+                  "sender_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "recipient_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "template_key": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "focus_start_small",
+                      "focus_keep_pace",
+                      "focus_effort_seen",
+                      "focus_restart",
+                      "sleep_goodnight",
+                      "sleep_no_rush",
+                      "sleep_morning",
+                      "sleep_support",
+                      null
+                    ]
+                  },
+                  "template_version": {
+                    "type": "integer",
+                    "const": 1
+                  },
+                  "flower": {
+                    "type": "boolean"
+                  },
+                  "context": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "buddy_share",
+                              "buddy_joint_activity"
+                            ]
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "acknowledged": {
+                    "type": "boolean"
+                  },
+                  "can_acknowledge": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "relationship_id",
+                  "domain",
+                  "sender_id",
+                  "recipient_id",
+                  "template_key",
+                  "template_version",
+                  "flower",
+                  "context",
+                  "created_at",
+                  "expires_at",
+                  "acknowledged",
+                  "can_acknowledge"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "partner_id",
+          "display_name",
+          "relationships",
+          "has_note",
+          "latest_received_note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "enabled",
+    "partners",
+    "next_cursor",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportCenterData = {
+  "enabled": boolean;
+  "partners": (
+{
+  "partner_id": string;
+  "display_name": string;
+  "relationships": (
+{
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+}
+)[];
+  "has_note": boolean;
+  "latest_received_note": (
+{
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+}
+) | unknown;
+}
+)[];
+  "next_cursor": string | null;
+  "server_time": string;
+};
+
+export const BuddySupportPageDataSchema = {
+  "type": "object",
+  "properties": {
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "relationship_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "focus"
+            ]
+          },
+          "sender_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "recipient_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "template_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "focus_start_small",
+              "focus_keep_pace",
+              "focus_effort_seen",
+              "focus_restart",
+              "sleep_goodnight",
+              "sleep_no_rush",
+              "sleep_morning",
+              "sleep_support",
+              null
+            ]
+          },
+          "template_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "flower": {
+            "type": "boolean"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "buddy_share",
+                      "buddy_joint_activity"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "acknowledged": {
+            "type": "boolean"
+          },
+          "can_acknowledge": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "relationship_id",
+          "domain",
+          "sender_id",
+          "recipient_id",
+          "template_key",
+          "template_version",
+          "flower",
+          "context",
+          "created_at",
+          "expires_at",
+          "acknowledged",
+          "can_acknowledge"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "notes",
+    "next_cursor",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPageData = {
+  "notes": (
+{
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+}
+)[];
+  "next_cursor": string | null;
+  "server_time": string;
+};
+
+export const BuddySupportOperationSchema = {
+  "type": "object",
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "command_type": {
+      "type": "string",
+      "enum": [
+        "send",
+        "permission",
+        "ack"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "not_sent",
+        "not_found"
+      ]
+    },
+    "resource_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "operation_id",
+    "state",
+    "resource_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportOperation = {
+  "operation_id": string;
+  "command_type"?: "send" | "permission" | "ack";
+  "state": "accepted" | "not_sent" | "not_found";
+  "resource_id": string | null;
+};
+
+export const BuddySupportOperationDataSchema = {
+  "type": "object",
+  "properties": {
+    "operation": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "command_type": {
+          "type": "string",
+          "enum": [
+            "send",
+            "permission",
+            "ack"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "accepted",
+            "not_sent",
+            "not_found"
+          ]
+        },
+        "resource_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "operation_id",
+        "state",
+        "resource_id"
+      ],
+      "additionalProperties": false
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "operation",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportOperationData = {
+  "operation": {
+  "operation_id": string;
+  "command_type"?: "send" | "permission" | "ack";
+  "state": "accepted" | "not_sent" | "not_found";
+  "resource_id": string | null;
+};
+  "server_time": string;
+};
+
+export const BuddySupportCapabilityDataSchema = {
+  "type": "object",
+  "properties": {
+    "capability": {
+      "type": "object",
+      "properties": {
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "domain": {
+          "type": "string",
+          "enum": [
+            "sleep",
+            "focus"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "can_send": {
+          "type": "boolean"
+        },
+        "can_read_history": {
+          "type": "boolean"
+        },
+        "own_receive_enabled": {
+          "type": "boolean"
+        },
+        "permission_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_send_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "is_muted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "relationship_id",
+        "domain",
+        "enabled",
+        "can_send",
+        "can_read_history",
+        "own_receive_enabled",
+        "permission_revision",
+        "next_send_at",
+        "is_muted"
+      ],
+      "additionalProperties": false
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "capability",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportCapabilityData = {
+  "capability": {
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+};
+  "server_time": string;
+};
+
+export const BuddySupportNoteDataSchema = {
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "domain": {
+          "type": "string",
+          "enum": [
+            "sleep",
+            "focus"
+          ]
+        },
+        "sender_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recipient_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "template_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "focus_start_small",
+            "focus_keep_pace",
+            "focus_effort_seen",
+            "focus_restart",
+            "sleep_goodnight",
+            "sleep_no_rush",
+            "sleep_morning",
+            "sleep_support",
+            null
+          ]
+        },
+        "template_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "flower": {
+          "type": "boolean"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "buddy_share",
+                    "buddy_joint_activity"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "required": [
+                "type",
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acknowledged": {
+          "type": "boolean"
+        },
+        "can_acknowledge": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "relationship_id",
+        "domain",
+        "sender_id",
+        "recipient_id",
+        "template_key",
+        "template_version",
+        "flower",
+        "context",
+        "created_at",
+        "expires_at",
+        "acknowledged",
+        "can_acknowledge"
+      ],
+      "additionalProperties": true
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportNoteData = {
+  "note": {
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+};
+  "operation_id"?: string;
+  "server_time": string;
+};
+
+export const BuddySupportPermissionSchema = {
+  "type": "object",
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "recipient_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "app_id",
+    "relationship_id",
+    "recipient_id",
+    "enabled",
+    "revision",
+    "updated_at"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPermission = {
+  "app_id": string;
+  "relationship_id": string;
+  "recipient_id": string;
+  "enabled": boolean;
+  "revision": number;
+  "updated_at": string;
+};
+
+export const BuddySupportPermissionDataSchema = {
+  "type": "object",
+  "properties": {
+    "permission": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recipient_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "app_id",
+        "relationship_id",
+        "recipient_id",
+        "enabled",
+        "revision",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "permission",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPermissionData = {
+  "permission": {
+  "app_id": string;
+  "relationship_id": string;
+  "recipient_id": string;
+  "enabled": boolean;
+  "revision": number;
+  "updated_at": string;
+};
+  "server_time": string;
+};
+
+export const BuddySupportAckDataSchema = {
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "acknowledged": {
+      "type": "boolean"
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note_id",
+    "acknowledged",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportAckData = {
+  "note_id": string;
+  "acknowledged": boolean;
+  "server_time": string;
+};
+
 export const FrogSleepPasswordLoginRequestSchema = {
   "type": "object",
   "additionalProperties": true,
@@ -24304,6 +25970,23 @@ export const GeneratedPublicContractNames = [
   "BuddySharingGrantUpdateRequest",
   "BuddySharingSelectionRequest",
   "BuddyStructuredShareRequest",
+  "BuddySupportAckData",
+  "BuddySupportAckRequest",
+  "BuddySupportCapability",
+  "BuddySupportCapabilityData",
+  "BuddySupportCenterData",
+  "BuddySupportContext",
+  "BuddySupportNote",
+  "BuddySupportNoteData",
+  "BuddySupportOperation",
+  "BuddySupportOperationData",
+  "BuddySupportPageData",
+  "BuddySupportPartner",
+  "BuddySupportPermission",
+  "BuddySupportPermissionData",
+  "BuddySupportPermissionRequest",
+  "BuddySupportResolveRequest",
+  "BuddySupportSendRequest",
   "ChangePasswordRequest",
   "CurrentUserData",
   "EmailCodeRequest",

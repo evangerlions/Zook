@@ -1,3 +1,4 @@
+import type { BuddySupportRepository } from "../../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import type { ApplicationBodyLogDatabasePort } from './application-bodylog-database-port.ts';
 import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
 import type { PersonalSyncRepository } from "../../modules/frogsleep/personal-sync/personal-sync.types.ts";
@@ -70,6 +71,7 @@ export interface ManagedStateSnapshot {
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
 export abstract class ApplicationDatabase {
+  abstract getBuddySupportRepository(): BuddySupportRepository;
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;
   abstract getSleepGuestStore(): SleepGuestStore;

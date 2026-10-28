@@ -1,3 +1,4 @@
+import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
 import { PostgresRbacStore } from './postgres-rbac.ts';
 import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
 import { PostgresPersonalSyncRepository } from "./postgres-personal-sync.ts";
@@ -138,6 +139,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
   private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
+  getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
   getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
   getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect(), () => this.sessionContext.getStore()); }
   getFrogSleepAdminStore() { return new PostgresFrogSleepAdminStore((sql, values) => this.query(sql, values)); }

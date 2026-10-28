@@ -1,3 +1,5 @@
+import { assertLegacySupportAllowed } from "../buddy-support/buddy-support-access.ts";
+import { buddyRelationshipSlotKeys } from "../buddy-growth/buddy-relationship-facts.ts";
 import { FocusBuddyQueries } from "./focus-buddy-queries.ts";
 import { storeFocusSession } from "./focus-session-writer.ts";
 import { recordFocusSharedMoment } from "./focus-shared-moment.ts";
@@ -242,6 +244,8 @@ export class FrogSleepFocusBuddyService {
     if (!relationship) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");
     }
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+    await assertLegacySupportAllowed(this.database, relationship.id);
     await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
     await this.assertMessageRateLimit(userId, receiverUserId);
     const createdAt = nowIso();
@@ -264,6 +268,7 @@ export class FrogSleepFocusBuddyService {
     };
     await this.database.insertFrogSleepEntity(message);
     return toFocusMessageResponse(message);
+    });
   }
 
   async messages(userId: string, pagination?: PaginationParams, filters: { buddyUserId?: string; since?: string } = {}) {
