@@ -28,7 +28,7 @@ export async function tryHandleBodyLogManagementRoutes(
     const admin = context.requireAdminSession(request);
     if (!service.retention) throw new ApplicationError(503, "BODYLOG_RETENTION_UNAVAILABLE", "Metrics are unavailable.");
     await context.recordAdminMutationAudit({ appId, action: "bodylog.retention.metrics", resourceType: "retention_metrics", payload: { adminUser: admin.username } });
-    return context.ok(await service.retention.telemetry.metrics(), request.requestId as string);
+    return context.ok(await service.retention.metrics(), request.requestId as string);
   }
   const campaignReview = relativePath.match(/^\/campaigns\/([A-Za-z0-9_-]{1,128})\/participations\/([A-Za-z0-9_-]{1,128})\/review$/);
   if (campaignReview && request.method === "POST") {

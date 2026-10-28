@@ -10,11 +10,23 @@ export class BodyLogRetentionService {
   readonly campaigns: BodyLogCampaignService;
   readonly telemetry: BodyLogRetentionTelemetry;
   constructor(private readonly database: ApplicationDatabase, private readonly growth: BodyLogGrowthStore,
-    readonly ledger: BodyLogRewardLedger, private readonly invitations: BodyLogInvitationService, store: BodyLogRetentionStore) {
+    readonly ledger: BodyLogRewardLedger, private readonly invitations: BodyLogInvitationService, private readonly store: BodyLogRetentionStore) {
     this.campaigns = new BodyLogCampaignService(database, store, ledger);
     this.telemetry = new BodyLogRetentionTelemetry(database);
   }
   async execute<T>(operation: () => Promise<T>): Promise<T> { return this.database.withExclusiveSession(operation); }
+  async metrics() {
+    const now = new Date().toISOString();
+    const [telemetry, attributions, rewards, experiment] = await Promise.all([
+      this.telemetry.metrics(), this.database.listBodyLogInvitationAttributions("bodylog"), this.store.grantSummary(now), this.telemetry.experimentStatus(),
+    ]);
+    return { ...telemetry, rewards, experiment, invitationBusiness: {
+      attributed: attributions.length, qualified: attributions.filter(item=>Boolean(item.qualifiedAt)).length,
+      pending: attributions.filter(item=>!item.qualifiedAt).length,
+      rewardedInvitees: attributions.filter(item=>Boolean(item.inviteeRewardEndsAt)).length,
+      rewardedInviters: attributions.filter(item=>Boolean(item.inviterRewardEndsAt)).length,
+    } };
+  }
   async reconcile(userId: string) { await this.invitations.list(userId); }
   async missions(userId: string) {
     const plan = await this.growth.findLatestGrowthPlan(userId);

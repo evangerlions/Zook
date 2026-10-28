@@ -554,6 +554,7 @@ export const adminApi = {
   resetLlmRouteCircuit: adminLlmApi.resetLlmRouteCircuit,
   getLlmModelMetrics: adminLlmApi.getLlmModelMetrics,
   runLlmSmokeTest: adminLlmApi.runLlmSmokeTest,
+  getBodyLogRetentionMetrics: adminBodyLogApi.getBodyLogRetentionMetrics,
   getBodyLogCheckinDashboard: adminBodyLogApi.getBodyLogCheckinDashboard,
   getBodyLogCheckinRecords: adminBodyLogApi.getBodyLogCheckinRecords,
   exportBodyLogCheckinRecordsCsv: adminBodyLogApi.exportBodyLogCheckinRecordsCsv,

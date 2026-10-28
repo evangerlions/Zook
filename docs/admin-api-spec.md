@@ -531,3 +531,16 @@ All paths use `/api/v1/admin/apps/bodylog`, require a validated admin Session co
 Campaign config `bodylog.campaigns` is a JSON array. Each definition needs a unique opaque `id`, `status`, `title`, `subtitle`, ISO `startsAt`/`endsAt`, `rules:string[]`, `reward:{type:"premium",durationDays:1..31,displayText}`, and `platformPolicy:{allowedPlatforms:string[],freeFormAllowed:boolean,oauthPlatforms:[],manualReviewPlatforms:string[]}`. All allowed platforms must be handled by manual review. Empty/unconfigured means no campaign entry. Use the existing authenticated app-config revision workflow; no default campaign is enabled by this change.
 
 Experiment config `bodylog.retention-experiment` defaults off. Example reviewable configuration: `{ "id":"continuation-v1", "enabled":false, "treatmentPercent":10 }`. Named release and analysis owners, opt-in funnel checks, sample size and mature D7 observation must be recorded before enabling or claiming an effect. The treatment emphasizes an existing local habit after the completed plan; the control retains the existing continuation hint and executable habit list.
+
+### BodyLog retention operations additions (2026-10-29)
+
+The existing session-only `GET /api/v1/admin/apps/bodylog/retention/metrics` now also returns:
+- `invitationBusiness:{attributed,pending,qualified,rewardedInvitees,rewardedInviters}` from stored attribution facts. Qualified includes rewarded accounts. Reading never reconciles qualification or issues grants.
+- `rewards:[{source,type,state,count}]` from the persisted grant ledger. Premium state is active/queued/expired; non-Premium awards use issued. Only aggregate counts leave the server; no user/installation/token identifiers are returned.
+- `experiment:{id,enabled,valid,errors,requiredPerVariant,design}` with disabled-by-default validated readiness. Incomplete/invalid configuration returns disabled assignment. Invalid designs are not rendered as a valid plan.
+
+The Admin page `/bodylog/retention` distinguishes optional observed invitation events from authoritative qualification/reward counts, preserves null immature rates, and reads cumulative UTC cohorts. Exposure and action must share both experiment and variant; maturity begins exactly at the following UTC midnight.
+
+`bodylog.retention-experiment` requires the design fields in [the pre-registration plan](bodylog-retention-experiment-plan.md) to enable assignment. No new write/toggle UI is introduced. The example remains disabled and lacks a real owner. Fixed alpha/power sample planning uses a normal approximation and is not an inference result or an automated operational stop monitor.
+
+Late events that predate the currently published experiment revision remain consented observation facts but are not relabeled into the new cohort. Report owners must keep the experiment ID/design stable through follow-up and the late-arrival window; this conservative exclusion cannot recover an overwritten historical assignment.

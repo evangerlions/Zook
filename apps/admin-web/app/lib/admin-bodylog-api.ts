@@ -5,6 +5,9 @@ import type {
 import { adminPath, requestBlob, requestJson } from "./admin-api-client.ts";
 import { cleanQuery } from './admin-api-query.ts';
 export const adminBodyLogApi={
+  getBodyLogRetentionMetrics() {
+    return requestJson<import("./types").BodyLogRetentionMetrics>(adminPath("/apps/bodylog/retention/metrics"));
+  },
 
   getBodyLogCheckinDashboard(range: BodyLogRange = "30d") {
     const days = range === "7d" ? 7 : range === "90d" ? 90 : 30;

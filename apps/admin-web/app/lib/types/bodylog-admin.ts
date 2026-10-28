@@ -94,3 +94,20 @@ export interface BodyLogHabitUsageDocument {
   from: string;
   to: string;
 }
+
+
+export interface BodyLogRetentionMetrics {
+  generatedAt: string; cohortTimeZone: string;
+  experiments: Array<{experimentId: string; variants: Array<{
+    variant: string; exposed: number;
+    d1: {eligible: number; retained: number; rate: number | null};
+    d7: {eligible: number; retained: number; rate: number | null};
+  }>} >;
+  invitationFunnelUniqueUsers: Record<string, number>;
+  invitationBusiness: {attributed: number; qualified: number; pending: number; rewardedInvitees: number; rewardedInviters: number};
+  rewards: Array<{source: string; type: string; state: string; count: number}>;
+  experiment: {enabled: boolean; valid: boolean; errors: string[]; id: string | null; treatmentPercent: number; requiredPerVariant: number | null;
+    design: null | {owner: string; primaryMetric: string; baselineRate: number; minimumDetectableEffect: number; targetMaturePerVariant: number;
+      minimumEnrollmentDays: number; followupDays: number; lateArrivalDays: number; stopPolicy: string;
+      guardrails: {maxAuthFailureRate: number; maxDuplicateOperations: number; maxLocalActionP95Millis: number}}};
+}
