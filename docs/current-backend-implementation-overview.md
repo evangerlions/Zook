@@ -773,3 +773,7 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 ### 2026-10-28 BodyLog retention source completion
 
 The `feature/bodylog-retention-completion` worktree adds persistent encouragement idempotency, invitation preview/revocation and confirmable attribution, growth-evidence qualification, separate promotional/reward ledger, effective quota entitlement, authenticated manually reviewed campaign operations and opt-in retention measurement. Migration `079_bodylog_retention_integrity.sql` adds revocation and scoped retention documents. Canonical app-data deletion clears those documents. OpenAPI and generated public contracts are updated together. PostgreSQL multi-instance/restart/rollback and local HTTP/password-auth journeys are verified separately from production deployment and physical Watch acceptance; this entry makes no production readiness claim.
+
+### Authentication recovery hardening
+
+Migration `080_auth_credential_version.sql` adds the durable account-wide credential version. Shared password changes use this version to invalidate old cross-app sessions. App logout and deletion remain app-scoped. Redis atomically commits refresh-token replacement and session indexes. Failed new-user registration rolls back its identity and retains the unconsumed code. Email/SMS provider waits run outside the short verification-preparation transaction. Fixed email test codes require an explicit local environment.

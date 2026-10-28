@@ -491,6 +491,15 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
     响应与限流 header 会透传；`X-Forwarded-For` 只在直接连接来自 loopback 或
     `ZOOK_TRUSTED_PROXY_IPS` 明确列出的代理时参与每 IP 限流。
 
+### 7.1 Registration and session recovery guarantees
+
+- Fixed email test codes require explicit `APP_ENV=local` with `NODE_ENV` other than `production`. Missing or loopback client addresses do not enable test login.
+- Email and SMS code endpoints reserve verification state and limits in a short transaction, then contact the provider outside that transaction. Email provider requests time out after 10 seconds. A late failed send cannot erase a newer challenge.
+- New-user registration rolls back the identity and membership if session persistence fails. The registration code remains available for retry until successfully consumed or expired.
+- Refresh validates account access before atomically committing the replacement token and indexes. Transient failures before commit allow retrying the original token. Explicit account-region denials still revoke the denied device refresh chain. Concurrent refresh has one winner; the successfully replaced token returns `AUTH_REFRESH_TOKEN_REVOKED`.
+- Setting, changing, or resetting the shared password invalidates prior access and refresh tokens across all apps and issues a new session for the current app. Ordinary `logout(scope=all)` and app-account deletion retain their app-only scope.
+
+
 ## 8. BodyLog API
 
 BodyLog 固定使用 `appId = "bodylog"`。登录和注册复用平台邮箱验证码接口：

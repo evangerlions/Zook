@@ -40,15 +40,8 @@ export function matchLocalEmailLoginTestAccount(
   return account?.verificationCode === verificationCode ? account : undefined;
 }
 
-function isLocalEmailLoginTestAccountEnabled(ipAddress: string): boolean {
+function isLocalEmailLoginTestAccountEnabled(_ipAddress: string): boolean {
   const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
   const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
-  const normalizedIp = ipAddress.trim();
-  return (
-    appEnv === "local" ||
-    nodeEnv === "development" ||
-    normalizedIp === "127.0.0.1" ||
-    normalizedIp === "::1" ||
-    normalizedIp === "unknown"
-  );
+  return appEnv === "local" && nodeEnv !== "production";
 }

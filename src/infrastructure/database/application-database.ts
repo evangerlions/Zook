@@ -78,6 +78,7 @@ export abstract class ApplicationDatabase {
   abstract getPersonalSyncRepository(): PersonalSyncRepository;
   abstract getFrogSleepAdminStore(): FrogSleepAdminStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
+  abstract withNewUserTransaction<T>(userId: string, fn: () => Promise<T> | T): Promise<T>;
   abstract withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],

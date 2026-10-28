@@ -1,6 +1,7 @@
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type { RefreshTokenRecord } from "../shared/types.ts";
 import { sha256 } from "../shared/utils.ts";
+import type { KVAtomicChange } from "../infrastructure/kv/kv-atomic.ts";
 
 const REFRESH_TOKEN_SCOPE = "auth.refresh-tokens";
 const APP_INDEX_PREFIX = "app";
@@ -13,10 +14,29 @@ export class RefreshTokenStore {
   constructor(private readonly kvManager: KVManager) {}
 
   async create(record: RefreshTokenRecord): Promise<void> {
-    await this.kvManager.setJson(REFRESH_TOKEN_SCOPE, this.buildRecordKey(record.id), record);
-    await this.kvManager.setString(REFRESH_TOKEN_SCOPE, this.buildHashKey(record.tokenHash), record.id);
-    await this.appendIndexId(this.buildAppIndexKey(record.appId), record.id);
-    await this.appendIndexId(this.buildUserAppIndexKey(record.appId, record.userId), record.id);
+    await this.kvManager.applyAtomic(REFRESH_TOKEN_SCOPE, this.creationChange(record));
+  }
+
+  async rotate(previous: RefreshTokenRecord, next: RefreshTokenRecord, now = new Date()): Promise<boolean> {
+    const change = this.creationChange(next);
+    change.compare = [{ key: this.buildRecordKey(previous.id), value: JSON.stringify(previous) }];
+    change.set.push({ key: this.buildRecordKey(previous.id), value: JSON.stringify({
+      ...previous, revokedAt: now.toISOString(), replacedBy: next.id,
+    }) });
+    return await this.kvManager.applyAtomic(REFRESH_TOKEN_SCOPE, change);
+  }
+
+  private creationChange(record: RefreshTokenRecord): KVAtomicChange {
+    return {
+      set: [
+        { key: this.buildRecordKey(record.id), value: JSON.stringify(record) },
+        { key: this.buildHashKey(record.tokenHash), value: record.id },
+      ],
+      append: [
+        { key: this.buildAppIndexKey(record.appId), value: record.id },
+        { key: this.buildUserAppIndexKey(record.appId, record.userId), value: record.id },
+      ],
+    };
   }
 
   async getByRawToken(rawToken: string): Promise<RefreshTokenRecord | undefined> {
@@ -82,14 +102,6 @@ export class RefreshTokenStore {
       REFRESH_TOKEN_SCOPE,
       this.buildRecordKey(recordId),
     );
-  }
-
-  private async appendIndexId(indexKey: string, recordId: string): Promise<void> {
-    const ids = await this.readIndexIds(indexKey);
-    if (!ids.includes(recordId)) {
-      ids.push(recordId);
-      await this.kvManager.setJson(REFRESH_TOKEN_SCOPE, indexKey, ids);
-    }
   }
 
   private async removeIndexId(indexKey: string, recordId: string): Promise<void> {
