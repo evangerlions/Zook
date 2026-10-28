@@ -1307,9 +1307,9 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 新增 `/api/v1/lighttick/action-plans`、`/action-plans/{id}/operations`、执行记录、复盘及AI历史、日历、`/action-link-tickets` 和受信 `/grow-bridge`。正式账号公共登录鉴权；功能开关 `LIGHTTICK_ACTIONS_ENABLED=1`，未开启返回503。完整方法、字段、幂等、签名、接管恢复与错误语义见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
 
 
-### FrogSleep 异步搭子留言与小花（V1，本地实现，未部署）
+### FrogSleep 异步搭子留言与小花（V1，受控发布）
 
-所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/request_id` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
+所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/requestId` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
 
 | 方法 / 子路径 | 输入与结果 |
 | --- | --- |
