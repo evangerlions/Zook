@@ -542,3 +542,5 @@ The existing session-only `GET /api/v1/admin/apps/bodylog/retention/metrics` now
 The Admin page `/bodylog/retention` distinguishes optional observed invitation events from authoritative qualification/reward counts, preserves null immature rates, and reads cumulative UTC cohorts. Exposure and action must share both experiment and variant; maturity begins exactly at the following UTC midnight.
 
 `bodylog.retention-experiment` requires the design fields in [the pre-registration plan](bodylog-retention-experiment-plan.md) to enable assignment. No new write/toggle UI is introduced. The example remains disabled and lacks a real owner. Fixed alpha/power sample planning uses a normal approximation and is not an inference result or an automated operational stop monitor.
+
+Late events that predate the currently published experiment revision remain consented observation facts but are not relabeled into the new cohort. Report owners must keep the experiment ID/design stable through follow-up and the late-arrival window; this conservative exclusion cannot recover an overwritten historical assignment.

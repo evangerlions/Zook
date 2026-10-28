@@ -86,3 +86,13 @@ test("retention day matures at next UTC midnight, not one second early",async t=
   const result=await new BodyLogRetentionTelemetry(runtime.database).metrics();
   assert.equal(result.experiments[0]!.variants.reduce((n,row)=>n+row.d1.eligible,0),0);
 });
+
+test("offline events from before the current experiment revision are not relabeled into a new experiment",async t=>{
+ t.mock.timers.enable({apis:["Date"],now:new Date("2026-10-01T12:00:00Z")});
+ const {runtime,call,event}=await setup();
+ t.mock.timers.tick(86400000);
+ await runtime.database.upsertAppConfig({id:"exp",appId:"bodylog",configKey:"bodylog.retention-experiment",configValue:JSON.stringify({id:"new",enabled:true,treatmentPercent:50,design}),updatedAt:new Date().toISOString()});
+ assert.equal((await call(event)).statusCode,200);
+ const stored=await runtime.database.listAnalyticsEvents("bodylog");
+ assert.equal(stored[0]!.metadata.experimentId,"disabled");
+});

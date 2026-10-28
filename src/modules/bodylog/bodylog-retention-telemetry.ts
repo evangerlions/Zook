@@ -11,8 +11,11 @@ const PROPERTY_VALUES: Record<string, string[]> = {
 };
 export class BodyLogRetentionTelemetry {
   constructor(private readonly database: ApplicationDatabase) {}
-  async assignment(userId: string) {
+  async assignment(userId: string, occurredAt?: string) {
     const config = await this.database.findAppConfig("bodylog", "bodylog.retention-experiment");
+    // A delayed client event predating this revision has no server-proof of
+    // assignment to the new experiment. Keep it observable but out of cohorts.
+    if (occurredAt && config && Date.parse(occurredAt) < Date.parse(config.updatedAt)) return { experimentId: "disabled", variant: "control" };
     const inspected = inspectRetentionExperiment(config?.configValue);
     const value = inspected.config;
     if (!inspected.valid || !value?.enabled) return { experimentId: "disabled", variant: "control" };
@@ -35,7 +38,7 @@ export class BodyLogRetentionTelemetry {
       throw new ApplicationError(400, "BODYLOG_RETENTION_EVENT_INVALID", "Explicit consent and allowlisted event values are required.");
     const id = "bodylog_event_" + createHash("sha256").update(JSON.stringify([userId, input.eventId])).digest("hex");
     {
-      const assignment = await this.assignment(userId);
+      const assignment = await this.assignment(userId, input.timestamp);
       await this.database.insertAnalyticsEvents([{ id, appId: "bodylog", userId, platform: "ios", sessionId: "bodylog-retention", pageKey: String((props as Record<string,string>).source ?? "home"),
         eventName: `bodylog_${input.name}` as EventName, occurredAt: input.timestamp, receivedAt: new Date().toISOString(), metadata: { properties: props, ...assignment } }]);
     }
