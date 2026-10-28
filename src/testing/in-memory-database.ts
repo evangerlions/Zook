@@ -265,6 +265,18 @@ export class InMemoryDatabase extends ApplicationDatabase {
     });
   }
 
+  async withNewUserTransaction<T>(userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      try { return await fn(); }
+      catch (error) {
+        this.users = this.users.filter(user => user.id !== userId);
+        this.appUsers = this.appUsers.filter(member => member.userId !== userId);
+        this.userRoles = this.userRoles.filter(role => role.userId !== userId);
+        throw error;
+      }
+    });
+  }
+
   async withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],
     fn: () => Promise<T> | T,
@@ -897,6 +909,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
     user.passwordHash = passwordHash;
     user.passwordAlgo = passwordAlgo;
+    user.credentialVersion = (user.credentialVersion ?? 1) + 1;
   }
 
   insertAuditLog(record: AuditLogRecord): void {
