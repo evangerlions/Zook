@@ -135,6 +135,7 @@ export abstract class ApplicationDatabase {
   abstract listBodyLogLeaderboardEntries(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogLeaderboardEntries']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogLeaderboardEntries']>;
   abstract findBodyLogInvitationByTokenHash(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogInvitationByTokenHash']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogInvitationByTokenHash']>;
   abstract findBodyLogInvitationByCode(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogInvitationByCode']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogInvitationByCode']>;
+  abstract updateBodyLogInvitation(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogInvitation']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogInvitation']>;
   abstract insertBodyLogInvitation(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogInvitation']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogInvitation']>;
   abstract listBodyLogInvitations(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogInvitations']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogInvitations']>;
   abstract insertBodyLogInvitationAttribution(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogInvitationAttribution']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogInvitationAttribution']>;

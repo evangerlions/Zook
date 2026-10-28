@@ -122,6 +122,7 @@ export interface DissolveBuddyPairRequest {
 }
 
 export interface EncourageBuddyRequest {
+  operationId?: string;
   pairId: string;
   emoji: BuddyEncouragementEmoji;
   isSameAction: boolean;

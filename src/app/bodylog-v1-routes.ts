@@ -78,8 +78,31 @@ export async function tryHandleBodyLogV1Routes(
   if (bodyLogPath === "/challenges" && request.method === "POST") {
     requireEnabledFeature(await featureFlagService.isEnabled("challengeCreation"), "BodyLog challenge creation");
   }
-  if (isRouteUnder(bodyLogPath, ["/seven-day-plan"])) {
+  if (isRouteUnder(bodyLogPath, ["/seven-day-plan", "/missions", "/rewards", "/campaigns", "/retention"])) {
     requireEnabledFeature(await featureFlagService.isEnabled("growth"), "BodyLog growth");
+  }
+  const retention = growthService.retention;
+  if (retention) {
+    if (bodyLogPath === "/retention/events" && request.method === "POST") return context.ok(await retention.execute(() => retention.telemetry.record(auth.userId, requestBody(request))), request.requestId as string);
+    if (bodyLogPath === "/retention/assignment" && request.method === "GET") return context.ok(await retention.telemetry.assignment(auth.userId), request.requestId as string);
+    if (bodyLogPath === "/entitlements" && request.method === "GET") {
+      await retention.reconcile(auth.userId);
+      return context.ok(await retention.ledger.entitlements(auth.userId), request.requestId as string);
+    }
+    if (bodyLogPath === "/missions" && request.method === "GET") return context.ok(await retention.missions(auth.userId), request.requestId as string);
+    if (bodyLogPath === "/rewards" && request.method === "GET") return context.ok(await retention.rewards(auth.userId), request.requestId as string);
+    if (bodyLogPath === "/campaigns/active" && request.method === "GET") return context.ok(await retention.campaigns.active(auth.userId), request.requestId as string);
+    const campaign = bodyLogPath.match(/^\/campaigns\/([A-Za-z0-9_-]{1,128})\/(join|participation|submit|claim)$/);
+    if (campaign) {
+      const id = campaign[1]!;
+      if (campaign[2] === "participation" && request.method === "GET") return context.ok({ participation: await retention.campaigns.participation(auth.userId, id) }, request.requestId as string);
+      if (request.method === "POST") {
+        const operation: () => Promise<unknown> = async () => campaign[2] === "join" ? retention.campaigns.join(auth.userId, id)
+          : campaign[2] === "submit" ? retention.campaigns.submit(auth.userId, id, { platform: requestBody(request).platform, url: requestBody(request).url })
+          : campaign[2] === "claim" ? retention.campaigns.claim(auth.userId, id) : Promise.reject(new ApplicationError(404, "BODYLOG_CAMPAIGN_NOT_FOUND", "Unknown operation."));
+        return context.ok(await retention.execute(operation), request.requestId as string);
+      }
+    }
   }
   if (request.path === "/api/v1/bodylog/subscription/status" && request.method === "GET") {
     return context.ok(await buddyService.subscriptionStatus(auth.userId), request.requestId as string);
@@ -208,12 +231,19 @@ export async function tryHandleBodyLogV1Routes(
       request.requestId as string,
     );
   }
+  if (request.path === "/api/v1/bodylog/invitations/preview" && request.method === "GET") {
+    return context.ok(await invitationService.preview(request.query ?? {}), request.requestId as string);
+  }
+  const revokeInvitation = request.path.match(/^\/api\/v1\/bodylog\/invitations\/([A-Za-z0-9_-]{1,512})$/);
+  if (revokeInvitation && request.method === "DELETE") {
+    return context.ok(await invitationService.revoke(auth.userId, revokeInvitation[1]!), request.requestId as string);
+  }
   if (request.path === "/api/v1/bodylog/invitations/attribute" && request.method === "POST") {
     const body = requestBody(request);
     return context.ok(
-      await invitationService.attribute(auth.userId, {
-        token: body.token, installId: body.installId,
-      }),
+      await (body.code !== undefined
+        ? (body.token !== undefined ? Promise.reject(new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Choose a token or code.")) : invitationService.attributeByCode(auth.userId, { code: body.code, installId: body.installId }))
+        : invitationService.attribute(auth.userId, { token: body.token, installId: body.installId })),
       request.requestId as string,
     );
   }
@@ -302,9 +332,13 @@ export async function tryHandleBodyLogV1Routes(
     await buddyService.dissolvePair(auth.userId, buddyDissolveMatch[1] as string);
     return context.ok({ dissolved: true }, request.requestId as string);
   }
-  if (request.path === "/api/v1/bodylog/buddies/encourage" && request.method === "POST") {
+  if (["/api/v1/bodylog/buddies/encourage", "/api/v1/bodylog/buddies/encouragements"].includes(request.path) && request.method === "POST") {
+    if (request.path.endsWith("/encouragements") && !request.headers?.["idempotency-key"]) {
+      throw new ApplicationError(400, "REQ_INVALID_BODY", "A stable Idempotency-Key is required for durable delivery.");
+    }
     const body = requestBody(request);
     const encouragement = await buddyService.encourage(auth.userId, {
+      operationId: request.headers?.["idempotency-key"],
       pairId: validation.requireString(body, "pairId"),
       emoji: validation.requireString(body, "emoji") as BuddyEncouragementEmoji,
       isSameAction: validation.optionalBoolean(body, "isSameAction") ?? false,
