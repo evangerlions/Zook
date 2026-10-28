@@ -30,6 +30,7 @@ const APP_WORKSPACES = [
   { to: "/frogsleep", label: "Sleep 运营", code: "SLP", description: "查看账号、邀请、方向授权与通知投递" },
   { to: "/lighttick", label: "LightTick Ops", code: "LTK", description: "查看 LightTick 功能、AI 场景与隐私安全指标" },
   { to: "/bodylog", label: "BodyLog 打卡", code: "BLG", description: "查看打卡数据、群组活跃度与习惯模板" },
+  { to: "/bodylog/retention", label: "留存与邀请", code: "RET", description: "核对邀请账本、成熟留存和实验准备" },
   { to: "/bodylog/records", label: "打卡记录", code: "REC", description: "查询用户级打卡记录" },
   { to: "/bodylog/groups", label: "群组监控", code: "GRP", description: "查看群组健康度与成员贡献" },
   { to: "/bodylog/habit-templates", label: "习惯模板", code: "TPL", description: "维护 BodyLog 习惯模板" },

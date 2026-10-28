@@ -169,6 +169,7 @@ export class BodyLogBuddyService {
       lastActiveDate: null,
       createdAt: now.toISOString(),
       acceptedAt: null,
+      canAcceptInvitation: false,
     };
 
     return { pair, invitationUrl: `https://bodylog.app/b/${pairId}?token=${invitationToken}` };
@@ -246,6 +247,7 @@ export class BodyLogBuddyService {
       lastActiveDate: pair.lastActiveDate,
       createdAt: pair.createdAt,
       acceptedAt: now.toISOString(),
+      canAcceptInvitation: false,
     };
 
     return buddyPair;
@@ -310,6 +312,7 @@ export class BodyLogBuddyService {
         lastActiveDate: pair.lastActiveDate,
         createdAt: pair.createdAt,
         acceptedAt: pair.acceptedAt,
+        canAcceptInvitation: pair.status === "pending" && Boolean(pair.inviterUserId) && pair.inviterUserId !== userId && Date.now() <= Date.parse(pair.createdAt) + 14 * DAY_MS,
       });
     }
 
@@ -349,6 +352,7 @@ export class BodyLogBuddyService {
       lastActiveDate: pair.lastActiveDate,
       createdAt: pair.createdAt,
       acceptedAt: pair.acceptedAt,
+      canAcceptInvitation: pair.status === "pending" && Boolean(pair.inviterUserId) && pair.inviterUserId !== userId && Date.now() <= Date.parse(pair.createdAt) + 14 * DAY_MS,
     };
 
     // 获取动态流

@@ -195,12 +195,12 @@ export async function handleFrogSleepRefresh(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const body = asBody(request);
-  const session = await context.authService.refresh({
+  const { payload } = await context.authService.refreshWithPayload({
     appId: FROGSLEEP_APP_ID,
     refreshToken: stringField(body, "refresh_token", "refreshToken"),
     cookieRefreshToken: request.cookies?.refreshToken,
-  });
-  return frogSleepOk(context, await toFrogSleepAuthPayload(context, session), request.requestId as string);
+  }, candidate => toFrogSleepAuthPayload(context, candidate));
+  return frogSleepOk(context, payload, request.requestId as string);
 }
 
 export async function handleFrogSleepLogout(

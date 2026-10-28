@@ -2141,6 +2141,9 @@ components:
           acceptedAt,
         ]
       properties:
+        canAcceptInvitation:
+          type: boolean
+          description: Whether the authenticated viewer may accept this unexpired addressed pending invitation. Server authorization is still enforced.
         id: { type: string }
         partnerUserId: { type: string }
         partnerNickname: { type: string }

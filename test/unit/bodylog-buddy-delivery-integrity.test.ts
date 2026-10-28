@@ -4,7 +4,7 @@ import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/defau
 import { resolveBodyLogStores } from "../../src/application-bodylog-stores.ts";
 import { createApplication } from "../support/create-test-application.ts";
 
-async function setup() {
+async function setup(accept = true) {
   const seed = buildDefaultSeed();
   seed.apps!.push({ id: "bodylog", code: "bodylog", name: "BodyLog", nameI18n: { "zh-CN": "BodyLog", "en-US": "BodyLog" }, status: "ACTIVE", apiDomain: "bodylog.example.com", joinMode: "AUTO", createdAt: new Date().toISOString() });
   for (const userId of ["user_alice", "user_bob"]) {
@@ -26,7 +26,7 @@ async function setup() {
   const created = await call("user_alice", "POST", "buddies", { partnerUserId: "user_bob", sharedHabitIds: ["water"] });
   assert.equal(created.statusCode, 200);
   const pairId = created.body.data.pair.id as string;
-  assert.equal((await call("user_bob", "POST", `buddies/${pairId}/accept`)).statusCode, 200);
+  if (accept) assert.equal((await call("user_bob", "POST", `buddies/${pairId}/accept`)).statusCode, 200);
   return { runtime, stores, call, pairId };
 }
 
@@ -138,4 +138,14 @@ test("durable encouragement route requires a key and confirms the same receipt a
   assert.equal(first.statusCode, 200); assert.equal(retry.statusCode, 200);
   assert.equal(first.body.data.id, retry.body.data.id); assert.equal(first.body.data.id, compatible.body.data.id);
   assert.equal((await stores.buddy.listBodyLogBuddyEncouragements(pairId)).length, 1);
+});
+
+
+test("pending invitation accept action is available only to its addressed recipient", async () => {
+  const {call,pairId}=await setup(false);
+  assert.equal((await call("user_alice","GET",`buddies/${pairId}`)).body.data.pair.canAcceptInvitation,false);
+  assert.equal((await call("user_bob","GET",`buddies/${pairId}`)).body.data.pair.canAcceptInvitation,true);
+  assert.equal((await call("user_bob","GET","buddies")).body.data.buddies[0].canAcceptInvitation,true);
+  assert.equal((await call("user_alice","POST",`buddies/${pairId}/accept`)).statusCode,403);
+  assert.equal((await call("user_bob","POST",`buddies/${pairId}/accept`)).body.data.canAcceptInvitation,false);
 });

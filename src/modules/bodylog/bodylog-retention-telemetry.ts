@@ -1,3 +1,4 @@
+import { inspectRetentionExperiment } from "./bodylog-retention-experiment.ts";
 import { createHash } from "node:crypto";
 import type { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import type { EventName } from "../../shared/types.ts";
@@ -10,16 +11,23 @@ const PROPERTY_VALUES: Record<string, string[]> = {
 };
 export class BodyLogRetentionTelemetry {
   constructor(private readonly database: ApplicationDatabase) {}
-  async assignment(userId: string) {
+  async assignment(userId: string, occurredAt?: string) {
     const config = await this.database.findAppConfig("bodylog", "bodylog.retention-experiment");
-    if (!config) return { experimentId: "disabled", variant: "control" };
-    try {
-      const value = JSON.parse(config.configValue);
-      if (value.enabled !== true) return { experimentId: "disabled", variant: "control" };
-      if (typeof value.id !== "string" || !/^[a-z0-9_-]{1,64}$/.test(value.id) || !Number.isInteger(value.treatmentPercent) || value.treatmentPercent < 0 || value.treatmentPercent > 50) throw new Error();
-      const bucket = createHash("sha256").update(`${value.id}:${userId}`).digest().readUInt32BE(0) % 100;
-      return { experimentId: value.id, variant: bucket < value.treatmentPercent ? "treatment" : "control" };
-    } catch { return { experimentId: "disabled", variant: "control" }; }
+    // A delayed client event predating this revision has no server-proof of
+    // assignment to the new experiment. Keep it observable but out of cohorts.
+    if (occurredAt && config && Date.parse(occurredAt) < Date.parse(config.updatedAt)) return { experimentId: "disabled", variant: "control" };
+    const inspected = inspectRetentionExperiment(config?.configValue);
+    const value = inspected.config;
+    if (!inspected.valid || !value?.enabled) return { experimentId: "disabled", variant: "control" };
+    const bucket = createHash("sha256").update(`${value.id}:${userId}`).digest().readUInt32BE(0) % 100;
+    return { experimentId: value.id, variant: bucket < value.treatmentPercent ? "treatment" : "control" };
+  }
+  async experimentStatus() {
+    const stored = await this.database.findAppConfig("bodylog", "bodylog.retention-experiment");
+    const result = inspectRetentionExperiment(stored?.configValue);
+    return { enabled: result.valid && result.config?.enabled === true, valid: result.valid, errors: result.errors,
+      id: result.config?.id ?? null, treatmentPercent: result.config?.treatmentPercent ?? 0,
+      design: result.valid ? result.config?.design ?? null : null, requiredPerVariant: result.requiredPerVariant };
   }
   async record(userId: string, input: Record<string, unknown>) {
     const props = input.properties;
@@ -30,7 +38,7 @@ export class BodyLogRetentionTelemetry {
       throw new ApplicationError(400, "BODYLOG_RETENTION_EVENT_INVALID", "Explicit consent and allowlisted event values are required.");
     const id = "bodylog_event_" + createHash("sha256").update(JSON.stringify([userId, input.eventId])).digest("hex");
     {
-      const assignment = await this.assignment(userId);
+      const assignment = await this.assignment(userId, input.timestamp);
       await this.database.insertAnalyticsEvents([{ id, appId: "bodylog", userId, platform: "ios", sessionId: "bodylog-retention", pageKey: String((props as Record<string,string>).source ?? "home"),
         eventName: `bodylog_${input.name}` as EventName, occurredAt: input.timestamp, receivedAt: new Date().toISOString(), metadata: { properties: props, ...assignment } }]);
     }
@@ -39,21 +47,21 @@ export class BodyLogRetentionTelemetry {
   async metrics() {
     const events = await this.database.listAnalyticsEvents("bodylog");
     const actions = events.filter(item => item.eventName === "bodylog_local_goal_completed");
-    const exposures = events.filter(item => item.eventName === "bodylog_seven_day_plan_opened" && (item.metadata.properties as Record<string,string>)?.state === "completed" && item.metadata.experimentId !== "disabled");
+    const exposures = events.filter(item => item.eventName === "bodylog_seven_day_plan_opened" && (item.metadata.properties as Record<string,string>)?.state === "completed" && typeof item.metadata.experimentId === "string" && item.metadata.experimentId !== "disabled" && ["control", "treatment"].includes(String(item.metadata.variant)));
     const experimentIds = [...new Set(exposures.map(item => String(item.metadata.experimentId)))];
     const experiments = experimentIds.map(experimentId => ({ experimentId, variants: ["control", "treatment"].map(variant => {
       const rows = exposures.filter(item => item.metadata.variant === variant && item.metadata.experimentId === experimentId).sort((a,b) => a.occurredAt.localeCompare(b.occurredAt));
       const cohort = new Map<string, string>();
       for (const row of rows) if (!cohort.has(row.userId)) cohort.set(row.userId,row.occurredAt.slice(0,10));
       const actionDates = new Map<string, Set<string>>();
-      for (const action of actions) {
+      for (const action of actions.filter(item => item.metadata.experimentId === experimentId && item.metadata.variant === variant)) {
         const dates = actionDates.get(action.userId) ?? new Set<string>(); dates.add(action.occurredAt.slice(0,10)); actionDates.set(action.userId, dates);
       }
       const retention = (day: number) => {
         let eligible = 0, retained = 0;
         for (const [user,first] of cohort) {
           const target = new Date(Date.parse(`${first}T00:00:00Z`) + day * 86_400_000).toISOString().slice(0,10);
-          if (Date.parse(`${target}T23:59:59Z`) >= Date.now()) continue;
+          if (Date.parse(`${target}T00:00:00Z`) + 86_400_000 > Date.now()) continue;
           eligible++; if (actionDates.get(user)?.has(target)) retained++;
         }
         return { eligible, retained, rate: eligible ? retained / eligible : null };

@@ -1,3 +1,4 @@
+import { prepareEmailCodeDelivery, type EmailCodeDeliveryInput } from "./auth-email-delivery.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { BodyLogInvitationService } from "../bodylog/bodylog-invitation.service.ts";
 import { BODYLOG_APP_ID } from "../bodylog/bodylog-profile.types.ts";
@@ -24,7 +25,6 @@ import {
   sha256,
   timingSafeHexCompare,
 } from "../../shared/utils.ts";
-import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { DevelopmentPasswordHasher } from "./password-hasher.ts";
@@ -32,7 +32,6 @@ import { AuthSessionManager } from "./auth-session-manager.ts";
 import {
   AuthVerificationLimiter,
   type AuthRateLimitRuntimeConfig,
-  type EmailVerificationCacheEntry,
 } from "./auth-verification-limiter.ts";
 import {
   findLocalEmailLoginTestAccount,
@@ -54,81 +53,95 @@ export class AuthEmailFlow {
     command: RegisterEmailCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.assertSelfRegistrationAllowed(command.appId);
-    const email = this.normalizeEmail(command.email);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumeRegistrationCodeLimits(
-      app.id,
-      email,
-      ipAddress,
-      rateLimit,
-      now,
-    );
-    return await this.issueEmailCode({
-      app,
-      email,
-      cacheKey: this.verificationLimiter.buildRegistrationCodeKey(app.id, email),
-      command,
-      rateLimit,
-      now,
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.assertSelfRegistrationAllowed(command.appId);
+      const email = this.normalizeEmail(command.email);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumeRegistrationCodeLimits(
+        app.id,
+        email,
+        ipAddress,
+        rateLimit,
+        now,
+      );
+      return await this.issueEmailCode({
+        app,
+        email,
+        cacheKey: this.verificationLimiter.buildRegistrationCodeKey(app.id, email),
+        command,
+        rateLimit,
+        now,
+      });
     });
+    return await deliver();
   }
 
   async loginEmailCode(
     command: EmailLoginCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.appRegistryService.getAppOrThrow(command.appId);
-    const email = this.normalizeEmail(command.email);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumeEmailLoginCodeLimits(
-      app.id,
-      email,
-      ipAddress,
-      rateLimit,
-      now,
-    );
-    if (findLocalEmailLoginTestAccount(email, ipAddress)) {
-      return this.buildAcceptedResult(rateLimit);
-    }
-    return await this.issueEmailCode({
-      app,
-      email,
-      cacheKey: this.verificationLimiter.buildEmailLoginCodeKey(app.id, email),
-      command,
-      rateLimit,
-      now,
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.appRegistryService.getAppOrThrow(command.appId);
+      const email = this.normalizeEmail(command.email);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumeEmailLoginCodeLimits(
+        app.id,
+        email,
+        ipAddress,
+        rateLimit,
+        now,
+      );
+      if (findLocalEmailLoginTestAccount(email, ipAddress)) {
+        return async () => this.buildAcceptedResult(rateLimit);
+      }
+      return await this.issueEmailCode({
+        app,
+        email,
+        cacheKey: this.verificationLimiter.buildEmailLoginCodeKey(app.id, email),
+        command,
+        rateLimit,
+        now,
+      });
     });
+    return await deliver();
   }
 
   async emailChangeCode(
     command: EmailLoginCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.appRegistryService.getAppOrThrow(command.appId);
-    const email = this.normalizeEmail(command.email);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumeEmailChangeCodeLimits(
-      app.id,
-      email,
-      ipAddress,
-      rateLimit,
-      now,
-    );
-    return await this.issueEmailCode({
-      app,
-      email,
-      cacheKey: this.verificationLimiter.buildEmailChangeCodeKey(app.id, email),
-      command,
-      rateLimit,
-      now,
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.appRegistryService.getAppOrThrow(command.appId);
+      const email = this.normalizeEmail(command.email);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumeEmailChangeCodeLimits(
+        app.id,
+        email,
+        ipAddress,
+        rateLimit,
+        now,
+      );
+      return await this.issueEmailCode({
+        app,
+        email,
+        cacheKey: this.verificationLimiter.buildEmailChangeCodeKey(app.id, email),
+        command,
+        rateLimit,
+        now,
+      });
     });
+    return await deliver();
   }
 
   async register(command: RegisterCommand, now = new Date()): Promise<AuthSession> {
+    const userId = randomId("user");
+    return await this.database.withNewUserTransaction(userId, () => this.completeRegistration(command, userId, now));
+  }
+
+  private async completeRegistration(command: RegisterCommand, userId: string, now: Date): Promise<AuthSession> {
     const rateLimit = await this.verificationLimiter.getRuntimeConfig();
     const app = await this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
@@ -156,8 +169,6 @@ export class AuthEmailFlow {
         "Registration is not available for the provided email.",
       );
     }
-    await this.verificationLimiter.deleteVerificationCodeEntry(cacheKey);
-    const userId = randomId("user");
     await this.database.insertUser({
       id: userId,
       email,
@@ -167,7 +178,9 @@ export class AuthEmailFlow {
       createdAt: now.toISOString(),
     });
     await this.appRegistryService.ensureMembership(app.id, userId, now);
-    return await this.sessionManager.issueSession(userId, app.id, now);
+    const session = await this.sessionManager.issueSession(userId, app.id, now);
+    await this.verificationLimiter.deleteVerificationCodeEntry(cacheKey);
+    return session;
   }
 
   async loginWithEmailCode(
@@ -318,35 +331,38 @@ export class AuthEmailFlow {
     command: PasswordEmailCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
-    const app = await this.appRegistryService.getAppOrThrow(command.appId);
-    const email = this.normalizeEmail(command.email);
-    const ipAddress = this.normalizeIpAddress(command.ipAddress);
-    await this.verificationLimiter.consumePasswordCodeLimits(
-      app.id,
-      email,
-      ipAddress,
-      rateLimit,
-      now,
-    );
-    const cacheKey = this.verificationLimiter.buildPasswordResetCodeKey(app.id, email);
-    await this.assertResendCooldown(cacheKey, rateLimit, now);
-    const user = await this.database.findUserByAccount(email);
-    if (
-      !user ||
-      user.status === "BLOCKED" ||
-      !(await this.canUsePasswordFlow(app.id, user.id))
-    ) {
-      return this.buildAcceptedResult(rateLimit);
-    }
-    return await this.issueEmailCode({
-      app,
-      email,
-      cacheKey,
-      command,
-      rateLimit,
-      now,
+    const deliver = await this.database.withExclusiveSession(async () => {
+      const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+      const app = await this.appRegistryService.getAppOrThrow(command.appId);
+      const email = this.normalizeEmail(command.email);
+      const ipAddress = this.normalizeIpAddress(command.ipAddress);
+      await this.verificationLimiter.consumePasswordCodeLimits(
+        app.id,
+        email,
+        ipAddress,
+        rateLimit,
+        now,
+      );
+      const cacheKey = this.verificationLimiter.buildPasswordResetCodeKey(app.id, email);
+      await this.assertResendCooldown(cacheKey, rateLimit, now);
+      const user = await this.database.findUserByAccount(email);
+      if (
+        !user ||
+        user.status === "BLOCKED" ||
+        !(await this.canUsePasswordFlow(app.id, user.id))
+      ) {
+        return async () => this.buildAcceptedResult(rateLimit);
+      }
+      return await this.issueEmailCode({
+        app,
+        email,
+        cacheKey,
+        command,
+        rateLimit,
+        now,
+      });
     });
+    return await deliver();
   }
 
   async resetPassword(
@@ -388,60 +404,15 @@ export class AuthEmailFlow {
       this.passwordHasher.hash(command.password),
       this.passwordHasher.algorithm,
     );
-    await this.sessionManager.revokeAllSessions(app.id, user.id, now);
     await this.appRegistryService.ensureMembership(app.id, user.id, now);
     return await this.sessionManager.issueSession(user.id, app.id, now);
   }
 
-  private async issueEmailCode(input: {
-    app: { id: string };
-    email: string;
-    cacheKey: string;
-    command: RegisterEmailCodeCommand | EmailLoginCodeCommand | PasswordEmailCodeCommand;
-    rateLimit: AuthRateLimitRuntimeConfig;
-    now: Date;
-  }): Promise<RegisterEmailCodeResult> {
-    const existingCode = await this.verificationLimiter.getVerificationCodeEntry(input.cacheKey, input.now);
-    if (
-      existingCode &&
-      input.now.getTime() - new Date(existingCode.sentAt).getTime() <
-        input.rateLimit.resendCooldownMs
-    ) {
-      tooManyRequests(
-        "AUTH_RATE_LIMITED",
-        "Request rate is too high. Please retry later.",
-      );
-    }
-    const rawCode = this.createVerificationCode();
-    const entry = this.createVerificationCodeEntry(
-      rawCode,
-      input.now,
-      input.rateLimit.verificationCodeTtlMs,
-    );
-    await this.verificationLimiter.setVerificationCodeEntry(
-      input.cacheKey,
-      entry,
-      input.rateLimit.verificationCodeTtlMs,
-      input.now,
-    );
-    try {
-      await this.registrationEmailSender.sendVerificationCode({
-        appName: this.appRegistryService.resolveLocalizedAppName(input.app, {
-          locale: input.command.locale,
-          region: input.command.region,
-        }),
-        email: input.email,
-        code: rawCode,
-        locale: input.command.locale.trim() || "zh-CN",
-        region: input.command.region,
-        expireMinutes: Math.floor(input.rateLimit.verificationCodeTtlMs / (60 * 1000)),
-        templateName: VERIFICATION_EMAIL_TEMPLATE_NAME,
-      });
-    } catch (error) {
-      await this.verificationLimiter.deleteVerificationCodeEntry(input.cacheKey);
-      throw error;
-    }
-    return this.buildAcceptedResult(input.rateLimit);
+  private async issueEmailCode(input: EmailCodeDeliveryInput): Promise<() => Promise<RegisterEmailCodeResult>> {
+    return await prepareEmailCodeDelivery(input, {
+      database: this.database, registry: this.appRegistryService,
+      sender: this.registrationEmailSender, limiter: this.verificationLimiter,
+    }, this.createVerificationCode());
   }
 
   private async assertEmailCodeValid(input: {
@@ -551,19 +522,6 @@ export class AuthEmailFlow {
       );
     }
     return rawCode;
-  }
-
-  private createVerificationCodeEntry(
-    code: string,
-    now = new Date(),
-    verificationCodeTtlMs: number,
-  ): EmailVerificationCacheEntry {
-    return {
-      codeHash: sha256(code),
-      expiresAt: new Date(now.getTime() + verificationCodeTtlMs).toISOString(),
-      sentAt: now.toISOString(),
-      failedAttempts: 0,
-    };
   }
 
   private buildAcceptedResult(
