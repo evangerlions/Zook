@@ -163,6 +163,7 @@ export abstract class ApplicationDatabase extends BodyLogAdminDatabase {
   abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
   abstract findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): MaybePromise<BodyLogInvitationRecord | undefined>;
   abstract findBodyLogInvitationByCode(appId: string, code: string): MaybePromise<BodyLogInvitationRecord | undefined>;
+  abstract updateBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
   abstract insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
   abstract listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;
   abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;

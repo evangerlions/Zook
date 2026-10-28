@@ -1,3 +1,5 @@
+import type { BodyLogGrowthStore } from "../../infrastructure/bodylog-store-ports.ts";
+import type { BodyLogRewardLedger } from "./bodylog-reward-ledger.ts";
 import { createHash, randomBytes } from "node:crypto";
 import type { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { ApplicationError } from "../../shared/errors.ts";
@@ -8,7 +10,7 @@ import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from
 const DAY_MS = 86_400_000;
 
 export class BodyLogInvitationService {
-  constructor(private readonly database: ApplicationDatabase) {}
+  constructor(private readonly database: ApplicationDatabase, private readonly growth?: BodyLogGrowthStore, private readonly ledger?: BodyLogRewardLedger) {}
 
   async create(inviterUserId: string, installId: unknown, intent?: "general" | "buddy" | "group") {
     if (typeof installId !== "string" || installId.trim().length < 8) {
@@ -28,7 +30,7 @@ export class BodyLogInvitationService {
     await this.database.insertBodyLogInvitation(record);
 
     // 根据intent生成不同的URL路径
-    const urlPath = intent === "buddy" ? "b" : intent === "group" ? "g" : "i";
+    const urlPath = "i";
     return {
       token,
       code,
@@ -37,6 +39,7 @@ export class BodyLogInvitationService {
     };
   }
   async list(userId: string) {
+    await this.reconcile(userId);
     const invitations = await this.database.listBodyLogInvitations(BODYLOG_APP_ID, userId);
     const invitationById = new Map(invitations.map((item) => [item.id, item]));
     const all = await this.database.listBodyLogInvitationAttributions(BODYLOG_APP_ID);
@@ -74,7 +77,7 @@ export class BodyLogInvitationService {
     const invitation = await this.database.findBodyLogInvitationByTokenHash(
       BODYLOG_APP_ID, hash(input.token),
     );
-    if (!invitation || Date.parse(invitation.expiresAt) <= Date.now()) {
+    if (!invitation) {
       throw new ApplicationError(410, "BODYLOG_INVITATION_EXPIRED", "Invitation expired.");
     }
     return this.validateAndBind(inviteeUserId, invitation, input.installId);
@@ -88,10 +91,32 @@ export class BodyLogInvitationService {
     const invitation = await this.database.findBodyLogInvitationByCode(
       BODYLOG_APP_ID, input.code.toUpperCase(),
     );
-    if (!invitation || Date.parse(invitation.expiresAt) <= Date.now()) {
+    if (!invitation) {
       throw new ApplicationError(410, "BODYLOG_INVITATION_EXPIRED", "Invitation expired.");
     }
     return this.validateAndBind(inviteeUserId, invitation, input.installId);
+  }
+
+  async preview(input: { token?: unknown; code?: unknown }) {
+    if ((input.token === undefined) === (input.code === undefined) ||
+      (input.token !== undefined && (typeof input.token !== "string" || !/^[A-Za-z0-9_-]{1,512}$/.test(input.token))) ||
+      (input.code !== undefined && (typeof input.code !== "string" || !/^[A-Z2-9]{6}$/i.test(input.code)))) {
+      throw new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Provide exactly one valid invitation token or code.");
+    }
+    const invitation = input.token !== undefined
+      ? await this.database.findBodyLogInvitationByTokenHash(BODYLOG_APP_ID, hash(input.token as string))
+      : await this.database.findBodyLogInvitationByCode(BODYLOG_APP_ID, (input.code as string).toUpperCase());
+    if (!invitation || invitation.revokedAt || Date.parse(invitation.expiresAt) <= Date.now()) {
+      throw new ApplicationError(410, "BODYLOG_INVITATION_EXPIRED", "Invitation is unavailable.");
+    }
+    return { intent: invitation.intent, code: invitation.code ?? null, expiresAt: invitation.expiresAt };
+  }
+
+  async revoke(userId: string, token: string) {
+    const invitation = await this.database.findBodyLogInvitationByTokenHash(BODYLOG_APP_ID, hash(token));
+    if (!invitation || invitation.inviterUserId !== userId) throw new ApplicationError(404, "BODYLOG_INVITATION_NOT_FOUND", "Invitation not found.");
+    if (!invitation.revokedAt) await this.database.updateBodyLogInvitation({ ...invitation, revokedAt: new Date().toISOString() });
+    return { revoked: true };
   }
 
   private async validateAndBind(
@@ -106,6 +131,13 @@ export class BodyLogInvitationService {
     const installIdHash = hash(installId);
     if (invitation.inviterInstallIdHash === installIdHash) {
       throw new ApplicationError(409, "BODYLOG_INVITATION_INVALID", "Same-device invitation is not allowed.");
+    }
+    const existing = all.find(item => item.inviteeUserId === inviteeUserId);
+    if (existing?.invitationId === invitation.id && existing.installIdHash === installIdHash) {
+      return { attributed: true, progressDays: existing.completedDates.length };
+    }
+    if (invitation.revokedAt || Date.parse(invitation.expiresAt) <= Date.now()) {
+      throw new ApplicationError(410, "BODYLOG_INVITATION_EXPIRED", "Invitation is unavailable.");
     }
     if (all.some((item) => item.inviteeUserId === inviteeUserId ||
         item.installIdHash === installIdHash)) {
@@ -135,36 +167,46 @@ export class BodyLogInvitationService {
         input.date !== todayIn(input.timezone)) {
       throw new ApplicationError(400, "BODYLOG_INVITATION_PROGRESS_INVALID", "Only today's completed plan day is accepted.");
     }
+    const record = await this.reconcile(inviteeUserId);
+    if (!record) throw new ApplicationError(409, "BODYLOG_INVITATION_INVALID", "No attributed invitation.");
+    if (record.completedDates.length === 0) throw new ApplicationError(409, "BODYLOG_INVITATION_PROGRESS_INVALID", "A recorded qualifying plan goal is required.");
+    return { progressDays: record.completedDates.length, qualified: Boolean(record.qualifiedAt), premiumUntil: record.inviteeRewardEndsAt ?? null };
+  }
+
+  private async reconcile(userId: string) {
     const all = await this.database.listBodyLogInvitationAttributions(BODYLOG_APP_ID);
-    const current = all.find((item) => item.inviteeUserId === inviteeUserId);
-    if (!current) {
-      throw new ApplicationError(409, "BODYLOG_INVITATION_INVALID", "No attributed invitation.");
+    const current = all.find(item => item.inviteeUserId === userId);
+    if (!current || current.qualifiedAt || !this.growth) return current;
+    const plan = await this.growth.findLatestGrowthPlan(userId);
+    let dates: string[] = [];
+    if (plan && plan.status !== "cancelled") {
+      const zone = plan.timeZone ?? "UTC";
+      const format = (date: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+      const start = format(new Date(plan.startDate));
+      const attributed = format(new Date(current.attributedAt));
+      dates = (await this.growth.findGrowthMissionsByPlanId(plan.id)).filter(item => item.type === "localGoal" && item.completed).map(item => {
+        const date = new Date(`${start}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + item.day - 1);
+        return date.toISOString().slice(0, 10);
+      }).filter(date => date >= attributed && date <= format(new Date()));
     }
-    if (current.completedDates.includes(input.date)) {
-      return { progressDays: current.completedDates.length, qualified: Boolean(current.qualifiedAt) };
-    }
-    const updated: BodyLogInvitationAttributionRecord = {
-      ...current,
-      completedDates: [...current.completedDates, input.date].sort(),
-    };
-    if (updated.completedDates.length >= 3 && !updated.qualifiedAt) {
+    const updated = { ...current, completedDates: [...new Set(dates)].sort() };
+    if (updated.completedDates.length >= 3) {
       const now = new Date();
       updated.qualifiedAt = now.toISOString();
-      updated.rewardedAt = now.toISOString();
-      updated.inviteeRewardEndsAt = nextRewardEnd(inviteeUserId, all, now);
-      const inviterMonthRewards = all.filter((item) =>
-        item.inviterUserId === updated.inviterUserId && item.rewardedAt &&
-        sameCalendarMonth(new Date(item.rewardedAt), now)).length;
-      if (inviterMonthRewards < 3) {
-        updated.inviterRewardEndsAt = nextRewardEnd(updated.inviterUserId, all, now);
+      // Qualification and both durable grants commit in the same transaction.
+      if (this.ledger) {
+        const invitee = await this.ledger.grant(userId, "invitation", `${current.id}:invitee`, "premium", "1_day_premium", 1);
+        updated.inviteeRewardEndsAt = invitee.endsAt ?? undefined;
+        const monthly = all.filter(item => item.inviterUserId === current.inviterUserId && item.inviterRewardEndsAt && item.rewardedAt && sameCalendarMonth(new Date(item.rewardedAt), now)).length;
+        if (monthly < 3) {
+          const inviter = await this.ledger.grant(current.inviterUserId, "invitation", `${current.id}:inviter`, "premium", "1_day_premium", 1);
+          updated.inviterRewardEndsAt = inviter.endsAt ?? undefined;
+        }
+        updated.rewardedAt = now.toISOString();
       }
     }
     await this.database.updateBodyLogInvitationAttribution(updated);
-    return {
-      progressDays: updated.completedDates.length,
-      qualified: Boolean(updated.qualifiedAt),
-      premiumUntil: updated.inviteeRewardEndsAt ?? null,
-    };
+    return updated;
   }
 
   // 生成唯一的 6 位邀请码（重试直到不冲突）
@@ -204,19 +246,6 @@ function todayIn(timezone: string): string {
   } catch {
     throw new ApplicationError(400, "BODYLOG_INVITATION_PROGRESS_INVALID", "Time zone is invalid.");
   }
-}
-
-function nextRewardEnd(
-  userId: string,
-  all: BodyLogInvitationAttributionRecord[],
-  now: Date,
-): string {
-  const existingEnds = all.flatMap((item) => [
-    item.inviterUserId === userId ? item.inviterRewardEndsAt : undefined,
-    item.inviteeUserId === userId ? item.inviteeRewardEndsAt : undefined,
-  ]).filter((value): value is string => Boolean(value)).map(Date.parse);
-  const start = Math.max(now.getTime(), ...existingEnds);
-  return new Date(start + DAY_MS).toISOString();
 }
 
 function sameCalendarMonth(left: Date, right: Date): boolean {

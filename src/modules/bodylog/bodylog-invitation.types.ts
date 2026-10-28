@@ -8,6 +8,7 @@ export interface BodyLogInvitationRecord {
   tokenHash: string;
   code?: string; // 6 位邀请码（可选）
   intent: BodyLogInvitationIntent;
+  revokedAt?: string;
   expiresAt: string;
   createdAt: string;
 }

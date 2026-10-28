@@ -788,3 +788,7 @@ Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编
 2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；全仓行数门禁仍失败，未发布。
 
 2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.
+
+### 2026-10-28 BodyLog retention source completion
+
+The `feature/bodylog-retention-completion` worktree adds persistent encouragement idempotency, invitation preview/revocation and confirmable attribution, growth-evidence qualification, separate promotional/reward ledger, effective quota entitlement, authenticated manually reviewed campaign operations and opt-in retention measurement. Migration `079_bodylog_retention_integrity.sql` adds revocation and scoped retention documents. Canonical app-data deletion clears those documents. OpenAPI and generated public contracts are updated together. PostgreSQL multi-instance/restart/rollback and local HTTP/password-auth journeys are verified separately from production deployment and physical Watch acceptance; this entry makes no production readiness claim.

@@ -1,3 +1,5 @@
+import { BodyLogRewardLedger } from "./modules/bodylog/bodylog-reward-ledger.ts";
+import { BodyLogRetentionService } from "./modules/bodylog/bodylog-retention.service.ts";
 import type { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import type { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { resolveBodyLogStores } from "./application-bodylog-stores.ts";
@@ -38,18 +40,21 @@ export function createBodyLogServices(input: {
   const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
   const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
   const bodyLogLeaderboardService = withBodyLogExecution(new BodyLogLeaderboardService(database, bodyLogProfileService), execute);
-  const bodyLogInvitationService = new BodyLogInvitationService(database);
+  const ledger = new BodyLogRewardLedger(stores.retention, stores.subscription);
+  const bodyLogInvitationService = withBodyLogExecution(new BodyLogInvitationService(database, stores.growth, ledger), execute);
+  const bodyLogRetentionService = withBodyLogExecution(new BodyLogRetentionService(database, stores.growth, ledger, bodyLogInvitationService, stores.retention), execute);
   const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
-  const bodyLogGrowthService = withBodyLogExecution(new BodyLogGrowthService(stores.growth), execute);
+  const bodyLogGrowthService = withBodyLogExecution(new BodyLogGrowthService(stores.growth, bodyLogRetentionService), execute);
   const bodyLogNotificationService = withBodyLogExecution(new BodyLogNotificationService(stores.notification), execute);
   const bodyLogFeatureFlagService = new BodyLogFeatureFlagService(stores.flags);
-  const bodyLogAdminService = new BodyLogAdminService(stores.admin, stores.flags);
-  const subscriptionService = new SubscriptionService(stores.subscription);
+  const bodyLogAdminService = new BodyLogAdminService(stores.admin, stores.flags, bodyLogRetentionService);
+  const subscriptionService = new SubscriptionService(stores.subscription, ledger);
   const purchaseVerificationService = new BodyLogPurchaseVerificationService(stores.subscription, new BodyLogStorePurchaseVerifier());
   const bodyLogBuddyService = withBodyLogExecution(new BodyLogBuddyService(stores.buddy, database, notificationService, subscriptionService, purchaseVerificationService), execute);
   const bodyLogGroupService = withBodyLogExecution(new BodyLogGroupService(stores.group, database, notificationService, subscriptionService), execute);
   const bodyLogWorkerService = new BodyLogWorkerService(stores.jobs, bodyLogBuddyService, bodyLogGroupService, logger);
   return {
+    bodyLogRetentionService,
     bodyLogProfileService,
     bodyLogSocialService,
     bodyLogLeaderboardService,

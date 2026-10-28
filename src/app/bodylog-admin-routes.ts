@@ -24,6 +24,26 @@ export async function tryHandleBodyLogManagementRoutes(
   const appId = BODYLOG_APP_ID;
   const relativePath = request.path.slice(ADMIN_PATH_PREFIX.length) || "/";
 
+  if (relativePath === "/retention/metrics" && request.method === "GET") {
+    const admin = context.requireAdminSession(request);
+    if (!service.retention) throw new ApplicationError(503, "BODYLOG_RETENTION_UNAVAILABLE", "Metrics are unavailable.");
+    await context.recordAdminMutationAudit({ appId, action: "bodylog.retention.metrics", resourceType: "retention_metrics", payload: { adminUser: admin.username } });
+    return context.ok(await service.retention.telemetry.metrics(), request.requestId as string);
+  }
+  const campaignReview = relativePath.match(/^\/campaigns\/([A-Za-z0-9_-]{1,128})\/participations\/([A-Za-z0-9_-]{1,128})\/review$/);
+  if (campaignReview && request.method === "POST") {
+    const session = context.requireAdminSession(request);
+    const approved = (request.body as Record<string, unknown> | undefined)?.approved;
+    if (typeof approved !== "boolean") throw new ApplicationError(400, "REQ_INVALID_BODY", "approved must be boolean.");
+    if (!service.retention) throw new ApplicationError(503, "BODYLOG_CAMPAIGN_UNAVAILABLE", "Campaign review is unavailable.");
+    const result = await service.retention.execute(async () => {
+      const reviewed = await service.retention!.campaigns.review(campaignReview[2]!, campaignReview[1]!, approved, session.username);
+      await context.recordAdminMutationAudit({ appId, action: "bodylog.campaign.review", resourceType: "campaign_participation", resourceId: `${campaignReview[1]}:${campaignReview[2]}`, payload: { adminUser: session.username, approved } });
+      return reviewed;
+    });
+    return context.ok(result, request.requestId as string);
+  }
+
   // Helper to parse pagination query params
   const pagination = () => {
     const q = request.query ?? {};

@@ -1,3 +1,4 @@
+import type { BodyLogRetentionStore } from "./bodylog-retention-store.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
 import type { BodyLogBlockRecord } from "../modules/bodylog/bodylog-social.types.ts";
 import type {
@@ -192,6 +193,7 @@ export interface BodyLogAdminStore {
 }
 
 export interface BodyLogStores {
+  retention: BodyLogRetentionStore;
   jobs: { runOnce(key: string, job: () => Promise<void>): Promise<boolean> };
   buddy: BodyLogBuddyStore;
   group: BodyLogGroupStore;

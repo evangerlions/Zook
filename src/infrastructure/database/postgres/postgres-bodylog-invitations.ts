@@ -11,7 +11,7 @@ export class PostgresBodyLogInvitationStore {
 
   async findByTokenHash(appId: string, tokenHash: string) {
     const result = await this.query(
-      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, code, intent, expires_at, created_at
+      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, code, intent, expires_at, created_at, revoked_at
        FROM zook_bodylog_invitations WHERE app_id = $1 AND token_hash = $2`,
       [appId, tokenHash],
     );
@@ -20,11 +20,15 @@ export class PostgresBodyLogInvitationStore {
 
   async findByCode(appId: string, code: string) {
     const result = await this.query(
-      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, code, intent, expires_at, created_at
+      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, code, intent, expires_at, created_at, revoked_at
        FROM zook_bodylog_invitations WHERE app_id = $1 AND code = $2`,
       [appId, code],
     );
     return result.rows[0] ? invitation(result.rows[0]) : undefined;
+  }
+
+  async updateInvitation(record: BodyLogInvitationRecord) {
+    await this.query("UPDATE zook_bodylog_invitations SET revoked_at=$2::timestamptz WHERE id=$1", [record.id, record.revokedAt ?? null]);
   }
 
   async insertInvitation(record: BodyLogInvitationRecord) {
@@ -39,7 +43,7 @@ export class PostgresBodyLogInvitationStore {
 
   async listInvitations(appId: string, inviterUserId: string) {
     const result = await this.query(
-      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, code, intent, expires_at, created_at
+      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, code, intent, expires_at, created_at, revoked_at
        FROM zook_bodylog_invitations WHERE app_id = $1 AND inviter_user_id = $2`,
       [appId, inviterUserId],
     );
@@ -90,6 +94,7 @@ function invitation(row: Record<string, unknown>): BodyLogInvitationRecord {
     tokenHash: String(row.token_hash),
     code: row.code ? String(row.code) : undefined,
     intent: String(row.intent ?? "general") as "general" | "buddy" | "group",
+    revokedAt: row.revoked_at ? iso(row.revoked_at) : undefined,
     expiresAt: iso(row.expires_at), createdAt: iso(row.created_at),
   };
 }
