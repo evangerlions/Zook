@@ -21961,11 +21961,12 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
     "joint_activity_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Accepted tonight_together activity. Both participants and terminal retries reuse one session across local dates."
+      "description": "Accepted and started tonight_together activity. Retries and participants on different dates return its original session, including after completion."
     },
     "jointActivityId": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Compatibility alias for joint_activity_id"
     }
   },
   "anyOf": [
