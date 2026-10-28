@@ -1,3 +1,4 @@
+import { createApplicationInfrastructure } from './application-infrastructure.ts';
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -6,19 +7,14 @@ import { RbacGuard } from "./core/guards/rbac.guard.ts";
 import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
-import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
-import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
+
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
-import { InMemoryKVBackend, KVManager } from "./infrastructure/kv/kv-manager.ts";
-import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
+
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { createLocalRunFileLogSink } from "./infrastructure/logging/local-run-file-log-sink.ts";
-import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
-import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
-import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
-import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
@@ -67,7 +63,7 @@ import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
 import { LlmEmailAlertService } from "./services/llm-email-alert.service.ts";
 import { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
-import { NotificationService } from "./services/notification.service.ts";
+
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -90,7 +86,7 @@ import { createApplicationTelemetryGateway } from "./application-telemetry-runti
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { resolveLightTickEnabled, resolveLightTickSeedEnabled } from "./application-lighttick-runtime-config.ts";
-import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
+import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime } from "./application-lighttick-services.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
@@ -100,61 +96,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
   const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
   const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
-  const kvManager =
-    options.kvManager ??
-    (options.kvBackend
-      ? await KVManager.create({ backend: options.kvBackend })
-      : resolveRuntimeRedisUrl()
-        ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
-        : await KVManager.create({ backend: new InMemoryKVBackend() }));
-  const shouldLoadManagedState = Boolean(
-    options.database || options.databaseFactory,
-  );
-  const managedStateStore = new ManagedStateStore(kvManager, {
-    enabled: shouldLoadManagedState,
-  });
-  const seed = shouldLoadManagedState
-    ? applyManagedState(baseSeed, await managedStateStore.load())
-    : baseSeed;
-  const database =
-    options.database ??
-    (options.databaseFactory
-      ? await options.databaseFactory(seed)
-      : await PostgresDatabase.create(
-          options.databaseUrl?.trim() ||
-            resolveRuntimeDatabaseUrl() ||
-            (() => {
-              throw new Error(
-                "DATABASE_URL must be configured before starting PostgreSQL.",
-              );
-            })(),
-          seed,
-          {
-            migrationConnectionString:
-              options.migrationDatabaseUrl?.trim() ||
-              resolveRuntimeMigrationDatabaseUrl(),
-          },
-        ));
-  const lighttickRepository = resolveApplicationLightTickRepository(database, options.lighttickRepository);
-  const cache = new InMemoryCache();
-  const defaultQueueBackend =
-    options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl()
-      ? "redis"
-      : "memory";
-  const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
-  const queue =
-    options.queue ??
-    (resolvedQueueBackend === "redis"
-      ? new RedisJobQueue(
-          options.queueRedisUrl?.trim() ||
-            resolveRuntimeRedisUrl() ||
-            (() => {
-              throw new Error(
-                "REDIS_URL must be configured before starting the Redis job queue backend.",
-              );
-            })(),
-        )
-      : new InMemoryJobQueue());
+  const {kvManager,managedStateStore,seed,database,lighttickRepository,cache,queue}=await createApplicationInfrastructure(options,baseSeed);
   const lighttickRuntime = createApplicationLightTickRuntime(lighttickRepository, queue);
   const localRunFileLogSink = createLocalRunFileLogSink({
     service: options.serviceName ?? "api",

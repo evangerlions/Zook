@@ -1,3 +1,6 @@
+import { cleanQuery } from './admin-api-query.ts';
+import { adminBodyLogApi } from './admin-bodylog-api.ts';
+import { adminLlmApi } from './admin-llm-api.ts';
 import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
@@ -16,7 +19,10 @@ import type {
   AdminContentSafetyDocument,
   AdminContentSafetyStatsDocument,
   AdminContentSafetyTestDocument,
-  AdminEmailDeliveryEventListDocument, AdminFeedbackAttachmentContentDocument, AdminFeedbackListDocument, AdminFeedbackStatusUpdateDocument,
+  AdminEmailDeliveryEventListDocument,
+  AdminFeedbackAttachmentContentDocument,
+  AdminFeedbackListDocument,
+  AdminFeedbackStatusUpdateDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
@@ -29,13 +35,6 @@ import type {
   AdminRemoteLogPullTaskDocument,
   AdminRemoteLogPullTaskFileDocument,
   AdminRemoteLogPullTaskListDocument,
-  AdminLlmMetricsDocument,
-  AdminLlmModelMetricsDocument,
-  AdminLlmRouteCircuitResetDocument,
-  AdminLlmRouteCircuitResetRequest,
-  AdminLlmServiceDocument,
-  AdminLlmSmokeTestDocument,
-  AdminLlmSmokeTestRunRequest,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
   AdminReleaseUpdateDocument,
@@ -44,12 +43,9 @@ import type {
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   AdminSensitiveOperationGrantDocument,
-  LlmMetricsRange,
   FeedbackStatus,
-  BodyLogRange,
-  BodyLogHabitTemplate,
 } from "./types";
-import { adminPath, requestBlob, requestJson } from "./admin-api-client.ts";
+import { adminPath, requestJson } from "./admin-api-client.ts";
 
 export {
   ADMIN_AUTH_REQUIRED_EVENT,
@@ -58,12 +54,6 @@ export {
   isAdminAuthError,
   requestJson,
 } from "./admin-api-client.ts";
-
-function cleanQuery(query: Record<string, string | undefined>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(query).filter((entry): entry is [string, string] => Boolean(entry[1])),
-  );
-}
 
 export const adminApi = {
   getLightTickOperations() { return requestJson<import("./types").LightTickAdminOperationsDocument>(adminPath("/apps/lighttick/operations")); },
@@ -556,114 +546,22 @@ export const adminApi = {
       },
     );
   },
-  getLlmService() {
-    return requestJson<AdminLlmServiceDocument>(adminPath("/apps/common/llm-service"));
-  },
-  getLlmServiceRevision(revision: number) {
-    return requestJson<AdminLlmServiceDocument>(adminPath(`/apps/common/llm-service/revisions/${revision}`));
-  },
-  updateLlmService(input: Record<string, unknown>) {
-    return requestJson<AdminLlmServiceDocument>(adminPath("/apps/common/llm-service"), {
-      method: "PUT",
-      body: input,
-    });
-  },
-  restoreLlmService(revision: number, desc?: string) {
-    return requestJson<AdminLlmServiceDocument>(
-      adminPath(`/apps/common/llm-service/revisions/${revision}/restore`),
-      {
-        method: "POST",
-        body: {
-          desc: desc || undefined,
-        },
-      },
-    );
-  },
-  getLlmMetrics(range: LlmMetricsRange, filters: { provider?: string; providerModel?: string; operation?: "chat" | "embedding" } = {}) {
-    const query = new URLSearchParams(cleanQuery({ range, ...filters }));
-    return requestJson<AdminLlmMetricsDocument>(adminPath(`/apps/common/llm-service/metrics?${query.toString()}`));
-  },
-  resetLlmRouteCircuit(input: AdminLlmRouteCircuitResetRequest) {
-    return requestJson<AdminLlmRouteCircuitResetDocument>(
-      adminPath("/apps/common/llm-service/circuits/reset"),
-      { method: "POST", body: input },
-    );
-  },
-  getLlmModelMetrics(modelKey: string, range: LlmMetricsRange, provider?: string) {
-    const query = new URLSearchParams(cleanQuery({ range, provider }));
-    return requestJson<AdminLlmModelMetricsDocument>(
-      adminPath(`/apps/common/llm-service/metrics/models/${encodeURIComponent(modelKey)}?${query.toString()}`),
-    );
-  },
-  runLlmSmokeTest(input: AdminLlmSmokeTestRunRequest) {
-    return requestJson<AdminLlmSmokeTestDocument>(adminPath("/apps/common/llm-service/smoke-test"), {
-      method: "POST",
-      body: input,
-    });
-  },
-  getBodyLogCheckinDashboard(range: BodyLogRange = "30d") {
-    const days = range === "7d" ? 7 : range === "90d" ? 90 : 30;
-    const to = new Date().toISOString().slice(0, 10);
-    const fromDate = new Date(`${to}T00:00:00.000Z`);
-    fromDate.setUTCDate(fromDate.getUTCDate() - days + 1);
-    const from = fromDate.toISOString().slice(0, 10);
-    return requestJson<import("./types").BodyLogCheckinDashboardDocument>(
-      adminPath(`/apps/bodylog/checkin/dashboard?${new URLSearchParams({ range, from, to, timezone: "Asia/Shanghai" }).toString()}`),
-    );
-  },
-  getBodyLogCheckinRecords(input: { query?: string; userId?: string; groupId?: string; from?: string; to?: string; page?: number; limit?: number } = {}) {
-    return requestJson<import("./types").BodyLogCheckinRecordsDocument>(
-      adminPath(`/apps/bodylog/checkin/records?${new URLSearchParams(cleanQuery({
-        query: input.query,
-        user_id: input.userId,
-        group_id: input.groupId,
-        from: input.from,
-        to: input.to,
-        page: input.page?.toString(),
-        limit: input.limit?.toString(),
-      })).toString()}`),
-    );
-  },
-  exportBodyLogCheckinRecordsCsv(input: { userId?: string; groupId?: string; from?: string; to?: string } = {}) {
-    return requestBlob(adminPath(`/apps/bodylog/checkin/records/export?${new URLSearchParams(cleanQuery({
-      user_id: input.userId,
-      group_id: input.groupId,
-      from: input.from,
-      to: input.to,
-    })).toString()}`));
-  },
-  listBodyLogGroups(input: { status?: string; health?: string; from?: string; to?: string; page?: number; limit?: number } = {}) {
-    return requestJson<import("./types").BodyLogGroupListDocument>(
-      adminPath(`/apps/bodylog/groups?${new URLSearchParams(cleanQuery({
-        status: input.status,
-        health: input.health,
-        from: input.from,
-        to: input.to,
-        page: input.page?.toString(),
-        limit: input.limit?.toString(),
-      })).toString()}`),
-    );
-  },
-  getBodyLogGroupMemberContributions(groupId: string, input: { from?: string; to?: string } = {}) {
-    return requestJson<{ items: import("./types").BodyLogGroupMember[] }>(
-      adminPath(`/apps/bodylog/groups/${encodeURIComponent(groupId)}/members?${new URLSearchParams(cleanQuery(input)).toString()}`),
-    );
-  },
-  listBodyLogHabitTemplates() {
-    return requestJson<{ items: BodyLogHabitTemplate[] }>(adminPath("/apps/bodylog/habit-templates"));
-  },
-  createBodyLogHabitTemplate(input: Omit<BodyLogHabitTemplate, "id" | "appId" | "createdAt" | "updatedAt" | "status">) {
-    return requestJson<{ item: BodyLogHabitTemplate }>(adminPath("/apps/bodylog/habit-templates"), { method: "POST", body: input });
-  },
-  updateBodyLogHabitTemplate(id: string, input: Partial<Omit<BodyLogHabitTemplate, "id" | "appId" | "createdAt" | "updatedAt">>) {
-    return requestJson<{ item: BodyLogHabitTemplate }>(adminPath(`/apps/bodylog/habit-templates/${encodeURIComponent(id)}`), { method: "PUT", body: input });
-  },
-  deleteBodyLogHabitTemplate(id: string) {
-    return requestJson<{ deleted: boolean; archived: boolean }>(adminPath(`/apps/bodylog/habit-templates/${encodeURIComponent(id)}`), { method: "DELETE" });
-  },
-  getBodyLogHabitTemplateUsage(input: { from?: string; to?: string } = {}) {
-    return requestJson<import("./types").BodyLogHabitUsageDocument>(
-      adminPath(`/apps/bodylog/habit-templates/usage?${new URLSearchParams(cleanQuery(input)).toString()}`),
-    );
-  },
+  getLlmService: adminLlmApi.getLlmService,
+  getLlmServiceRevision: adminLlmApi.getLlmServiceRevision,
+  updateLlmService: adminLlmApi.updateLlmService,
+  restoreLlmService: adminLlmApi.restoreLlmService,
+  getLlmMetrics: adminLlmApi.getLlmMetrics,
+  resetLlmRouteCircuit: adminLlmApi.resetLlmRouteCircuit,
+  getLlmModelMetrics: adminLlmApi.getLlmModelMetrics,
+  runLlmSmokeTest: adminLlmApi.runLlmSmokeTest,
+  getBodyLogCheckinDashboard: adminBodyLogApi.getBodyLogCheckinDashboard,
+  getBodyLogCheckinRecords: adminBodyLogApi.getBodyLogCheckinRecords,
+  exportBodyLogCheckinRecordsCsv: adminBodyLogApi.exportBodyLogCheckinRecordsCsv,
+  listBodyLogGroups: adminBodyLogApi.listBodyLogGroups,
+  getBodyLogGroupMemberContributions: adminBodyLogApi.getBodyLogGroupMemberContributions,
+  listBodyLogHabitTemplates: adminBodyLogApi.listBodyLogHabitTemplates,
+  createBodyLogHabitTemplate: adminBodyLogApi.createBodyLogHabitTemplate,
+  updateBodyLogHabitTemplate: adminBodyLogApi.updateBodyLogHabitTemplate,
+  deleteBodyLogHabitTemplate: adminBodyLogApi.deleteBodyLogHabitTemplate,
+  getBodyLogHabitTemplateUsage: adminBodyLogApi.getBodyLogHabitTemplateUsage,
 };

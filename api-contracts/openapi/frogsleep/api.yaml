@@ -2030,6 +2030,496 @@ paths:
       responses:
         "302":
           description: Redirects to a FrogSleep deep link with mode=preview; never encodes consent
+  /api/v1/frogsleep/buddy-support/center:
+    get:
+      operationId: frogSleepSupportCenter
+      tags:
+      - frogsleep
+      summary: frogSleepSupportCenter
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportCenterData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 20
+      - in: query
+        name: include_content
+        required: false
+        schema:
+          type: boolean
+  /api/v1/frogsleep/buddy-support/capabilities:
+    get:
+      operationId: frogSleepSupportCapabilities
+      tags:
+      - frogsleep
+      summary: frogSleepSupportCapabilities
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportCapabilityData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: query
+        name: relationship_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/permissions/{relationship_id}:
+    put:
+      operationId: frogSleepSupportReceiving
+      tags:
+      - frogsleep
+      summary: frogSleepSupportReceiving
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportPermissionData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportPermissionRequest'
+      parameters:
+      - in: path
+        name: relationship_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/notes:
+    post:
+      operationId: frogSleepSendSupportNote
+      tags:
+      - frogsleep
+      summary: frogSleepSendSupportNote
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportNoteData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportSendRequest'
+    get:
+      operationId: frogSleepSupportHistory
+      tags:
+      - frogsleep
+      summary: frogSleepSupportHistory
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportPageData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: query
+        name: partner_id
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      - in: query
+        name: domain
+        required: false
+        schema:
+          type: string
+          enum:
+          - sleep
+          - focus
+      - in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - in: query
+        name: limit
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+  /api/v1/frogsleep/buddy-support/notes/{note_id}:
+    get:
+      operationId: frogSleepSupportDetail
+      tags:
+      - frogsleep
+      summary: frogSleepSupportDetail
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportNoteData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: path
+        name: note_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/operations/{operation_id}:
+    get:
+      operationId: frogSleepSupportOperation
+      tags:
+      - frogsleep
+      summary: frogSleepSupportOperation
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportOperationData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      parameters:
+      - in: path
+        name: operation_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/operations/{operation_id}/resolution:
+    put:
+      operationId: frogSleepSupportResolve
+      tags:
+      - frogsleep
+      summary: frogSleepSupportResolve
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportOperationData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportResolveRequest'
+      parameters:
+      - in: path
+        name: operation_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+  /api/v1/frogsleep/buddy-support/notes/{note_id}/acknowledgement:
+    post:
+      operationId: frogSleepSupportAcknowledge
+      tags:
+      - frogsleep
+      summary: frogSleepSupportAcknowledge
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 'Authorized support result; Cache-Control: no-store'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/BuddySupportAckData'
+                  requestId:
+                    type: string
+                required:
+                - code
+                - message
+                - data
+                - requestId
+                additionalProperties: true
+        '400':
+          description: Invalid fields or cursor
+        '401':
+          description: Authentication required
+        '404':
+          description: Unavailable support target
+        '409':
+          description: Revision, operation or client version conflict
+        '429':
+          description: Sender quota or request limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddySupportAckRequest'
+      parameters:
+      - in: path
+        name: note_id
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
 components:
   securitySchemes:
     bearerAuth:
@@ -2145,6 +2635,405 @@ components:
           schema:
             $ref: "#/components/schemas/FrogSleepEnvelope"
   schemas:
+    BuddySupportContext:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - buddy_share
+          - buddy_joint_activity
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - type
+      - id
+      additionalProperties: false
+    BuddySupportSendRequest:
+      type: object
+      properties:
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        template_key:
+          type:
+          - string
+          - 'null'
+          enum:
+          - focus_start_small
+          - focus_keep_pace
+          - focus_effort_seen
+          - focus_restart
+          - sleep_goodnight
+          - sleep_no_rush
+          - sleep_morning
+          - sleep_support
+          - null
+        flower:
+          type: boolean
+        context:
+          anyOf:
+          - $ref: '#/components/schemas/BuddySupportContext'
+          - type: 'null'
+      required:
+      - relationship_id
+      - operation_id
+      additionalProperties: false
+    BuddySupportPermissionRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        expected_revision:
+          type: integer
+          minimum: 0
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - enabled
+      - expected_revision
+      - operation_id
+      additionalProperties: false
+    BuddySupportResolveRequest:
+      type: object
+      properties:
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        submission:
+          $ref: '#/components/schemas/BuddySupportSendRequest'
+      required:
+      - relationship_id
+      - submission
+      additionalProperties: false
+    BuddySupportAckRequest:
+      type: object
+      properties:
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - operation_id
+      additionalProperties: false
+    BuddySupportNote:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        domain:
+          type: string
+          enum:
+          - sleep
+          - focus
+        sender_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        recipient_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        template_key:
+          type:
+          - string
+          - 'null'
+          enum:
+          - focus_start_small
+          - focus_keep_pace
+          - focus_effort_seen
+          - focus_restart
+          - sleep_goodnight
+          - sleep_no_rush
+          - sleep_morning
+          - sleep_support
+          - null
+        template_version:
+          type: integer
+          const: 1
+        flower:
+          type: boolean
+        context:
+          anyOf:
+          - $ref: '#/components/schemas/BuddySupportContext'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        acknowledged:
+          type: boolean
+        can_acknowledge:
+          type: boolean
+      required:
+      - id
+      - relationship_id
+      - domain
+      - sender_id
+      - recipient_id
+      - template_key
+      - template_version
+      - flower
+      - context
+      - created_at
+      - expires_at
+      - acknowledged
+      - can_acknowledge
+      additionalProperties: true
+    BuddySupportCapability:
+      type: object
+      properties:
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        domain:
+          type: string
+          enum:
+          - sleep
+          - focus
+        enabled:
+          type: boolean
+        can_send:
+          type: boolean
+        can_read_history:
+          type: boolean
+        own_receive_enabled:
+          type: boolean
+        permission_revision:
+          type: integer
+          minimum: 0
+        next_send_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        is_muted:
+          type: boolean
+      required:
+      - relationship_id
+      - domain
+      - enabled
+      - can_send
+      - can_read_history
+      - own_receive_enabled
+      - permission_revision
+      - next_send_at
+      - is_muted
+      additionalProperties: false
+    BuddySupportPartner:
+      type: object
+      properties:
+        partner_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        display_name:
+          type: string
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddySupportCapability'
+        has_note:
+          type: boolean
+        latest_received_note:
+          anyOf:
+          - $ref: '#/components/schemas/BuddySupportNote'
+          - type: 'null'
+      required:
+      - partner_id
+      - display_name
+      - relationships
+      - has_note
+      - latest_received_note
+      additionalProperties: false
+    BuddySupportCenterData:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        partners:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddySupportPartner'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - enabled
+      - partners
+      - next_cursor
+      - server_time
+      additionalProperties: false
+    BuddySupportPageData:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddySupportNote'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - notes
+      - next_cursor
+      - server_time
+      additionalProperties: false
+    BuddySupportOperation:
+      type: object
+      properties:
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        command_type:
+          type: string
+          enum:
+          - send
+          - permission
+          - ack
+        state:
+          type: string
+          enum:
+          - accepted
+          - not_sent
+          - not_found
+        resource_id:
+          type:
+          - string
+          - 'null'
+      required:
+      - operation_id
+      - state
+      - resource_id
+      additionalProperties: false
+    BuddySupportOperationData:
+      type: object
+      properties:
+        operation:
+          $ref: '#/components/schemas/BuddySupportOperation'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - operation
+      - server_time
+      additionalProperties: false
+    BuddySupportCapabilityData:
+      type: object
+      properties:
+        capability:
+          $ref: '#/components/schemas/BuddySupportCapability'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - capability
+      - server_time
+      additionalProperties: false
+    BuddySupportNoteData:
+      type: object
+      properties:
+        note:
+          $ref: '#/components/schemas/BuddySupportNote'
+        operation_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - note
+      - server_time
+      additionalProperties: false
+    BuddySupportPermission:
+      type: object
+      properties:
+        app_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        relationship_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        recipient_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        enabled:
+          type: boolean
+        revision:
+          type: integer
+          minimum: 1
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - app_id
+      - relationship_id
+      - recipient_id
+      - enabled
+      - revision
+      - updated_at
+      additionalProperties: false
+    BuddySupportPermissionData:
+      type: object
+      properties:
+        permission:
+          $ref: '#/components/schemas/BuddySupportPermission'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - permission
+      - server_time
+      additionalProperties: false
+    BuddySupportAckData:
+      type: object
+      properties:
+        note_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        acknowledged:
+          type: boolean
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - note_id
+      - acknowledged
+      - server_time
+      additionalProperties: false
     FrogSleepRawSleepEvent:
       type: object
       additionalProperties: false
@@ -2904,8 +3793,8 @@ components:
         joint_activity_id:
           type: string
           minLength: 1
-          description: Accepted tonight_together activity. Both participants and terminal retries reuse one session across local dates.
-        jointActivityId: { type: string, minLength: 1 }
+          description: Accepted and started tonight_together activity. Retries and participants on different dates return its original session, including after completion.
+        jointActivityId: { type: string, minLength: 1, description: Compatibility alias for joint_activity_id }
       anyOf:
         - required: [relationship_id]
         - required: [relationshipId]
