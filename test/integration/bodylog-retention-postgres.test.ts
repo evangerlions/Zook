@@ -118,6 +118,14 @@ test("BodyLog live PostgreSQL delivery and retention integrity", async suite => 
       const replay = await second.withExclusiveSession(() => ledgers[1].grant(bob, "campaign", sourceId, "premium", "1_day_premium", 1));
       assert.equal((await ledgers[0].grants(bob)).filter(grant => grant.id === replay.id).length, 1);
     });
+    await suite.test("grant summary is account-free and stable across PostgreSQL instances", async () => {
+      const firstSummary = await resolveBodyLogStores(first).retention.grantSummary(new Date().toISOString());
+      const secondSummary = await resolveBodyLogStores(second).retention.grantSummary(new Date().toISOString());
+      assert.deepEqual(firstSummary, secondSummary);
+      assert.ok(firstSummary.some(item => item.source === "invitation" && item.type === "premium" && item.count > 0));
+      assert.ok(firstSummary.every(item => Object.keys(item).sort().join() === "count,source,state,type"));
+    });
+
     await suite.test("deleting BodyLog app data removes its grants without deleting another account", async () => {
       assert.ok((await ledgers[0].grants(alice)).length > 0);
       assert.ok((await ledgers[0].grants(bob)).length > 0);

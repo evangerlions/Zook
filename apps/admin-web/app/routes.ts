@@ -11,6 +11,7 @@ export default [
     route("frogsleep", "routes/frogsleep.tsx"),
     route("lighttick", "routes/lighttick.tsx"),
     route("bodylog", "routes/bodylog.tsx"),
+    route("bodylog/retention", "routes/bodylog-retention.tsx"),
     route("bodylog/records", "routes/bodylog-records.tsx"),
     route("bodylog/groups", "routes/bodylog-groups.tsx"),
     route("bodylog/habit-templates", "routes/bodylog-habit-templates.tsx"),

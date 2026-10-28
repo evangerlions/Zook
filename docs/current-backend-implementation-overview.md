@@ -773,3 +773,6 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 ### 2026-10-28 BodyLog retention source completion
 
 The `feature/bodylog-retention-completion` worktree adds persistent encouragement idempotency, invitation preview/revocation and confirmable attribution, growth-evidence qualification, separate promotional/reward ledger, effective quota entitlement, authenticated manually reviewed campaign operations and opt-in retention measurement. Migration `079_bodylog_retention_integrity.sql` adds revocation and scoped retention documents. Canonical app-data deletion clears those documents. OpenAPI and generated public contracts are updated together. PostgreSQL multi-instance/restart/rollback and local HTTP/password-auth journeys are verified separately from production deployment and physical Watch acceptance; this entry makes no production readiness claim.
+
+
+2026-10-29 BodyLog补充：公共邀请HTML/AASA legacy/短码兜底、会话鉴权的留存运营报表（观察事件与权威账本分口径）、严格预注册配置和跨实验/UTC成熟边界修复；新增只允许loopback的实际UI联调服务、域名核验、dev账号验收与PostgreSQL必跑的发布门禁。未配置Campaign/实验仍关闭，实际域名托管、APNs、Watch、跨日奖励与D7效果保留外部门禁。
