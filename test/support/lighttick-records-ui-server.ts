@@ -29,6 +29,7 @@ seed.appUsers.push({id:'record-ui-member',...owner,status:'ACTIVE',accountRegion
 const app=await createApplication({seed,lighttickEnabled:true,lighttickRepository:repository});
 const actions=app.services.lighttickRuntime!.actions;
 let offline=false;
+let dropPracticeResponse=false;
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url!,'http://localhost:3106');res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
  if(url.pathname==='/__reset'){offline=false;await repository.deleteOwnerData(owner);res.end('{}');return;}
@@ -37,6 +38,15 @@ const server=createServer(async(req,res)=>{try{
   await actions.request(owner,'POST','',{key:'synthetic-action-seed-'+Date.now(),title:'UI计时行动',period:'day',start_date:day,end_date:day,timezone:'UTC',target_minutes:20,minimum_minutes:5});res.end('{}');return;
  }
  if(url.pathname==='/__actions_snapshot'){res.end(JSON.stringify(await actions.request(owner,'GET','')));return;}
+ if(url.pathname==='/__practice_drop_next'){dropPracticeResponse=true;res.end('{}');return;}
+ if(url.pathname==='/__practice_seed'){
+  offline=false;dropPracticeResponse=false;await repository.deleteOwnerData(owner);
+  const link={...owner,source_account_id:'practice-native-'+testUser,binding_id:'practice-native-binding-'+testUser,phase:'active' as const};await repository.saveActionLink(link);
+  const content='# 实践来源\n\n将结论先行用于一次真实汇报。',references='';
+  const lesson={id:'lesson-practice-ui',collection_id:'practice-ui',collection_title:'实践验收课程',number:1,title:'结论先行',content,references,content_version:digest({content,references}),learning_state:'completed',source_url:'https://grow.example/#mobile/learn/lesson-practice-ui'};
+  await receiveLibrary(actions,link,{action:'learning-library',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:new Date().toISOString(),consent_enabled:true,lessons:[lesson]});
+  res.end(JSON.stringify(lesson));return;
+ }
  if(url.pathname==='/__actions_modes'){
   offline=false;await repository.deleteOwnerData(owner);const day=new Date().toISOString().slice(0,10);
   for(const mode of ['time','check'])await actions.request(owner,'POST','',{key:'synthetic-'+mode+'-'+Date.now(),title:mode==='time'?'UI计时行动':'UI勾选行动',period:'day',completion_mode:mode,start_date:day,end_date:day,timezone:'UTC'});
@@ -82,6 +92,7 @@ const server=createServer(async(req,res)=>{try{
  if(headers.authorization==='Bearer record-ui-only')headers.authorization='Bearer '+app.services.tokenService.issueAccessToken(owner.userId,'lighttick');
  const raw=Buffer.concat(buffers).toString();
  const result=await app.app.handle({method:req.method!,path:url.pathname,query:Object.fromEntries(url.searchParams),headers,body:raw?JSON.parse(raw):undefined} as any);
+ if(dropPracticeResponse&&req.method==='POST'&&url.pathname==='/api/v1/lighttick/action-plans/practices'&&result.statusCode===200){dropPracticeResponse=false;res.statusCode=503;res.end('{"message":"Synthetic committed response lost"}');return;}
  if(url.pathname.endsWith('/private')){const data=(result.body as any)?.data;console.log(JSON.stringify({method:req.method,status:result.statusCode,revision:data?.state?.revision,submitted_revision:raw?JSON.parse(raw).revision:undefined,operations:data?.operations?.map((o:any)=>o.status)}));}
  res.statusCode=result.statusCode;res.end(JSON.stringify(result.body));
 }catch(error){res.statusCode=500;res.end(JSON.stringify({error:String(error)}));}});
