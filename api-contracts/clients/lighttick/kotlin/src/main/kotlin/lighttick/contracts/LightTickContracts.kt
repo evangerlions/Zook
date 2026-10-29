@@ -293,6 +293,21 @@ data class LightTickActionCapabilities(
     val connection_write_enabled: Boolean,
     val source_delivery_enabled: Boolean,
     val v2_import_enabled: Boolean,
+    val learning_practice: Boolean? = null,
+)
+data class LightTickPracticeSource(
+    val kind: String,
+    val id: String,
+    val version: String,
+    val binding_id: String? = null,
+)
+data class LightTickPracticeFeedback(
+    val id: String,
+    val created_at: String,
+    val outcome: String,
+    val result: String,
+    val evidence: String,
+    val next_step: String,
 )
 data class LightTickActionPlan(
     val title: String,
@@ -323,6 +338,8 @@ data class LightTickActionPlan(
     val schema_version: Int,
     val completed_at: String? = null,
     val completion_record_id: String? = null,
+    val practice_source: LightTickPracticeSource? = null,
+    val practice_feedback: List<LightTickPracticeFeedback>? = null,
 )
 data class LightTickActionExecution(
     val id: String,

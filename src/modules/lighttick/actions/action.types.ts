@@ -9,6 +9,8 @@ export interface ActionFields {
  reminder:boolean; reason:string; if_then:string; target:ActionTarget|null; completion_mode:ActionMode; estimated_minutes:number|null;
 }
 export interface ActionPlan extends ActionFields {
+ practice_source?:{kind:'lesson'|'record';id:string;version:string;binding_id:string|null};
+ practice_feedback?:{id:string;created_at:string;outcome:'applied'|'not_applied'|'unknown';result:string;evidence:string;next_step:string}[];
  id:string; revision:number; status:'active'|'paused'|'completed'|'archived'; created_at:string; updated_at:string; reminder_at:string|null;
  schema_version:1|2; completed_at:string|null; completion_record_id:string|null;
 }

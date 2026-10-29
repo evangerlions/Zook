@@ -2179,6 +2179,124 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickActionCreateRequest'
+  /api/v1/lighttick/action-plans/practices:
+    get:
+      operationId: listLightTickPractices
+      tags:
+      - lighttick-actions
+      summary: Read source-linked practices and feedback without changing completion
+      parameters:
+      - name: source_kind
+        in: query
+        schema:
+          type: string
+          maxLength: 128
+      - name: source_id
+        in: query
+        schema:
+          type: string
+          maxLength: 128
+      responses:
+        '200':
+          description: Current data or idempotent receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPracticeListEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickPractice
+      tags:
+      - lighttick-actions
+      summary: Create a reviewed single check practice from an owned current source
+      description: Registered LightTick membership or trusted active Grow action bridge, schema header 2 and opt-in
+        write gate are required. Current source is checked only for new commands; committed identical keys replay
+        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL are
+        not copied. No lesson completion, execution minutes or AI calls are created.
+      parameters:
+      - name: X-Grow-Action-Schema
+        in: header
+        required: true
+        schema:
+          type: string
+          const: '2'
+        description: Contract acknowledgement, never authorization or write enablement.
+      responses:
+        '200':
+          description: Current data or idempotent receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickActionMutationResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPracticeCreateRequest'
+  /api/v1/lighttick/action-plans/practices/{planId}/source:
+    get:
+      operationId: getLightTickPracticeSource
+      tags:
+      - lighttick-actions
+      summary: Revalidate and read the current owned practice source without retaining another copy
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 80
+      responses:
+        '200':
+          description: Current data or idempotent receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPracticeSourceEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      description: Missing or withdrawn sources return available=false. A reading binding change never opens a different
+        source. No source text is retained in action receipts or AI context.
   /api/v1/lighttick/action-plans/{planId}/operations:
     post:
       operationId: mutateLightTickActionPlan
@@ -7223,6 +7341,13 @@ components:
           - string
           - 'null'
           maxLength: 80
+        practice_source:
+          $ref: '#/components/schemas/LightTickPracticeSource'
+        practice_feedback:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickPracticeFeedback'
       required:
       - title
       - period
@@ -7462,6 +7587,7 @@ components:
           - complete-time
           - reopen
           - reconcile-content
+          - practice-feedback
         fields:
           $ref: '#/components/schemas/LightTickActionFields'
         variant:
@@ -7496,15 +7622,18 @@ components:
         source_event_id:
           type: string
           maxLength: 160
+        feedback:
+          $ref: '#/components/schemas/LightTickPracticeFeedbackInput'
       required:
       - key
       - revision
       - action
       additionalProperties: false
-      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums
-        confirmed session minutes; interrupted threshold requires complete-time. Content requires a durable private
-        source receipt. Running actions reject other mutations. Completed/archived actions are read-only except
-        check reopen. HTTP writes remain closed in this stage.
+      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums confirmed
+        session minutes; interrupted threshold requires complete-time. Content requires a durable private source receipt.
+        Running actions reject other mutations. Completed/archived actions are read-only except check reopen. HTTP writes
+        remain closed in this stage. Practice feedback is append-only, allowed after completion, and never completes
+        an action or lesson.
       allOf:
       - if:
           properties:
@@ -7515,6 +7644,15 @@ components:
             date: {}
           required:
           - date
+      - if:
+          properties:
+            action:
+              const: practice-feedback
+        then:
+          properties:
+            feedback: {}
+          required:
+          - feedback
     LightTickActionWorkspace:
       type: object
       properties:
@@ -8343,15 +8481,21 @@ components:
             enum:
             - article
             - plan
-          maxItems: 0
+          maxItems: 2
         actual_fact_dates:
           const: true
         connection_write_enabled:
-          const: false
+          type: boolean
+          default: false
         source_delivery_enabled:
-          const: false
+          type: boolean
+          default: false
         v2_import_enabled:
-          const: false
+          type: boolean
+          default: false
+        learning_practice:
+          type: boolean
+          description: Only permits practice writes when the separately configured connection write gate is enabled.
       additionalProperties: false
       required:
       - nullable_schedule
@@ -9238,3 +9382,186 @@ components:
         requestId:
           type: string
           maxLength: 100
+    LightTickPracticeSource:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+          - lesson
+          - record
+        id:
+          type: string
+          maxLength: 128
+        version:
+          type: string
+          maxLength: 80
+        binding_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+      required:
+      - kind
+      - id
+      - version
+      - binding_id
+      additionalProperties: false
+    LightTickPracticeFeedback:
+      type: object
+      properties:
+        id:
+          type: string
+          maxLength: 80
+        created_at:
+          type: string
+          format: date-time
+        outcome:
+          type: string
+          enum:
+          - applied
+          - not_applied
+          - unknown
+        result:
+          type: string
+          maxLength: 2000
+        evidence:
+          type: string
+          maxLength: 2000
+        next_step:
+          type: string
+          maxLength: 1000
+      required:
+      - id
+      - created_at
+      - outcome
+      - result
+      - evidence
+      - next_step
+      additionalProperties: false
+    LightTickPracticeFeedbackInput:
+      type: object
+      properties:
+        outcome:
+          type: string
+          enum:
+          - applied
+          - not_applied
+          - unknown
+        result:
+          type: string
+          maxLength: 2000
+        evidence:
+          type: string
+          maxLength: 2000
+        next_step:
+          type: string
+          maxLength: 1000
+      required:
+      - outcome
+      additionalProperties: false
+    LightTickPracticeCreateRequest:
+      type: object
+      properties:
+        key:
+          type: string
+          minLength: 8
+          maxLength: 160
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        source_kind:
+          type: string
+          enum:
+          - lesson
+          - record
+        source_id:
+          type: string
+          maxLength: 128
+        source_version:
+          type: string
+          maxLength: 80
+        date:
+          type:
+          - string
+          - 'null'
+          format: date
+        timezone:
+          type: string
+          maxLength: 100
+        parent_id:
+          type:
+          - string
+          - 'null'
+          maxLength: 80
+      required:
+      - key
+      - title
+      - source_kind
+      - source_id
+      - source_version
+      - date
+      additionalProperties: false
+    LightTickPracticeListData:
+      type: object
+      properties:
+        practices:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/LightTickActionPlan'
+      required:
+      - practices
+      additionalProperties: false
+    LightTickPracticeListEnvelope:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPracticeListData'
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      additionalProperties: false
+    LightTickPracticeSourceData:
+      type: object
+      properties:
+        available:
+          type: boolean
+        title:
+          type: string
+          maxLength: 500
+        text:
+          type: string
+          maxLength: 100000
+        current_version:
+          type: string
+          maxLength: 80
+      required:
+      - available
+      additionalProperties: false
+    LightTickPracticeSourceEnvelope:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPracticeSourceData'
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      additionalProperties: false

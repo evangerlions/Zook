@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import type {ActionWorkspace,ActionPlan,Json} from './action.types.ts';
-import {fields,getPlan,validateParent,dueAt,integer,text,descendants,reject,date,keys,fieldNames,sameTarget} from './action.validation.ts';
+import {fields,getPlan,validateParent,dueAt,integer,text,descendants,reject,date,keys,fieldNames,sameTarget,object} from './action.validation.ts';
 import {validateSource,requireUnique,duplicate,executable,makeFact,markComplete,completeFact,reconcileContent} from './action.facts.ts';
 
 export function createPlans(w:ActionWorkspace,body:Json,now:Date):Json {
@@ -30,11 +30,11 @@ export function schedule(w:ActionWorkspace,b:Json,now:Date):Json {
 }
 
 export function mutatePlan(w:ActionWorkspace,pid:string,b:Json,now:Date,ownerId:string):Json {
- keys(b,['key','revision','action','fields','variant','execution_id','outcome','actual_minutes','note','snooze_minutes','date','source_event_id']);
+ keys(b,['key','revision','action','fields','variant','execution_id','outcome','actual_minutes','note','snooze_minutes','date','source_event_id','feedback']);
  const p=getPlan(w.plans,pid);
  if(integer(b.revision,1,2147483647)!==p.revision)reject(409,'The action changed in another page. Preserve input and reconcile.','REVISION_CONFLICT',{current_revision:p.revision});
  const running=w.records.find(r=>r.outcome==='running'),own=running?.plan_id===pid;
- if(p.status==='archived'||p.status==='completed'&&b.action!=='reopen')reject(409,'Completed or archived actions are read-only.');
+ if(p.status==='archived'||p.status==='completed'&&!['reopen','practice-feedback'].includes(b.action))reject(409,'Completed or archived actions are read-only.');
  if(own&&b.action!=='finish')reject(409,'Save the running session first.','RUNNING_CONFLICT');
  if(['start','complete-time','complete','reconcile-content'].includes(b.action)){
   if(p.status!=='active')reject(409,'Resume the action first.');if(p.period==='day')executable(w,p,now);
@@ -42,10 +42,13 @@ export function mutatePlan(w:ActionWorkspace,pid:string,b:Json,now:Date,ownerId:
  let execution;
  if(b.action==='edit') {
   keys(b.fields??{},fieldNames);const f=fields(b.fields);
+  if(p.practice_source&&(f.period!=='day'||f.completion_mode!=='check'||f.target!==null))reject(422,'Practice completion stays independent from course completion.');
   if(p.period==='day'&&(f.start_date!==p.start_date||f.end_date!==p.end_date))reject(422,'Use reschedule to change action dates.');
   if(w.records.some(r=>r.plan_id===pid)&&['completion_mode','target','target_minutes','minimum_minutes'].some(k=>k==='target'?
    !(f.target===null&&p.target===null||sameTarget(f.target,p.target)):((f as any)[k]!==((p as any)[k]))))reject(409,'Completion configuration is locked after execution. Copy a new action.');
   validateParent(w.plans,f,p);validateSource(w,f);requireUnique(w,f,pid);Object.assign(p,f,{reminder_at:dueAt(f)});
+ } else if(b.action==='practice-feedback') {
+  appendPracticeFeedback(p,b.feedback,now);
  } else if(b.action==='reschedule') {
   if(p.period!=='day'||!['active','paused'].includes(p.status)||!Object.hasOwn(b,'date'))reject(422,'Select an action and an explicit date or null.');
   const day=b.date===null?null:date(b.date),f=fields({...p,start_date:day,end_date:day,...(day===null?{at:null,reminder:false}:{})});
@@ -92,4 +95,13 @@ export function mutatePlan(w:ActionWorkspace,pid:string,b:Json,now:Date,ownerId:
   executable(w,p,now);p.reminder_at=new Date(Math.max(now.getTime(),Date.parse(p.reminder_at))+integer(b.snooze_minutes??15,5,120)*60000).toISOString();
  } else reject(422,'Unsupported action operation.');
  p.revision++;p.updated_at=now.toISOString();return {plan:p,...(execution?{execution}:{})};
+}
+
+function appendPracticeFeedback(p:ActionPlan,input:unknown,now:Date){
+ if(!p.practice_source)reject(422,'Select a practice action.');
+ const b=object(input);keys(b,['outcome','result','evidence','next_step']);
+ const outcome=text(b.outcome,20,true),result=text(b.result??'',2000),evidence=text(b.evidence??'',2000),next_step=text(b.next_step??'',1000);
+ if(!['applied','not_applied','unknown'].includes(outcome)||![result,evidence,next_step].some(s=>s.trim()))reject(422,'Select the actual outcome and enter a result, evidence or next step.');
+ if((p.practice_feedback?.length??0)>=100)reject(422,'Practice feedback capacity reached.');
+ (p.practice_feedback??=[]).push({id:'feedback-'+randomUUID().replaceAll('-',''),created_at:now.toISOString(),outcome:outcome as 'applied'|'not_applied'|'unknown',result,evidence,next_step});
 }
