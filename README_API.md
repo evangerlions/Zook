@@ -22,6 +22,12 @@
 - [docs/frogsleep-buddy-operations-runbook.md](docs/frogsleep-buddy-operations-runbook.md)
 - [docs/frogsleep-buddy-security-review.md](docs/frogsleep-buddy-security-review.md)
 
+### 2026-10-25 合同校验对齐
+
+公共合同补齐既有鉴权/参数错误响应，并将日志、文件、通知、配置、FrogSleep 私有同步与邀请、LightTick 资源响应接到对应的数据模型；未新增运行时接口。FrogSleep 通知类型继续允许兼容及未来字符串，邀请投递允许 `not_queued` 且该状态不要求尝试次数。邀请落地链接仍为 302 预览跳转，旧 BodyLog 手动完成接口仍返回 409。加密 AI 接口的 `x-decrypted-*` 引用只说明加密内层模型，不是明文网络载荷。
+
+规则检查和逐节点语义例外说明见 [OpenAPI 质量记录](docs/openapi-quality-20261025.md)，唯一合同来源仍为 `api-contracts/openapi/`。
+
 ## 2. 核心原则
 
 统一业务前缀：
@@ -1319,6 +1325,65 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 ### FrogSleep 异步搭子留言与小花（V1，受控发布）
 
 所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/requestId` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
+### LightTick 独立记录（Grow I1）
+
+注册 LightTick 成员以 Token 中的 app/user 归属访问，无需 goal/plan；游客仅在客户端暂存。记录不会自动进入 AI 上下文。
+
+| 方法 | Canonical 路径 | 结果 |
+|---|---|---|
+| GET | `/api/v1/lighttick/records` | `items,has_more,next_cursor`；q/date/archived=false,true,all/limit(1–200)/cursor；日期降序后按 ID 降序，游标固定 owner 与筛选 |
+| GET | `/api/v1/lighttick/records/{recordId}` | 当前记录，他人或未知 ID 为 404 |
+| PUT | `/api/v1/lighttick/records/{recordId}` | 客户端稳定 ID，base_version=0 创建；之后使用当前版本 |
+| GET | `/api/v1/lighttick/records/{recordId}/versions` | 含归档/恢复操作的不可变历史，版本倒序 |
+| POST | `/api/v1/lighttick/records/{recordId}/archive`、`/restore` | body: `{base_version}`，产生新版本 |
+| GET | `/api/v1/lighttick/records/export` | format_version=1、exported_at、records[{record,versions}]，含归档及全部历史 |
+
+PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_date 为真实 YYYY-MM-DD；prompt_kind 为 free/learning/difficulty/decision，guided_answers 可选（最多12项，每值2000字符），tags 可选（最多20项，每项50字符）。采用整理 adopted_summary 需提供 summary_basis_version（1至base_version）；本轮不生成 AI 整理。
+
+所有写请求必须携带 8–128 字符 Idempotency-Key；同键同请求返回原结果，不再增加版本或变化；同键更换正文、对象或操作返回 LIGHTTICK_IDEMPOTENCY_MISMATCH(409)。陈旧版本为 LIGHTTICK_VERSION_CONFLICT(409)，输入不得自动覆盖。写入、历史、请求结果与 sync change log 同事务；sync/pull 返回 entity_type=record 的完整快照，sync/push 仍仅承载已有任务事件。LightTick 应用删除覆盖新表、历史、操作及变化日志，其他产品保持原归属。无旧 Grow 数据迁移或账户自动合并。
+
+
+### Grow 独立记录交接（默认关闭）
+
+- `POST /api/v1/lighttick/record-link/tickets`：正式账户生成五分钟记录连接码；`GET /record-link/status` 返回该账户当前阶段。与 action-link 的计划授权分开。
+- `POST /api/v1/lighttick/record-bridge`：仅信任配置的 Grow 实例和服务端登录 subject。HMAC 签名覆盖实例、subject、秒级时间、nonce 和递归排序的紧凑 JSON；窗口 ±120 秒，nonce 入库防重放。原生端不能自行声明 Grow 身份。
+- 流程：preview → claim → stage（原生查询、同步和导出均不可见）→ 来源持久化写屏障和精确备份 → 签名 frozen 回执 → activate。binding、operation、快照 SHA256、目标 owner 必须一致；激活、历史和变更日志在同一个 owner 事务内提交。响应丢失使用相同操作和快照重试，不覆盖之后的新编辑。
+- `cancel` 仅允许 prepared/staged，取消确认后来源可恢复写入；active/readonly 禁止取消。已激活回退使用 `POST /record-link/readonly` 返回 `{phase, export}`：目标停止写入并导出最新完整状态，来源继续冻结，不能用交接前快照直接回写。
+- 交接包最大 4 MiB / 10000 条，包含所有归档记录、实际存在的版本、当前观察快照、AI 私人历史与安全的操作元数据。旧版未存下的版本须在 `source.missing_versions` 明列。原始结构保存在 owner-only `source_history`，完整导出一并返回；不会伪造缺失历史。凭据字段不得进入包。
+- 转入记录的 `source` 只由服务端写入；客户端编辑不得提交该字段。原文、日期、提问类型、回答、标签和已采用整理保持独立于目标。AI 历史在本阶段只读，桥接不能触发新 AI 生成。
+- 记录、版本、来源历史、stage 备份、连接码及绑定随 LightTick app-scoped 账户删除清理；原 Grow 只读备份的独立删除仍由 Grow 账户负责，删除目标不会重新开放旧来源。
+- 部署配置：Zook `LIGHTTICK_RECORD_HANDOFF_ENABLED=1`、`GROW_RECORDS_SOURCE_ID`、`GROW_RECORDS_BRIDGE_SECRET`（至少 32 字符）；Grow 使用相同来源 ID 和密钥，加 `LIGHTTICK_BRIDGE_URL`。只允许 HTTPS，localhost 合成验收可用 HTTP。密钥只留在服务端。未配置或网络错误时保持当前写入归属并保留输入。
+- 记录写入在 owner 锁内复核 ACTIVE user/membership，避免删除与在途写入交错后重建数据。桥接每次也在锁内复核正式账户访问资格。
+
+旧 Grow 历史版本未记录 `summary_basis_version` 时，不从最新记录推断旧依据；规范投影可省略该历史版本的整理字段，原始 `adopted_summary` 完整保存在 `source_history.private_history.versions`，被省略的版本号在 `private_history.normalization.summary_basis_missing_versions` 明列。当前观察快照使用其实际保存的依据。
+
+`/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`启用读取，另需显式 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 才开放写入、新连接码和 Grow v2 接管。行动POST须声明 `X-Grow-Action-Schema: 2`；默认关闭时仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED，旧版本始终拒写。原生消费者在本地候选适配，真机和生产发布另验。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+### LightTick：Grow 私有来源证明与可靠回执（C2）
+
+`POST /api/v1/lighttick/grow-bridge` 增加签名 source-context/source-confirmation/source-receipt/source-reconcile。仅已有 active 绑定和活跃注册会员可用；服务器生成的 article_read/lesson_completed 证明通过私有 outbox 投递，按不可变事件 ID/hash 去重，丢响应后查询/重放，running 结束后核对原事件完成。origin 证明保留原计划日期/时区；不复制正文/笔记。新增稳定错误 SOURCE_EVENT_CONFLICT、SOURCE_PROOF_INVALID、SOURCE_DELIVERY_UNAVAILABLE；详细字段、状态与恢复见 [共享行动协议](docs/public-lighttick-actions.md#c2-私有来源通道2026-10-21) 和唯一 OpenAPI 的 LightTickActionSource* schemas。
+
+默认不放行普通 action 写入、新配对或 v2 接管；2026-10-25 独立 v2 开关与消费者适配见行动协议当前接入节，生产尚未部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。
+
+### LightTick 行动接管快照 v2（默认关闭，显式启用）
+
+唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对默认关闭；显式 v2 开关启用后由三模式消费者接入，旧消费者仍拒写。私有切换协调、来源确认屏障、不可变备份与故障恢复已隔离验收；新增 LightTickActionHandoffReceipt 严格区分预检和导入回执，并将迁移事件接入既有 C2 完成核对。目标版本冲突用 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED 拒绝，pending 仅可对同一备份重预检；未恢复来源发布日志会阻断冻结。2026-10-25 已将同一内部服务接到显式启用的受信 bridge 预检/导入动作；默认门禁和旧客户端拒写仍保留。原生/真实双端与生产放行仍待完成，不能据内部通过迁移真实账号；最新证据见 docs/verification/lighttick-handoff-cutover/README.md。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
+
+
+### Grow 手机学习计划进度（本地候选）
+
+`GET /api/v1/lighttick/action-plans/learning-progress` 读取正式账号本人已绑定 Grow 来源的最近快照，无快照返回 `data.progress:null`。有快照包含来源修订/观察和接收时间、配置网页地址、正式计划及阶段的总课数/发布数/本人学完数/百分比；不含课程正文、笔记、反馈或模型输出。匿名与游客不能读取私人进度。源每30秒通过受信 `grow-bridge action=learning-progress` 检查并持久重试投递，绑定、修订、摘要及阶段数量必须匹配；不接受客户端自报完成数。协议、配置、H5分工与开关见 [行动协议当前接入](docs/public-lighttick-actions.md#2026-10-25-原生执行及学习计划进度)。
+
+### 2026-10-25 Grow 原生课程只读接入
+
+`GET /api/v1/lighttick/learning-library` 返回本人当前绑定且已另行授权的课程目录；`GET /api/v1/lighttick/learning-library/{lessonId}` 返回正文、来源参考、内容版本和来源学完状态。需要 lighttick 正式账户 Bearer 与有效成员身份，禁用服务返回503；未授权目录为空，正文404。仅投影已发布内容，不含笔记/作答，不产生完成。正文版本绑定 content+references 的 canonical SHA256，课程ID不随标题改名变化。
+
+可信 Grow 源通过既有签名桥接 `action=learning-library` 推送，需 schema 2、相同已认领的 binding（可处于只读 staged 阶段）、单调 source_revision、observed_at、consent_enabled 和有界 lessons。授权单独在 Grow 确认，旧行动/记录授权不扩大。重放同版本同摘要幂等；篡改、过期绑定和乱序拒绝。最多200节、每正文/参考100000字符、整包4MiB。独立可重建投影表不膨胀行动工作区，产品账户删除覆盖镜像。原生每账户有界缓存、同版本阅读位置；撤回后在线清理，离线旧缓存须设备清理。默认 v2 写开关不变，不推送私人正文到未授权账户。
+
+只读课程连接允许使用已认领但未接管行动的 staged binding：只有显式阅读 scope 可读写课程镜像，其他行动/来源操作仍要求 active，不能因此绕过 R20 或行动冻结/接管门禁。
+### FrogSleep 异步搭子留言与小花（V1，本地实现，未部署）
+
+所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/request_id` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
 
 | 方法 / 子路径 | 输入与结果 |
 | --- | --- |
@@ -1371,3 +1436,7 @@ The AASA document includes `/i/*`, `/invite/*`, `/b/*`, `/g/*` and `/invite-code
 
 
 Buddy pair responses now include optional-compatible `canAcceptInvitation:boolean`, computed for the authenticated viewer: false for the inviter, active/dissolved/expired pairs and legacy pairs without an addressed inviter; true only for the pending recipient. It is a UI affordance, not permission to bypass the accept endpoint. Existing acceptance authorization remains authoritative.
+### I4 private learning (2026-10-25, local implementation)
+`GET /api/v1/lighttick/learning-library/{lessonId}/private` reads separately consented Grow notes, exercise answers, completion and saved position. `POST` accepts `LightTickLearningPrivateCommand` with immutable id, current content version/revision, action `save|complete|position`, notes/answers and position; requires formal LightTick bearer membership and schema header2. Acceptance queues a command, never fabricates source completion; GET operations expose pending/applied/conflict/unavailable receipts. Source CAS conflicts preserve phone input for comparison. Notes and completion are independent commands. Unknown legacy completion timestamps remain null.
+
+Signed bridge `learning-private` exchanges monotonic source snapshots and bounded command receipts against the current claimed binding; reading-only consent never authorizes private data. Grow remains sole writer and H5 uses the same source stores. Reading revocation and account deletion clear the private mirror/queues. Offline local drafts require device cleanup. Default action/v2 gates stay unchanged; no production scope is enabled by this code.

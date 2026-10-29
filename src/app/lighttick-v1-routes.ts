@@ -1,4 +1,5 @@
-import { profileData, goalData, variantsData, taskData, planData, reviewData, proposalData, runData } from './lighttick-v1-projections.ts';
+import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -85,7 +86,6 @@ async function recordFact(runtime: LightTickRuntime, request: HttpRequest, userI
   try { await runtime.analytics?.record({ userId, event, dedupeKey, pageKey, platform: analyticsPlatform(request), metadata }); }
   catch { /* Product writes must not fail when ordinary analytics is unavailable. */ }
 }
-
 async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
   entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
   const key = idempotencyKeyOf(request);
@@ -158,6 +158,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) assertGuestRouteAllowed(request);
+  const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {
+    const membership=await context.database.findAppUser(current.appId,current.userId),user=await context.database.findUserById(current.userId);
+    if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
+  });
+  if (recordResult !== undefined) return response(context, request, recordResult);
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",

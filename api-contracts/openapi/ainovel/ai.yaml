@@ -179,6 +179,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      x-decrypted-scene-schema:
+        $ref: '#/components/schemas/AiNovelChatSceneKey'
+      x-decrypted-usage-schema:
+        $ref: '#/components/schemas/AiNovelChatUsage'
   /api/v1/ai_novel/agent-skills/query:
     post:
       operationId: queryAiNovelAgentSkills
@@ -226,6 +230,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      x-decrypted-response-data-schema:
+        $ref: '#/components/schemas/AiNovelAgentSkillManifest'
   /api/v1/ai_novel/agent-skills/fetch:
     post:
       operationId: fetchAiNovelAgentSkillPackages
@@ -273,6 +279,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      x-decrypted-request-schema:
+        $ref: '#/components/schemas/AiNovelAgentSkillFetchRequest'
+      x-decrypted-response-skills-item-schema:
+        $ref: '#/components/schemas/AiNovelAgentSkillPackage'
   /api/v1/ai_novel/ai/embeddings:
     post:
       operationId: createAiNovelEmbeddings

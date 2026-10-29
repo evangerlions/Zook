@@ -1,0 +1,40 @@
+{
+  "code": "OK",
+  "message": "",
+  "requestId": "synthetic-private-fixture",
+  "data": {
+    "enabled": true,
+    "state": {
+      "id": "lesson-private-fixture",
+      "content_version": "94c654ed08c082e168de4f445e2a3a7301a2177f63c488f65e9dfa5dd20ebe72",
+      "draft_version": "94c654ed08c082e168de4f445e2a3a7301a2177f63c488f65e9dfa5dd20ebe72",
+      "revision": 3,
+      "notes": "Synthetic private note",
+      "answers": [
+        {
+          "id": "exercise:1",
+          "prompt": "What is the main idea?",
+          "answer": "One clear claim."
+        }
+      ],
+      "questions": [
+        {
+          "id": "exercise:1",
+          "prompt": "What is the main idea?",
+          "answer": ""
+        }
+      ],
+      "completed": true,
+      "completed_at": null,
+      "position": 2,
+      "updated_at": "2026-10-25T12:00:00Z"
+    },
+    "operations": [
+      {
+        "id": "synthetic-private-op",
+        "status": "applied",
+        "error": ""
+      }
+    ]
+  }
+}

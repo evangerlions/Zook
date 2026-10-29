@@ -1,0 +1,21 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "binding_id": "sample-only",
+    "observed_at": "2026-10-25T12:00:00Z",
+    "lesson": {
+      "id": "lesson-sample-2",
+      "collection_id": "sample",
+      "collection_title": "本机体验课程",
+      "number": 2,
+      "title": "Day002 · Explain with evidence",
+      "content_version": "e3c81ac7ff380a8767364fd62d336dfb107d1649ed688e30c4b279d05b8e4436",
+      "learning_state": "unknown",
+      "source_url": "https://example.org/",
+      "content": "# Explain with evidence\n\nState your point, give one concrete example, then explain how the example supports it.\n\n## Try it\n\nChoose something you learned today and explain it in three sentences.",
+      "references": "These are original local practice lessons. They do not change your Grow completion history."
+    }
+  },
+  "requestId": "synthetic_learning_progress"
+}

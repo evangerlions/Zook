@@ -1,0 +1,31 @@
+# Exact reviewed semantic exceptions; rationale and regression coverage: docs/openapi-quality-20261025.md.
+# Do not regenerate this file from arbitrary lint output or disable rules globally.
+openapi/ainovel/ai.yaml:
+  no-unused-components:
+  - '#/components/schemas/AiNovelAgentSkillManifest'
+  - '#/components/schemas/AiNovelAgentSkillFetchRequest'
+  - '#/components/schemas/AiNovelAgentSkillPackage'
+  - '#/components/schemas/AiNovelChatSceneKey'
+  - '#/components/schemas/AiNovelChatUsage'
+openapi/bodylog/api.yaml:
+  operation-2xx-response:
+  - '#/paths/~1api~1v1~1bodylog~1seven-day-plan~1{planId}~1missions~1{missionId}~1complete/post/responses'
+  no-unused-components:
+  - '#/components/responses/Mission'
+openapi/common/health.yaml:
+  operation-4xx-response:
+  - '#/paths/~1api~1health/get/responses'
+openapi/frogsleep/api.yaml:
+  no-ambiguous-paths:
+  - '#/paths/~1api~1v1~1frogsleep~1buddy~1groups~1{groupId}~1members~1{userId}'
+  operation-2xx-response:
+  - '#/paths/~1frogsleep~1sleep-buddy-invite/get/responses'
+  - '#/paths/~1frogsleep~1focus-invite/get/responses'
+  operation-4xx-response:
+  - '#/paths/~1frogsleep~1sleep-buddy-invite/get/responses'
+  - '#/paths/~1frogsleep~1focus-invite/get/responses'
+openapi/lighttick/api.yaml:
+  no-ambiguous-paths:
+  - '#/paths/~1api~1v1~1lighttick~1action-plans~1requests~1{key}'
+  - '#/paths/~1api~1v1~1lighttick~1action-plans~1{planId}~1calendar.ics'
+  - '#/paths/~1api~1v1~1lighttick~1action-plans~1{planId}~1reminder-claim'

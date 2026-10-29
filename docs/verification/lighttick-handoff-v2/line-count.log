@@ -1,0 +1,5 @@
+
+> zook-backend-scaffold@0.1.0 check:line-count
+> node scripts/check-source-line-count.mjs
+
+source line-count gate passed: 669 files stayed within limit or legacy baseline

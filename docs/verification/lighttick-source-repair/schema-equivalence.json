@@ -1,0 +1,5 @@
+{
+  "base": "10496b9",
+  "validation_unchanged": true,
+  "change": "Only declare already-required properties with the unconstrained empty schema inside conditional branches; all outer validation constraints retained."
+}

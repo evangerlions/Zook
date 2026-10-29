@@ -65,3 +65,7 @@ The initial embedded contents were copied from the former API repository's `main
 ```
 
 This revision is provenance only; subsequent contract development happens in Zook.
+
+## Reviewed semantic lint exceptions (2026-10-25)
+
+The recommended Redocly rules remain enabled. `api-contracts/.redocly.lint-ignore.yaml` contains only exact JSON pointers; every entry has a matching reason in `api-contracts/lint-exceptions.json` and coverage in `test/unit/openapi-quality.test.ts`. Do not regenerate ignores from arbitrary warnings, disable rules globally, or invent 2xx/error payloads to satisfy a heuristic. Encryption-only inner models use explicit `x-decrypted-*` references; wire envelopes remain encrypted. See `docs/openapi-quality-20261025.md` for the reviewed cases and validation evidence.

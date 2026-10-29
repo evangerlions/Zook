@@ -1,0 +1,21 @@
+{
+  "baseline": "3db81b9",
+  "unit": {
+    "pass": 1506,
+    "fail": 0,
+    "skip": 0
+  },
+  "contract_and_c3_tests": 13,
+  "original_postgres_compound_tests": 3,
+  "grow_c3_plus_p0": 19,
+  "grow_source_recovery": 12,
+  "line_count_files": 669,
+  "domain_typecheck": "PASS (12 action domain files and transitive dependencies)",
+  "whole_backend_typecheck": "NOT VERIFIED/GREEN",
+  "contract_warnings": 197,
+  "contract_errors": 0,
+  "public_pairing_import_and_write_enabled": false,
+  "native_changed": false,
+  "cutover_coordinator_implemented": false,
+  "production_migrated": false
+}

@@ -22,6 +22,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicConfigResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/ai_novel/public/update:
     get:
       operationId: getAiNovelPublicUpdate
@@ -344,11 +346,4 @@ components:
         message: { type: string, example: success }
         requestId: { type: string }
         data:
-          type: object
-          required: [appId, config]
-          properties:
-            appId: { type: string, example: ai_novel }
-            config:
-              type: object
-              additionalProperties: true
-            updatedAt: { type: string, format: date-time }
+          $ref: '#/components/schemas/PublicConfigData'

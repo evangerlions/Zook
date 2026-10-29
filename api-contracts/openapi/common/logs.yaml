@@ -23,6 +23,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LogPolicyResponse"
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/logs/pull-task:
     get:
       operationId: claimLogPullTask
@@ -41,6 +43,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LogPullTaskResponse"
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/logs/upload:
     post:
       operationId: uploadClientLogs
@@ -76,11 +80,28 @@ paths:
               format: binary
       responses:
         "200":
-          description: Upload accepted
+          description: Successful response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AcceptedResponse"
+                allOf:
+                - $ref: '#/components/schemas/AcceptedResponse'
+                - type: object
+                  required:
+                  - code
+                  - message
+                  - data
+                  properties:
+                    code:
+                      type: string
+                    message:
+                      type: string
+                    requestId:
+                      type: string
+                    data:
+                      $ref: '#/components/schemas/LogUploadData'
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/logs/tasks/{taskId}/ack:
     post:
       operationId: ackLogPullTaskNoData
@@ -98,11 +119,28 @@ paths:
               $ref: "#/components/schemas/LogAckRequest"
       responses:
         "200":
-          description: Ack recorded
+          description: Successful response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AcceptedResponse"
+                allOf:
+                - $ref: '#/components/schemas/AcceptedResponse'
+                - type: object
+                  required:
+                  - code
+                  - message
+                  - data
+                  properties:
+                    code:
+                      type: string
+                    message:
+                      type: string
+                    requestId:
+                      type: string
+                    data:
+                      $ref: '#/components/schemas/LogNoDataAckData'
+        '401':
+          description: Missing, invalid or expired bearer credentials.
   /api/v1/logs/tasks/{taskId}/fail:
     post:
       operationId: failLogPullTask
@@ -120,11 +158,28 @@ paths:
               $ref: "#/components/schemas/LogFailRequest"
       responses:
         "200":
-          description: Failure recorded
+          description: Successful response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AcceptedResponse"
+                allOf:
+                - $ref: '#/components/schemas/AcceptedResponse'
+                - type: object
+                  required:
+                  - code
+                  - message
+                  - data
+                  properties:
+                    code:
+                      type: string
+                    message:
+                      type: string
+                    requestId:
+                      type: string
+                    data:
+                      $ref: '#/components/schemas/LogFailData'
+        '401':
+          description: Missing, invalid or expired bearer credentials.
 components:
   securitySchemes:
     bearerAuth:
@@ -147,8 +202,7 @@ components:
         message: { type: string }
         requestId: { type: string }
         data:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/LogPolicyData'
     LogPullTaskResponse:
       type: object
       required: [code, message, data]
@@ -157,12 +211,7 @@ components:
         message: { type: string }
         requestId: { type: string }
         data:
-          type: object
-          properties:
-            shouldUpload: { type: boolean }
-            taskId: { type: string }
-            claimToken: { type: string }
-          additionalProperties: true
+          $ref: '#/components/schemas/LogPullTaskData'
     LogAckRequest:
       type: object
       required: [status, claimToken]
