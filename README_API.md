@@ -465,6 +465,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 当 `hasPassword = false` 的账号尝试 `POST /api/v1/auth/login` 密码登录时，服务端返回 `401 AUTH_PASSWORD_NOT_SET`，`message` 会按请求语言本地化，提示用户先使用验证码登录并在账号设置中设置密码。
 如果账号不存在，密码登录返回 `401 AUTH_ACCOUNT_NOT_FOUND`，`message` 会按请求语言本地化提示账号不存在；如果账号存在但密码错误，仍返回 `401 AUTH_INVALID_CREDENTIAL`。
 
+登录和刷新响应中的 accessToken、refreshToken 均作为 opaque credential 使用；当前 access token 实现不是标准 JWT，客户端不得拆解 token 推断身份或权限。App 的 `scope=current` 登出须在 JSON body 提供当前 refreshToken，Web 可使用 HttpOnly refresh cookie；`scope=all` 无需 refreshToken。单设备登出撤销 refresh 凭证，不承诺立即使已发 access token 失效；健康产品另需可撤销的设备会话。
+
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。

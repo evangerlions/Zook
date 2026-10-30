@@ -1991,7 +1991,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     IdempotencyKey:
       name: Idempotency-Key

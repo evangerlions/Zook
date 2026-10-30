@@ -544,6 +544,7 @@ export type RefreshRequest = {
 
 export const LogoutRequestSchema = {
   "type": "object",
+  "description": "App current-session logout supplies refreshToken; web clients may use their HttpOnly refresh cookie. All-session logout does not require a refresh token.",
   "properties": {
     "appId": {
       "type": "string"
@@ -555,6 +556,11 @@ export const LogoutRequestSchema = {
         "all"
       ],
       "default": "current"
+    },
+    "refreshToken": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque current-session refresh credential for app clients."
     }
   }
 } as const;
@@ -562,6 +568,7 @@ export const LogoutRequestSchema = {
 export type LogoutRequest = {
   "appId"?: string;
   "scope"?: "current" | "all";
+  "refreshToken"?: string;
 };
 
 export const AuthAcceptedDataSchema = {

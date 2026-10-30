@@ -505,7 +505,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     LoginId:
       name: loginId
@@ -657,9 +657,11 @@ components:
         clientType: { type: string, enum: [app, web] }
     LogoutRequest:
       type: object
+      description: App current-session logout supplies refreshToken; web clients may use their HttpOnly refresh cookie. All-session logout does not require a refresh token.
       properties:
         appId: { type: string }
         scope: { type: string, enum: [current, all], default: current }
+        refreshToken: { type: string, minLength: 1, description: Opaque current-session refresh credential for app clients. }
     AcceptedResponse:
       type: object
       required: [code, message]
