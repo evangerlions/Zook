@@ -1391,3 +1391,5 @@ App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/ap
 该验证经过真实 PostgreSQL 迁移、真实 Redis、loopback HTTP、服务端验证码校验、账号/产品成员关系、跨产品拒绝、并发 refresh 单一成功、登出后 refresh 失效及新应用实例的会话/成员关系读取。短信发送器与任务队列是明确的本地 fixture，无外发短信或推送；不代表家庭授权、可信设备、密文同步、支付或视觉模型已验收。禁止把 fixture 配置用于部署。
 
 同一命令还验证内部主体关联端口的真实 PG 并发/回执与账号隔离。该端口尚未开放为公共 API，`me.healthAccessEstablished` 仍为 `false`；本人声明关联不等于已验证本人、受信设备、共享授权或密钥领取。当前没有健康内容上传接口。
+
+iOS 持续本地联调使用独立的 `npm run dev:yaohezi-local`，默认只监听 `127.0.0.1:18763`，创建独立 PG/Redis，短信为正常验证码校验加本地 capture transport。该 fixture 的控制路径不属于公共 API、不会注册到部署入口。iOS 使用固定版本的轻量合同快照，账号登录/刷新/退出/切换不触发档案关联或上传。启动与 XCTest 步骤见 [本地开发说明](docs/yaohezi-local-development.md)。

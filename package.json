@@ -33,6 +33,7 @@
     "check:bodylog-links": "node scripts/check-bodylog-links.mjs",
     "gate:bodylog-release": "node scripts/bodylog-release-gate.mjs",
     "dev:bodylog-acceptance": "node --experimental-transform-types scripts/bodylog-local-acceptance.ts",
+    "dev:yaohezi-local": "node --experimental-transform-types scripts/yaohezi-local-server.ts",
     "verify:yaohezi-local": "node scripts/yaohezi-local-verify.mjs",
     "test:postgres:yaohezi-local": "node --experimental-transform-types --test test/integration/yaohezi-local-postgres.test.ts"
   },
