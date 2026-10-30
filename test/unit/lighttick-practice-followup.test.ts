@@ -30,6 +30,7 @@ test('reviewed follow-up preserves feedback origin and current parent without au
 });
 test('follow-up rejects stale source, parent, origin and other owner; committed retry survives source archive',async()=>{
  const {actions,records,record,p,parent,path,body}=await setup();
+ const {date,...withoutDate}=body;await assert.rejects(actions.request(owner,'POST',path,{...withoutDate,key:'missing-date-command',parent_id:null,parent_revision:null}));
  await assert.rejects(actions.request({...owner,userId:'other'},'POST',path,body));
  await assert.rejects(actions.request(owner,'POST',path,{...body,feedback_id:'feedback-missing'}));
  await actions.request(owner,'POST',`/${parent.id}/operations`,{key:'parent-reduce-key',revision:1,action:'edit',fields:{...Object.fromEntries(fieldNames.map(k=>[k,parent[k]])),target_minutes:30}});

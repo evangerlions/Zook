@@ -18,6 +18,7 @@ export async function followUpContext(repo:LightTickRepository,owner:LightTickOw
 /** The owner transaction holds record -> action locks before validating current source and parent. */
 export async function createFollowUp(repo:LightTickRepository,owner:LightTickOwner,w:ActionWorkspace,id:string,b:Json,now:Date):Promise<Json>{
  keys(b,['key','revision','feedback_id','source_version','title','date','timezone','parent_id','parent_revision']);
+ if(!Object.hasOwn(b,'date'))reject(422,'Confirm an explicit date or null before creating a follow-up.');
  const {p,feedback}=origin(w,id,text(b.feedback_id,80,true));
  if(integer(b.revision,1,2147483647)!==p.revision)reject(409,'Practice feedback changed. Preserve input and review the latest version.','REVISION_CONFLICT');
  const source=await practiceSource(repo,owner,w,id);
