@@ -62,6 +62,9 @@ test("real PostgreSQL and local HTTP: SMS account, scoped me, refresh race, logo
   const session = login.body.data;
   const me = await request("/api/v1/yaohezi/me", undefined, session.accessToken);
   assert.equal(me.status, 200); assert.equal(me.body.data.healthAccessEstablished, false);
+  const malformed = await request("/api/v1/yaohezi/me", undefined, session.accessToken + ".extra");
+  assert.equal(malformed.status, 401);
+  assert.equal(malformed.body.code, "AUTH_INVALID_TOKEN");
   const reopenedKV = await KVManager.create({ redisUrl });
   const reopenedBeforeLogout = await createApplication({ ...options, kvManager: reopenedKV });
   try {

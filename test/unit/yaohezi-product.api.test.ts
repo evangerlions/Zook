@@ -26,12 +26,17 @@ test("Yaohezi uses shared identity but does not establish health ownership on lo
 });
 
 test("other-product tokens are rejected before Yaohezi metadata is returned", async () => {
-  const runtime = await createApplication({ yaoheziEnabled: true });
-  const result = await login(runtime, "app_a");
-  const me = await runtime.app.handle({ method: "GET", path: "/api/v1/yaohezi/me",
-    headers: { authorization: `Bearer ${result.body.data.accessToken}` } });
-  assert.equal(me.statusCode, 403);
-  assert.equal(me.body.data, null);
+  const runtime = await createApplication({ yaoheziEnabled: true, frogsleepEnabled: true });
+  for (const appId of ["app_a", "frogsleep"]) {
+    const result = await login(runtime, appId);
+    assert.equal(result.statusCode, 200);
+    for (const path of ["/me", "/subjects", "/attachments/private-fixture"]) {
+      const denied = await runtime.app.handle({ method: "GET", path: `/api/v1/yaohezi${path}`,
+        headers: { authorization: `Bearer ${result.body.data.accessToken}` } });
+      assert.equal(denied.statusCode, 403);
+      assert.equal(denied.body.data, null);
+    }
+  }
 });
 
 test("blocked and deleted Yaohezi memberships deny valid access tokens", async () => {

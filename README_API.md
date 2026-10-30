@@ -1376,6 +1376,8 @@ Buddy pair responses now include optional-compatible `canAcceptInvitation:boolea
 
 ## 药盒子（Yaohezi）账号接入
 
+公共账号校验仅接受服务端签发的完整 opaque credential；追加分段、非 URL-safe 签名、缺失或类型错误的内部声明均返回 `401 AUTH_INVALID_TOKEN`，不应触发客户端无限刷新。客户端不读取这些内部声明，沿用响应中的有效期和 user 信息。
+
 药盒子使用独立 `appId/productKey=yaohezi` 和 `/api/v1/yaohezi/*`。服务端仅在显式设置 `YAOHEZI_ENABLED=true` 时注册默认产品角色/配置并启用账号路由；未设置时保持关闭，不随部署 slot 自动开启。已有部署须确认产品元数据已通过标准 seed 注册。
 
 App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/api/v1/auth/refresh` 与 `/api/v1/auth/logout` 建立账号会话，预登录请求提供 `appId=yaohezi`；不得使用开发验证码绕过。

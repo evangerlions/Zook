@@ -35,6 +35,12 @@ test("PostgreSQL explicit self bindings preserve subject identity and do not cre
     assert.equal(distinct.subjectId, otherSubject);
     assert.equal((await store.listSelfBindings(other)).length, 1);
     assert.equal((await store.listSelfBindings(account))[0].subjectId, command.subjectId);
+    await database.updateAppUserStatus("yaohezi", other.userId, "BLOCKED");
+    await assert.rejects(store.listSelfBindings(other), { code: "YAOHEZI_MEMBERSHIP_REQUIRED" });
+    await assert.rejects(store.createSelfBinding({ ...command, account: other }), { code: "YAOHEZI_MEMBERSHIP_REQUIRED" });
+    const blockedUser = { ...account, userId: "user_blocked" };
+    await database.insertAppUser({ id: randomUUID(), ...blockedUser, status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString() });
+    await assert.rejects(store.listSelfBindings(blockedUser), { code: "YAOHEZI_MEMBERSHIP_REQUIRED" });
     const reopened = await PostgresDatabase.create(connectionString);
     try { assert.equal((await reopened.getYaoheziProfileStore().listSelfBindings(account))[0].subjectId, command.subjectId); }
     finally { await reopened.close(); }
