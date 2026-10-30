@@ -451,6 +451,7 @@ public struct LightTickActionCapabilities: Codable, Equatable, Sendable {
     public var connection_write_enabled: Bool
     public var source_delivery_enabled: Bool
     public var v2_import_enabled: Bool
+    public var practice_follow_up: Bool?
     public var learning_practice: Bool?
 }
 public struct LightTickPracticeSource: Codable, Equatable, Sendable, Identifiable {
@@ -458,6 +459,10 @@ public struct LightTickPracticeSource: Codable, Equatable, Sendable, Identifiabl
     public var id: String
     public var version: String
     public var binding_id: String?
+}
+public struct LightTickPracticeOrigin: Codable, Equatable, Sendable {
+    public var plan_id: String
+    public var feedback_id: String
 }
 public struct LightTickPracticeFeedback: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -496,6 +501,7 @@ public struct LightTickActionPlan: Codable, Equatable, Sendable, Identifiable {
     public var schema_version: Int
     public var completed_at: String?
     public var completion_record_id: String?
+    public var practice_origin: LightTickPracticeOrigin?
     public var practice_source: LightTickPracticeSource?
     public var practice_feedback: [LightTickPracticeFeedback]?
 }

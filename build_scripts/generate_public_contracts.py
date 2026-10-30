@@ -140,6 +140,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickRecordExportEnvelope",
 
         'LightTickActionTarget',
+        'LightTickPracticeFollowUpRequest',
+        'LightTickPracticeFollowUpContextEnvelope',
         'LightTickActionCapabilities',
         'LightTickActionScheduleRequest',
         'LightTickActionCreateResult',

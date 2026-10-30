@@ -9,6 +9,7 @@ import {listing,reviewContext,calendar} from './action.projections.ts';
 import {normalizeWorkspace} from './action.facts.ts';
 import {publicLearningProgress} from './action-learning-progress.ts';
 import {createPractice,practiceSource} from './action.practice.ts';
+import {createFollowUp,followUpContext} from './action.followup.ts';
 export class ActionService {
  constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date(),readonly generator:SummaryGenerator=generateSummary,readonly p0WriteEnabled=false){}
  async readWorkspace(owner:LightTickOwner){return await this.repository.getActionWorkspace(owner)??{...owner,data:emptyWorkspace(),version:0};}
@@ -16,7 +17,7 @@ export class ActionService {
   let fresh:{report:Json;config:Json}|undefined;
   const value=await this.repository.transaction(owner,async()=>{
    const b=object(body);
-   if(method==='POST'&&path==='/practices'&&b.source_kind==='record')await this.repository.lockRecordOwner(owner);
+   if(method==='POST'&&(path==='/practices'&&b.source_kind==='record'||/^\/practices\/action-[a-zA-Z0-9-]+\/follow-up$/.test(path)))await this.repository.lockRecordOwner(owner);
    await this.repository.lockActionOwner(owner);if(method!=='GET')await authorize?.();const stored=await this.readWorkspace(owner),row={...stored,data:normalizeWorkspace(stored.data)},w=row.data,now=this.clock();
    // The adapter is request-scoped. An unrelated write must not rewrite immutable
    // ended v1 facts; only a legacy running session can legitimately be settled.
@@ -42,6 +43,7 @@ export class ActionService {
    let result:Json;
    if(path==='')result=createPlans(w,b,now);
    else if(path==='/practices')result=await createPractice(this.repository,owner,w,b,now);
+   else if(/^\/practices\/action-[a-zA-Z0-9-]+\/follow-up$/.test(path))result=await createFollowUp(this.repository,owner,w,path.split('/')[2],b,now);
    else if(path==='/schedules')result=schedule(w,b,now);
    else if(/^\/action-[a-zA-Z0-9-]+\/operations$/.test(path))result=mutatePlan(w,path.split('/')[1],b,now,owner.userId);
    else if(path==='/reviews/generate'){fresh=prepareSummary(w,b,now);result={report:publicReport(fresh.report)};}
@@ -59,11 +61,12 @@ export class ActionService {
  }
  private async read(w:ActionWorkspace,path:string,q:Json,now:Date,version:number,owner:LightTickOwner):Promise<Json|string>{
   if(path==='')return listing(w,now,version,this.p0WriteEnabled);
+  if(/^\/practices\/action-[a-zA-Z0-9-]+\/follow-up$/.test(path))return followUpContext(this.repository,owner,w,path.split('/')[2],q);
   if(/^\/practices\/action-[a-zA-Z0-9-]+\/source$/.test(path))return practiceSource(this.repository,owner,w,path.split('/')[2]);
   if(path==='/practices'){
    if(q.source_kind&&!['lesson','record'].includes(q.source_kind))reject(422,'Invalid source kind.');
    const plans=listing(w,now,version,this.p0WriteEnabled).plans;
-   return {practices:plans.filter((p:Json)=>p.practice_source&&(!q.source_kind||p.practice_source.kind===q.source_kind)&&(!q.source_id||p.practice_source.id===q.source_id))};
+   return {follow_up_enabled:this.p0WriteEnabled,practices:plans.filter((p:Json)=>p.practice_source&&(!q.source_kind||p.practice_source.kind===q.source_kind)&&(!q.source_id||p.practice_source.id===q.source_id))};
   }
   if(path==='/learning-progress')return {progress:publicLearningProgress(w)};
   if(path.startsWith('/requests/')){const key=text(path.slice(10),160,true),old=await this.repository.getOperation(owner,'action:'+key),legacy=w.legacy_operations&&Object.hasOwn(w.legacy_operations,key)?w.legacy_operations[key]:undefined;return {found:!!old||!!legacy,result:old?.resultPayload??legacy?.result??null};}

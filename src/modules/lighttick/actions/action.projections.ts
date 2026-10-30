@@ -3,7 +3,7 @@ import {activeAncestors,descendants,getPlan,date,text,reject} from './action.val
 import {progress} from './action.facts.ts';
 export const summary=(records:ActionExecution[]):Json=>progress(records);
 export function listing(w:ActionWorkspace,now:Date,version:number,enabled=false):Json {
- return {action_schema_version:2,capabilities:{nullable_schedule:true,completion_modes:['time','content','check'],content_receipts:enabled?['article','plan']:[],actual_fact_dates:true,connection_write_enabled:enabled,source_delivery_enabled:enabled,v2_import_enabled:enabled,learning_practice:enabled},plans:w.plans.map(p=>{const ids=descendants(w.plans,p.id);return {...p,blocked:!activeAncestors(w.plans,p),progress:summary(w.records.filter(r=>ids.has(r.plan_id)))};}).sort((a,b)=>((a.start_date??'9999')+(a.at??'')+a.id).localeCompare((b.start_date??'9999')+(b.at??'')+b.id)),
+ return {action_schema_version:2,capabilities:{nullable_schedule:true,completion_modes:['time','content','check'],content_receipts:enabled?['article','plan']:[],actual_fact_dates:true,connection_write_enabled:enabled,source_delivery_enabled:enabled,v2_import_enabled:enabled,learning_practice:enabled,practice_follow_up:enabled},plans:w.plans.map(p=>{const ids=descendants(w.plans,p.id);return {...p,blocked:!activeAncestors(w.plans,p),progress:summary(w.records.filter(r=>ids.has(r.plan_id)))};}).sort((a,b)=>((a.start_date??'9999')+(a.at??'')+a.id).localeCompare((b.start_date??'9999')+(b.at??'')+b.id)),
   execution:w.records.find(r=>r.outcome==='running')??null,server_time:now.toISOString(),workspace_version:version,reminder_delivery:'native-foreground-and-calendar'};
 }
 export function reviewContext(w:ActionWorkspace,b:Json):Json {

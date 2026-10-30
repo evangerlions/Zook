@@ -1454,3 +1454,9 @@ Source identity and version are checked against a currently consented lesson or 
 ### 2026-10-30 Grow网页统一会话的记录历史读取
 
 `GET /api/v1/lighttick/records/{recordId}/history`使用正式LightTick Bearer及活跃membership，返回本人`{record,versions,source_history?}`；与现有记录详情／版本同一权威存储，异账号返回404，不生成AI、不改写来源。可选source_history仅包含已接管的本人原始历史，遵循现有导出／删除范围，禁止凭据。Grow同源BFF使用该公共合同读取单条历史，无须以来源签名代替本人Token或为一次详情导出全部记录。
+
+### 2026-10-30 实践反馈到后续安排
+
+`GET /api/v1/lighttick/action-plans/practices/{planId}/follow-up?feedback_id=...`只读返回选中反馈、原行动revision、当前来源版本／可用性及本人当前有效的上级计划。`POST`同一路径提交`key,revision,feedback_id,source_version,title,date`，可选`timezone,parent_id,parent_revision`；所选上级必须携带当前revision。沿用schema头2、注册会员、独立写入开关与原请求幂等。原行动／来源／上级变化返回冲突供本人重新核对；来源撤回拒绝新建，但已提交同key先重放。
+
+新实践附带只读`practice_origin:{plan_id,feedback_id}`，来源仍为当前授权材料；原反馈、完成事实、上级日期与目标分钟不变。不自动复制整期预算，不自动生成计划或调用模型。旧端忽略可选字段，按`capabilities.practice_follow_up`识别能力；课程与整体Goal Coach约束仍遵循各自原任务。

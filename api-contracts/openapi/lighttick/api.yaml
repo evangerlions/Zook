@@ -2296,6 +2296,97 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickPracticeCreateRequest'
+  /api/v1/lighttick/action-plans/practices/{planId}/follow-up:
+    get:
+      operationId: getLightTickPracticeFollowUpContext
+      tags:
+      - lighttick-actions
+      summary: Review selected feedback and current source and parent constraints before a follow-up
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 80
+      - name: feedback_id
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 80
+      responses:
+        '200':
+          description: Current data or idempotent receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPracticeFollowUpContextEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      description: Read-only review. Returns the selected feedback, source availability/version and current active parents. It never creates or completes an action.
+    post:
+      operationId: createLightTickPracticeFollowUp
+      tags:
+      - lighttick-actions
+      summary: Confirm a reviewed follow-up from one owned practice feedback
+      description: Registered LightTick membership or trusted active Grow action bridge, schema header 2 and opt-in
+        write gate are required. Current source is checked only for new commands; committed identical keys replay
+        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL are
+        not copied. No lesson completion, execution minutes or AI calls are created.
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 80
+      - name: X-Grow-Action-Schema
+        in: header
+        required: true
+        schema:
+          type: string
+          const: '2'
+        description: Contract acknowledgement, never authorization or write enablement.
+      responses:
+        '200':
+          description: Current data or idempotent receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickActionMutationResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPracticeFollowUpRequest'
   /api/v1/lighttick/action-plans/practices/{planId}/source:
     get:
       operationId: getLightTickPracticeSource
@@ -7408,6 +7499,8 @@ components:
           - string
           - 'null'
           maxLength: 80
+        practice_origin:
+          $ref: '#/components/schemas/LightTickPracticeOrigin'
         practice_source:
           $ref: '#/components/schemas/LightTickPracticeSource'
         practice_feedback:
@@ -8560,6 +8653,10 @@ components:
         v2_import_enabled:
           type: boolean
           default: false
+        practice_follow_up:
+          type: boolean
+          default: false
+          description: Enables explicitly reviewed follow-ups; feedback alone never creates one.
         learning_practice:
           type: boolean
           description: Only permits practice writes when the separately configured connection write gate is enabled.
@@ -9449,6 +9546,19 @@ components:
         requestId:
           type: string
           maxLength: 100
+    LightTickPracticeOrigin:
+      type: object
+      additionalProperties: false
+      properties:
+        plan_id:
+          type: string
+          maxLength: 80
+        feedback_id:
+          type: string
+          maxLength: 80
+      required:
+      - plan_id
+      - feedback_id
     LightTickPracticeSource:
       type: object
       properties:
@@ -9573,6 +9683,9 @@ components:
     LightTickPracticeListData:
       type: object
       properties:
+        follow_up_enabled:
+          type: boolean
+          default: false
         practices:
           type: array
           maxItems: 1000
@@ -9624,6 +9737,115 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickPracticeSourceData'
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      additionalProperties: false
+    LightTickPracticeFollowUpRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          minLength: 8
+          maxLength: 160
+        revision:
+          type: integer
+          minimum: 1
+        feedback_id:
+          type: string
+          maxLength: 80
+        source_version:
+          type: string
+          maxLength: 80
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        date:
+          type: [string, 'null']
+          format: date
+        timezone:
+          type: string
+          maxLength: 100
+        parent_id:
+          type: [string, 'null']
+          maxLength: 80
+        parent_revision:
+          type: [integer, 'null']
+          minimum: 1
+      required:
+      - key
+      - revision
+      - feedback_id
+      - source_version
+      - title
+      - date
+    LightTickPracticeFollowUpContext:
+      type: object
+      additionalProperties: false
+      properties:
+        available:
+          type: boolean
+        origin_id:
+          type: string
+          maxLength: 80
+        feedback_id:
+          type: string
+          maxLength: 80
+        revision:
+          type: integer
+          minimum: 1
+        feedback:
+          $ref: '#/components/schemas/LightTickPracticeFeedback'
+        source_version:
+          type: [string, 'null']
+          maxLength: 80
+        source_title:
+          type: [string, 'null']
+          maxLength: 10000
+        parents:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              period:
+                type: string
+                enum: [year, month, week]
+              revision:
+                type: integer
+                minimum: 1
+              start_date:
+                type: string
+                format: date
+              end_date:
+                type: string
+                format: date
+              timezone:
+                type: string
+              target_minutes:
+                type: [integer, 'null']
+            required: [id, title, period, revision, start_date, end_date, timezone, target_minutes]
+      required: [available, origin_id, feedback_id, revision, feedback, source_version, source_title, parents]
+    LightTickPracticeFollowUpContextEnvelope:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPracticeFollowUpContext'
         requestId:
           type: string
       required:

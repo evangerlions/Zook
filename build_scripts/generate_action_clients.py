@@ -5,7 +5,7 @@ import re
 import yaml
 
 ROOT=Path(__file__).resolve().parents[1]
-NAMES=['LightTickActionTarget','LightTickActionProgress','LightTickActionCapabilities','LightTickPracticeSource','LightTickPracticeFeedback','LightTickActionPlan',
+NAMES=['LightTickActionTarget','LightTickActionProgress','LightTickActionCapabilities','LightTickPracticeSource','LightTickPracticeOrigin','LightTickPracticeFeedback','LightTickActionPlan',
        'LightTickActionExecution','LightTickActionWorkspace','LightTickLearningStageProgress',
        'LightTickLearningPlanProgress','LightTickLearningProgress','LightTickLearningProgressData','LightTickLearningLessonSummary','LightTickLearningLesson','LightTickLearningLibraryData','LightTickLearningLessonData','LightTickLearningAnswer','LightTickLearningPrivateState','LightTickLearningPrivateOperation','LightTickLearningPrivateData','LightTickLearningPrivateCommand']
 
