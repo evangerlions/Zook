@@ -1383,3 +1383,7 @@ App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/ap
 `GET /api/v1/yaohezi/me` 要求匹配的有效 token、启用的 app 和 ACTIVE membership，返回 `{code,message,data,requestId}`，其中 data 为 `{appId,userId,healthAccessEstablished:false,capabilities:{cloudSync:false,familySharing:false,reportAI:false,subscriptionSales:false}}`。登录不关联、上传或认领本地档案；成员角色不授予健康资料权限，其他产品 token 返回 403。该端点只确认账号接入，当前返回的云端/共享/AI/销售能力均关闭。
 
 唯一合同为 `api-contracts/openapi/yaohezi/api.yaml`；运行时使用生成后的 `YaoheziMeData`。服务地区、供应商、付费 SKU 与实际部署另行验证后配置，不在本账号入口隐式开启。
+
+本地接入验证：在 Zook 工作区运行 `npm run verify:yaohezi-local`。需要 Node、正在运行的本机 PostgreSQL（当前 OS 用户具备建库权限）及 PATH 中的 `redis-server`；可用 `YAOHEZI_LOCAL_PG_PORT` 指定本机数据库端口。脚本只连 `127.0.0.1`，为每次运行创建独立 `yaohezi_local_*` 数据库，并启动独占端口、随机密码的临时 Redis，不读取生产 `DATABASE_URL/REDIS_URL`，不清空现有数据库或 Redis。结束后关闭该 Redis，保留测试数据库和 `.artifacts/yaohezi/<数据库名>/` 证据供检查。
+
+该验证经过真实 PostgreSQL 迁移、真实 Redis、loopback HTTP、服务端验证码校验、账号/产品成员关系、跨产品拒绝、并发 refresh 单一成功、登出后 refresh 失效及新应用实例的会话/成员关系读取。短信发送器与任务队列是明确的本地 fixture，无外发短信或推送；不代表家庭授权、可信设备、密文同步、支付或视觉模型已验收。禁止把 fixture 配置用于部署。

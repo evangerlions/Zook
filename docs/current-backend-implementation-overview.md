@@ -782,6 +782,8 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 
 ## Yaohezi 账号基础接入（默认关闭）
 
+`npm run verify:yaohezi-local` 提供独立本地验收入口：真实 PostgreSQL、独占临时 Redis、loopback HTTP；覆盖验证码登录、产品隔离、刷新竞态、退出与应用实例重开。数据库与日志保留在本机，临时 Redis 自动关闭。短信 transport 和队列使用本地 fixture；该入口不宣称云健康能力或外部供应商验收完成，运行要求见 README_API。
+
 新增独立 `yaohezi` 产品注册、member 角色和全关闭的健康功能配置；通过 `YAOHEZI_ENABLED=true` 显式启用 `/api/v1/yaohezi/me`，复用公共身份和活动 membership 校验。默认 seed/其他产品路由行为不变。账号入口不建立健康主体关系、不上传资料，也不授予家人权限。
 
 公共登出合同补齐 App 当前设备 logout 的 refreshToken；所有平台 bearer 文档改为 opaque 凭证，与当前 token 实现一致。合同源、生成类型、外部 README_API 与负向测试同步维护。健康设备会话、密文同步、授权共享、真实对象存储和付费 AI 仍须按后续门禁实现，不能用该 me 接口宣称这些能力已经上线。
