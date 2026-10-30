@@ -11,12 +11,12 @@ if(!connectionString||!['localhost','127.0.0.1'].includes(new URL(connectionStri
 await runPostgresMigrations({connectionString,log:()=>{}});
 const pool=new Pool({connectionString}),repository=new PostgresLightTickRepository(pool),seed=buildDefaultSeed(undefined,{includeLightTick:true});
 const owners=['alice','bob','carol','dave'].map(name=>({appId:'lighttick' as const,userId:'record-http-'+name+'-'+randomUUID()}));
-for(const owner of owners){seed.users.push({...seed.users.find(u=>u.id==='user_alice')!,id:owner.userId});seed.appUsers.push({id:randomUUID(),...owner,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});}
+for(const owner of owners){seed.users.push({...seed.users.find(u=>u.id==='user_alice')!,id:owner.userId,email:owner.userId+'@example.test'});seed.appUsers.push({id:randomUUID(),...owner,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});}
 const app=await createApplication({seed,lighttickEnabled:true,lighttickRepository:repository});
 const server=createServer(async(req,res)=>{try{
  const url=new URL(req.url!,'http://localhost');const buffers=[];for await(const chunk of req)buffers.push(chunk);const raw=Buffer.concat(buffers).toString();
  const result=await app.app.handle({method:req.method!,path:url.pathname,query:Object.fromEntries(url.searchParams),headers:req.headers,body:raw?JSON.parse(raw):undefined} as any);
  res.statusCode=result.statusCode;res.setHeader('content-type','application/json');res.end(JSON.stringify(result.body));
 }catch(e){res.statusCode=500;res.end(JSON.stringify({message:String(e)}));}});
-server.listen(0,'127.0.0.1',()=>console.log('READY '+JSON.stringify({port:(server.address() as any).port,owners:owners.map(owner=>({...owner,token:app.services.tokenService.issueAccessToken(owner.userId,'lighttick')}))})));
+server.listen(0,'127.0.0.1',()=>console.log('READY '+JSON.stringify({port:(server.address() as any).port,owners:owners.map(owner=>({...owner,account:owner.userId+'@example.test',token:app.services.tokenService.issueAccessToken(owner.userId,'lighttick'),expired_token:app.services.tokenService.issueAccessToken(owner.userId,'lighttick',1,new Date(Date.now()-86400000))}))})));
 process.on('SIGTERM',()=>server.close(async()=>{for(const owner of owners)await repository.deleteOwnerData(owner);await pool.end();process.exit(0);}));

@@ -807,3 +807,5 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.
 
 2026-10-29 I5: opt-in single check practices resolve owned current lesson/record sources, keep minimal source references, and append independent bounded feedback in the existing JSONB action workspace. Source reads revalidate authorization, and stable receipts survive source withdrawal. Record -> action lock ordering and immutable completion mode preserve existing deletion and completion boundaries. No new service, database migration, model call or production enablement.
+
+2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。

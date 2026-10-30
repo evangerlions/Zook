@@ -136,6 +136,7 @@ SPECS: dict[str, list[str]] = {
         "LightTickRecordEnvelope",
         "LightTickRecordPageEnvelope",
         "LightTickRecordVersionsEnvelope",
+        "LightTickRecordHistoryEnvelope",
         "LightTickRecordExportEnvelope",
 
         'LightTickActionTarget',

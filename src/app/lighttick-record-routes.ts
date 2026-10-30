@@ -9,6 +9,8 @@ export async function handleRecordRequest(repository:LightTickRepository,owner:L
  const service=new LightTickRecordService(repository,undefined,authorize); const prefix='/api/v1/lighttick/records';
  if(request.path===prefix+'/export'&&request.method==='GET') return service.export(owner);
  if(request.path===prefix&&request.method==='GET') return service.list(owner,request.query as Record<string,string>);
+ const history=request.path.match(/^\/api\/v1\/lighttick\/records\/([a-zA-Z0-9_-]+)\/history$/);
+ if(history&&request.method==='GET')return {record:await service.get(owner,history[1]!),versions:(await service.versions(owner,history[1]!)).items,source_history:await repository.recordSourceHistory(owner,history[1]!)};
  const match=request.path.match(/^\/api\/v1\/lighttick\/records\/([a-zA-Z0-9_-]+)(?:\/(versions|archive|restore))?$/);
  if(!match) return undefined;
  if(request.method==='GET'&&!match[2]) return service.get(owner,match[1]!);

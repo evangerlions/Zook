@@ -198,6 +198,41 @@ paths:
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
       - $ref: '#/components/parameters/IdempotencyKey'
+  /api/v1/lighttick/records/{recordId}/history:
+    get:
+      operationId: getLightTickRecordHistory
+      tags:
+      - lighttick-records
+      summary: getLightTickRecordHistory
+      description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
+        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
+        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordHistoryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
   /api/v1/lighttick/records/{recordId}/versions:
     get:
       operationId: listLightTickRecordVersions
@@ -3416,6 +3451,38 @@ components:
           required:
           - items
           - has_more
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LightTickRecordHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            record:
+              $ref: '#/components/schemas/LightTickRecord'
+            versions:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickRecord'
+            source_history:
+              type: object
+              additionalProperties: true
+              description: Owner-only immutable source history without credentials.
+          required:
+          - record
+          - versions
         requestId:
           type: string
       required:

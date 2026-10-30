@@ -17,6 +17,9 @@ test('independent records: ownership, retry, CAS, versions, archive, export and 
  assert.equal((await call('PUT','records/record-test-001',{...input,base_version:1},'records-stale-001')).statusCode,409);
  assert.equal((await call('GET','records/record-test-001',undefined,undefined,'user_bob')).statusCode,404);
  assert.equal((await call('GET','records/record-test-001/versions')).body.data.items.length,2);
+ const history=await call('GET','records/record-test-001/history');assert.equal(history.statusCode,200);
+ assert.equal(history.body.data.record.raw_text,'新版本');assert.equal(history.body.data.versions.length,2);
+ assert.equal((await call('GET','records/record-test-001/history',undefined,undefined,'user_bob')).statusCode,404);
  assert.equal((await call('POST','records/record-test-001/archive',{base_version:2},'records-archive-001')).body.data.version,3);
  assert.equal((await call('GET','records')).body.data.items.length,0);
  assert.equal((await call('GET','records',undefined,undefined,undefined,{archived:'true'})).body.data.items.length,1);

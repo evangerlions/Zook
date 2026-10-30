@@ -1450,3 +1450,7 @@ Source identity and version are checked against a currently consented lesson or 
 `POST /api/v1/lighttick/action-plans/{planId}/operations` adds `action: "practice-feedback"` with current `revision`, stable `key` and `feedback:{outcome:"applied"|"not_applied"|"unknown",result?,evidence?,next_step?}`. At least one text field is nonblank; result/evidence are capped at 2000 characters, next_step at 1000, and each practice at 100 feedback entries. Entries append IDs/timestamps to `practice_feedback`; completed practices may receive feedback, archived practices remain read-only. Feedback never creates completion facts, minutes, another task or a model request. Practice mode stays check/day with no content target through edits.
 
 `GET /api/v1/lighttick/action-plans/practices/{planId}/source` revalidates current access and returns `{available:true,title,text,current_version}` or `{available:false}`. A changed lesson binding cannot reopen a different source. Reading does not mutate facts. These responses and receipts are no-store and owner scoped. Error classes remain the existing 403/404/409/422/503 semantics; no production switch or account migration is enabled by this change.
+
+### 2026-10-30 Grow网页统一会话的记录历史读取
+
+`GET /api/v1/lighttick/records/{recordId}/history`使用正式LightTick Bearer及活跃membership，返回本人`{record,versions,source_history?}`；与现有记录详情／版本同一权威存储，异账号返回404，不生成AI、不改写来源。可选source_history仅包含已接管的本人原始历史，遵循现有导出／删除范围，禁止凭据。Grow同源BFF使用该公共合同读取单条历史，无须以来源签名代替本人Token或为一次详情导出全部记录。
