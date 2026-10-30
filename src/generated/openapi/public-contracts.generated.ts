@@ -1,6 +1,70 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const YaoheziMeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "userId",
+    "healthAccessEstablished",
+    "capabilities"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string",
+      "const": "yaohezi"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "healthAccessEstablished": {
+      "type": "boolean",
+      "const": false
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloudSync",
+        "familySharing",
+        "reportAI",
+        "subscriptionSales"
+      ],
+      "properties": {
+        "cloudSync": {
+          "type": "boolean",
+          "const": false
+        },
+        "familySharing": {
+          "type": "boolean",
+          "const": false
+        },
+        "reportAI": {
+          "type": "boolean",
+          "const": false
+        },
+        "subscriptionSales": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  }
+} as const;
+
+export type YaoheziMeData = {
+  "appId": string;
+  "userId": string;
+  "healthAccessEstablished": boolean;
+  "capabilities": {
+  "cloudSync": boolean;
+  "familySharing": boolean;
+  "reportAI": boolean;
+  "subscriptionSales": boolean;
+};
+};
+
 export const PasswordLoginRequestSchema = {
   "type": "object",
   "required": [
@@ -27280,5 +27344,6 @@ export const GeneratedPublicContractNames = [
   "SetPasswordRequest",
   "SmsCodeRequest",
   "SmsLoginRequest",
-  "UserSummary"
+  "UserSummary",
+  "YaoheziMeData"
 ] as const;

@@ -13,6 +13,8 @@ import type { DatabaseSeed } from "./shared/types.ts";
 import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
+  /** Independent Yaohezi account routes; health/cloud capabilities remain gated. */
+  yaoheziEnabled?: boolean;
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;

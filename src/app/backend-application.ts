@@ -1,4 +1,5 @@
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
+import { tryHandleYaoheziV1Routes } from "./yaohezi-v1-routes.ts";
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
@@ -150,6 +151,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly frogsleepEnabled = false,
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
+    private readonly yaoheziEnabled = false,
   ) {
     super(
       database,
@@ -238,6 +240,8 @@ export class BackendApplication extends BackendRouteContext {
       );
     }
 
+    const yaoheziResponse = await tryHandleYaoheziV1Routes(this, this.yaoheziEnabled, request);
+    if (yaoheziResponse) return yaoheziResponse;
     const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
     if (lightTickAdminResponse) return lightTickAdminResponse;
     const bodyLogAdminResponse = await tryHandleBodyLogManagementRoutes(this, true, this.bodyLogAdminService, request);

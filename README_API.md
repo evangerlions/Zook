@@ -1373,3 +1373,13 @@ The AASA document includes `/i/*`, `/invite/*`, `/b/*`, `/g/*` and `/invite-code
 
 
 Buddy pair responses now include optional-compatible `canAcceptInvitation:boolean`, computed for the authenticated viewer: false for the inviter, active/dissolved/expired pairs and legacy pairs without an addressed inviter; true only for the pending recipient. It is a UI affordance, not permission to bypass the accept endpoint. Existing acceptance authorization remains authoritative.
+
+## 药盒子（Yaohezi）账号接入
+
+药盒子使用独立 `appId/productKey=yaohezi` 和 `/api/v1/yaohezi/*`。服务端仅在显式设置 `YAOHEZI_ENABLED=true` 时注册默认产品角色/配置并启用账号路由；未设置时保持关闭，不随部署 slot 自动开启。已有部署须确认产品元数据已通过标准 seed 注册。
+
+App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/api/v1/auth/refresh` 与 `/api/v1/auth/logout` 建立账号会话，预登录请求提供 `appId=yaohezi`；不得使用开发验证码绕过。
+
+`GET /api/v1/yaohezi/me` 要求匹配的有效 token、启用的 app 和 ACTIVE membership，返回 `{code,message,data,requestId}`，其中 data 为 `{appId,userId,healthAccessEstablished:false,capabilities:{cloudSync:false,familySharing:false,reportAI:false,subscriptionSales:false}}`。登录不关联、上传或认领本地档案；成员角色不授予健康资料权限，其他产品 token 返回 403。该端点只确认账号接入，当前返回的云端/共享/AI/销售能力均关闭。
+
+唯一合同为 `api-contracts/openapi/yaohezi/api.yaml`；运行时使用生成后的 `YaoheziMeData`。服务地区、供应商、付费 SKU 与实际部署另行验证后配置，不在本账号入口隐式开启。

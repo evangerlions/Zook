@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "yaohezi/api.yaml": ["YaoheziMeData"],
     "common/auth.yaml": [
         "PasswordLoginRequest",
         "EmailCodeRequest",

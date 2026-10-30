@@ -1,0 +1,64 @@
+openapi: 3.1.1
+info:
+  title: Yaohezi Public API
+  version: 0.1.0
+  description: Shared Zook account session for the independently scoped Yaohezi product. Login does not associate or upload health archives.
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+tags:
+  - name: yaohezi-account
+    description: Product-scoped account access, separate from health grants and payment.
+paths:
+  /api/v1/yaohezi/me:
+    get:
+      operationId: getYaoheziMe
+      tags: [yaohezi-account]
+      summary: Read the active Yaohezi account session
+      responses:
+        "200":
+          description: Active product account without implicit health access
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, message, data]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+                  data: { $ref: '#/components/schemas/YaoheziMeData' }
+        "401":
+          description: Missing, expired or revoked account credential
+        "403":
+          description: Product scope, app status or membership check failed
+        "404":
+          description: Product disabled
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+  schemas:
+    YaoheziMeData:
+      type: object
+      additionalProperties: false
+      required: [appId, userId, healthAccessEstablished, capabilities]
+      properties:
+        appId: { type: string, const: yaohezi }
+        userId: { type: string }
+        healthAccessEstablished: { type: boolean, const: false }
+        capabilities:
+          type: object
+          additionalProperties: false
+          required: [cloudSync, familySharing, reportAI, subscriptionSales]
+          properties:
+            cloudSync: { type: boolean, const: false }
+            familySharing: { type: boolean, const: false }
+            reportAI: { type: boolean, const: false }
+            subscriptionSales: { type: boolean, const: false }
