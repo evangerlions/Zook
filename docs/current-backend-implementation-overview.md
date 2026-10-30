@@ -809,3 +809,5 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 2026-10-29 I5: opt-in single check practices resolve owned current lesson/record sources, keep minimal source references, and append independent bounded feedback in the existing JSONB action workspace. Source reads revalidate authorization, and stable receipts survive source withdrawal. Record -> action lock ordering and immutable completion mode preserve existing deletion and completion boundaries. No new service, database migration, model call or production enablement.
 
 2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
+
+2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
