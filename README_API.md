@@ -1387,3 +1387,5 @@ App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/ap
 本地接入验证：在 Zook 工作区运行 `npm run verify:yaohezi-local`。需要 Node、正在运行的本机 PostgreSQL（当前 OS 用户具备建库权限）及 PATH 中的 `redis-server`；可用 `YAOHEZI_LOCAL_PG_PORT` 指定本机数据库端口。脚本只连 `127.0.0.1`，为每次运行创建独立 `yaohezi_local_*` 数据库，并启动独占端口、随机密码的临时 Redis，不读取生产 `DATABASE_URL/REDIS_URL`，不清空现有数据库或 Redis。结束后关闭该 Redis，保留测试数据库和 `.artifacts/yaohezi/<数据库名>/` 证据供检查。
 
 该验证经过真实 PostgreSQL 迁移、真实 Redis、loopback HTTP、服务端验证码校验、账号/产品成员关系、跨产品拒绝、并发 refresh 单一成功、登出后 refresh 失效及新应用实例的会话/成员关系读取。短信发送器与任务队列是明确的本地 fixture，无外发短信或推送；不代表家庭授权、可信设备、密文同步、支付或视觉模型已验收。禁止把 fixture 配置用于部署。
+
+同一命令还验证内部主体关联端口的真实 PG 并发/回执与账号隔离。该端口尚未开放为公共 API，`me.healthAccessEstablished` 仍为 `false`；本人声明关联不等于已验证本人、受信设备、共享授权或密钥领取。当前没有健康内容上传接口。

@@ -71,6 +71,8 @@ export interface ManagedStateSnapshot {
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
 export abstract class ApplicationDatabase {
+  /** Optional internal product port; unsupported adapters fail closed. */
+  getYaoheziProfileStore(): import("../../modules/yaohezi/profiles/yaohezi-profile-store.ts").YaoheziProfileStore | undefined { return undefined; }
   abstract getBuddySupportRepository(): BuddySupportRepository;
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;

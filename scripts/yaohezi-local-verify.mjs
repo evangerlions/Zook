@@ -48,7 +48,8 @@ try {
   if (!ready) throw new Error("Isolated Redis did not become ready");
 const env = { ...process.env, YAOHEZI_TEST_DATABASE_URL: connectionString,
   YAOHEZI_TEST_REDIS_URL: `redis://:${redisPassword}@127.0.0.1:${redisPort}/0` };
-const command = ["--experimental-transform-types", "--test", "test/integration/yaohezi-local-postgres.test.ts"];
+const command = ["--experimental-transform-types", "--test", "--test-concurrency=1",
+  "test/integration/yaohezi-local-postgres.test.ts", "test/integration/yaohezi-profiles-postgres.test.ts"];
 const child = spawn(process.execPath, command, { env, stdio: ["ignore", "pipe", "pipe"] });
 let log = "";
 child.stdout.on("data", (value) => { log += value; });
