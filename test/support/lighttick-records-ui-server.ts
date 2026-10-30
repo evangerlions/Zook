@@ -45,6 +45,7 @@ const server=createServer(async(req,res)=>{try{
   const content='# 实践来源\n\n将结论先行用于一次真实汇报。',references='';
   const lesson={id:'lesson-practice-ui',collection_id:'practice-ui',collection_title:'实践验收课程',number:1,title:'结论先行',content,references,content_version:digest({content,references}),learning_state:'completed',source_url:'https://grow.example/#mobile/learn/lesson-practice-ui'};
   await receiveLibrary(actions,link,{action:'learning-library',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:new Date().toISOString(),consent_enabled:true,lessons:[lesson]});
+  await receiveLearningProgress(actions,link,{action:'learning-progress',action_schema_version:2,binding_id:link.binding_id,source_revision:1,observed_at:new Date().toISOString(),web_url:'https://grow.example/',plans:[]});
   res.end(JSON.stringify(lesson));return;
  }
  if(url.pathname==='/__actions_modes'){
