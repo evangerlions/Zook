@@ -43,6 +43,18 @@ def generate(schemas,language):
             protocols='Codable, Equatable, Sendable'+(', Identifiable' if 'id' in schema['properties'] else '')
             lines.append(f'public struct {name}: {protocols} {{')
             lines.extend(f'    public var {key}: {kind}' for key,kind,_ in fields)
+            if any(optional and key in required for key,_,optional in fields):
+                # Synthesized Swift encoding uses encodeIfPresent and would omit
+                # required nullable fields. Preserve explicit JSON null on writes.
+                lines.append('    private enum CodingKeys: String, CodingKey {')
+                lines.extend(f'        case {key}' for key,_,_ in fields)
+                lines.append('    }')
+                lines.append('    public func encode(to encoder: Encoder) throws {')
+                lines.append('        var values = encoder.container(keyedBy: CodingKeys.self)')
+                for key,_,optional in fields:
+                    method='encodeIfPresent' if optional and key not in required else 'encode'
+                    lines.append(f'        try values.{method}({key}, forKey: .{key})')
+                lines.append('    }')
             lines.append('}')
         else:
             lines.append(f'data class {name}(')

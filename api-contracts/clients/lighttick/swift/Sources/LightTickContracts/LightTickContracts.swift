@@ -437,6 +437,23 @@ public struct LightTickManualAction: Codable, Equatable, Sendable, Identifiable 
     public var estimated_minutes: Int?
     public var completion_criteria: String
     public var guidance: String
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case scheduled_for
+        case estimated_minutes
+        case completion_criteria
+        case guidance
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(title, forKey: .title)
+        try values.encode(scheduled_for, forKey: .scheduled_for)
+        try values.encode(estimated_minutes, forKey: .estimated_minutes)
+        try values.encode(completion_criteria, forKey: .completion_criteria)
+        try values.encode(guidance, forKey: .guidance)
+    }
 }
 public struct LightTickManualDraft: Codable, Equatable, Sendable {
     public var goal_id: String?
@@ -458,6 +475,33 @@ public struct LightTickManualTask: Codable, Equatable, Sendable, Identifiable {
     public var notes: String
     public var completed_at: String?
     public var version: Int
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case goal_id
+        case plan_id
+        case title
+        case status
+        case scheduled_date
+        case estimated_duration_minutes
+        case completion_criteria
+        case notes
+        case completed_at
+        case version
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(goal_id, forKey: .goal_id)
+        try values.encode(plan_id, forKey: .plan_id)
+        try values.encode(title, forKey: .title)
+        try values.encode(status, forKey: .status)
+        try values.encode(scheduled_date, forKey: .scheduled_date)
+        try values.encode(estimated_duration_minutes, forKey: .estimated_duration_minutes)
+        try values.encode(completion_criteria, forKey: .completion_criteria)
+        try values.encode(notes, forKey: .notes)
+        try values.encode(completed_at, forKey: .completed_at)
+        try values.encode(version, forKey: .version)
+    }
 }
 public struct LightTickManualPlan: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -487,6 +531,31 @@ public struct LightTickLocalAction: Codable, Equatable, Sendable, Identifiable {
     public var completed_at: String?
     public var archived: Bool
     public var source_reflection_id: String?
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case goal_id
+        case title
+        case date
+        case estimated_minutes
+        case criteria
+        case details
+        case completed_at
+        case archived
+        case source_reflection_id
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(goal_id, forKey: .goal_id)
+        try values.encode(title, forKey: .title)
+        try values.encode(date, forKey: .date)
+        try values.encode(estimated_minutes, forKey: .estimated_minutes)
+        try values.encode(criteria, forKey: .criteria)
+        try values.encode(details, forKey: .details)
+        try values.encode(completed_at, forKey: .completed_at)
+        try values.encode(archived, forKey: .archived)
+        try values.encode(source_reflection_id, forKey: .source_reflection_id)
+    }
 }
 public struct LightTickLocalReflection: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -496,6 +565,25 @@ public struct LightTickLocalReflection: Codable, Equatable, Sendable, Identifiab
     public var obstacles: String
     public var next_step: String
     public var created_at: String
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case goal_id
+        case action_id
+        case result
+        case obstacles
+        case next_step
+        case created_at
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(goal_id, forKey: .goal_id)
+        try values.encode(action_id, forKey: .action_id)
+        try values.encode(result, forKey: .result)
+        try values.encode(obstacles, forKey: .obstacles)
+        try values.encode(next_step, forKey: .next_step)
+        try values.encode(created_at, forKey: .created_at)
+    }
 }
 public struct LightTickLocalEvent: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -552,6 +640,19 @@ public struct LightTickPracticeSource: Codable, Equatable, Sendable, Identifiabl
     public var id: String
     public var version: String
     public var binding_id: String?
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case id
+        case version
+        case binding_id
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(kind, forKey: .kind)
+        try values.encode(id, forKey: .id)
+        try values.encode(version, forKey: .version)
+        try values.encode(binding_id, forKey: .binding_id)
+    }
 }
 public struct LightTickPracticeOrigin: Codable, Equatable, Sendable {
     public var plan_id: String
@@ -597,6 +698,73 @@ public struct LightTickActionPlan: Codable, Equatable, Sendable, Identifiable {
     public var practice_origin: LightTickPracticeOrigin?
     public var practice_source: LightTickPracticeSource?
     public var practice_feedback: [LightTickPracticeFeedback]?
+    private enum CodingKeys: String, CodingKey {
+        case title
+        case period
+        case horizon
+        case start_date
+        case end_date
+        case timezone
+        case parent_id
+        case target_minutes
+        case minimum_minutes
+        case target_count
+        case at
+        case reminder
+        case reason
+        case if_then
+        case target
+        case completion_mode
+        case estimated_minutes
+        case id
+        case revision
+        case status
+        case created_at
+        case updated_at
+        case reminder_at
+        case progress
+        case blocked
+        case schema_version
+        case completed_at
+        case completion_record_id
+        case practice_origin
+        case practice_source
+        case practice_feedback
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(title, forKey: .title)
+        try values.encode(period, forKey: .period)
+        try values.encode(horizon, forKey: .horizon)
+        try values.encode(start_date, forKey: .start_date)
+        try values.encode(end_date, forKey: .end_date)
+        try values.encode(timezone, forKey: .timezone)
+        try values.encode(parent_id, forKey: .parent_id)
+        try values.encode(target_minutes, forKey: .target_minutes)
+        try values.encode(minimum_minutes, forKey: .minimum_minutes)
+        try values.encode(target_count, forKey: .target_count)
+        try values.encode(at, forKey: .at)
+        try values.encode(reminder, forKey: .reminder)
+        try values.encode(reason, forKey: .reason)
+        try values.encode(if_then, forKey: .if_then)
+        try values.encode(target, forKey: .target)
+        try values.encode(completion_mode, forKey: .completion_mode)
+        try values.encode(estimated_minutes, forKey: .estimated_minutes)
+        try values.encode(id, forKey: .id)
+        try values.encode(revision, forKey: .revision)
+        try values.encode(status, forKey: .status)
+        try values.encode(created_at, forKey: .created_at)
+        try values.encode(updated_at, forKey: .updated_at)
+        try values.encode(reminder_at, forKey: .reminder_at)
+        try values.encodeIfPresent(progress, forKey: .progress)
+        try values.encodeIfPresent(blocked, forKey: .blocked)
+        try values.encode(schema_version, forKey: .schema_version)
+        try values.encode(completed_at, forKey: .completed_at)
+        try values.encode(completion_record_id, forKey: .completion_record_id)
+        try values.encodeIfPresent(practice_origin, forKey: .practice_origin)
+        try values.encodeIfPresent(practice_source, forKey: .practice_source)
+        try values.encodeIfPresent(practice_feedback, forKey: .practice_feedback)
+    }
 }
 public struct LightTickActionExecution: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -621,6 +789,55 @@ public struct LightTickActionExecution: Codable, Equatable, Sendable, Identifiab
     public var reverses_record_id: String?
     public var source_event_id: String?
     public var recorded_at: String?
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case plan_id
+        case title
+        case started_at
+        case ended_at
+        case variant
+        case planned_minutes
+        case actual_minutes
+        case outcome
+        case note
+        case business_date
+        case timezone
+        case target
+        case schema_version
+        case record_kind
+        case completion_mode
+        case completion_effect
+        case planned_date
+        case date_basis
+        case reverses_record_id
+        case source_event_id
+        case recorded_at
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(plan_id, forKey: .plan_id)
+        try values.encode(title, forKey: .title)
+        try values.encode(started_at, forKey: .started_at)
+        try values.encode(ended_at, forKey: .ended_at)
+        try values.encode(variant, forKey: .variant)
+        try values.encode(planned_minutes, forKey: .planned_minutes)
+        try values.encode(actual_minutes, forKey: .actual_minutes)
+        try values.encode(outcome, forKey: .outcome)
+        try values.encode(note, forKey: .note)
+        try values.encode(business_date, forKey: .business_date)
+        try values.encode(timezone, forKey: .timezone)
+        try values.encode(target, forKey: .target)
+        try values.encode(schema_version, forKey: .schema_version)
+        try values.encode(record_kind, forKey: .record_kind)
+        try values.encode(completion_mode, forKey: .completion_mode)
+        try values.encode(completion_effect, forKey: .completion_effect)
+        try values.encode(planned_date, forKey: .planned_date)
+        try values.encode(date_basis, forKey: .date_basis)
+        try values.encodeIfPresent(reverses_record_id, forKey: .reverses_record_id)
+        try values.encodeIfPresent(source_event_id, forKey: .source_event_id)
+        try values.encodeIfPresent(recorded_at, forKey: .recorded_at)
+    }
 }
 public struct LightTickActionWorkspace: Codable, Equatable, Sendable {
     public var plans: [LightTickActionPlan]
@@ -630,6 +847,25 @@ public struct LightTickActionWorkspace: Codable, Equatable, Sendable {
     public var reminder_delivery: String
     public var action_schema_version: Int
     public var capabilities: LightTickActionCapabilities
+    private enum CodingKeys: String, CodingKey {
+        case plans
+        case execution
+        case server_time
+        case workspace_version
+        case reminder_delivery
+        case action_schema_version
+        case capabilities
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(plans, forKey: .plans)
+        try values.encode(execution, forKey: .execution)
+        try values.encode(server_time, forKey: .server_time)
+        try values.encode(workspace_version, forKey: .workspace_version)
+        try values.encode(reminder_delivery, forKey: .reminder_delivery)
+        try values.encode(action_schema_version, forKey: .action_schema_version)
+        try values.encode(capabilities, forKey: .capabilities)
+    }
 }
 public struct LightTickLearningStageProgress: Codable, Equatable, Sendable {
     public var number: Int
@@ -659,6 +895,13 @@ public struct LightTickLearningProgress: Codable, Equatable, Sendable {
 }
 public struct LightTickLearningProgressData: Codable, Equatable, Sendable {
     public var progress: LightTickLearningProgress?
+    private enum CodingKeys: String, CodingKey {
+        case progress
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(progress, forKey: .progress)
+    }
 }
 public struct LightTickLearningLessonSummary: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -687,6 +930,19 @@ public struct LightTickLearningLibraryData: Codable, Equatable, Sendable {
     public var binding_id: String?
     public var observed_at: String?
     public var lessons: [LightTickLearningLessonSummary]
+    private enum CodingKeys: String, CodingKey {
+        case consent_enabled
+        case binding_id
+        case observed_at
+        case lessons
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(consent_enabled, forKey: .consent_enabled)
+        try values.encode(binding_id, forKey: .binding_id)
+        try values.encode(observed_at, forKey: .observed_at)
+        try values.encode(lessons, forKey: .lessons)
+    }
 }
 public struct LightTickLearningLessonData: Codable, Equatable, Sendable {
     public var lesson: LightTickLearningLesson
@@ -710,6 +966,33 @@ public struct LightTickLearningPrivateState: Codable, Equatable, Sendable, Ident
     public var position: Int
     public var updated_at: String
     public var questions: [LightTickLearningAnswer]
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case content_version
+        case draft_version
+        case revision
+        case notes
+        case answers
+        case completed
+        case completed_at
+        case position
+        case updated_at
+        case questions
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(content_version, forKey: .content_version)
+        try values.encode(draft_version, forKey: .draft_version)
+        try values.encode(revision, forKey: .revision)
+        try values.encode(notes, forKey: .notes)
+        try values.encode(answers, forKey: .answers)
+        try values.encode(completed, forKey: .completed)
+        try values.encode(completed_at, forKey: .completed_at)
+        try values.encode(position, forKey: .position)
+        try values.encode(updated_at, forKey: .updated_at)
+        try values.encode(questions, forKey: .questions)
+    }
 }
 public struct LightTickLearningPrivateOperation: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -720,6 +1003,17 @@ public struct LightTickLearningPrivateData: Codable, Equatable, Sendable {
     public var enabled: Bool
     public var state: LightTickLearningPrivateState?
     public var operations: [LightTickLearningPrivateOperation]
+    private enum CodingKeys: String, CodingKey {
+        case enabled
+        case state
+        case operations
+    }
+    public func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(enabled, forKey: .enabled)
+        try values.encode(state, forKey: .state)
+        try values.encode(operations, forKey: .operations)
+    }
 }
 public struct LightTickLearningPrivateCommand: Codable, Equatable, Sendable, Identifiable {
     public var id: String
