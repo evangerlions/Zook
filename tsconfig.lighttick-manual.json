@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.lighttick-actions.json","include":["src/modules/lighttick/manual/**/*.ts","src/app/lighttick-manual-routes.ts"]}

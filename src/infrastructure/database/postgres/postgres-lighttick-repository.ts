@@ -1,3 +1,4 @@
+import {PostgresLocalAdoptionStore} from './postgres-lighttick-local-adoption-store.ts';
 import {mapRow,timestampString} from "./postgres-lighttick-row-mappers.ts";
 import {readLightTickOperationalSummary} from "./postgres-lighttick-admin-summary.ts";
 import { PostgresRecordTransferStore } from "./postgres-lighttick-record-transfer-store.ts";
@@ -24,6 +25,10 @@ function versionConflict(resourceId: string): never {
   throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.", { resourceId });
 }
 export class PostgresLightTickRepository implements LightTickRepository {
+  private readonly localAdoptionStore=new PostgresLocalAdoptionStore((sql,values)=>this.query(sql,values));
+  lockLocalSource=this.localAdoptionStore.lockLocalSource.bind(this.localAdoptionStore);
+  getLocalClaim=this.localAdoptionStore.getLocalClaim.bind(this.localAdoptionStore);
+  saveLocalClaim=this.localAdoptionStore.saveLocalClaim.bind(this.localAdoptionStore);
   private readonly session = new AsyncLocalStorage<QueryClient>();
   constructor(private readonly connector: Connector,
     private readonly transactionRunner?: <T>(operation: () => Promise<T>) => Promise<T>) {}
@@ -574,6 +579,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
+      await this.lockPlanningOwner(owner);
+      await this.query("UPDATE zook_lighttick_local_claims SET user_id=NULL,cloud_id=NULL,payload_hash=NULL,source_payload='{}'::jsonb,deleted=TRUE WHERE app_id=$1 AND user_id=$2", [owner.appId,owner.userId]);
       await this.lockRecordOwner(owner);
       await this.lockActionOwner(owner);
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1

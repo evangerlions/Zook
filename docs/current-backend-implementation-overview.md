@@ -811,3 +811,7 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
 
 2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
+
+#### LightTick N2 原生手动计划候选（2026-10-31）
+
+新增同 goal/plan/task 域的手动草稿、编辑、双版本原子确认与持久回执；独立本机目标/行动/复盘转属采用稳定源映射和单向归属。未知投入在数据库保留 NULL，未定日期的手动任务不投影 Today。注册账户不需要 Grow / AI。接口、关闭恢复及旧客户端 schema 2 升级边界见 README_API；迁移 081。真实隔离 PostgreSQL专项覆盖并发、回滚、重连和删除；候选不代表生产或双端上线验收已完成。
