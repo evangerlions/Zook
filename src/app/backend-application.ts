@@ -174,6 +174,8 @@ export class BackendApplication extends BackendRouteContext {
       auditInterceptor,
       adminSensitiveOperationService,
     );
+    this.resolveNetworkCountry = (request) =>
+      requestEmailContextService.resolveNetworkCountry(request);
   }
 
   async handle(request: HttpRequest): Promise<HttpResponse<unknown>> {

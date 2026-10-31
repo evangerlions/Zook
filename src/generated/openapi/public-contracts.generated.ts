@@ -2268,6 +2268,10 @@ export const PublicConfigDataSchema = {
       "type": "string",
       "example": "ai_novel"
     },
+    "countryCode": {
+      "type": "string",
+      "description": "Estimated country of the current request, when available (ISO 3166-1 alpha-2)."
+    },
     "config": {
       "type": "object",
       "additionalProperties": true,
@@ -2700,6 +2704,7 @@ export const PublicConfigDataSchema = {
 
 export type PublicConfigData = {
   "appId": string;
+  "countryCode"?: string;
   "config": {
   "app"?: string;
   "kickoff"?: {

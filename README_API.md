@@ -263,6 +263,8 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 `reminder.intervalSeconds` 提供可选升级提醒的次数与最小间隔；`mandatory` 强制升级不受
 提醒次数限制。产物可选提供 `messageI18n`（locale 到文本的映射），客户端只在存在当前
 语言文本时显示；未配置时不显示客户端内置的替代更新消息。
+AINovel 的 `GET /api/v1/ai_novel/public/config` 响应 `data.countryCode` 可选，表示根据当前请求可信代理信息或 IP 推断的 ISO 3166-1 alpha-2 国家代码；无法确定时省略。该响应为请求特定数据，设置 `Cache-Control: private, no-store`。客户端应在返回有效值时更新本地缓存。
+
 AINovel 读取既有 `GET /api/v1/ai_novel/public/config` 时，也会在 `config.releaseUpdate`
 中收到同一份 AINovel 专属投影，便于客户端减少一次请求。
 

@@ -66,6 +66,8 @@ function parseBasicAuthorization(
 }
 
 export class BackendRouteContext {
+  resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
+    async () => undefined;
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
 

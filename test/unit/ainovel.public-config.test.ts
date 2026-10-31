@@ -39,6 +39,20 @@ const REVIEWED_JAPANESE_KICKOFF_PROMPTS = [
   "冒頭から危機が迫る終末サバイバル成長譚を書こう。",
 ] as const;
 
+test("AINovel config country is request-specific and does not trust client locale", async () => {
+  const runtime = await createApplication({
+    geoResolver: { resolveCountryCode: async (ip) => ip === "203.0.113.1" ? "JP" : undefined },
+  });
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/public/config",
+    headers: { "x-app-id": "ai_novel", "x-app-country-code": "CN" },
+    ipAddress: "203.0.113.1",
+  });
+  assert.equal(response.body.data.countryCode, "JP");
+  assert.equal(response.headers?.["Cache-Control"], "private, no-store");
+});
+
 test("AINovel public config remains locale-neutral and carries every prompt list", async () => {
   const runtime = await createApplication();
   const request = (locale: string) =>
