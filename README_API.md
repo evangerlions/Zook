@@ -1476,3 +1476,13 @@ Source identity and version are checked against a currently consented lesson or 
 ### 目标停止与旧入口（2026-10-31）
 
 目标生命周期与任务 start/complete/variant/step 等写入在同一 owner 事务锁下核验。暂停、达成或结束的目标不能被缓存任务命令、旧通知／深链隐式恢复；状态不允许时返回409，历史仍可读取。旧接口明确选择 keep_light_tasks 的轻量／最小任务保持兼容。手动目标仍有未完成事项时，直接 lifecycle resume 返回409，须先审阅剩余事项并确认恢复安排；不会自动把旧积压补排到今日。通知执行时按其目标／计划／任务来源重新核验，已停止目标的延迟投递被抑制。
+
+### 无网页原生接续与已确认条件（N3）
+
+- `GET /api/v1/lighttick/goals/{goalId}/continuation?period_start=YYYY-MM-DD&period_end=YYYY-MM-DD` 读取本人目标在显式近期窗口（最多31天）的任务、已保存复盘、来源安排、条件历史和每天容量。`goal` 是同一ID/版本的最小投影；`daily_limits` 同时返回已知分钟、未知项数和超限标记。读取超限安排不会删除或改变工作。
+- `POST /api/v1/lighttick/goals/{goalId}/conditions` 用 Idempotency-Key 确认条件。提交 `id, base_version`（目标版本）、`condition_version`（新条件0）、`scope`（ongoing/temporary）、`starts_on, ends_on, daily_minutes, active, reason`；持续条件 ends_on 明确为null，临时条件必须有界日期。启用分钟为1–1440；失效提交 active=false、daily_minutes=null，保留原适用窗口。目标与条件并发更正返回409并保留原事实。历史保存在目标自有的 `confirmed_planning_conditions` 审计范围；通用目标PATCH不得伪造或删除它。
+- 最新本人确认的持续值进入后续窗口，临时值到期退出；失效不会恢复被取代旧预算。降低容量不隐式删除已有任务，超限在审阅中显式处理。未知投入保持未知，不冒充零投入；实际完成仍允许如实记录。条件原因和原始审计历史不自动进入模型，规划上下文只消费所选窗口内的有效数值及来源版本。
+- 手动草稿新增可选 `source_reflection_id/source_reflection_version`，必须成对且属于同一目标。保存复盘及下一步文字仍然零排程；明确保存并确认关联草稿后，生成一个可追溯后续安排。来源变化返回409；同一复盘版本已确认过的后续安排不可再次消费。确认时的原文依据保存在 owner 范围的只读来源快照，不隐式加入AI上下文。
+- 手动草稿可提交 `replace_tasks: [{id,version}]`，逐项审阅待替换的 pending/in_progress 任务；行动可带 `source_task_id` 保留 lineage。确认事务内核对来源、任务、目标版本和当前容量，取消明确替换的旧事项并写入新事项，完成历史不变。`resume_goal=true` 允许为暂停／恢复中的目标制定新安排，须覆盖所有未完成事项；未选为继续的工作会明确显示在替换清单，不自动补债。
+- `PUT reflections/{id}` 按稳定资源ID和提交的 base_version 持久保存原响应。同一完整请求在后续修正发生后仍可核对原已接受版本；同一ID/base_version的不同正文409。保持旧客户端已有PUT及header行为，持久请求身份不与其他域共用的header key冲突。
+- `LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0` 关闭新的条件、关联后续、替换与审阅恢复写入；读取及匹配的已接受原请求仍可核对。已有有效条件继续约束普通安排，关闭不删除历史；正式账户及membership验证不变，不要求Grow绑定或网页会话。

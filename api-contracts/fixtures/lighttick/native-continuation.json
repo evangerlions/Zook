@@ -1,0 +1,39 @@
+{
+  "condition": {
+    "id": "condition-ongoing",
+    "base_version": 2,
+    "condition_version": 0,
+    "scope": "ongoing",
+    "starts_on": "2026-10-31",
+    "ends_on": null,
+    "daily_minutes": 10,
+    "active": true,
+    "reason": "My confirmed available time"
+  },
+  "draft": {
+    "goal_id": "goal-basic-loop",
+    "title": "Practice explanations",
+    "completion_criteria": "One clear example",
+    "period_start": "2026-11-01",
+    "period_end": "2026-11-01",
+    "source_reflection_id": "reflection-first",
+    "source_reflection_version": 1,
+    "replace_tasks": [
+      {
+        "id": "task-to-replace",
+        "version": 1
+      }
+    ],
+    "tasks": [
+      {
+        "id": "candidate-next",
+        "title": "Explain one small example",
+        "scheduled_for": "2026-11-01",
+        "estimated_minutes": 10,
+        "completion_criteria": "A concrete example",
+        "guidance": "Use the revised time limit",
+        "source_task_id": "task-to-replace"
+      }
+    ]
+  }
+}

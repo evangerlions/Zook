@@ -5,21 +5,26 @@ import re
 import yaml
 
 ROOT=Path(__file__).resolve().parents[1]
-NAMES=['LightTickManualAction','LightTickManualDraft','LightTickManualTask','LightTickManualPlan','LightTickLocalGoal','LightTickLocalAction','LightTickLocalReflection','LightTickLocalEvent','LightTickLocalAdoption','LightTickLocalMapping','LightTickLocalReceipt','LightTickActionTarget','LightTickActionProgress','LightTickActionCapabilities','LightTickPracticeSource','LightTickPracticeOrigin','LightTickPracticeFeedback','LightTickActionPlan',
+NAMES=['LightTickManualTaskReference', 'LightTickConfirmedCondition', 'LightTickDailyLimit', 'LightTickContinuationGoal', 'LightTickContinuationPlan', 'LightTickReflectionSource', 'LightTickReflectionData', 'LightTickContinuationContext','LightTickManualAction','LightTickManualDraft','LightTickManualTask','LightTickManualPlan','LightTickLocalGoal','LightTickLocalAction','LightTickLocalReflection','LightTickLocalEvent','LightTickLocalAdoption','LightTickLocalMapping','LightTickLocalReceipt','LightTickActionTarget','LightTickActionProgress','LightTickActionCapabilities','LightTickPracticeSource','LightTickPracticeOrigin','LightTickPracticeFeedback','LightTickActionPlan',
        'LightTickActionExecution','LightTickActionWorkspace','LightTickLearningStageProgress',
        'LightTickLearningPlanProgress','LightTickLearningProgress','LightTickLearningProgressData','LightTickLearningLessonSummary','LightTickLearningLesson','LightTickLearningLibraryData','LightTickLearningLessonData','LightTickLearningAnswer','LightTickLearningPrivateState','LightTickLearningPrivateOperation','LightTickLearningPrivateData','LightTickLearningPrivateCommand']
 
 
-def wire_type(value,language):
+def wire_type(value,language,schemas=None):
     nullable=False
     if 'anyOf' in value:
         nullable=any(v.get('type')=='null' for v in value['anyOf'])
         value=next(v for v in value['anyOf'] if v.get('type')!='null')
     kind=value.get('type')
     if isinstance(kind,list):nullable='null' in kind;kind=next(v for v in kind if v!='null')
-    if '$ref' in value:result=value['$ref'].rsplit('/',1)[1]
+    if '$ref' in value:
+        name=value['$ref'].rsplit('/',1)[1]
+        target=(schemas or {}).get(name,{})
+        if target.get('type') in ('string','integer','boolean'):
+            result,_=wire_type(target,language,schemas)
+        else:result=name
     elif kind=='array':
-        item=wire_type(value['items'],language)[0]
+        item=wire_type(value['items'],language,schemas)[0]
         result=f'[{item}]' if language=='swift' else f'List<{item}>'
     elif kind=='string' or 'enum' in value and all(isinstance(v,str) for v in value['enum']):result='String'
     elif kind=='integer' or type(value.get('const')) is int:result='Int'
@@ -37,7 +42,7 @@ def generate(schemas,language):
             # Optional open-ended link metadata is intentionally not interpreted
             # by native clients. It cannot become a client-controlled URL.
             if key=='linked_source':continue
-            kind,nullable=wire_type(value,language);optional=nullable or key not in required
+            kind,nullable=wire_type(value,language,schemas);optional=nullable or key not in required
             fields.append((key,kind+('?' if optional else ''),optional))
         if language=='swift':
             protocols='Codable, Equatable, Sendable'+(', Identifiable' if 'id' in schema['properties'] else '')

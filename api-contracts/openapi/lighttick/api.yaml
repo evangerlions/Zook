@@ -53,7 +53,12 @@ paths:
         enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
         after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
         source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones.
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
+        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
+        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
+        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
+        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
+        Private source snapshots and condition reasons are excluded from implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -89,7 +94,12 @@ paths:
         enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
         after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
         source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones.
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
+        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
+        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
+        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
+        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
+        Private source snapshots and condition reasons are excluded from implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -134,7 +144,12 @@ paths:
         enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
         after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
         source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones.
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
+        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
+        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
+        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
+        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
+        Private source snapshots and condition reasons are excluded from implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -177,7 +192,12 @@ paths:
         enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
         after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
         source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones.
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
+        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
+        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
+        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
+        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
+        Private source snapshots and condition reasons are excluded from implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -228,7 +248,12 @@ paths:
         enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
         after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
         source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones.
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
+        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
+        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
+        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
+        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
+        Private source snapshots and condition reasons are excluded from implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -1737,13 +1762,11 @@ paths:
       tags:
       - lighttick-goals
       summary: Pause, resume, complete, or archive a goal
-      description: >-
-        Goal lifecycle and task mutations serialize on the same owner lock.
-        Cached task commands cannot execute a paused, completed or archived goal;
-        legacy explicitly retained light tasks remain available while paused.
-        A manual goal with outstanding work requires a reviewed manual resumption
-        instead of direct resume. History remains readable. Delayed notifications
-        for stopped goal, plan or task resources are suppressed at delivery.
+      description: Goal lifecycle and task mutations serialize on the same owner lock. Cached task commands cannot
+        execute a paused, completed or archived goal; legacy explicitly retained light tasks remain available while
+        paused. A manual goal with outstanding work requires a reviewed manual resumption instead of direct resume.
+        History remains readable. Delayed notifications for stopped goal, plan or task resources are suppressed
+        at delivery.
       requestBody:
         required: true
         content:
@@ -3683,6 +3706,94 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickLearningPrivateCommand'
+  /api/v1/lighttick/goals/{goalId}/continuation:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    get:
+      operationId: getLightTickGoalContinuation
+      tags:
+      - lighttick-goals
+      summary: Review basic goal continuation and applicable conditions
+      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal and condition
+        versions, explicit ongoing/temporary windows, and durable immutable request receipts. Invalidation preserves
+        the original window and cannot resurrect superseded budgets. Changing capacity never deletes existing work.
+        Context reads report excess known workload and unknown effort honestly. LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0
+        closes new continuation writes but retains reads and original accepted-request replay.
+      parameters:
+      - name: period_start
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: period_end
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickContinuationContextEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/goals/{goalId}/conditions:
+    parameters:
+    - $ref: '#/components/parameters/GoalId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: confirmLightTickGoalCondition
+      tags:
+      - lighttick-goals
+      summary: Confirm, correct or invalidate a scoped daily condition
+      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal and condition
+        versions, explicit ongoing/temporary windows, and durable immutable request receipts. Invalidation preserves
+        the original window and cannot resurrect superseded budgets. Changing capacity never deletes existing work.
+        Context reads report excess known workload and unknown effort honestly. LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0
+        closes new continuation writes but retains reads and original accepted-request replay.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickConditionCommand'
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickConditionResultEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -3831,6 +3942,9 @@ components:
         guidance:
           type: string
           maxLength: 1000
+        source_task_id:
+          type: string
+          maxLength: 128
     LightTickManualDraft:
       type: object
       additionalProperties: false
@@ -3863,6 +3977,20 @@ components:
           maxItems: 50
           items:
             $ref: '#/components/schemas/LightTickManualAction'
+        source_reflection_id:
+          type: string
+          maxLength: 128
+        source_reflection_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        replace_tasks:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/LightTickManualTaskReference'
+        resume_goal:
+          type: boolean
     LightTickManualEdit:
       type: object
       additionalProperties: false
@@ -3968,6 +4096,15 @@ components:
         version:
           type: integer
           minimum: 1
+        lineage_id:
+          type: string
+          maxLength: 128
+        actual_minutes:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 1440
+          - type: 'null'
     LightTickManualPlan:
       type: object
       additionalProperties: false
@@ -4003,6 +4140,16 @@ components:
           items:
             $ref: '#/components/schemas/LightTickManualTask'
         tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+        source_reflection:
+          $ref: '#/components/schemas/LightTickReflectionSource'
+        daily_limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickDailyLimit'
+        replaced_tasks:
           type: array
           items:
             $ref: '#/components/schemas/LightTickManualTask'
@@ -6221,6 +6368,25 @@ components:
           maxItems: 28
           items:
             $ref: '#/components/schemas/LightTickAvailabilityWindow'
+        confirmed_planning_conditions:
+          $ref: '#/components/schemas/LightTickConditionsLog'
+          readOnly: true
+        completion_criteria:
+          type: string
+          maxLength: 1000
+        local_status:
+          type: string
+          maxLength: 32
+          readOnly: true
+        local_archived:
+          type: boolean
+          readOnly: true
+        closure_outcome:
+          type: string
+          enum:
+          - achieved
+          - ended_without_achievement
+          readOnly: true
       additionalProperties: false
     LightTickGoalCreateRequest:
       type: object
@@ -10789,3 +10955,375 @@ components:
       - data
       - requestId
       additionalProperties: false
+    LightTickManualTaskReference:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickConfirmedCondition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - sequence
+      - scope
+      - starts_on
+      - ends_on
+      - daily_minutes
+      - active
+      - reason
+      - confirmed_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        sequence:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        scope:
+          type: string
+          enum:
+          - ongoing
+          - temporary
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        daily_minutes:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 1440
+          - type: 'null'
+        active:
+          type: boolean
+        reason:
+          type: string
+          maxLength: 1000
+        confirmed_at:
+          type: string
+          format: date-time
+    LightTickConditionCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - base_version
+      - condition_version
+      - scope
+      - starts_on
+      - ends_on
+      - daily_minutes
+      - active
+      - reason
+      properties:
+        id:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+        base_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        condition_version:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        scope:
+          type: string
+          enum:
+          - ongoing
+          - temporary
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+        daily_minutes:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 1440
+          - type: 'null'
+        active:
+          type: boolean
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    LightTickConditionsLog:
+      type: object
+      additionalProperties: false
+      required:
+      - schema_version
+      - revisions
+      properties:
+        schema_version:
+          type: integer
+          const: 1
+        revisions:
+          type: array
+          maxItems: 512
+          items:
+            $ref: '#/components/schemas/LightTickConfirmedCondition'
+    LightTickDailyLimit:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - minutes
+      - condition_id
+      - condition_version
+      - known_minutes
+      - unknown_count
+      - over_limit
+      properties:
+        date:
+          type: string
+          format: date
+        minutes:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 1440
+          - type: 'null'
+        condition_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+        condition_version:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        known_minutes:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        unknown_count:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        over_limit:
+          type: boolean
+    LightTickContinuationGoal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - status
+      - version
+      - completion_criteria
+      - closure_outcome
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/LightTickGoalStatus'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        completion_criteria:
+          type: string
+          maxLength: 1000
+        closure_outcome:
+          anyOf:
+          - type: string
+            enum:
+            - achieved
+            - ended_without_achievement
+          - type: 'null'
+    LightTickContinuationPlan:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - status
+      - period_start
+      - period_end
+      - source_reflection_id
+      - source_reflection_version
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: string
+          maxLength: 32
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        source_reflection_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+        source_reflection_version:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+    LightTickReflectionSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - goal_id
+      - content
+      - next_action
+      - period_start
+      - period_end
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        goal_id:
+          type: string
+          maxLength: 128
+        content:
+          type: string
+          maxLength: 4000
+        next_action:
+          type: string
+          maxLength: 1000
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+    LightTickContinuationContext:
+      type: object
+      additionalProperties: false
+      required:
+      - continuation_enabled
+      - goal
+      - period_start
+      - period_end
+      - tasks
+      - reflections
+      - plans
+      - conditions
+      - daily_limits
+      properties:
+        continuation_enabled:
+          type: boolean
+        goal:
+          $ref: '#/components/schemas/LightTickContinuationGoal'
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+        reflections:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReflectionData'
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickContinuationPlan'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickConfirmedCondition'
+        daily_limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickDailyLimit'
+    LightTickConditionResult:
+      type: object
+      additionalProperties: false
+      required:
+      - goal
+      - condition
+      properties:
+        goal:
+          $ref: '#/components/schemas/LightTickContinuationGoal'
+        condition:
+          $ref: '#/components/schemas/LightTickConfirmedCondition'
+    LightTickContinuationContextEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 200
+        message:
+          type: string
+          maxLength: 4000
+        data:
+          $ref: '#/components/schemas/LightTickContinuationContext'
+        requestId:
+          type: string
+          maxLength: 200
+    LightTickConditionResultEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+          maxLength: 200
+        message:
+          type: string
+          maxLength: 4000
+        data:
+          $ref: '#/components/schemas/LightTickConditionResult'
+        requestId:
+          type: string
+          maxLength: 200
