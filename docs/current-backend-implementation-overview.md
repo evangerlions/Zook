@@ -830,3 +830,7 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 Node 参考实现 HPKE 资源版本钥、离线恢复 vault、HTTPS/nonce/30 秒当前信任快照和有根证书链验权。读者不能签发 owner 授权，恢复后只需新恢复根，历史批准设备撤销不误撤合法存活设备。恢复包不是 iOS 可移植备份码，不含 token、SQLCipher key 或 current grants。
 
 本地验证和实现状态见 docs/security/yaohezi-m2-review.md。原生 UI/Keychain、真机互操作、外部密码审计、依赖告警处理仍是发布门槛。密文同步、家庭授权和付费 AI 未完成。接口及配置以 README_API 和 canonical OpenAPI 为准。未推送或部署。
+
+#### LightTick N2 原生手动计划候选（2026-10-31）
+
+新增同 goal/plan/task 域的手动草稿、编辑、双版本原子确认与持久回执；独立本机目标/行动/复盘转属采用稳定源映射和单向归属。未知投入在数据库保留 NULL，未定日期的手动任务不投影 Today。注册账户不需要 Grow / AI。接口、关闭恢复及旧客户端 schema 2 升级边界见 README_API；迁移 081。真实隔离 PostgreSQL专项覆盖并发、回滚、重连和删除；候选不代表生产或双端上线验收已完成。

@@ -1,3 +1,4 @@
+import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
@@ -119,7 +120,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (!request.path.startsWith(PREFIX)) return undefined;
   const methodOverride = request.headers["x-http-method-override"] ?? request.headers["X-HTTP-Method-Override"];
   if (methodOverride !== undefined) {
-    if (request.path !== `${PREFIX}profile` || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
+    if ((request.path !== `${PREFIX}profile` && !/^\/api\/v1\/lighttick\/manual-plans\/[a-zA-Z0-9_-]{1,128}$/.test(request.path)) || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
       throw new ApplicationError(400, "REQ_METHOD_OVERRIDE_INVALID", "HTTP method override is not allowed for this route.");
     request = { ...request, method: "PATCH" };
   }
@@ -158,6 +159,15 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) assertGuestRouteAllowed(request);
+  const manualResult=await handleManualRequest(runtime.repository,owner,request,async()=>{
+    const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
+    if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
+  });
+  if(manualResult!==undefined)return response(context,request,manualResult);
+  const taskSchema=request.headers["x-lighttick-task-schema"]??request.headers["X-LightTick-Task-Schema"];
+  if(taskSchema!=="2"&&/^\/api\/v1\/lighttick\/(today|plans|tasks|sync)(\/|$)/.test(request.path)&&
+    (await runtime.repository.listPlans(owner)).some(p=>["manual_native","local_adoption"].includes(p.source)))
+    throw new ApplicationError(426,"CONTRACT_UPGRADE_REQUIRED","Update the client to read manual task dates and unknown effort.");
   const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {
     const membership=await context.database.findAppUser(current.appId,current.userId),user=await context.database.findUserById(current.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");

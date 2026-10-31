@@ -1512,3 +1512,15 @@ Source identity and version are checked against a currently consented lesson or 
 密码组合为 RFC 9180 X25519/HKDF-SHA256/AES-256-GCM 资源密钥封装，以及独立 256 位离线恢复材料派生的签名 verifier 和 AES-GCM 恢复 vault。服务器不执行解密、不持恢复 secret、设备私钥、SQLCipher key 或明文 DEK。不能检查恶意发送方放入密文的字节；客户端资源类型与核验边界仍是必要条件。实现与互操作参考在 `clients/yaohezi-security`，该目录和 HPKE 开发依赖不会被服务端运行时导入。详细威胁边界、AAD/framing 和评审见 `docs/security/yaohezi-m2-protocol.md`、`docs/security/yaohezi-m2-review.md`。
 
 本轮没有部署上述接口，没有完成原生可信设备 UI/Keychain、真机互操作、远程家庭授权、密文修订持久化、私有附件或 AI。不能用本地两个 Node 参考设备代替正式两台 iOS 设备验收。健康开关上线前还须处理已记录的依赖安全告警及产品删除编排；原件/共享/订阅功能开关仍为 false。
+
+### LightTick 原生手动计划与本机转属（N2）
+
+`/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
+
+草稿必须有目标标题和 1–50 个行动，日期窗口最多 31 天；标题、说明、完成标准、日期、未知或正整数分钟遵循唯一 OpenAPI。日期须是真实日历日期且在窗口内。每日已知投入（包含已有安排）不超过 1440 分钟；未知投入保持 `null`，不能推断成零或默认十五分钟。未定日期的手动/转属行动不进入 Today。已有安排保留，不因新窗口而隐藏今日历史。手动草稿不会调用模型或生成执行任务。
+
+新原生包必须在 task / plan / Today / sync 请求发送 `X-LightTick-Task-Schema: 2`。已有计划读取遇到手动/转属对象时，旧包收到 `426 CONTRACT_UPGRADE_REQUIRED`，须升级后继续；服务端不会向旧包伪造已知投入或返回不完整的 Today。正式开放前须将 delivery config 的 minimum client version 更新到双端验收包。
+
+`POST /api/v1/lighttick/local-adoptions` 是独立审阅授权的单向转属。请求明确列出选中的目标及其行动、复盘、历史，必须包含关系闭包；不包含草稿和未选择对象。登录、游客升级及记录授权不触发本机计划上传。使用本机持久随机 workspace/source proof 生成稳定源映射，proof 不存入回执、操作日志或数据库。回执含 owner、各本机 ID 对应的云端 ID；同源重复请求只返回已有映射，换账户或改变已转属源内容返回 409。真实完成与复盘时间、未知日期/投入以及原历史保留，导入不虚构一次当下执行。客户端必须在发请求前冻结所选本机源；结果待核对时只恢复原账户、原 payload/key；成功后本机保留只读来源和回执，正式修改改走云端对象。
+
+账户删除清除产品内容、映射内容与回执，仅保留不可逆源散列墓碑，阻止复制旧本机文件复活已删数据。`LIGHTTICK_MANUAL_PLANNING_ENABLED=0` 可关闭新写入，既有手动计划读取与已有原请求回执恢复仍可用；不清空本机输入。共用 fixture：`api-contracts/fixtures/lighttick/native-manual-loop.json`。本轮仅研发候选，实际部署及商店开放另行验收。

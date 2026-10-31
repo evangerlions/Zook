@@ -35,6 +35,7 @@ export class LightTickTodayService {
     const scheduledToday = tasks.filter(task => {
       const plan = planById.get(task.planId)!;
       if (goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
+      if (!task.scheduledFor && ["manual_native", "local_adoption"].includes(plan.source)) return false;
       if (!task.scheduledFor) return plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
       const date = /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor) ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone);
       return date === businessDate;
@@ -43,7 +44,7 @@ export class LightTickTodayService {
       .sort((left, right) => Number(right.status === "in_progress") - Number(left.status === "in_progress") ||
         right.priority - left.priority || (left.scheduledFor ?? "").localeCompare(right.scheduledFor ?? ""));
     const completedTasks = scheduledToday.filter(task => task.status === "completed");
-    const remainingEstimatedMinutes = executableTasks.reduce((sum, task) => sum + task.estimatedMinutes, 0);
+    const remainingEstimatedMinutes = executableTasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0);
     return { businessDate, timezone, planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0].id, primaryTask: executableTasks[0], executableTasks,
       completedTasks, remainingEstimatedMinutes, planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
       snapshotVersion: Math.max(...availablePlans.map(plan => plan.version), ...tasks.map(task => task.version), ...goals.map(goal => goal.version), 0),

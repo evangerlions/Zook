@@ -1,3 +1,4 @@
+import type {LocalClaim} from '../modules/lighttick/manual/local-adoption.types.ts';
 import type { RecordTransferRow, RecordTransferTicket } from "../modules/lighttick/records/record-transfer.types.ts";
 import { selectRecordRows } from "../modules/lighttick/lighttick-record.service.ts";
 import type { LightTickRecordRow, LightTickRecord, RecordQuery } from "../modules/lighttick/lighttick-record.service.ts";
@@ -20,6 +21,10 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  private localClaims=new Map<string,LocalClaim>();
+  async lockLocalSource(hash:string){}
+  async getLocalClaim(hash:string){return clone(this.localClaims.get(hash));}
+  async saveLocalClaim(row:LocalClaim){if(this.localClaims.has(row.sourceHash))throw new ApplicationError(409,'LIGHTTICK_VERSION_CONFLICT','Source was already adopted.');this.localClaims.set(row.sourceHash,clone(row));}
   private recordTransfers=new Map<string,RecordTransferRow>();
   private recordTickets=new Map<string,RecordTransferTicket>();
   private sourceHistories=new Map<string,Record<string,unknown>>();
@@ -66,7 +71,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -74,6 +79,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.localClaims=new Map(snapshot.localClaims);
       this.recordTransfers=new Map(snapshot.recordTransfers);this.recordTickets=new Map(snapshot.recordTickets);this.sourceHistories=new Map(snapshot.sourceHistories);
       this.records=new Map(snapshot.records);this.recordHistory=new Map(snapshot.recordHistory);
       this.learningPrivate=new Map(snapshot.learningPrivate);
@@ -375,6 +381,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    for(const [key,r] of this.localClaims)if(r.userId===owner.userId)this.localClaims.set(key,{...r,userId:null,cloudId:null,payloadHash:null,sourcePayload:{},deleted:true});
     for(const [key,row] of this.recordTransfers)if(ownerKey(row)===ownerKey(owner))this.recordTransfers.delete(key);
     for(const [key,row] of this.recordTickets)if(ownerKey(row)===ownerKey(owner))this.recordTickets.delete(key);
     for(const key of this.sourceHistories.keys())if(key.startsWith(ownerKey(owner)+":"))this.sourceHistories.delete(key);

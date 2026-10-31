@@ -34,6 +34,8 @@ export class LightTickPlanService {
   async confirm(owner: LightTickOwner, planId: string, baseVersion: number, planningSessionId?: string): Promise<{ plan: LightTickPlanRow; tasks: LightTickTaskRow[] }> {
     const current = await this.repository.getPlan(owner, planId);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
+    if (["manual_native", "local_adoption"].includes(current.source))
+      throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Use the manual plan confirmation with its durable receipt.");
     if (current.proposal.planning_session_id && current.proposal.planning_session_id !== planningSessionId)
       throw new ApplicationError(409, "LIGHTTICK_PLANNING_STALE", "Session drafts must be confirmed through their planning session.");
     transitionPlan(current.status as "proposed", "active");
