@@ -12,6 +12,8 @@ if(database.hostname!=='127.0.0.1'||database.port!=='55445'||database.pathname!=
 await runPostgresMigrations({connectionString,log:()=>{}});const pool=new Pool({connectionString}),repository=new PostgresLightTickRepository(pool);
 const seed=buildDefaultSeed(undefined,{includeLightTick:true});
 seed.appUsers.push({id:"planning-ui-member",appId:"lighttick",userId:"user_alice",status:"ACTIVE",accountRegion:"UNKNOWN",joinedAt:new Date().toISOString()});
+const delivery=seed.appConfigs.find(c=>c.appId==='lighttick'&&c.configKey==='admin.delivery_config')!;
+const configuration=JSON.parse(delivery.configValue);configuration.enabled=true;configuration.minimumClientVersions={ios:'0.1.0',android:'0.1.0'};configuration.featureFlags={aiPlanning:true,conversationalPlanning:true};delivery.configValue=JSON.stringify(configuration);
 const runtime=await createApplication({seed,lighttickEnabled:true,lighttickRepository:repository});
 const lighttick=runtime.services.lighttickRuntime;lighttick.planningEnabled=true;
 const owner={appId:"lighttick" as const,userId:"user_alice"};

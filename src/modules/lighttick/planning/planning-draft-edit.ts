@@ -81,8 +81,8 @@ export async function editPlanningDraft(
     { tasks: input.tasks },
     {
       availableMinutes: Number(session.context.available_minutes!.value),
-      periodStart: plan.periodStart.slice(0, 10),
-      periodEnd: plan.periodEnd.slice(0, 10),
+      periodStart: plan!.periodStart.slice(0, 10),
+      periodEnd: plan!.periodEnd.slice(0, 10),
       timezone,
     },
   );
