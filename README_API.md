@@ -1460,3 +1460,15 @@ Source identity and version are checked against a currently consented lesson or 
 `GET /api/v1/lighttick/action-plans/practices/{planId}/follow-up?feedback_id=...`只读返回选中反馈、原行动revision、当前来源版本／可用性及本人当前有效的上级计划。`POST`同一路径提交`key,revision,feedback_id,source_version,title,date`，可选`timezone,parent_id,parent_revision`；所选上级必须携带当前revision。沿用schema头2、注册会员、独立写入开关与原请求幂等。原行动／来源／上级变化返回冲突供本人重新核对；来源撤回拒绝新建，但已提交同key先重放。
 
 新实践附带只读`practice_origin:{plan_id,feedback_id}`，来源仍为当前授权材料；原反馈、完成事实、上级日期与目标分钟不变。不自动复制整期预算，不自动生成计划或调用模型。旧端忽略可选字段，按`capabilities.practice_follow_up`识别能力；课程与整体Goal Coach约束仍遵循各自原任务。
+
+### LightTick 原生手动计划与本机转属（N2）
+
+`/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
+
+草稿必须有目标标题和 1–50 个行动，日期窗口最多 31 天；标题、说明、完成标准、日期、未知或正整数分钟遵循唯一 OpenAPI。日期须是真实日历日期且在窗口内。每日已知投入（包含已有安排）不超过 1440 分钟；未知投入保持 `null`，不能推断成零或默认十五分钟。未定日期的手动/转属行动不进入 Today。已有安排保留，不因新窗口而隐藏今日历史。手动草稿不会调用模型或生成执行任务。
+
+新原生包必须在 task / plan / Today / sync 请求发送 `X-LightTick-Task-Schema: 2`。已有计划读取遇到手动/转属对象时，旧包收到 `426 CONTRACT_UPGRADE_REQUIRED`，须升级后继续；服务端不会向旧包伪造已知投入或返回不完整的 Today。正式开放前须将 delivery config 的 minimum client version 更新到双端验收包。
+
+`POST /api/v1/lighttick/local-adoptions` 是独立审阅授权的单向转属。请求明确列出选中的目标及其行动、复盘、历史，必须包含关系闭包；不包含草稿和未选择对象。登录、游客升级及记录授权不触发本机计划上传。使用本机持久随机 workspace/source proof 生成稳定源映射，proof 不存入回执、操作日志或数据库。回执含 owner、各本机 ID 对应的云端 ID；同源重复请求只返回已有映射，换账户或改变已转属源内容返回 409。真实完成与复盘时间、未知日期/投入以及原历史保留，导入不虚构一次当下执行。客户端必须在发请求前冻结所选本机源；结果待核对时只恢复原账户、原 payload/key；成功后本机保留只读来源和回执，正式修改改走云端对象。
+
+账户删除清除产品内容、映射内容与回执，仅保留不可逆源散列墓碑，阻止复制旧本机文件复活已删数据。`LIGHTTICK_MANUAL_PLANNING_ENABLED=0` 可关闭新写入，既有手动计划读取与已有原请求回执恢复仍可用；不清空本机输入。共用 fixture：`api-contracts/fixtures/lighttick/native-manual-loop.json`。本轮仅研发候选，实际部署及商店开放另行验收。

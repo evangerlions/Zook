@@ -81,7 +81,7 @@ export class LightTickProposalService {
       const lineage = Object.entries(facts.byLineage).find(([, group]) => group.title === biasRule.facts.title)?.[0];
       const task = lineage ? pendingByLineage(lineage) : undefined;
       const ratio = typeof biasRule.facts.ratio === "number" ? biasRule.facts.ratio : 0;
-      if (task && !touched.has(task.id) && Math.abs(ratio) >= 0.3 && task.estimatedMinutes > 0) {
+      if (task && !touched.has(task.id) && Math.abs(ratio) >= 0.3 && task.estimatedMinutes !== null && task.estimatedMinutes > 0) {
         const adjustment = Math.round(biasRule.facts.deviation_minutes / biasRule.facts.count);
         const estimated = Math.min(1440, Math.max(1, task.estimatedMinutes + adjustment));
         if (estimated !== task.estimatedMinutes) {

@@ -40,6 +40,277 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/manual-plans:
+    get:
+      operationId: listLightTickManualPlans
+      tags:
+      - lighttick-planning
+      summary: listLightTickManualPlans
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
+        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
+        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
+        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
+        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
+        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
+        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones.
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickManualListEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createLightTickManualPlan
+      tags:
+      - lighttick-planning
+      summary: createLightTickManualPlan
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
+        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
+        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
+        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
+        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
+        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
+        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones.
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickManualPlanEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickManualDraft'
+  /api/v1/lighttick/manual-plans/{planId}:
+    get:
+      operationId: getLightTickManualPlan
+      tags:
+      - lighttick-planning
+      summary: getLightTickManualPlan
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
+        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
+        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
+        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
+        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
+        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
+        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones.
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickManualPlanEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+    patch:
+      operationId: editLightTickManualPlan
+      tags:
+      - lighttick-planning
+      summary: editLightTickManualPlan
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
+        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
+        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
+        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
+        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
+        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
+        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones.
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickManualPlanEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickManualEdit'
+  /api/v1/lighttick/manual-plans/{planId}/confirm:
+    post:
+      operationId: confirmLightTickManualPlan
+      tags:
+      - lighttick-planning
+      summary: confirmLightTickManualPlan
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
+        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
+        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
+        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
+        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
+        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
+        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones.
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickManualPlanEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickManualConfirm'
+  /api/v1/lighttick/local-adoptions:
+    post:
+      operationId: adoptLightTickLocalWorkspace
+      tags:
+      - lighttick-planning
+      summary: adoptLightTickLocalWorkspace
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
+        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
+        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
+        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
+        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
+        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
+        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones.
+      responses:
+        '200':
+          description: Owner-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickLocalReceiptEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickLocalAdoption'
   /api/v1/lighttick/records:
     get:
       operationId: listLightTickRecords
@@ -991,7 +1262,8 @@ paths:
         matching today's executable tasks. Positive numeric deviation suggests increasing duration, negative suggests
         decreasing it; zero or absent numeric evidence produces no directional suggestion. Top-level suggestion
         fields retain camelCase.
-      parameters: []
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
         '200':
           description: Successful owner-scoped response
@@ -1016,6 +1288,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/today/rhythm-suggestion/feedback:
     post:
       operationId: recordLightTickRhythmFeedback
@@ -1024,7 +1298,8 @@ paths:
       summary: Accept or dismiss a rhythm suggestion
       description: Requires a registered LightTick membership; guest sessions receive 403. accept records intent
         only and does not mutate tasks or plans; dismiss retires the insight from the feed.
-      parameters: []
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
         '200':
           description: Successful owner-scoped response
@@ -1048,6 +1323,8 @@ paths:
         '409':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '426':
           $ref: '#/components/responses/LightTickError'
       requestBody:
         required: true
@@ -1510,11 +1787,14 @@ paths:
         in: query
         schema:
           $ref: '#/components/schemas/LightTickId'
+      - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
         '200':
           $ref: '#/components/responses/LightTickOk'
         '401':
           description: Missing, invalid or expired bearer credentials.
+        '426':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/plans/{planId}:
     parameters:
     - $ref: '#/components/parameters/PlanId'
@@ -1537,6 +1817,10 @@ paths:
                       $ref: '#/components/schemas/LightTickPlanData'
         '404':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/plans/{planId}/confirm:
     parameters:
     - $ref: '#/components/parameters/PlanId'
@@ -1559,6 +1843,10 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/plans/{planId}/tasks:
     parameters:
     - $ref: '#/components/parameters/PlanId'
@@ -1575,6 +1863,10 @@ paths:
           $ref: '#/components/responses/LightTickOk'
         '404':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/today:
     get:
       operationId: getLightTickToday
@@ -1589,6 +1881,7 @@ paths:
         schema:
           type: string
           format: date
+      - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
         '200':
           description: Successful response
@@ -1603,8 +1896,10 @@ paths:
                       $ref: '#/components/schemas/LightTickTodayData'
         '400':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/tasks/{taskId}/start:
-    parameters: &id001
+    parameters:
     - $ref: '#/components/parameters/TaskId'
     - $ref: '#/components/parameters/IdempotencyKey'
     post:
@@ -1612,13 +1907,13 @@ paths:
       tags:
       - lighttick-tasks
       summary: Mark a task in progress
-      requestBody: &id003
+      requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickVersionedCommandRequest'
-      responses: &id002
+      responses:
         '200':
           $ref: '#/components/responses/LightTickOk'
         '400':
@@ -1627,8 +1922,14 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '409':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/complete:
-    parameters: *id001
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
     post:
       operationId: completeLightTickTask
       tags:
@@ -1640,9 +1941,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickTaskCompleteRequest'
-      responses: *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/skip:
-    parameters: *id001
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
     post:
       operationId: skipLightTickTask
       tags:
@@ -1654,9 +1969,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickTaskSkipRequest'
-      responses: *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/defer:
-    parameters: *id001
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
     post:
       operationId: deferLightTickTask
       tags:
@@ -1668,9 +1997,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickTaskDeferRequest'
-      responses: *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/cancel:
-    parameters: *id001
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
     post:
       operationId: cancelLightTickTask
       tags:
@@ -1682,9 +2025,23 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickTaskCancelRequest'
-      responses: *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/variant:
-    parameters: *id001
+    parameters:
+    - $ref: '#/components/parameters/TaskId'
+    - $ref: '#/components/parameters/IdempotencyKey'
     post:
       operationId: switchLightTickTaskVariant
       tags:
@@ -1696,7 +2053,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickTaskVariantRequest'
-      responses: *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/tasks/{taskId}/steps/{stepId}:
     parameters:
     - $ref: '#/components/parameters/TaskId'
@@ -1717,7 +2086,19 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickTaskStepCommandRequest'
-      responses: *id002
+      responses:
+        '200':
+          $ref: '#/components/responses/LightTickOk'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/reflections:
     get:
       operationId: listLightTickReflections
@@ -2008,7 +2389,12 @@ paths:
       - lighttick-ai
       - lighttick-plans
       summary: Explain proposal conclusion, evidence, and changes without mutating the plan
-      requestBody: *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickVersionedCommandRequest'
       responses:
         '200':
           $ref: '#/components/responses/LightTickOk'
@@ -2042,6 +2428,10 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '413':
           $ref: '#/components/responses/LightTickError'
+        '426':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/LightTickTaskSchema'
   /api/v1/lighttick/sync/pull:
     get:
       operationId: pullLightTickSyncChanges
@@ -2058,6 +2448,7 @@ paths:
           minimum: 1
           maximum: 200
           default: 100
+      - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
         '200':
           description: Successful response
@@ -2071,6 +2462,8 @@ paths:
                     data:
                       $ref: '#/components/schemas/LightTickSyncPullData'
         '400':
+          $ref: '#/components/responses/LightTickError'
+        '426':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/devices:
     post:
@@ -2259,8 +2652,8 @@ paths:
       summary: Create a reviewed single check practice from an owned current source
       description: Registered LightTick membership or trusted active Grow action bridge, schema header 2 and opt-in
         write gate are required. Current source is checked only for new commands; committed identical keys replay
-        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL are
-        not copied. No lesson completion, execution minutes or AI calls are created.
+        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL
+        are not copied. No lesson completion, execution minutes or AI calls are created.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -2336,7 +2729,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-      description: Read-only review. Returns the selected feedback, source availability/version and current active parents. It never creates or completes an action.
+      description: Read-only review. Returns the selected feedback, source availability/version and current active
+        parents. It never creates or completes an action.
     post:
       operationId: createLightTickPracticeFollowUp
       tags:
@@ -2344,8 +2738,8 @@ paths:
       summary: Confirm a reviewed follow-up from one owned practice feedback
       description: Registered LightTick membership or trusted active Grow action bridge, schema header 2 and opt-in
         write gate are required. Current source is checked only for new commands; committed identical keys replay
-        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL are
-        not copied. No lesson completion, execution minutes or AI calls are created.
+        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL
+        are not copied. No lesson completion, execution minutes or AI calls are created.
       parameters:
       - name: planId
         in: path
@@ -3358,6 +3752,16 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/LightTickId'
+    LightTickTaskSchema:
+      name: X-LightTick-Task-Schema
+      in: header
+      required: false
+      description: Use 2 for nullable effort and explicit manual task dates. Owners with manual/adopted plans require
+        2; older clients receive 426 and must upgrade. Existing data is retained.
+      schema:
+        type: string
+        enum:
+        - '2'
   responses:
     LightTickOk:
       description: Successful LightTick response
@@ -3384,6 +3788,495 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickManualAction:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - scheduled_for
+      - estimated_minutes
+      - completion_criteria
+      - guidance
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          minLength: 1
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        scheduled_for:
+          type:
+          - string
+          - 'null'
+          format: date
+        estimated_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 1440
+        completion_criteria:
+          type: string
+          maxLength: 1000
+        guidance:
+          type: string
+          maxLength: 1000
+    LightTickManualDraft:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - completion_criteria
+      - period_start
+      - period_end
+      - tasks
+      properties:
+        goal_id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        completion_criteria:
+          type: string
+          maxLength: 1000
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        tasks:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickManualAction'
+    LightTickManualEdit:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - completion_criteria
+      - period_start
+      - period_end
+      - tasks
+      - base_version
+      properties:
+        goal_id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        completion_criteria:
+          type: string
+          maxLength: 1000
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        tasks:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickManualAction'
+        base_version:
+          type: integer
+          minimum: 1
+    LightTickManualConfirm:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - goal_base_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        goal_base_version:
+          type: integer
+          minimum: 1
+    LightTickManualTask:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - goal_id
+      - plan_id
+      - title
+      - status
+      - scheduled_date
+      - estimated_duration_minutes
+      - completion_criteria
+      - notes
+      - completed_at
+      - version
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        goal_id:
+          type: string
+          maxLength: 128
+        plan_id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: string
+          maxLength: 30
+        scheduled_date:
+          type:
+          - string
+          - 'null'
+          format: date
+        estimated_duration_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 1440
+        completion_criteria:
+          type: string
+          maxLength: 1000
+        notes:
+          type: string
+          maxLength: 1000
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+    LightTickManualPlan:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - goal_id
+      - goal_version
+      - version
+      - status
+      - draft
+      - preserved_tasks
+      - tasks
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        goal_id:
+          type: string
+          maxLength: 128
+        goal_version:
+          type: integer
+        version:
+          type: integer
+        status:
+          type: string
+          enum:
+          - proposed
+          - active
+        draft:
+          $ref: '#/components/schemas/LightTickManualDraft'
+        preserved_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickManualTask'
+    LightTickLocalGoal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - criteria
+      - status
+      - archived
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        criteria:
+          type: string
+          maxLength: 1000
+        status:
+          type: string
+          enum:
+          - active
+          - paused
+          - achieved
+          - ended
+        archived:
+          type: boolean
+    LightTickLocalAction:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - goal_id
+      - title
+      - date
+      - estimated_minutes
+      - criteria
+      - details
+      - completed_at
+      - archived
+      - source_reflection_id
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        goal_id:
+          type: string
+          maxLength: 128
+        title:
+          type: string
+          maxLength: 200
+        date:
+          type:
+          - string
+          - 'null'
+          format: date
+        estimated_minutes:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 1440
+        criteria:
+          type: string
+          maxLength: 1000
+        details:
+          type: string
+          maxLength: 1000
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        archived:
+          type: boolean
+        source_reflection_id:
+          type:
+          - string
+          - 'null'
+    LightTickLocalReflection:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - goal_id
+      - action_id
+      - result
+      - obstacles
+      - next_step
+      - created_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        goal_id:
+          type: string
+          maxLength: 128
+        action_id:
+          type:
+          - string
+          - 'null'
+        result:
+          type: string
+          maxLength: 1800
+        obstacles:
+          type: string
+          maxLength: 1800
+        next_step:
+          type: string
+          maxLength: 1000
+        created_at:
+          type: string
+          format: date-time
+    LightTickLocalEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - entity_id
+      - kind
+      - value
+      - created_at
+      properties:
+        id:
+          type: string
+          maxLength: 128
+        entity_id:
+          type: string
+          maxLength: 128
+        kind:
+          type: string
+          maxLength: 100
+        value:
+          type: string
+          maxLength: 10000
+        created_at:
+          type: string
+          format: date-time
+    LightTickLocalAdoption:
+      type: object
+      additionalProperties: false
+      required:
+      - workspace_id
+      - source_secret
+      - goals
+      - actions
+      - reflections
+      - events
+      properties:
+        workspace_id:
+          type: string
+          maxLength: 128
+        source_secret:
+          type: string
+          minLength: 32
+          maxLength: 128
+          writeOnly: true
+          pattern: ^[a-zA-Z0-9-]+$
+        goals:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/LightTickLocalGoal'
+          minItems: 1
+        actions:
+          type: array
+          maxItems: 250
+          items:
+            $ref: '#/components/schemas/LightTickLocalAction'
+        reflections:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/LightTickLocalReflection'
+        events:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/LightTickLocalEvent'
+    LightTickLocalMapping:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - local_id
+      - cloud_id
+      properties:
+        kind:
+          type: string
+          enum:
+          - goal
+          - action
+          - reflection
+        local_id:
+          type: string
+          maxLength: 128
+        cloud_id:
+          type: string
+          maxLength: 128
+    LightTickLocalReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - receipt_id
+      - owner_id
+      - mappings
+      - adopted_at
+      properties:
+        receipt_id:
+          type: string
+          maxLength: 128
+        owner_id:
+          type: string
+          maxLength: 128
+        mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickLocalMapping'
+        adopted_at:
+          type: string
+          format: date-time
+    LightTickManualPlanEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickManualPlan'
+        requestId:
+          type: string
+    LightTickManualListEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickManualPlan'
+        requestId:
+          type: string
+    LightTickLocalReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickLocalReceipt'
+        requestId:
+          type: string
     LightTickRecord:
       type: object
       additionalProperties: false
@@ -5551,7 +6444,9 @@ components:
           minLength: 1
           maxLength: 200
         estimatedMinutes:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 1
           maximum: 1440
         priority:
@@ -5621,7 +6516,9 @@ components:
           type: string
           format: date
         estimated_duration_minutes:
-          type: integer
+          type:
+          - integer
+          - 'null'
           minimum: 1
           maximum: 1440
         actual_duration_minutes:
@@ -7789,11 +8686,11 @@ components:
       - revision
       - action
       additionalProperties: false
-      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums confirmed
-        session minutes; interrupted threshold requires complete-time. Content requires a durable private source receipt.
-        Running actions reject other mutations. Completed/archived actions are read-only except check reopen. HTTP writes
-        remain closed in this stage. Practice feedback is append-only, allowed after completion, and never completes
-        an action or lesson.
+      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums
+        confirmed session minutes; interrupted threshold requires complete-time. Content requires a durable private
+        source receipt. Running actions reject other mutations. Completed/archived actions are read-only except
+        check reopen. HTTP writes remain closed in this stage. Practice feedback is append-only, allowed after completion,
+        and never completes an action or lesson.
       allOf:
       - if:
           properties:
@@ -9767,16 +10664,22 @@ components:
           minLength: 1
           maxLength: 160
         date:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           format: date
         timezone:
           type: string
           maxLength: 100
         parent_id:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           maxLength: 80
         parent_revision:
-          type: [integer, 'null']
+          type:
+          - integer
+          - 'null'
           minimum: 1
       required:
       - key
@@ -9803,10 +10706,14 @@ components:
         feedback:
           $ref: '#/components/schemas/LightTickPracticeFeedback'
         source_version:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           maxLength: 80
         source_title:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           maxLength: 10000
         parents:
           type: array
@@ -9821,7 +10728,10 @@ components:
                 type: string
               period:
                 type: string
-                enum: [year, month, week]
+                enum:
+                - year
+                - month
+                - week
               revision:
                 type: integer
                 minimum: 1
@@ -9834,9 +10744,27 @@ components:
               timezone:
                 type: string
               target_minutes:
-                type: [integer, 'null']
-            required: [id, title, period, revision, start_date, end_date, timezone, target_minutes]
-      required: [available, origin_id, feedback_id, revision, feedback, source_version, source_title, parents]
+                type:
+                - integer
+                - 'null'
+            required:
+            - id
+            - title
+            - period
+            - revision
+            - start_date
+            - end_date
+            - timezone
+            - target_minutes
+      required:
+      - available
+      - origin_id
+      - feedback_id
+      - revision
+      - feedback
+      - source_version
+      - source_title
+      - parents
     LightTickPracticeFollowUpContextEnvelope:
       type: object
       properties:

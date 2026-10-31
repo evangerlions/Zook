@@ -78,6 +78,7 @@ export function aggregateExecutionFacts(events: LightTickExecutionEventRow[], ti
   let to = "";
   for (const event of completions) {
     const estimated = payloadNumber(event.payload, "estimated_minutes");
+    if (estimated === undefined) continue; // Unknown estimates are never comparison evidence.
     const actual = payloadNumber(event.payload, "actual_minutes") ?? 0;
     const deviation = estimated === undefined ? 0 : actual - estimated;
     const lineage = payloadString(event.payload, "lineage_id") ?? payloadString(event.payload, "task_id") ?? "unknown";
@@ -107,7 +108,7 @@ export function aggregateExecutionFacts(events: LightTickExecutionEventRow[], ti
   const completedCount = completions.length;
   return {
     completedCount,
-    averageDeviationMinutes: completedCount === 0 ? 0 : deviationSum / completedCount,
+    averageDeviationMinutes: Object.values(byLineage).reduce((n, g) => n + g.count, 0) === 0 ? 0 : deviationSum / Object.values(byLineage).reduce((n, g) => n + g.count, 0),
     byLineage,
     bySlot,
     maxConsecutiveSkipsByLineage: maxConsecutiveSkips(events),
@@ -209,12 +210,12 @@ export function evaluateFeedbackRules(facts: LightTickExecutionFacts): LightTick
 
 /** Deterministic factual feedback for a single fresh completion (audit-only). */
 export function buildSingleCompletionFeedback(
-  task: { id: string; title: string; estimatedMinutes: number; selectedVariant?: string },
+  task: { id: string; title: string; estimatedMinutes: number | null; selectedVariant?: string },
   actualMinutes: number,
   completedAt: string,
 ): LightTickFactFeedback {
-  const deviation = actualMinutes - task.estimatedMinutes;
-  const message = deviation > 5
+  const deviation = task.estimatedMinutes === null ? 0 : actualMinutes - task.estimatedMinutes;
+  const message = task.estimatedMinutes === null ? `这次实际用了 ${actualMinutes} 分钟；预计投入尚未确定。` : deviation > 5
     ? `这次预计 ${task.estimatedMinutes} 分钟，实际用了 ${actualMinutes} 分钟。`
     : deviation < -5
       ? `这次预计 ${task.estimatedMinutes} 分钟，实际只用了 ${actualMinutes} 分钟。`
