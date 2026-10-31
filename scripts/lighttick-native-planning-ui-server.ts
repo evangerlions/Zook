@@ -7,8 +7,10 @@ import {LightTickAiRunner} from "../src/modules/lighttick/ai/lighttick-ai-runner
 import {Pool} from 'pg';
 import {PostgresLightTickRepository} from '../src/infrastructure/database/postgres/postgres-lighttick-repository.ts';
 import {runPostgresMigrations} from '../src/infrastructure/database/postgres/migrate.ts';
+const qaPort=Number(process.env.LIGHTTICK_NATIVE_PLANNING_TEST_PORT??'3104');
+if(![3104,3114].includes(qaPort))throw Error('Planning QA uses only reserved loopback ports');
 const connectionString=process.env.LIGHTTICK_TEST_DATABASE_URL??'';const database=new URL(connectionString);
-if(database.hostname!=='127.0.0.1'||database.port!=='55445'||database.pathname!=='/native_enhancements_backend_qa')throw Error('Requires disposable native_enhancements_backend_qa on loopback55445');
+if(database.hostname!=='127.0.0.1'||database.port!=='55445'||database.pathname!==(qaPort===3104?'/native_enhancements_backend_qa':'/native_enhancements_planning_android_qa'))throw Error('Requires disposable native_enhancements_backend_qa on loopback55445');
 await runPostgresMigrations({connectionString,log:()=>{}});const pool=new Pool({connectionString}),repository=new PostgresLightTickRepository(pool);
 const seed=buildDefaultSeed(undefined,{includeLightTick:true});
 seed.appUsers.push({id:"planning-ui-member",appId:"lighttick",userId:"user_alice",status:"ACTIVE",accountRegion:"UNKNOWN",joinedAt:new Date().toISOString()});
@@ -52,4 +54,4 @@ http.createServer(async(req,res)=>{
  res.writeHead(response.statusCode,{"Content-Type":"application/json"});res.end(JSON.stringify(response.body));
  await runtime.queue.processDueJobs(job=>lighttick.worker!.process(job),new Date("2030-01-01"));
  }catch(e){res.writeHead(500);res.end(JSON.stringify({code:"TEST_SERVER_FAILURE"}));}
-}).listen(3104,"127.0.0.1",()=>process.stdout.write("Local planning acceptance server on 3104; deterministic provider only.\n"));
+}).listen(qaPort,"127.0.0.1",()=>process.stdout.write(`Local planning acceptance server on ${qaPort}; deterministic provider only.\n`));
