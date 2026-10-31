@@ -824,3 +824,6 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 目标 constraints 中保存版本化 confirmed_planning_conditions 审计；持续/临时每日可用分钟按所选窗口解析，更正/撤销保留历史，临时条件不永久化。已有事实不删除，未知投入保持未知；手动确认、旧计划/提案接受和任务强度变更共用容量规则与 owner 锁。私人条件原因/历史不自动进入 AI。生命周期阻止暂停、达成、结束目标的旧任务及定向通知恢复执行，达成与未达成结束分开记录。
 
 接口与关闭恢复见 README_API，固定合同由 api-contracts 生成供双端消费；无新表迁移。真实 PG 专项命令：`LIGHTTICK_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/lighttick-native-continuation-postgres.test.ts`（仅可丢弃数据库，独立 schema）。双端本机 UI 验证不代表真机、真实通知 provider、dev/online 或商店发布完成。
+
+#### 原生可选规划增强 N4
+PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会话/计划版本、已确认总投入与当前每日容量校验；显式确认再校验持久提案。开关关闭仍支持已有会话读取和已接受请求回执恢复，不重新调度生成。原生手动链与网页 C05 可选增强独立，网页复用 canonical manual-plans，不新增第二份计划主数据。工程回归不代替真实 provider 或上线外部门禁。

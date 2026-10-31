@@ -215,6 +215,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickPlanningContextRequest",
         "LightTickPlanningDraftRequest",
         "LightTickPlanningConfirmRequest",
+        "LightTickPlanningTaskEdit",
+        "LightTickPlanningDraftEditRequest",
         "LightTickPlanningMutationData",
         "LightTickPlanningEnvelope",
         "LightTickPlanningMutationEnvelope",

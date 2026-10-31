@@ -35391,6 +35391,217 @@ export type LightTickPlanningConfirmRequest = {
   "plan_version": number;
 };
 
+export const LightTickPlanningTaskEditSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "estimated_minutes"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "scheduled_for": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T.*)?$",
+      "description": "ISO timestamp or YYYY-MM-DD business date within the selected window."
+    },
+    "completion_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "steps": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "materials": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "expected_output": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickPlanningTaskEdit = {
+  "title": string;
+  "estimated_minutes": number;
+  "scheduled_for"?: string;
+  "completion_criteria"?: string;
+  "steps"?: string[];
+  "guidance"?: {
+  "purpose"?: string;
+  "materials"?: string[];
+  "expected_output"?: string;
+};
+  "priority"?: number;
+};
+
+export const LightTickPlanningDraftEditRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "context_revision",
+    "draft_plan_id",
+    "plan_version",
+    "tasks"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "context_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "draft_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "estimated_minutes"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "scheduled_for": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T.*)?$",
+            "description": "ISO timestamp or YYYY-MM-DD business date within the selected window."
+          },
+          "completion_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 2147483647
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningDraftEditRequest = {
+  "base_version": number;
+  "context_revision": number;
+  "draft_plan_id": string;
+  "plan_version": number;
+  "tasks": (
+{
+  "title": string;
+  "estimated_minutes": number;
+  "scheduled_for"?: string;
+  "completion_criteria"?: string;
+  "steps"?: string[];
+  "guidance"?: {
+  "purpose"?: string;
+  "materials"?: string[];
+  "expected_output"?: string;
+};
+  "priority"?: number;
+}
+)[];
+};
+
 export const LightTickPlanningMutationDataSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -46408,6 +46619,10 @@ export const LightTickPublicFeatureFlagsSchema = {
     },
     "ai_coach": {
       "type": "boolean"
+    },
+    "conversational_planning": {
+      "type": "boolean",
+      "description": "Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable."
     }
   },
   "additionalProperties": false
@@ -46419,6 +46634,7 @@ export type LightTickPublicFeatureFlags = {
   "sync": boolean;
   "notifications": boolean;
   "ai_coach": boolean;
+  "conversational_planning"?: boolean;
 };
 
 export const LightTickMinimumClientVersionsSchema = {
@@ -46532,6 +46748,10 @@ export const LightTickPublicConfigDataSchema = {
         },
         "ai_coach": {
           "type": "boolean"
+        },
+        "conversational_planning": {
+          "type": "boolean",
+          "description": "Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable."
         }
       },
       "additionalProperties": false
@@ -46572,6 +46792,7 @@ export type LightTickPublicConfigData = {
   "sync": boolean;
   "notifications": boolean;
   "ai_coach": boolean;
+  "conversational_planning"?: boolean;
 };
   "privacy_policy_url": string;
   "terms_of_service_url": string;
@@ -46681,6 +46902,10 @@ export const LightTickPublicConfigEnvelopeSchema = {
             },
             "ai_coach": {
               "type": "boolean"
+            },
+            "conversational_planning": {
+              "type": "boolean",
+              "description": "Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable."
             }
           },
           "additionalProperties": false
@@ -46729,6 +46954,7 @@ export type LightTickPublicConfigEnvelope = {
   "sync": boolean;
   "notifications": boolean;
   "ai_coach": boolean;
+  "conversational_planning"?: boolean;
 };
   "privacy_policy_url": string;
   "terms_of_service_url": string;
@@ -53536,12 +53762,14 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningContext",
   "LightTickPlanningContextRequest",
   "LightTickPlanningCreateRequest",
+  "LightTickPlanningDraftEditRequest",
   "LightTickPlanningDraftRequest",
   "LightTickPlanningEnvelope",
   "LightTickPlanningMessageRequest",
   "LightTickPlanningMutationData",
   "LightTickPlanningMutationEnvelope",
   "LightTickPlanningSession",
+  "LightTickPlanningTaskEdit",
   "LightTickPlanningValue",
   "LightTickPracticeFollowUpContextEnvelope",
   "LightTickPracticeFollowUpRequest",

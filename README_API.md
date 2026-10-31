@@ -1145,6 +1145,7 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
 | POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?}`，返回 202；instruction 用于调整当前草案 |
+| PATCH /planning-sessions/{id}/draft | `{base_version,context_revision,draft_plan_id,plan_version,tasks}`，在同一草案ID逐项修改标题、投入、日期、标准、步骤/指导和优先级；校验摘要总投入与当前每日容量，不创建执行任务 |
 | POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session |
 
 所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
@@ -1486,3 +1487,11 @@ Source identity and version are checked against a currently consented lesson or 
 - 手动草稿可提交 `replace_tasks: [{id,version}]`，逐项审阅待替换的 pending/in_progress 任务；行动可带 `source_task_id` 保留 lineage。确认事务内核对来源、任务、目标版本和当前容量，取消明确替换的旧事项并写入新事项，完成历史不变。`resume_goal=true` 允许为暂停／恢复中的目标制定新安排，须覆盖所有未完成事项；未选为继续的工作会明确显示在替换清单，不自动补债。
 - `PUT reflections/{id}` 按稳定资源ID和提交的 base_version 持久保存原响应。同一完整请求在后续修正发生后仍可核对原已接受版本；同一ID/base_version的不同正文409。保持旧客户端已有PUT及header行为，持久请求身份不与其他域共用的header key冲突。
 - `LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0` 关闭新的条件、关联后续、替换与审阅恢复写入；读取及匹配的已接受原请求仍可核对。已有有效条件继续约束普通安排，关闭不删除历史；正式账户及membership验证不变，不要求Grow绑定或网页会话。
+
+### LightTick 可选规划增强（N4）
+
+草案逐项编辑复用既有 PlanningSession 和 proposed AI plan，不另建手动副本。编辑前校验会话、摘要与计划版本、来源、目标状态、到期时间及当天容量；确认时再次校验持久草案未超出已审阅总投入，最终任务只在显式确认事务中创建。共用请求 fixture：`api-contracts/fixtures/lighttick/native-planning-edit.json`。AI 上下文仅追加当前窗口有效的每日分钟及条件ID/修订，不包含私人原因或审计历史。
+
+`public/config.features.conversational_planning` 只有运行时 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 与 delivery `featureFlags.conversationalPlanning=true` 同时开启才为 true；旧响应缺失视为 false，原生据此隐藏增强入口。规划开关关闭时拒绝新的写入；既有会话可读取，已接受的相同 key/body 回执可恢复，恢复不重新启动生成任务。未接受的请求仍拒绝。App 本机/手动基础链不依赖规划开关或 Grow 会话。
+
+Grow 的可选网页入口经 C05 同源受限代理调用现有 `goals`、`manual-plans` 和 continuation 读取路由，只允许基础草稿创建、逐项修改与显式确认；浏览器不接触 Zook token，不将基本计划复制到 Grow 计划库。该入口的 `GROW_NATIVE_BASIC_PLANS_ENABLED` 默认关闭；原生基础能力独立。真实 provider 质量、真机及用户观察证据与工程替身测试分开记录。

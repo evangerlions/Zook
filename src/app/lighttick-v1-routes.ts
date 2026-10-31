@@ -133,7 +133,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
     const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
-    return response(context, request, buildLightTickPublicConfiguration(enabled, config));
+    return response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
   }
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
   if (request.method === "POST" && request.path === `${PREFIX}account/guest-sessions`) {

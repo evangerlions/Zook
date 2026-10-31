@@ -71,12 +71,14 @@ public struct LightTickPublicFeatureFlags: Codable, Sendable {
     public let sync: Bool
     public let notifications: Bool
     public let aiCoach: Bool
+    public let conversationalPlanning: Bool?
 
     enum CodingKeys: String, CodingKey {
         case sync, notifications
         case guestSessions = "guest_sessions"
         case accountUpgrade = "account_upgrade"
         case aiCoach = "ai_coach"
+        case conversationalPlanning = "conversational_planning"
     }
 }
 

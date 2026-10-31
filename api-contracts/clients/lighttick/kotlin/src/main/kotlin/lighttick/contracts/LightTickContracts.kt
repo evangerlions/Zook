@@ -77,6 +77,7 @@ data class LightTickPublicFeatureFlags(
     val sync: Boolean,
     val notifications: Boolean,
     val aiCoach: Boolean,
+    val conversationalPlanning: Boolean = false,
 )
 
 data class LightTickMinimumClientVersions(

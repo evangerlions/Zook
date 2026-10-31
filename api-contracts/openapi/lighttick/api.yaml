@@ -3794,6 +3794,51 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-sessions/{session_id}/draft:
+    patch:
+      operationId: editLightTickPlanningDraft
+      tags:
+      - lighttick-planning
+      summary: Edit tasks in the same unconfirmed draft
+      description: Registered owner, explicit draft/session/context/plan versions and Idempotency-Key required.
+        Updates the same draft ID, never schedules work. Goal or existing-work changes require regeneration.
+        Disabled planning retains reads and accepted-request reconciliation.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningDraftEditRequest'
 components:
   securitySchemes:
     bearerAuth:
@@ -7569,6 +7614,9 @@ components:
           type: boolean
         ai_coach:
           type: boolean
+        conversational_planning:
+          type: boolean
+          description: Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable.
       additionalProperties: false
     LightTickMinimumClientVersions:
       type: object
@@ -11327,3 +11375,85 @@ components:
         requestId:
           type: string
           maxLength: 200
+    LightTickPlanningTaskEdit:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - estimated_minutes
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        estimated_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        scheduled_for:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}(?:T.*)?$
+          description: ISO timestamp or YYYY-MM-DD business date within the selected window.
+        completion_criteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        steps:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 1000
+        guidance:
+          type: object
+          additionalProperties: false
+          properties:
+            purpose:
+              type: string
+              minLength: 1
+              maxLength: 1000
+            materials:
+              type: array
+              maxItems: 10
+              items:
+                type: string
+                minLength: 1
+                maxLength: 1000
+            expected_output:
+              type: string
+              minLength: 1
+              maxLength: 1000
+        priority:
+          type: integer
+          minimum: -2147483648
+          maximum: 2147483647
+    LightTickPlanningDraftEditRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - context_revision
+      - draft_plan_id
+      - plan_version
+      - tasks
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        context_revision:
+          type: integer
+          minimum: 1
+        draft_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        plan_version:
+          type: integer
+          minimum: 1
+        tasks:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickPlanningTaskEdit'
