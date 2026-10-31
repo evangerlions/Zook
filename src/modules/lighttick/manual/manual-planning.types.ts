@@ -6,9 +6,14 @@ export interface ManualAction {
   estimated_minutes: number | null;
   completion_criteria: string;
   guidance: string;
+  source_task_id?: string;
 }
 export interface ManualDraft {
   goal_id?: string;
+  source_reflection_id?: string;
+  source_reflection_version?: number;
+  replace_tasks?: {id:string;version:number}[];
+  resume_goal?: boolean;
   title: string;
   completion_criteria: string;
   period_start: string;
@@ -55,6 +60,11 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
     value.tasks.length > 50
   )
     invalid("A manual plan needs 1–50 actions.");
+  const hasSource = value.source_reflection_id !== undefined || value.source_reflection_version !== undefined;
+  if (hasSource && (!value.goal_id || typeof value.source_reflection_id !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(value.source_reflection_id) || !Number.isInteger(value.source_reflection_version) || value.source_reflection_version! < 1)) invalid("Select an owned reflection and its reviewed revision.");
+  if (value.resume_goal !== undefined && typeof value.resume_goal !== "boolean") invalid("Review whether this arrangement resumes the goal.");
+  if (value.replace_tasks !== undefined && (!Array.isArray(value.replace_tasks) || value.replace_tasks.length > 500 || value.replace_tasks.some(r => !r || !boundedText(r.id,128,true) || !Number.isInteger(r.version) || r.version < 1) || new Set(value.replace_tasks.map(r=>r.id)).size !== value.replace_tasks.length)) invalid("Review unique source task IDs and versions.");
+  if ((value.resume_goal || value.replace_tasks?.length) && !value.goal_id) invalid("Review the existing goal before replacing or resuming work.");
   const ids = new Set<string>(),
     identities = new Set<string>(),
     minutes = new Map<string, number>();
@@ -69,6 +79,7 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
     )
       invalid("Check each action title, stable ID and instructions.");
     ids.add(t.id);
+    if (t.source_task_id !== undefined && !value.replace_tasks?.some(r=>r.id===t.source_task_id)) invalid("Each task source must belong to the reviewed replacement list.");
     if (
       t.scheduled_for !== null &&
       (!dateOnly(t.scheduled_for) ||
@@ -103,6 +114,9 @@ export function validateManualDraft(value: ManualDraft): ManualDraft {
   } = value;
   return {
     ...(goal_id ? { goal_id } : {}),
+    ...(hasSource ? {source_reflection_id:value.source_reflection_id,source_reflection_version:value.source_reflection_version} : {}),
+    ...(value.replace_tasks ? {replace_tasks:structuredClone(value.replace_tasks)} : {}),
+    ...(value.resume_goal !== undefined ? {resume_goal:value.resume_goal} : {}),
     title,
     completion_criteria,
     period_start,

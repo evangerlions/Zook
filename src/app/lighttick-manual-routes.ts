@@ -51,6 +51,11 @@ export async function handleManualRequest(
       "LIGHTTICK_APP_DISABLED",
       "New manual cloud writes are unavailable; saved plans and request receipts remain readable.",
     );
+  const body=request.body as Record<string,unknown>;
+  const reviewedPlan=match ? await repository.getPlan(owner,match[1]) : undefined;
+  const continuation=(value:any)=>!!(value?.source_reflection_id||value?.resume_goal||value?.replace_tasks?.length);
+  if(process.env.LIGHTTICK_NATIVE_CONTINUATION_ENABLED==="0"&&(continuation(body)||continuation(reviewedPlan?.proposal.draft))&&!await repository.getOperation(owner,key))
+    throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","New continuation writes are unavailable; saved history and original accepted requests remain readable.");
   if (request.method === "POST" && relative === "manual-plans") {
     validateManualRequest("create", request.body);
     return service.create(owner, key, request.body as unknown as ManualDraft);

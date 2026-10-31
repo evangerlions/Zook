@@ -1,3 +1,5 @@
+import { reviewManualContinuation } from "./manual-continuation.ts";
+import { assertDailyCapacity } from "../goal-context/confirmed-conditions.ts";
 import { businessDateAt } from "../lighttick-today.service.ts";
 import type {
   LightTickRepository,
@@ -111,7 +113,7 @@ export class ManualPlanningService {
       let goal: LightTickGoalRow;
       if (input.goal_id) {
         goal = await this.goal(owner, input.goal_id);
-        this.available(goal);
+        this.available(goal, input);
       } else {
         goal = {
           ...owner,
@@ -130,6 +132,7 @@ export class ManualPlanningService {
           }),
         );
       }
+      const review = await reviewManualContinuation(this.repository,owner,goal,input,await this.repository.listTasks(owner),(await this.repository.getProfile(owner))?.timezone??"UTC");
       const plan: LightTickPlanRow = {
         ...owner,
         id: randomId("lighttick_plan"),
@@ -139,7 +142,7 @@ export class ManualPlanningService {
         status: "proposed",
         periodStart: input.period_start,
         periodEnd: input.period_end,
-        proposal: this.proposal(input),
+        proposal: this.proposal(input, review.source),
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -155,11 +158,10 @@ export class ManualPlanningService {
   }
   async get(owner: LightTickOwner, id: string) {
     const plan = await this.plan(owner, id);
-    const [goal, tasks, profile] = await Promise.all([
-      this.goal(owner, plan.goalId),
-      this.repository.listTasks(owner),
-      this.repository.getProfile(owner),
-    ]);
+    // Mutation callers share one PostgreSQL transaction connection.
+    const goal = await this.goal(owner, plan.goalId);
+    const tasks = await this.repository.listTasks(owner);
+    const profile = await this.repository.getProfile(owner);
     return this.project(plan, goal, tasks, profile?.timezone ?? "UTC");
   }
   async list(owner: LightTickOwner) {
@@ -197,8 +199,11 @@ export class ManualPlanningService {
       version: p.version,
       status: p.status,
       draft: p.proposal.draft as unknown as ManualDraft,
+      ...(p.proposal.source_reflection_snapshot ? {source_reflection:p.proposal.source_reflection_snapshot} : {}),
+      daily_limits: p.status !== "proposed" && Array.isArray(p.proposal.confirmed_daily_limits) ? p.proposal.confirmed_daily_limits : assertDailyCapacity(g,(p.proposal.draft as unknown as ManualDraft).period_start,(p.proposal.draft as unknown as ManualDraft).period_end,p.status === "active" ? [] : (p.proposal.draft as unknown as ManualDraft).tasks,tasks,new Set(((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).map(r=>r.id)),timezone,false),
+      replaced_tasks: tasks.filter(t=>((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).some(r=>r.id===t.id)).map(t=>manualTaskData(t,timezone)),
       preserved_tasks: tasks
-        .filter((t) => t.goalId === g.id && t.planId !== p.id)
+        .filter((t) => t.goalId === g.id && t.planId !== p.id && !((p.proposal.draft as unknown as ManualDraft).replace_tasks??[]).some(r=>r.id===t.id))
         .map((t) => manualTaskData(t, timezone)),
       tasks: tasks
         .filter((t) => t.planId === p.id)
@@ -217,12 +222,14 @@ export class ManualPlanningService {
       this.proposed(p, input.base_version);
       if ((input.goal_id ?? p.goalId) !== p.goalId)
         invalid("A draft cannot change owner goal.");
+      const goal = await this.goal(owner,p.goalId);this.available(goal,input);
+      const review = await reviewManualContinuation(this.repository,owner,goal,input,await this.repository.listTasks(owner),(await this.repository.getProfile(owner))?.timezone??"UTC");
       await this.repository.savePlan(
         {
           ...p,
           periodStart: input.period_start,
           periodEnd: input.period_end,
-          proposal: this.proposal(input),
+          proposal: this.proposal(input, review.source),
           updatedAt: this.clock().toISOString(),
         },
         this.write(
@@ -254,7 +261,6 @@ export class ManualPlanningService {
         const p = await this.plan(owner, id);
         this.proposed(p, input.base_version);
         const g = await this.goal(owner, p.goalId);
-        this.available(g);
         if (g.version !== input.goal_base_version)
           throw new ApplicationError(
             409,
@@ -265,11 +271,12 @@ export class ManualPlanningService {
             p.proposal.draft as unknown as ManualDraft,
           ),
           now = this.clock().toISOString();
-        const existing = (await this.repository.listTasks(owner)).filter(
-          (t) => t.goalId === g.id && t.status !== "cancelled",
-        );
-        const timezone =
-          (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+        this.available(g,d);
+        const allTasks=await this.repository.listTasks(owner);
+        const timezone=(await this.repository.getProfile(owner))?.timezone??"UTC";
+        const review=await reviewManualContinuation(this.repository,owner,g,d,allTasks,timezone,p.id);
+        const retired=new Set(review.replacements.map(t=>t.id));
+        const existing=allTasks.filter(t=>t.goalId===g.id&&t.status!=="cancelled"&&!retired.has(t.id));
         const identity = (title: string) =>
           title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
         const date = (t: LightTickTaskRow) =>
@@ -306,6 +313,7 @@ export class ManualPlanningService {
               invalid("Existing and new actions exceed daily capacity.");
             budgets.set(t.scheduled_for, n);
           }
+        for(const old of review.replacements)await this.repository.saveTask({...old,status:"cancelled",updatedAt:now},this.write(owner,"task",old.id,old.version+1,"task_replaced",now,{status:"cancelled",replacement_plan_id:p.id}),old.version);
         await this.repository.saveGoal(
           {
             ...g,
@@ -314,7 +322,7 @@ export class ManualPlanningService {
               ...g.constraints,
               completion_criteria: d.completion_criteria,
             },
-            status: g.status === "draft" ? "active" : g.status,
+            status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             updatedAt: now,
           },
           this.write(
@@ -326,13 +334,13 @@ export class ManualPlanningService {
             now,
             {
               title: d.title,
-              status: g.status === "draft" ? "active" : g.status,
+              status: g.status === "draft" || d.resume_goal ? "active" : g.status,
             },
           ),
           g.version,
         );
         await this.repository.savePlan(
-          { ...p, status: "active", updatedAt: now },
+          { ...p, status: "active", proposal:{...p.proposal,confirmed_daily_limits:review.dailyLimits}, updatedAt: now },
           this.write(
             owner,
             "plan",
@@ -345,11 +353,13 @@ export class ManualPlanningService {
           p.version,
         );
         for (const [position, a] of d.tasks.entries()) {
+          const sourceTask=review.replacements.find(t=>t.id===a.source_task_id)??(review.replacements.length===1?review.replacements[0]:undefined);
           const t: LightTickTaskRow = {
             ...owner,
             id: randomId("lighttick_task"),
             goalId: g.id,
             planId: p.id,
+            ...(sourceTask ? {lineageId:sourceTask.lineageId??sourceTask.id} : {}),
             title: a.title.trim(),
             status: "pending",
             priority: d.tasks.length - position,
@@ -366,6 +376,8 @@ export class ManualPlanningService {
             this.write(owner, "task", t.id, 1, "task_materialized", now, {
               plan_id: p.id,
               manual_action_id: a.id,
+              ...(sourceTask ? {source_task_id:sourceTask.id} : {}),
+              ...(d.source_reflection_id ? {source_reflection_id:d.source_reflection_id,source_reflection_version:d.source_reflection_version} : {}),
             }),
           );
         }
@@ -373,9 +385,10 @@ export class ManualPlanningService {
       },
     );
   }
-  private proposal(input: ManualDraft) {
+  private proposal(input: ManualDraft, source?: unknown) {
     return {
       manual_schema: 1,
+      ...(source ? {source_reflection_snapshot:source} : {}),
       draft: validateManualDraft(input),
       tasks: input.tasks.map((a) => ({
         title: a.title,
@@ -388,8 +401,8 @@ export class ManualPlanningService {
       })),
     };
   }
-  private available(g: LightTickGoalRow) {
-    if (!["draft", "active", "recovering"].includes(g.status))
+  private available(g: LightTickGoalRow, draft?: ManualDraft) {
+    if (!["draft", "active"].includes(g.status) && !(draft?.resume_goal && ["paused","recovering"].includes(g.status)))
       throw new ApplicationError(
         409,
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",

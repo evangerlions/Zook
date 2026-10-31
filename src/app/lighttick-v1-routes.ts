@@ -1,6 +1,7 @@
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
+import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -160,10 +161,13 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) assertGuestRouteAllowed(request);
-  const manualResult=await handleManualRequest(runtime.repository,owner,request,async()=>{
+  const assertActive=async()=>{
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
-  });
+  };
+  const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
+  if(continuationResult!==undefined)return response(context,request,continuationResult);
+  const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);
   if(manualResult!==undefined)return response(context,request,manualResult);
   const taskSchema=request.headers["x-lighttick-task-schema"]??request.headers["X-LightTick-Task-Schema"];
   if(taskSchema!=="2"&&/^\/api\/v1\/lighttick\/(today|plans|tasks|sync)(\/|$)/.test(request.path)&&
@@ -442,7 +446,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, data);
   }
 
-  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request);
+  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request, assertActive);
   if (reflectionResult) return response(context, request, reflectionResult);
 
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {

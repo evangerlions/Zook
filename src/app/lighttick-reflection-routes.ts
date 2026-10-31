@@ -1,11 +1,13 @@
+import { sha256 } from '../shared/utils.ts';
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
+import { ManualPlanningService } from '../modules/lighttick/manual/manual-planning.service.ts';
 import { LightTickReflectionService, reflectionData } from "../modules/lighttick/lighttick-reflection.service.ts";
 
 // Called only after the shared LightTick authentication and guest capability checks.
-export async function handleReflectionRequest(repository: LightTickRepository, owner: LightTickOwner, request: HttpRequest) {
+export async function handleReflectionRequest(repository: LightTickRepository, owner: LightTickOwner, request: HttpRequest, assertActive: () => Promise<void> = async () => {}) {
   const service = new LightTickReflectionService(repository);
   if (request.path === "/api/v1/lighttick/reflections" && request.method === "GET") {
     const goalId = request.query?.goal_id;
@@ -20,5 +22,9 @@ export async function handleReflectionRequest(repository: LightTickRepository, o
   const body = request.body as Record<string, unknown>;
   if (Object.keys(body).some(k => !["goal_id", "plan_id", "period_start", "period_end", "content", "next_action", "base_version"].includes(k)))
     throw new ApplicationError(400, "REQ_FIELD_INVALID", "Unknown reflection field.");
-  return reflectionData(await service.save(owner, match[1]!, body as Parameters<LightTickReflectionService["save"]>[2]));
+  const save = async () => reflectionData(await service.save(owner, match[1]!, body as Parameters<LightTickReflectionService["save"]>[2]));
+  // PUT already has an immutable logical identity: resource + submitted base version.
+  // Keep legacy header behavior while retaining accepted revisions after later edits.
+  const key = "reflection-save:" + sha256(JSON.stringify([match[1],body.base_version]));
+  return new ManualPlanningService(repository, () => new Date(), assertActive).operation(owner,key,"reflection-save:"+match[1],body,save);
 }

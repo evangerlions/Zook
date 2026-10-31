@@ -1,0 +1,33 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Ajv2020} from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import {buildDefaultSeed} from '../../src/infrastructure/database/prisma/default-seed.ts';
+import {createApplication} from '../support/create-test-application.ts';
+import {LightTickContinuationContextEnvelopeSchema,LightTickConditionResultEnvelopeSchema,LightTickManualPlanEnvelopeSchema} from '../../src/generated/openapi/public-contracts.generated.ts';
+test('registered native continuation HTTP preserves scoped conditions, source receipts and nullable contracts without AI',async()=>{
+ const seed=buildDefaultSeed(undefined,{includeLightTick:true});
+ for(const id of ['user_alice','user_bob'])seed.appUsers.push({id:'loop-'+id,appId:'lighttick',userId:id,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
+ const app=await createApplication({seed,lighttickEnabled:true});app.services.lighttickRuntime.planningEnabled=false;
+ const r=app.services.lighttickRuntime.repository,owner={appId:'lighttick',userId:'user_alice'} as const;
+ const headers={authorization:'Bearer '+app.services.tokenService.issueAccessToken(owner.userId,owner.appId),'x-app-id':'lighttick','x-lighttick-task-schema':'2'};
+ let count=0;const call=(path:string,method:any='GET',body?:any,key='continuation-request-'+(++count),h:any=headers,query:any={})=>app.app.handle({path:'/api/v1/lighttick/'+path,method,body,headers:{...h,'idempotency-key':key},query});
+ const ajv=new Ajv2020({strict:false});addFormats(ajv);const check=(schema:any,response:any)=>{assert.equal(response.statusCode,200,JSON.stringify(response.body));const valid=ajv.compile(schema);assert.equal(valid(JSON.parse(JSON.stringify(response.body))),true,JSON.stringify(valid.errors))};
+ const draft={title:'Native loop',completion_criteria:'One example',period_start:'2026-10-31',period_end:'2026-10-31',tasks:[{id:'initial-action',title:'Original action',scheduled_for:'2026-10-31',estimated_minutes:15,completion_criteria:'One result',guidance:''}]};
+ let response=await call('manual-plans','POST',draft);check(LightTickManualPlanEnvelopeSchema,response);let p:any=response.body.data;
+ response=await call('manual-plans/'+p.id+'/confirm','POST',{base_version:p.version,goal_base_version:p.goal_version});check(LightTickManualPlanEnvelopeSchema,response);p=response.body.data;
+ const path='goals/'+p.goal_id,window={period_start:'2026-10-31',period_end:'2026-11-01'};
+ const condition={id:'confirmed-budget',base_version:p.goal_version,condition_version:0,scope:'ongoing',starts_on:'2026-10-31',ends_on:null,daily_minutes:10,active:true,reason:'My private capacity explanation'};
+ const saved=await call(path+'/conditions','POST',condition,'condition-durable-key');check(LightTickConditionResultEnvelopeSchema,saved);
+ const context=await call(path+'/continuation','GET',undefined,undefined,headers,window);check(LightTickContinuationContextEnvelopeSchema,context);assert.equal((context.body.data as any).daily_limits[0].over_limit,true);assert.equal((await r.listTasks(owner)).length,1);
+ const note={goal_id:p.goal_id,period_start:'2026-10-31',period_end:'2026-10-31',content:'Unknown result; needs another try',next_action:'Try one smaller example',base_version:0};
+ const first=await call('reflections/loop-reflection','PUT',note);assert.equal(first.statusCode,200,JSON.stringify(first.body));
+ const revised=await call('reflections/loop-reflection','PUT',{...note,base_version:1,content:'A revised private observation'});assert.equal(revised.statusCode,200);
+ const replay=await call('reflections/loop-reflection','PUT',note);assert.equal(replay.statusCode,200);assert.equal((replay.body.data as any).version,1);assert.equal((await r.listTasks(owner)).length,1);
+ const next={...draft,goal_id:p.goal_id,period_start:'2026-11-01',period_end:'2026-11-01',source_reflection_id:'loop-reflection',source_reflection_version:2,tasks:[{...draft.tasks[0],id:'next-action',title:'A smaller reviewed action',scheduled_for:'2026-11-01',estimated_minutes:10}]};
+ response=await call('manual-plans','POST',next);check(LightTickManualPlanEnvelopeSchema,response);const proposed:any=response.body.data;assert.equal(proposed.source_reflection.version,2);assert.equal(proposed.tasks.length,0);
+ response=await call('manual-plans/'+proposed.id+'/confirm','POST',{base_version:proposed.version,goal_base_version:proposed.goal_version});check(LightTickManualPlanEnvelopeSchema,response);assert.equal((await r.listTasks(owner)).length,2);
+ const other={...headers,authorization:'Bearer '+app.services.tokenService.issueAccessToken('user_bob','lighttick')};assert.equal((await call(path+'/continuation','GET',undefined,undefined,other,window)).statusCode,404);
+ const prior=process.env.LIGHTTICK_NATIVE_CONTINUATION_ENABLED;
+ try{process.env.LIGHTTICK_NATIVE_CONTINUATION_ENABLED='0';const read=await call(path+'/continuation','GET',undefined,undefined,headers,window);check(LightTickContinuationContextEnvelopeSchema,read);assert.equal((read.body.data as any).continuation_enabled,false);assert.equal((await call(path+'/conditions','POST',{...condition,base_version:999},'new-disabled-operation')).statusCode,503);assert.deepEqual((await call(path+'/conditions','POST',condition,'condition-durable-key')).body.data,saved.body.data);assert.equal((await call('manual-plans','POST',next)).statusCode,503)}finally{if(prior===undefined)delete process.env.LIGHTTICK_NATIVE_CONTINUATION_ENABLED;else process.env.LIGHTTICK_NATIVE_CONTINUATION_ENABLED=prior}
+});
