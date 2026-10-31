@@ -1737,6 +1737,13 @@ paths:
       tags:
       - lighttick-goals
       summary: Pause, resume, complete, or archive a goal
+      description: >-
+        Goal lifecycle and task mutations serialize on the same owner lock.
+        Cached task commands cannot execute a paused, completed or archived goal;
+        legacy explicitly retained light tasks remain available while paused.
+        A manual goal with outstanding work requires a reviewed manual resumption
+        instead of direct resume. History remains readable. Delayed notifications
+        for stopped goal, plan or task resources are suppressed at delivery.
       requestBody:
         required: true
         content:

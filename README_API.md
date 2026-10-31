@@ -1472,3 +1472,7 @@ Source identity and version are checked against a currently consented lesson or 
 `POST /api/v1/lighttick/local-adoptions` 是独立审阅授权的单向转属。请求明确列出选中的目标及其行动、复盘、历史，必须包含关系闭包；不包含草稿和未选择对象。登录、游客升级及记录授权不触发本机计划上传。使用本机持久随机 workspace/source proof 生成稳定源映射，proof 不存入回执、操作日志或数据库。回执含 owner、各本机 ID 对应的云端 ID；同源重复请求只返回已有映射，换账户或改变已转属源内容返回 409。真实完成与复盘时间、未知日期/投入以及原历史保留，导入不虚构一次当下执行。客户端必须在发请求前冻结所选本机源；结果待核对时只恢复原账户、原 payload/key；成功后本机保留只读来源和回执，正式修改改走云端对象。
 
 账户删除清除产品内容、映射内容与回执，仅保留不可逆源散列墓碑，阻止复制旧本机文件复活已删数据。`LIGHTTICK_MANUAL_PLANNING_ENABLED=0` 可关闭新写入，既有手动计划读取与已有原请求回执恢复仍可用；不清空本机输入。共用 fixture：`api-contracts/fixtures/lighttick/native-manual-loop.json`。本轮仅研发候选，实际部署及商店开放另行验收。
+
+### 目标停止与旧入口（2026-10-31）
+
+目标生命周期与任务 start/complete/variant/step 等写入在同一 owner 事务锁下核验。暂停、达成或结束的目标不能被缓存任务命令、旧通知／深链隐式恢复；状态不允许时返回409，历史仍可读取。旧接口明确选择 keep_light_tasks 的轻量／最小任务保持兼容。手动目标仍有未完成事项时，直接 lifecycle resume 返回409，须先审阅剩余事项并确认恢复安排；不会自动把旧积压补排到今日。通知执行时按其目标／计划／任务来源重新核验，已停止目标的延迟投递被抑制。

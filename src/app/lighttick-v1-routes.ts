@@ -92,6 +92,7 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
   const key = idempotencyKeyOf(request);
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
+    await runtime.repository.lockPlanningOwner(owner);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
       if (existing.payloadHash !== payloadHash || existing.action !== action)

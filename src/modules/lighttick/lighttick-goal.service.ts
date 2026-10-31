@@ -46,7 +46,15 @@ export class LightTickGoalService {
   }
   async transition(owner: LightTickOwner, id: string, baseVersion: number,
     action: "pause" | "resume" | "complete" | "archive", options: LightTickGoalLifecycleOptions = {}): Promise<LightTickGoalRow> {
+    return this.repository.transaction(owner, async () => {
+    await this.repository.lockPlanningOwner(owner);
     const current = await this.get(owner, id); const timestamp = this.clock().toISOString();
+    if (current.version !== baseVersion) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Goal changed; review it again.");
+    if (action === "resume" && options.resumeMode !== "adjust_goal") {
+      const manual = (await this.repository.listPlans(owner, id)).some(p => ["manual_native", "local_adoption"].includes(p.source));
+      const outstanding = (await this.repository.listTasks(owner)).some(t => t.goalId === id && ["pending", "in_progress"].includes(t.status));
+      if (manual && outstanding) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Review remaining tasks and confirm a new arrangement before resuming.");
+    }
     if (options.notificationPolicy !== undefined && !["suppress", "light_only"].includes(options.notificationPolicy))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Notification policy is invalid.");
     if (options.resumeMode !== undefined && !["original_pace", "recovery_mode", "adjust_goal"].includes(options.resumeMode))
@@ -68,6 +76,7 @@ export class LightTickGoalService {
     return await this.repository.saveGoal(next,
       this.write(next, action === "resume" && status === "recovering" ? "goal_recovery_started" : `goal_${action}d`,
         baseVersion + 1, timestamp), baseVersion);
+    });
   }
   private validateTitle(value: string): string {
     const title = value.trim();

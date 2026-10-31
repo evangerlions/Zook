@@ -99,3 +99,15 @@ test("paused goals and disabled review reminders suppress product notifications"
   await queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
   assert.equal(sent, 0);
 });
+for (const status of ['completed','archived'] as const) {
+ test(`stopped ${status} goals suppress delayed task and proposal notifications even with another active goal`,async()=>{
+  const repository=new InMemoryLightTickRepository(),queue=new InMemoryJobQueue();let sent=0;
+  await device(repository,'device_stopped_001','synthetic_push_stopped');
+  repository.listGoals=async()=>[{id:'stopped',status},{id:'other',status:'active'}] as any;
+  repository.getTask=async(_owner,id)=>id==='stale-task'?{goalId:'stopped'} as any:undefined;
+  const service=new LightTickNotificationService(repository,queue,{dispatch:async()=>{sent++}},undefined,()=>new Date(now));
+  await service.enqueue(owner,'2026-08-20',{type:'unfinished_task',resource_id:'stale-task',title_key:'a',body_key:'b'});
+  await service.enqueue(owner,'2026-08-20',{type:'plan_proposal',resource_id:'stopped',title_key:'a',body_key:'b'});
+  await queue.processDueJobs(job=>service.process(job),new Date('2030-01-01'));assert.equal(sent,0);
+ });
+}
