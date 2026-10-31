@@ -1,3 +1,6 @@
+import type { RecordTransferRow, RecordTransferTicket } from "../modules/lighttick/records/record-transfer.types.ts";
+import { selectRecordRows } from "../modules/lighttick/lighttick-record.service.ts";
+import type { LightTickRecordRow, LightTickRecord, RecordQuery } from "../modules/lighttick/lighttick-record.service.ts";
 import type {ActionWorkspaceRow,ActionTicket,ActionLink} from '../modules/lighttick/actions/action.types.ts';
 import type { LightTickReflectionRow } from "../modules/lighttick/lighttick-reflection.service.ts";
 import type { PlanningSession } from "../modules/lighttick/planning/planning.types.ts";
@@ -17,6 +20,11 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  private recordTransfers=new Map<string,RecordTransferRow>();
+  private recordTickets=new Map<string,RecordTransferTicket>();
+  private sourceHistories=new Map<string,Record<string,unknown>>();
+  private learningPrivate = new Map<string,Record<string,any>>();
+  private learningLibraries = new Map<string,Record<string,any>>();
   private actionWorkspaces = new Map<string,ActionWorkspaceRow>();
   private actionTickets = new Map<string,ActionTicket>();
   private actionLinks = new Map<string,ActionLink>();
@@ -26,6 +34,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private plans = new Map<string, LightTickPlanRow>();
   private tasks = new Map<string, LightTickTaskRow>();
   private taskSteps = new Map<string, LightTickTaskStepRow>();
+  private records = new Map<string, LightTickRecordRow>();
+  private recordHistory = new Map<string, LightTickRecord[]>();
   private reflections = new Map<string, LightTickReflectionRow>();
   private reviews = new Map<string, LightTickReviewRow>();
   private proposals = new Map<string, LightTickChangeProposalRow>();
@@ -56,7 +66,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -64,6 +74,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.recordTransfers=new Map(snapshot.recordTransfers);this.recordTickets=new Map(snapshot.recordTickets);this.sourceHistories=new Map(snapshot.sourceHistories);
+      this.records=new Map(snapshot.records);this.recordHistory=new Map(snapshot.recordHistory);
+      this.learningPrivate=new Map(snapshot.learningPrivate);
+      this.learningLibraries=new Map(snapshot.learningLibraries);
       this.actionWorkspaces=new Map(snapshot.actionWorkspaces);this.actionTickets=new Map(snapshot.actionTickets);this.actionLinks=new Map(snapshot.actionLinks);
       this.reflections = new Map(snapshot.reflections);
       this.planningSessions = new Map(snapshot.planningSessions);
@@ -98,6 +112,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   async lockActionOwner(owner:LightTickOwner){this.assertOwner(owner);}
+  async getLearningPrivate(owner:LightTickOwner){return clone(this.learningPrivate.get(ownerKey(owner)));}
+  async saveLearningPrivate(owner:LightTickOwner,data:Record<string,any>){this.learningPrivate.set(ownerKey(owner),clone(data));}
+  async getLearningLibrary(owner:LightTickOwner){return clone(this.learningLibraries.get(ownerKey(owner)));}
+  async saveLearningLibrary(owner:LightTickOwner,data:Record<string,any>){this.learningLibraries.set(ownerKey(owner),clone(data));}
   async getActionWorkspace(owner:LightTickOwner){return clone(this.actionWorkspaces.get(ownerKey(owner)));}
   async saveActionWorkspace(row:ActionWorkspaceRow){this.actionWorkspaces.set(ownerKey(row),clone(row));}
   async getActionTicket(hash:string){return clone(this.actionTickets.get(hash));}
@@ -107,6 +125,32 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async saveActionLink(row:ActionLink){const source=this.actionLinks.get(row.source_account_id),owner=await this.getOwnerActionLink(row);
     if(source&&source.userId!==row.userId||owner&&owner.source_account_id!==row.source_account_id)throw new ApplicationError(409,'LIGHTTICK_VERSION_CONFLICT','账户已连接。');
     this.actionLinks.set(row.source_account_id,clone(row));}
+  async lockRecordSource(key:string) {}
+  async getRecordTransfer(key:string){return clone(this.recordTransfers.get(key));}
+  async getOwnerRecordTransfer(owner:LightTickOwner){return clone([...this.recordTransfers.values()].find(r=>ownerKey(r)===ownerKey(owner)));}
+  async saveRecordTransfer(row:RecordTransferRow){
+    const source=this.recordTransfers.get(row.sourceKey),target=await this.getOwnerRecordTransfer(row);
+    if(source&&source.userId!==row.userId||target&&target.sourceKey!==row.sourceKey)throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Record binding conflict.");
+    this.recordTransfers.set(row.sourceKey,clone(row));
+  }
+  async getRecordTransferTicket(hash:string){return clone(this.recordTickets.get(hash));}
+  async saveRecordTransferTicket(row:RecordTransferTicket){this.recordTickets.set(row.hash,clone(row));}
+  async importRecord(row:LightTickRecordRow,versions:LightTickRecord[],history:Record<string,unknown>){
+    if(this.records.has(rowKey(row)))throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Imported record conflict.");
+    this.records.set(rowKey(row),clone(row));this.recordHistory.set(rowKey(row),clone(versions));this.sourceHistories.set(rowKey(row),clone(history));
+    this.changes.push({...row,entityType:"record",entityId:row.id,entityVersion:row.version,operation:"upsert",snapshot:clone(row.payload) as unknown as Record<string,unknown>,changedAt:row.payload.updated_at,sequence:++this.sequence});
+  }
+  async recordSourceHistory(owner:LightTickOwner,id:string){return clone(this.sourceHistories.get(rowKey({...owner,id})));}
+  async lockRecordOwner(owner: LightTickOwner) { this.assertOwner(owner); }
+  async getRecord(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.records.get(rowKey({...owner,id}))); }
+  async listRecords(owner: LightTickOwner, query?: RecordQuery) { this.assertOwner(owner); const rows=[...this.records.values()].filter(r => ownerKey(r) === ownerKey(owner)); return clone(query?selectRecordRows(rows,query):rows); }
+  async recordVersions(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.recordHistory.get(rowKey({...owner,id})) ?? []).reverse(); }
+  async saveRecord(row: LightTickRecordRow, baseVersion: number) {
+    const key=rowKey(row),current=this.records.get(key);
+    if ((current?.version ?? 0) !== baseVersion) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Record version changed.");
+    this.records.set(key,clone(row)); this.recordHistory.set(key,[...(this.recordHistory.get(key)??[]),clone(row.payload)]);
+    this.changes.push({...row,entityType:"record",entityId:row.id,entityVersion:row.version,operation:"upsert",snapshot:clone(row.payload) as unknown as Record<string,unknown>,changedAt:row.payload.updated_at,sequence:++this.sequence});
+  }
   async lockPlanningOwner(owner: LightTickOwner) { this.assertOwner(owner); }
   async getPlanningSession(owner: LightTickOwner, id: string) {
     this.assertOwner(owner); return clone(this.planningSessions.get(rowKey({ ...owner, id })));
@@ -331,7 +375,12 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    for(const [key,row] of this.recordTransfers)if(ownerKey(row)===ownerKey(owner))this.recordTransfers.delete(key);
+    for(const [key,row] of this.recordTickets)if(ownerKey(row)===ownerKey(owner))this.recordTickets.delete(key);
+    for(const key of this.sourceHistories.keys())if(key.startsWith(ownerKey(owner)+":"))this.sourceHistories.delete(key);
     const prefix = `${ownerKey(owner)}:`;
+    this.learningPrivate.delete(ownerKey(owner));
+    this.learningLibraries.delete(ownerKey(owner));
     this.actionWorkspaces.delete(ownerKey(owner));
     for(const store of [this.actionTickets,this.actionLinks])for(const [key,row] of store)if(ownerKey(row)===ownerKey(owner))store.delete(key);
     this.profiles.delete(ownerKey(owner));
@@ -339,6 +388,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     for (const [key, operation] of this.upgradeOperations)
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)
         this.upgradeOperations.delete(key);
+    for (const key of this.records.keys()) if (key.startsWith(ownerKey(owner)+":")) { this.records.delete(key); this.recordHistory.delete(key); }
     for (const store of [this.planningSessions,this.goals,this.plans,this.tasks,this.taskSteps,this.reflections,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }

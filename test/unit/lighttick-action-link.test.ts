@@ -19,3 +19,19 @@ test('expired/replaced code, source collisions and invalid import roll back',asy
  const other={...owner,userId:'other'},t=await links.ticket(other);await assert.rejects(links.claim(t.code,'grow-alice'),/已连接/);
  await assert.rejects(links.import('grow-alice',{snapshot,snapshot_hash:'x'.repeat(64)}),/校验/);assert.equal((await links.linked('grow-alice')).phase,'staged');
 });
+test('v1 importer rejects v2 facts and events without freezing or modifying either workspace',async()=>{
+ const repository=new InMemoryLightTickRepository(),actions=new ActionService(repository),links=new ActionLinkService(actions,secret);
+ const t=await links.ticket(owner);await links.claim(t.code,'grow-p0-source');
+ const before=JSON.stringify(await repository.getActionWorkspace(owner));
+ for(const patch of [{snapshot_version:2},{schema_version:2},{content_sources:[]},{content_events:[]},{plans:[{schema_version:2}]},{plans:[{completion_mode:'check'}]},
+  {records:[{record_kind:'completion'}]},{snapshot_version:3}]){
+  const data={...snapshot,...patch};await assert.rejects(links.import('grow-p0-source',{snapshot:data,snapshot_hash:digest(data)}),
+   (e:any)=>e.statusCode===409&&e.code==='CONTRACT_UPGRADE_REQUIRED');
+  assert.equal(JSON.stringify(await repository.getActionWorkspace(owner)),before);
+  assert.equal((await links.linked('grow-p0-source')).phase,'staged');
+ }
+ const invalid={...snapshot,plans:{}};await assert.rejects(links.import('grow-p0-source',{snapshot:invalid,snapshot_hash:digest(invalid)}),
+  (e:any)=>e.statusCode===422&&e.code==='VALIDATION_ERROR');
+ const nullRow={...snapshot,plans:[null]};await assert.rejects(links.import('grow-p0-source',{snapshot:nullRow,snapshot_hash:digest(nullRow)}),
+  (e:any)=>e.statusCode===422&&e.code==='VALIDATION_ERROR');
+});

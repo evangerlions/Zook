@@ -3,6 +3,16 @@ import XCTest
 @testable import LightTickContracts
 
 final class ContractFixtureTests: XCTestCase {
+    func testMobileActionAndLearningProgressFixturesDecode() throws {
+        let decoder = LightTickContractDecoder.makeJSONDecoder()
+        let actions = try decoder.decode(LightTickEnvelope<LightTickActionWorkspace>.self, from: fixture("action-workspace-p0-v2.json")).data
+        XCTAssertEqual(Set(actions.plans.map(\.completion_mode)), Set(["time", "check", "content"]))
+        XCTAssertTrue(actions.plans.contains { $0.start_date == nil })
+        XCTAssertTrue(actions.plans.filter { $0.completion_mode != "time" }.allSatisfy { $0.target_minutes == nil })
+        let progress = try decoder.decode(LightTickEnvelope<LightTickLearningProgressData>.self, from: fixture("learning-progress-success.json")).data.progress
+        XCTAssertEqual(progress?.plans.first?.percent, 50)
+        XCTAssertEqual(progress?.plans.first?.stages.map(\.percent), [100, 0])
+    }
     private func fixture(_ name: String) throws -> Data {
         let packageRoot = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         let fixtureURL = packageRoot
@@ -112,4 +122,20 @@ final class ContractFixtureTests: XCTestCase {
         ])
         XCTAssertEqual(envelope.data.primaryTask?.version, 2)
     }
+    func testNativeReadingWireFixturesPreserveContentAndSourceIdentity() throws {
+        let index = try JSONDecoder().decode(LightTickEnvelope<LightTickLearningLibraryData>.self, from: fixture("learning-library-success.json"))
+        XCTAssertEqual(index.data.lessons.count, 2)
+        let page = try JSONDecoder().decode(LightTickEnvelope<LightTickLearningLessonData>.self, from: fixture("learning-lesson-sample-1.json"))
+        XCTAssertEqual(page.data.lesson.id, index.data.lessons[0].id)
+        XCTAssertTrue(page.data.lesson.content.contains("main idea"))
+        XCTAssertEqual(page.data.lesson.learning_state, "unknown")
+    }
+
+    func testPrivateLearningFixturePreservesUnknownCompletionTime() throws {
+        let value = try JSONDecoder().decode(LightTickEnvelope<LightTickLearningPrivateData>.self, from: fixture("learning-private-success.json"))
+        XCTAssertTrue(value.data.state?.completed == true)
+        XCTAssertNil(value.data.state?.completed_at)
+        XCTAssertEqual(value.data.state?.answers.first?.id, value.data.state?.questions.first?.id)
+    }
+
 }
