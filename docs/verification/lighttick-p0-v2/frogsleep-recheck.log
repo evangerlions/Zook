@@ -1,0 +1,12 @@
+(node:58681) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ buddy hub consolidates same-person domains and separates different partners (366.843042ms)
+✔ structured shares, bounded reactions, joint activities, pagination, and redaction form a growth loop (312.228708ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1672.0345

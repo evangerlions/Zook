@@ -1,0 +1,110 @@
+(node:30246) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ guest upgrade credential failures do not reveal whether the guest identity exists (423.2815ms)
+✔ guest upgrade rejects expired, revoked, guest-target, and cross-app credentials without mutation (416.474583ms)
+✔ a completed upgrade operation cannot be stolen by a different registered account (361.230291ms)
+✔ the generated LightTick error contract includes every account security outcome (0.136625ms)
+(node:30247) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ guest upgrade preserves product identity, target preferences, sync position, and lost-response replay (407.257375ms)
+✔ guest upgrade rejects stolen proof and idempotency-key request changes (429.315584ms)
+✔ guest upgrade rolls back conflicting idempotent operations (412.397292ms)
+✔ guest upgrade deduplicates equivalent operations without duplicating results (355.652834ms)
+(node:30248) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ two-account pairing, exact idempotent import receipt and no double writer (6.151333ms)
+✔ expired/replaced code, source collisions and invalid import roll back (0.637125ms)
+✔ v1 importer rejects v2 facts and events without freezing or modifying either workspace (1.775584ms)
+(node:30249) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ canonical P0 input schemas cover null/modes, conditional dates and explicit operations (13.238042ms)
+✔ stable P0 errors preserve only safe recovery metadata in the Zook envelope (9.936ms)
+✔ canonical output fixtures include nullable schedules and v2 facts without private inventory (46.506334ms)
+(node:30250) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ registered API and signed bridge remain closed independently of old enable flag and schema2 (436.641208ms)
+(node:30251) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ v2 nullable check fields and validation are atomic, with no fabricated time (84.350833ms)
+✔ time accumulates confirmed sessions, actual and planned dates stay distinct (3.371375ms)
+✔ interrupted threshold requires a zero-minute explicit completion, replayed atomically (0.935792ms)
+✔ check completion reversal preserves audit and counts the effective action once (8.753542ms)
+✔ running, stale versions, ancestor blocks and immutable fact configuration (1.993583ms)
+✔ content requires owner-scoped durable evidence and preserves a running timer (1.641ms)
+✔ schedule deduplication, null bucket and conflicting reschedule do not overwrite (1.152ms)
+✔ calendar and claims never fabricate a time or use a completion threshold for content (1.531875ms)
+✔ article evidence is private, date scoped, one-use and cannot bypass rescheduling (2.362333ms)
+✔ plan evidence is private, date scoped, one-use and cannot bypass rescheduling (2.98175ms)
+✔ cross-midnight sessions, zero interruption, confirmation date and legacy read preservation (1.133125ms)
+✔ concurrent check completion and dedup keep one effect with transactional receipts (0.944542ms)
+✔ read-only receipt lookup and review preview never persist report recovery (0.309292ms)
+(node:30252) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ source contract requires explicit normalized proof, binding, version and signed origin context (23.512417ms)
+(node:30253) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ verified source event is durable, deduplicated and reconciles after a running session (427.340625ms)
+✔ unscoped confirmation consumes one matching occurrence only and private proof cannot be injected (390.923375ms)
+(node:30254) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ summary requires exact consent, keeps secrets out of storage and replays without another AI call (30.24125ms)
+(node:30255) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ action API authenticates, isolates accounts and matches populated canonical workspace fixtures (562.122583ms)
+(node:30256) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ four periods share actual facts; minimum and interruption do not invent completion (36.592875ms)
+✔ tenant isolation, concurrent start, stale revisions and idempotent retries (9.857417ms)
+✔ parent pause, date boundaries, reminder and calendar semantics (2.207417ms)
+(node:30257) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ LightTick is independently disabled and enabled seed includes product bootstrap (774.359917ms)
+✔ LightTick seed can be installed while product routes remain disabled (404.437ms)
+✔ LightTick profile route accepts only active LightTick token and membership (327.673042ms)
+✔ LightTick account deletion revokes only LightTick membership and sessions (380.089542ms)
+✔ LightTick deletion requires a one-time recent password reauthentication proof (575.346ms)
+✔ LightTick logout revokes the session without deleting product data (395.375ms)
+(node:30258) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ HTTP loop: clarify context -> AI draft -> confirm -> Today -> complete -> grounded daily review -> proposed diff -> accept -> refreshed Today (477.663375ms)
+(node:30262) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ profile/onboarding API persists a replayable run and validates timezone (339.083041ms)
+✔ device registration and notification preferences are app scoped and validated (362.54ms)
+✔ goal API enforces owner scope, lifecycle versions, envelopes, and idempotency (372.807583ms)
+✔ plan confirmation, Today, and task commands expose deterministic state changes (331.737834ms)
+✔ LightTick Admin operations requires a session and exposes aggregates only (294.506125ms)
+✔ Coach API accepts only bounded scenes and persists a recoverable run (180.841916ms)
+✔ AI run APIs reject unknown plan granularities and review periods before enqueue (165.7505ms)
+(node:30269) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ guest issuance is device-bound, audited, recoverable, and LightTick-scoped (377.370292ms)
+✔ guest issuance rejects idempotency mismatches and rate limits an IP window (363.734167ms)
+✔ expired guest identity is rejected even while its access token is otherwise valid (290.658708ms)
+(node:30270) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Phase 2 route responses conform to the generated public contracts (474.366334ms)
+(node:30271) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ planning HTTP contracts, auth, gate, queue, replay and explicit confirmation (470.27475ms)
+(node:30272) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ LightTick public environment collapses deployment names to the contract enum (0.775541ms)
+✔ LightTick public config remains available while product capabilities are disabled (393.026208ms)
+✔ LightTick public config exposes only the allowlisted non-secret contract (310.264417ms)
+✔ LightTick public config rejects a mismatched app identity (271.61125ms)
+(node:30273) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ registered journal HTTP contract saves, lists, rejects stale/invalid content and does not enqueue AI (418.043042ms)
+(node:30284) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ BodyLog admin dashboard calculates weighted check-in rates for day, week, and month (1.949791ms)
+✔ BodyLog admin member contributions include app-scoped profile fields (0.345208ms)
+ℹ tests 62
+ℹ suites 0
+ℹ pass 62
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5563.447709

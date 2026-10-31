@@ -1,0 +1,7 @@
+{
+  "database_port_methods": 45,
+  "port_signatures_equal": true,
+  "infrastructure_initializers": 10,
+  "initializer_bodies_and_order_equal": true,
+  "admin_public_members_and_order_equal": true
+}

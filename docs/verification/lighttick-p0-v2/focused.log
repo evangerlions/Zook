@@ -1,0 +1,51 @@
+(node:58828) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ two-account pairing, exact idempotent import receipt and no double writer (10.525542ms)
+✔ expired/replaced code, source collisions and invalid import roll back (2.078416ms)
+✔ v1 importer rejects v2 facts and events without freezing or modifying either workspace (1.410917ms)
+(node:58829) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ canonical P0 input schemas cover null/modes, conditional dates and explicit operations (5.951792ms)
+✔ stable P0 errors preserve only safe recovery metadata in the Zook envelope (2.893583ms)
+✔ canonical output fixtures include nullable schedules and v2 facts without private inventory (34.97325ms)
+(node:58830) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ registered API and signed bridge remain closed independently of old enable flag and schema2 (1001.669459ms)
+(node:58831) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ v2 nullable check fields and validation are atomic, with no fabricated time (19.719542ms)
+✔ time accumulates confirmed sessions, actual and planned dates stay distinct (4.861083ms)
+✔ interrupted threshold requires a zero-minute explicit completion, replayed atomically (5.704ms)
+✔ check completion reversal preserves audit and counts the effective action once (2.52375ms)
+✔ running, stale versions, ancestor blocks and immutable fact configuration (5.599292ms)
+✔ content requires owner-scoped durable evidence and preserves a running timer (28.410084ms)
+✔ schedule deduplication, null bucket and conflicting reschedule do not overwrite (9.868625ms)
+✔ calendar and claims never fabricate a time or use a completion threshold for content (14.736958ms)
+✔ article evidence is private, date scoped, one-use and cannot bypass rescheduling (3.130708ms)
+✔ plan evidence is private, date scoped, one-use and cannot bypass rescheduling (5.639583ms)
+✔ cross-midnight sessions, zero interruption, confirmation date and legacy read preservation (1.198917ms)
+✔ concurrent check completion and dedup keep one effect with transactional receipts (1.06ms)
+✔ read-only receipt lookup and review preview never persist report recovery (0.340542ms)
+(node:58832) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ summary requires exact consent, keeps secrets out of storage and replays without another AI call (137.7515ms)
+(node:58833) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ action API authenticates, isolates accounts and matches populated canonical workspace fixtures (1112.00925ms)
+(node:58834) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ four periods share actual facts; minimum and interruption do not invent completion (42.1075ms)
+✔ tenant isolation, concurrent start, stale revisions and idempotent retries (14.015334ms)
+✔ parent pause, date boundaries, reminder and calendar semantics (14.6095ms)
+(node:58835) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated public contracts include restored AI Novel and BodyLog schemas (0.707167ms)
+✔ in-repository OpenAPI source reproduces committed runtime contracts (2984.251792ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3829.092708

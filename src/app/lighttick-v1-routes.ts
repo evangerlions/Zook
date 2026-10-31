@@ -1,4 +1,7 @@
-import { profileData, goalData, variantsData, taskData, planData, reviewData, proposalData, runData } from './lighttick-v1-projections.ts';
+import {handleManualRequest} from './lighttick-manual-routes.ts';
+import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import { handleRecordRequest } from "./lighttick-record-routes.ts";
+import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -85,12 +88,12 @@ async function recordFact(runtime: LightTickRuntime, request: HttpRequest, userI
   try { await runtime.analytics?.record({ userId, event, dedupeKey, pageKey, platform: analyticsPlatform(request), metadata }); }
   catch { /* Product writes must not fail when ordinary analytics is unavailable. */ }
 }
-
 async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
   entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
   const key = idempotencyKeyOf(request);
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
+    await runtime.repository.lockPlanningOwner(owner);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
       if (existing.payloadHash !== payloadHash || existing.action !== action)
@@ -119,7 +122,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (!request.path.startsWith(PREFIX)) return undefined;
   const methodOverride = request.headers["x-http-method-override"] ?? request.headers["X-HTTP-Method-Override"];
   if (methodOverride !== undefined) {
-    if (request.path !== `${PREFIX}profile` || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
+    if ((request.path !== `${PREFIX}profile` && !/^\/api\/v1\/lighttick\/manual-plans\/[a-zA-Z0-9_-]{1,128}$/.test(request.path)) || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
       throw new ApplicationError(400, "REQ_METHOD_OVERRIDE_INVALID", "HTTP method override is not allowed for this route.");
     request = { ...request, method: "PATCH" };
   }
@@ -130,7 +133,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
     const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
-    return response(context, request, buildLightTickPublicConfiguration(enabled, config));
+    return response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
   }
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
   if (request.method === "POST" && request.path === `${PREFIX}account/guest-sessions`) {
@@ -158,6 +161,23 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) assertGuestRouteAllowed(request);
+  const assertActive=async()=>{
+    const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
+    if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
+  };
+  const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
+  if(continuationResult!==undefined)return response(context,request,continuationResult);
+  const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);
+  if(manualResult!==undefined)return response(context,request,manualResult);
+  const taskSchema=request.headers["x-lighttick-task-schema"]??request.headers["X-LightTick-Task-Schema"];
+  if(taskSchema!=="2"&&/^\/api\/v1\/lighttick\/(today|plans|tasks|sync)(\/|$)/.test(request.path)&&
+    (await runtime.repository.listPlans(owner)).some(p=>["manual_native","local_adoption"].includes(p.source)))
+    throw new ApplicationError(426,"CONTRACT_UPGRADE_REQUIRED","Update the client to read manual task dates and unknown effort.");
+  const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {
+    const membership=await context.database.findAppUser(current.appId,current.userId),user=await context.database.findUserById(current.userId);
+    if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
+  });
+  if (recordResult !== undefined) return response(context, request, recordResult);
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",
@@ -426,7 +446,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, data);
   }
 
-  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request);
+  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request, assertActive);
   if (reflectionResult) return response(context, request, reflectionResult);
 
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {

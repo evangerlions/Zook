@@ -801,6 +801,8 @@ paths:
       security: []
       responses:
         "200": { $ref: "#/components/responses/PublicConfig" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/bodylog/notification-preferences:
     get:
       operationId: getBodyLogNotificationPreferences

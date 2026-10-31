@@ -764,6 +764,29 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 为消除 origin/main 既有 8 个超长源码阻断，按原职责提取基础设施装配、响应投影、数据库类型端口、RBAC、BodyLog 查询/通知及后台 API 模块；保留原外部方法、初始化顺序、SQL 和事务回调。未引入其他产品待发布功能，未调整行数阈值或豁免名单。Sleep 业务、合同与发布结果另行记录。
 
 
+Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编辑、归档恢复、导出与 sync/pull 变化；新表 zook_lighttick_records / record_versions。来源身份接管、旧 Grow 历史导入与 AI 不在本轮范围。未部署。
+
+
+2026-10-25 Grow G1：独立记录已与当前 shared action 主线整合；新增记录专用一对一绑定、私人暂存、来源冻结凭证、事务激活、防重放、激活前取消和只读恢复导出。PostgreSQL 076 为增量迁移；无真实用户搬迁、无环境发布。原生草稿转属和磁盘存储由客户端负责，后端只接受明确同步后的正式账户记录。
+
+迁移入口使用专用连接的会话级 advisory lock，串行多个 API/worker 实例的 DDL 重放，覆盖每个迁移文件的独立事务；连接结束/异常断开自动释放。并发 records + handoff PostgreSQL 验收实际复现过无锁 DDL 死锁，并已回归。
+
+沿用 PostgreSQL 074 JSONB workspace及账号事务锁；P0 v2内部运行时已支持nullable日程、time/content/check、累计分钟、completion/reversal、实际日期、来源证据消费与稳定错误码。公共写入与新接管硬关闭，既有开关仅提供读取；实际来源登记/投递和v2快照接管仍未完成，不声明可用content_receipts。canonical API见README_API.md和docs/public-lighttick-actions.md；现有goal/plan/task独立。原生未改，未发布或迁移真实账号。
+
+### 2026-10-21 LightTick 连接 P0 C2
+
+新增已绑定 Grow 私有来源证明、HMAC 行动上下文、确认事件 inbox/幂等回执和完成核对。复用现有 owner JSONB workspace/事务锁；没有新增独立后端。Grow 使用租户 publication journal + outbox 恢复投递，私密内容不进入事件载荷。普通连接写入、配对、v2 接管及公开消费者能力仍关闭。C3 接管与原生消费者、生产部署待后续验证；详见 docs/public-lighttick-actions.md 与 docs/verification/lighttick-source-delivery/README.md。
+
+### 2026-10-21 C2 验收工程门禁修复
+
+8 个超长文件已按现有职责拆分：基础设施装配、LightTick 响应投影、数据库 BodyLog 类型端口、RBAC 查询、成长后台查询、习惯模板 CRUD、小组查询/日记录/通知及后台 BodyLog/LLM API。外部方法、初始化顺序、SQL 查询和事务 query 回调保持不变；现有行数阈值/豁免名单未修改。详见 `docs/verification/lighttick-source-repair/README.md` 的回归与等价核对证据。本轮不实现 C3，不修改原生端或连接写入门禁。
+
+2026-10-21 LightTick C3 增量：内部八类快照 v2 的只读全图预检、原子导入和持久幂等接管回执可在隔离环境验证；公开配对/导入/普通写入继续关闭，未增加运行时预检路由。Grow 接管前后回执查询已衔接。私有协调与来源屏障已补齐：先等待在途来源、复核摘要、原子备份/冻结，再导入并核对回执；pending 暂停新确认，未完成来源日志阻断冻结，迁移事件延续 C2 outbox 核对。隔离 HTTP 与双方进程重启恢复见 `docs/verification/lighttick-handoff-cutover/README.md`。原生 C4/C5、真实环境与公开放行仍未完成，不能标记全部 P0 通过。
+
+
+2026-10-25 Grow 原生执行整合候选：records 与 P0 v2 三模式运行时共存；公共行动写入与完整接管通过独立 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 显式启用，默认关闭。新增正式账户本人学习计划进度读取及绑定来源签名投递，进度保存在既有 owner workspace，不新增第二套课程完成事实。H5 负责制订及完善，手机负责读取、学习、执行、记录和通知；真实账号、生产及真机验证仍待办。当前协议见 README_API.md 和 docs/public-lighttick-actions.md 2026-10-25 节。
+
+2026-10-25：Grow 原生阅读新增独立课程只读镜像、单独授权与来源版本/绑定校验；正式学习写入和学完确认仍归 Grow。详情见 README_API.md 的原生课程只读接入。
 ### 2026-10-23 FrogSleep support notes（本地，未发布）
 
 新增异步模板/单朵小花、定向接收revision、跨sleep/focus滚动配额、持久操作resolution、单次收下和合并中心；PostgreSQL迁移075与独立Repository接入既有四slot根事务。无Push；默认flag关闭，内部受控关系enrollment默认不授予接收许可。公开方法、环境变量及回滚见[README_API](../README_API.md)。真实PostgreSQL并发验证使用隔离测试库，不代表dev/生产已验收。
@@ -779,3 +802,28 @@ The `feature/bodylog-retention-completion` worktree adds persistent encouragemen
 ### Authentication recovery hardening
 
 Migration `080_auth_credential_version.sql` adds the durable account-wide credential version. Shared password changes use this version to invalidate old cross-app sessions. App logout and deletion remain app-scoped. Redis atomically commits refresh-token replacement and session indexes. Failed new-user registration rolls back its identity and retains the unconsumed code. Email/SMS provider waits run outside the short verification-preparation transaction. Fixed email test codes require an explicit local environment.
+2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；全仓行数门禁仍失败，未发布。
+
+2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.
+
+2026-10-29 I5: opt-in single check practices resolve owned current lesson/record sources, keep minimal source references, and append independent bounded feedback in the existing JSONB action workspace. Source reads revalidate authorization, and stable receipts survive source withdrawal. Record -> action lock ordering and immutable completion mode preserve existing deletion and completion boundaries. No new service, database migration, model call or production enablement.
+
+2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
+
+2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
+
+#### LightTick N2 原生手动计划候选（2026-10-31）
+
+新增同 goal/plan/task 域的手动草稿、编辑、双版本原子确认与持久回执；独立本机目标/行动/复盘转属采用稳定源映射和单向归属。未知投入在数据库保留 NULL，未定日期的手动任务不投影 Today。注册账户不需要 Grow / AI。接口、关闭恢复及旧客户端 schema 2 升级边界见 README_API；迁移 081。真实隔离 PostgreSQL专项覆盖并发、回滚、重连和删除；候选不代表生产或双端上线验收已完成。
+
+
+#### LightTick N3 原生复盘与继续安排（2026-10-31）
+
+原目标/计划/任务域增加指定手写复盘来源、任务版本引用替换和审阅恢复；草稿与复盘保存均不排程，显式确认原子停止选定旧事项并建立新事项，同来源不会因旧计划被取代而再次消费。PUT 复盘按资源 ID/base_version 保留持久回执，来源或任务变化会拒绝确认。
+
+目标 constraints 中保存版本化 confirmed_planning_conditions 审计；持续/临时每日可用分钟按所选窗口解析，更正/撤销保留历史，临时条件不永久化。已有事实不删除，未知投入保持未知；手动确认、旧计划/提案接受和任务强度变更共用容量规则与 owner 锁。私人条件原因/历史不自动进入 AI。生命周期阻止暂停、达成、结束目标的旧任务及定向通知恢复执行，达成与未达成结束分开记录。
+
+接口与关闭恢复见 README_API，固定合同由 api-contracts 生成供双端消费；无新表迁移。真实 PG 专项命令：`LIGHTTICK_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/lighttick-native-continuation-postgres.test.ts`（仅可丢弃数据库，独立 schema）。双端本机 UI 验证不代表真机、真实通知 provider、dev/online 或商店发布完成。
+
+#### 原生可选规划增强 N4
+PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会话/计划版本、已确认总投入与当前每日容量校验；显式确认再校验持久提案。开关关闭仍支持已有会话读取和已接受请求回执恢复，不重新调度生成。原生手动链与网页 C05 可选增强独立，网页复用 canonical manual-plans，不新增第二份计划主数据。工程回归不代替真实 provider 或上线外部门禁。

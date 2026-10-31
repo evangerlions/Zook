@@ -1,3 +1,4 @@
+import {PostgresUserStore} from "./postgres-users.ts";
 import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
 import { PostgresRbacStore } from './postgres-rbac.ts';
 import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
@@ -90,7 +91,6 @@ import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
   parseAppConfig,
-  parseUser,
 } from "./postgres-row-parsers.ts";
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
@@ -138,6 +138,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
     this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
+  private readonly users = new PostgresUserStore((sql,values) => this.query(sql,values));
   private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
   getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
   getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
@@ -175,9 +176,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     const existingClient = this.sessionContext.getStore();
-    if (existingClient) {
-      return await fn();
-    }
+    if (existingClient) return await fn();
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
@@ -339,67 +338,12 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertUserRole(record: UserRoleRecord): Promise<void> { return await this.rbac.insertUserRole(record); }
   override async getPermissionCodes(appId: string, userId: string): Promise<string[]> { return await this.rbac.getPermissionCodes(appId, userId); }
 
-  override async findUserById(userId: string): Promise<UserRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, email, phone, password_hash, password_algo, credential_version, status, created_at FROM zook_users WHERE id = $1 LIMIT 1",
-      [userId],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByAccount(account: string): Promise<UserRecord | undefined> {
-    const normalized = account.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, credential_version, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(email, '')) = $1 OR lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByPhone(phone: string): Promise<UserRecord | undefined> {
-    const normalized = phone.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, credential_version, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async insertUser(record: UserRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_users (id, email, phone, password_hash, password_algo, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz)
-       ON CONFLICT (id) DO UPDATE SET
-         email = EXCLUDED.email,
-         phone = EXCLUDED.phone,
-         password_hash = EXCLUDED.password_hash,
-         password_algo = EXCLUDED.password_algo,
-         status = EXCLUDED.status,
-         created_at = EXCLUDED.created_at,
-         updated_at = NOW()`,
-      [record.id, record.email ?? null, record.phone ?? null, record.passwordHash, record.passwordAlgo, record.status, record.createdAt],
-    );
-  }
-
-  override async updateUserEmail(userId: string, email: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET email = $2, updated_at = NOW() WHERE id = $1",
-      [userId, email],
-    );
-  }
-
-  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET password_hash = $2, password_algo = $3, credential_version = credential_version + 1, updated_at = NOW() WHERE id = $1",
-      [userId, passwordHash, passwordAlgo],
-    );
-  }
+  override async findUserById(userId: string) { return await this.users.findUserById(userId); }
+  override async findUserByAccount(account: string) { return await this.users.findUserByAccount(account); }
+  override async findUserByPhone(phone: string) { return await this.users.findUserByPhone(phone); }
+  override async insertUser(record: UserRecord) { return await this.users.insertUser(record); }
+  override async updateUserEmail(userId: string, email: string) { return await this.users.updateUserEmail(userId,email); }
+  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string) { return await this.users.updateUserPassword(userId,passwordHash,passwordAlgo); }
 
   override async insertAuditLog(record: AuditLogRecord): Promise<void> {
     await this.query(
@@ -633,9 +577,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async deleteBodyLogHabitTemplate(appId: string, id: string) { return await this.bodyLogAdmin.deleteBodyLogHabitTemplate(appId, id); }
 
   private async initialize(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
+    if (this.initialized) return;
 
     await this.withExclusiveSession(async () => {
       await seedPostgresDefaults(this.seed, {
@@ -648,14 +590,10 @@ export class PostgresDatabase extends ApplicationDatabase {
     });
     this.initialized = true;
   }
-
   private async listRolePermissions(): Promise<RolePermissionRecord[]> { return await this.rbac.listRolePermissions(); }
-
   private async query(sql: string, values: unknown[] = []) {
     const client = this.sessionContext.getStore();
-    if (client) {
-      return await client.query(sql, values);
-    }
+    if (client) return await client.query(sql, values);
     return await this.pool.query(sql, values);
   }
 }

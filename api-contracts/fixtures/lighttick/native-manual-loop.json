@@ -1,0 +1,73 @@
+{
+  "draft": {
+    "title": "Practice clearly",
+    "completion_criteria": "Explain one example",
+    "period_start": "2026-10-31",
+    "period_end": "2026-11-06",
+    "tasks": [
+      {
+        "id": "manual-action-one",
+        "title": "Explain a situation",
+        "scheduled_for": "2026-10-31",
+        "estimated_minutes": 15,
+        "completion_criteria": "Two examples",
+        "guidance": ""
+      },
+      {
+        "id": "manual-action-two",
+        "title": "Choose a next topic",
+        "scheduled_for": null,
+        "estimated_minutes": null,
+        "completion_criteria": "",
+        "guidance": ""
+      }
+    ]
+  },
+  "adoption": {
+    "workspace_id": "fixture-workspace",
+    "source_secret": "fixture-proof-0123456789-0123456789",
+    "goals": [
+      {
+        "id": "local-goal",
+        "title": "Local goal",
+        "criteria": "An example",
+        "status": "active",
+        "archived": false
+      }
+    ],
+    "actions": [
+      {
+        "id": "local-action",
+        "goal_id": "local-goal",
+        "title": "Local completed action",
+        "date": null,
+        "estimated_minutes": null,
+        "criteria": "",
+        "details": "Original instructions",
+        "completed_at": "2026-10-30T04:00:00.000Z",
+        "archived": false,
+        "source_reflection_id": null
+      }
+    ],
+    "reflections": [
+      {
+        "id": "local-reflection",
+        "goal_id": "local-goal",
+        "action_id": "local-action",
+        "result": "Partly done",
+        "obstacles": "Noise",
+        "next_step": "Try again",
+        "created_at": "2026-10-30T05:00:00.000Z"
+      }
+    ],
+    "events": [
+      {
+        "id": "local-event",
+        "entity_id": "local-action",
+        "kind": "completed",
+        "value": "2026-10-30T04:00:00.000Z",
+        "created_at": "2026-10-30T04:00:00.000Z"
+      }
+    ]
+  }
+}

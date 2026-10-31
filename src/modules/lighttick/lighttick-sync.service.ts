@@ -67,8 +67,16 @@ export class LightTickSyncService {
   }
 
   private async deleteTask(owner: LightTickOwner, taskId: string, baseVersion: number) {
+    return this.repository.transaction(owner,async()=>{
+      await this.repository.lockPlanningOwner(owner);
+      return this.deleteTaskLocked(owner,taskId,baseVersion);
+    });
+  }
+  private async deleteTaskLocked(owner: LightTickOwner, taskId: string, baseVersion: number) {
     const current = await this.repository.getTask(owner, taskId);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+    const goal=await this.repository.getGoal(owner,current.goalId);
+    if(goal&&["paused","completed","archived"].includes(goal.status))throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Stopped goal history cannot be changed by a cached deletion.");
     const timestamp = this.clock().toISOString(); const status = transitionTask(current.status as any, "cancelled");
     return await this.repository.saveTask({ ...current, status, updatedAt: timestamp }, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
