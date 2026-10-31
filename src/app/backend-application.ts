@@ -1,6 +1,6 @@
 import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
-import { tryHandleYaoheziV1Routes } from "./yaohezi-v1-routes.ts";
+import { tryHandleYaoheziV1Routes, ownsYaoheziHealthTransaction } from "./yaohezi-v1-routes.ts";
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
@@ -153,6 +153,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
     private readonly yaoheziEnabled = false,
+    private readonly yaoheziHealthEnabled = false,
   ) {
     super(
       database,
@@ -187,7 +188,7 @@ export class BackendApplication extends BackendRouteContext {
     };
     const startedAt = Date.now();
     try {
-      const ownsTransaction = isAuthCodeDeliveryRequest(request) ||
+      const ownsTransaction = ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) || isAuthCodeDeliveryRequest(request) ||
         (request.method === "GET" && request.path === "/api/health") ||
         (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));
       const response = ownsTransaction ? await execute() : await this.database.withExclusiveSession(execute);
@@ -241,7 +242,7 @@ export class BackendApplication extends BackendRouteContext {
       );
     }
 
-    const yaoheziResponse = await tryHandleYaoheziV1Routes(this, this.yaoheziEnabled, request);
+    const yaoheziResponse = await tryHandleYaoheziV1Routes(this, this.yaoheziEnabled, request, this.yaoheziHealthEnabled);
     if (yaoheziResponse) return yaoheziResponse;
     const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
     if (lightTickAdminResponse) return lightTickAdminResponse;

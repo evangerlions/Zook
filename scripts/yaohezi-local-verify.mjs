@@ -2,6 +2,7 @@ import { Client } from "pg";
 import { randomBytes } from "node:crypto";
 import { userInfo } from "node:os";
 import { mkdir, writeFile } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { createServer, createConnection } from "node:net";
@@ -49,13 +50,16 @@ try {
 const env = { ...process.env, YAOHEZI_TEST_DATABASE_URL: connectionString,
   YAOHEZI_TEST_REDIS_URL: `redis://:${redisPassword}@127.0.0.1:${redisPort}/0` };
 const command = ["--experimental-transform-types", "--test", "--test-concurrency=1",
-  "test/integration/yaohezi-local-postgres.test.ts", "test/integration/yaohezi-profiles-postgres.test.ts"];
+  "test/integration/yaohezi-local-postgres.test.ts", "test/integration/yaohezi-profiles-postgres.test.ts", "test/integration/yaohezi-health-postgres.test.ts"];
 const child = spawn(process.execPath, command, { env, stdio: ["ignore", "pipe", "pipe"] });
+const stream=createWriteStream(resolve(output,"postgres.log"),{flags:"w"});
+const deadline=setTimeout(()=>child.kill("SIGTERM"),180_000);
 let log = "";
-child.stdout.on("data", (value) => { log += value; });
-child.stderr.on("data", (value) => { log += value; });
+child.stdout.on("data", (value) => { log += value; stream.write(value); });
+child.stderr.on("data", (value) => { log += value; stream.write(value); });
 const code = await new Promise((resolve, reject) => { child.once("error", reject); child.once("close", resolve); });
-await writeFile(resolve(output, "postgres.log"), log);
+clearTimeout(deadline);
+await new Promise(resolve=>stream.end(resolve));
 await writeFile(resolve(output, "result.json"), JSON.stringify({ database: name, host: "127.0.0.1", port,
   status: code === 0 ? "passed" : "failed", smsTransport: "local test fixture; no external SMS sent",
   tokenStorage: "real isolated Redis; application restart tested", membershipStorage: "real PostgreSQL",

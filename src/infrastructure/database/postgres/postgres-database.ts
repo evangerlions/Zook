@@ -1,5 +1,6 @@
 import {PostgresUserStore} from "./postgres-users.ts";
 import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
+import { PostgresYaoheziHealthStore } from "./postgres-yaohezi-health-store.ts";
 import { PostgresYaoheziProfileStore } from "./postgres-yaohezi-profile-store.ts";
 import { PostgresRbacStore } from './postgres-rbac.ts';
 import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
@@ -89,13 +90,9 @@ import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts"
 import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
 import { PostgresBodyLogCheckinStore } from "./postgres-bodylog-checkin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
-import {
-  parseApp,
-  parseAppConfig,
-} from "./postgres-row-parsers.ts";
+import { parseApp, parseAppConfig } from "./postgres-row-parsers.ts";
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
-  private readonly yaoheziProfiles: PostgresYaoheziProfileStore;
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly appUsers: PostgresAppUserStore;
   private readonly feedback: PostgresFeedbackStore;
@@ -119,7 +116,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
-    this.yaoheziProfiles = new PostgresYaoheziProfileStore(pool);
     this.appUsers = new PostgresAppUserStore(async (sql, values = []) => await this.query(sql, values));
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
@@ -144,7 +140,8 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly users = new PostgresUserStore((sql,values) => this.query(sql,values));
   private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
   getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
-  override getYaoheziProfileStore(): PostgresYaoheziProfileStore { return this.yaoheziProfiles; }
+  override getYaoheziHealthStore(): PostgresYaoheziHealthStore { return new PostgresYaoheziHealthStore(this.pool); }
+  override getYaoheziProfileStore(): PostgresYaoheziProfileStore { return new PostgresYaoheziProfileStore(this.pool); }
   getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
   getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect(), () => this.sessionContext.getStore()); }
   getFrogSleepAdminStore() { return new PostgresFrogSleepAdminStore((sql, values) => this.query(sql, values)); }
@@ -582,7 +579,6 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   private async initialize(): Promise<void> {
     if (this.initialized) return;
-
     await this.withExclusiveSession(async () => {
       await seedPostgresDefaults(this.seed, {
         query: async (sql, values = []) => await this.query(sql, values),

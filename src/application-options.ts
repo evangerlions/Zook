@@ -15,6 +15,8 @@ import type { LightTickRepository } from "./modules/lighttick/lighttick.reposito
 export interface CreateApplicationOptions {
   /** Independent Yaohezi account routes; health/cloud capabilities remain gated. */
   yaoheziEnabled?: boolean;
+  /** M2 trust API rollout, independent from account-only access. Defaults off. */
+  yaoheziHealthEnabled?: boolean;
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;

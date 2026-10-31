@@ -499,6 +499,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     frogsleepEnabled,
     lighttickEnabled, lighttickRuntime,
     yaoheziEnabled,
+    options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
   app.analyticsService = analyticsService;
   return {

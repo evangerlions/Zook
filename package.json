@@ -36,11 +36,15 @@
     "dev:bodylog-acceptance": "node --experimental-transform-types scripts/bodylog-local-acceptance.ts",
     "dev:yaohezi-local": "node --experimental-transform-types scripts/yaohezi-local-server.ts",
     "verify:yaohezi-local": "node scripts/yaohezi-local-verify.mjs",
-    "test:postgres:yaohezi-local": "node --experimental-transform-types --test test/integration/yaohezi-local-postgres.test.ts"
+    "test:postgres:yaohezi-local": "node --experimental-transform-types --test test/integration/yaohezi-local-postgres.test.ts",
+    "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json"
   },
   "devDependencies": {
+    "@hpke/core": "1.9.0",
     "@types/node": "^25.3.5",
-    "@types/nodemailer": "^6.4.24"
+    "@types/nodemailer": "^6.4.24",
+    "@types/pg": "8.15.6",
+    "typescript": "5.9.3"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",

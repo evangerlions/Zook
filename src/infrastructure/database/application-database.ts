@@ -72,6 +72,7 @@ export interface ManagedStateSnapshot {
  */
 export abstract class ApplicationDatabase {
   /** Optional internal product port; unsupported adapters fail closed. */
+  getYaoheziHealthStore(): import("../../modules/yaohezi/security/health-store.ts").YaoheziHealthStore | undefined { return undefined; }
   getYaoheziProfileStore(): import("../../modules/yaohezi/profiles/yaohezi-profile-store.ts").YaoheziProfileStore | undefined { return undefined; }
   abstract getBuddySupportRepository(): BuddySupportRepository;
   abstract readonly llmObservabilityStore: LlmObservabilityStore;

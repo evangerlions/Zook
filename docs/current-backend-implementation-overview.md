@@ -822,3 +822,11 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
 
 2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
+
+### Yaohezi M2 trusted-device backend（2026-10-31，本地）
+
+本节更新上文“健康设备会话待实现”的历史状态。新增迁移 082、独立 YaoheziHealthStore、默认关闭的设备 API 开关及同账号 self-subject 信任协议。PG 事务保护挑战、不可变设备公钥、资源版本只读授权、健康会话 hash、opaque key capsules、epoch 和最小审计/回执。撤销不依赖普通 access token 到期；恢复整体撤旧设备、清能力包并推进 epoch/verifier，不复活旧授权。M2 受保护操作自行持有账号/主体事务，不使用旧应用全局锁。
+
+Node 参考实现 HPKE 资源版本钥、离线恢复 vault、HTTPS/nonce/30 秒当前信任快照和有根证书链验权。读者不能签发 owner 授权，恢复后只需新恢复根，历史批准设备撤销不误撤合法存活设备。恢复包不是 iOS 可移植备份码，不含 token、SQLCipher key 或 current grants。
+
+本地验证和实现状态见 docs/security/yaohezi-m2-review.md。原生 UI/Keychain、真机互操作、外部密码审计、依赖告警处理仍是发布门槛。密文同步、家庭授权和付费 AI 未完成。接口及配置以 README_API 和 canonical OpenAPI 为准。未推送或部署。

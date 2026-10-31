@@ -1,6 +1,6 @@
 # 药盒子本地开发与验证
 
-开发工作区：`/Volumes/肖豪/project/Zook/.worktrees/yaohezi-family-care`，分支 `feature/yaohezi-family-care`，基于同步后的 `origin/main@e17a6ec`。原 Zook 工作区的 FrogSleep 分支和未跟踪资料保持原样。本分支尚未合并、推送或部署。
+开发工作区：`/Volumes/肖豪/project/Zook/.worktrees/yaohezi-family-care`，分支 `feature/yaohezi-family-care`，已合入 `origin/main@0b28ef7`。原 Zook 工作区的 FrogSleep 分支和未跟踪资料保持原样。本分支尚未合并回 main、推送或部署。
 
 ## 运行
 
@@ -25,9 +25,9 @@ npm run verify:yaohezi-local
 
 ## 当前产品边界
 
-仅 `YAOHEZI_ENABLED=true` 启用账号路由，健康能力开关全部为 false。主体关联是内部 PostgreSQL 端口，不是公开健康 API；`self_asserted` 不证明患者身份、设备信任或访问权。iOS 已接通账号客户端并完成下述本地验证；设备入圈/恢复、密文同步、家庭范围授权、协作任务、会员页额度或视觉 AI 尚未完成。
+账号与设备 API 分别由默认关闭的 `YAOHEZI_ENABLED`、`YAOHEZI_HEALTH_DEVICES_ENABLED` 控制，本地 M2 fixture 显式开启两者。`self_asserted` 不证明患者身份。iOS 已接通账号；Zook 设备入圈、恢复、即时撤销及 Node 参考设备已完成本地验证，原生可信设备接入、密文同步、家庭授权、协作和会员 AI 尚未验收。
 
-公共合同见 `api-contracts/openapi/yaohezi/api.yaml` 和 README_API。开放健康接口前仍须完成可信设备及恢复协议、安全评审、统一授权检查及产品删除编排。真实短信/私有存储/推送、商店 sandbox、视觉供应商和正式发布有独立验收门槛。
+公共合同见 `api-contracts/openapi/yaohezi/api.yaml` 和 README_API。生产开启设备接口前仍须完成原生设备、密钥驻留、真机验证、外部密码审计、已记录的依赖告警处理和产品删除编排。真实短信、私有存储、推送、商店 sandbox、视觉供应商和正式发布有独立验收门槛。
 
 ## iOS 持续联调服务
 
@@ -55,3 +55,11 @@ xcodebuild test -workspace HealthTimeline.xcworkspace -scheme HealthTimeline \
 先确认该专用模拟器存在；没有时用本机可用的 iOS Simulator ID。未启动 fixture 时，本地集成/UI 用例明确 skip，不算本地联调通过。实际验收要求这些用例执行且通过。
 
 本地通过范围：验证码登录/错误码、真实 Keychain 跨启动会话、24 个请求 single-flight、真实服务端 refresh/logout 撤销、双账号切换与旧账号上下文停止、父亲 SQLCipher 本地档案保留且未发生云端资料请求。补充模拟传输测试覆盖迟到 401、退出/刷新竞态、Keychain 写入/清除失败、丢失刷新响应与禁止无限重试；真实 HTTP 还验证认证请求不跟随 307 重定向。外部短信、真机与正式发布仍未验收。
+
+## M2 本地验证
+
+`npm run verify:yaohezi-local` 包含账号、主体路由、健康设备三组集成，共 18 个 test/subtest。M2 使用正常随机短信验证码及真实 Redis/PG/HTTP，覆盖设备批准、资源版本钥、只读签名改药与跨主体拒绝、撤销并发顺序、重开、三条恢复路径、旧恢复根拒绝、快照时效、伪造授权和限流。
+
+`npm run typecheck:yaohezi-security` 严格检查协议、客户端参考和 PG 实现；`npm test` 运行全仓单元。加密测试含 RFC 8032/9180 公共向量、恢复 AAD、HPKE 负向及未来版本钥轮换。向量里的私钥是公开测试资料。
+
+`npm run dev:yaohezi-local` 继续是账号 UI fixture，默认不启用 M2；无需开启健康接口即可重复 iOS 账号验收。M2 没有原生设备界面入口。测试 PG 库和证据保留，HTTP 与私有 Redis 验收后自动停止，不改用户 Redis 6379。

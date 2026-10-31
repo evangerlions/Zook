@@ -1483,3 +1483,32 @@ Source identity and version are checked against a currently consented lesson or 
 `GET /api/v1/lighttick/action-plans/practices/{planId}/follow-up?feedback_id=...`只读返回选中反馈、原行动revision、当前来源版本／可用性及本人当前有效的上级计划。`POST`同一路径提交`key,revision,feedback_id,source_version,title,date`，可选`timezone,parent_id,parent_revision`；所选上级必须携带当前revision。沿用schema头2、注册会员、独立写入开关与原请求幂等。原行动／来源／上级变化返回冲突供本人重新核对；来源撤回拒绝新建，但已提交同key先重放。
 
 新实践附带只读`practice_origin:{plan_id,feedback_id}`，来源仍为当前授权材料；原反馈、完成事实、上级日期与目标分钟不变。不自动复制整期预算，不自动生成计划或调用模型。旧端忽略可选字段，按`capabilities.practice_follow_up`识别能力；课程与整体Goal Coach约束仍遵循各自原任务。
+
+### 药盒子 M2：可信健康设备（2026-10-31，本地验证）
+
+账号入口和健康设备入口分别受 `YAOHEZI_ENABLED=true`、`YAOHEZI_HEALTH_DEVICES_ENABLED=true` 控制，二者默认关闭。只开启账号不会开放设备接口。M2 路径均为 `POST /api/v1/yaohezi/health/{action}`，要求有效药盒子 Bearer、活动账号/app/membership 和真实 PostgreSQL；无持久化存储返回 `503 YAOHEZI_HEALTH_STORAGE_REQUIRED`，无内存授权降级。普通 `X-Device-Id` 不提供设备证明。
+
+| action | 额外证明 | 行为 |
+| --- | --- | --- |
+| `challenges` | `subjectId + purpose + device` | 生成绑定账号/主体/不可变签名和封装公钥的五分钟单次挑战；每账号五分钟最多 20 次 |
+| `bootstrap` | 首次设备签名、明确本人确认、独立恢复 verifier/密文包 | 仅无历史健康 authority 时建立首个本人设备；self_asserted 不是患者身份验证 |
+| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话；数据库只存 hash |
+| `recovery` | 同一 owner 账号 | 返回 verifier/加密恢复包；账号本身不能解密或恢复设备信任 |
+| `recover` | 新设备挑战签名 + 当前恢复 verifier 的恢复签名 | 新恢复材料、epoch/version 必须接续；原子撤销所有旧设备授权/会话，移除所有中继能力包，仅信任新设备 |
+| `enroll` | owner 健康会话及签名、新设备自身挑战签名 | 同账号设备批准，必须核对完整指纹；可给 owner 或限定资源的 reader；不是家人邀请 |
+| `inspect` | 当前健康会话及设备签名 | 返回绑定请求 nonce、账号/主体/epoch 的 30 秒信任快照和本设备能力包；reader 只获取自身、合法 writer 及必需证书链 |
+| `key-capsules` | owner 健康会话及签名 | 只存按资源 UUID、资源版本 UUID、epoch、接收设备/授权版本绑定的签名 HPKE 密文；不得上传库钥/整档案钥 |
+| `revoke-device` | owner 健康会话及签名、新恢复材料 | 撤销目标设备，推进 epoch/恢复版本，清除旧能力包并使旧 epoch 会话失效 |
+| `rotate-keys` | owner 健康会话及签名、新恢复材料 | 推进 epoch/恢复版本；未来内容须用新的资源版本和随机 DEK，旧明文/钥不能远程收回 |
+| `logout` | 当前健康会话及设备签名 | 立即撤销当前健康会话；不删除本人本地健康库或把其私钥交给服务器 |
+| `verify-operation` | 当前健康会话、外层命令签名、内层 revision 签名 | 校验当前主体/资源/动作/设备授权、版本/epoch/摘要/到期；返回 `healthContentAccepted:false`，不写临床事实、不代替 M3 修订接收 |
+
+后七类受保护调用（`enroll/inspect/key-capsules/revoke-device/rotate-keys/logout/verify-operation`）同时要求 `X-Yaohezi-Health-Session`，完整请求形状以 canonical OpenAPI 为准。管理命令包含 `version:1/subjectId/operationId/actorAccountId/actorDeviceId/grantVersion/keyEpoch/expiresAt`；签名输入为 UTF-8 canonical JSON `['yaohezi-health-v1', action, command]`，对象键排序，只接受整数及规范字段，base64url 不带 padding。设备签名为 Ed25519，公钥 32 字节、签名 64 字节。新设备 `enroll-proof` 和恢复 `recover-authority` 使用独立 domain。不能把验签成功当成改药授权。
+
+健康会话、设备和授权状态每次在相同账号→主体 advisory lock、authority 行锁、membership/share lock 的事务中重新核验，副作用与审计/回执在该事务提交。M2 路由不持有旧应用全局锁；同主体撤销先提交后，后续健康操作必须拒绝，即使普通账号 access token 仍有效。旧回执也先验当前授权，不复活已撤设备。`400` 非法结构；`403` 会话/信任/动作/签名拒绝；`409` 旧 epoch/version、已用挑战或操作冲突；`429` 挑战额度；`404` 开关关闭。权限拒绝不应触发账号无限刷新。
+
+设备信任、健康会话与普通账号会话不同。公共 `/auth/logout` 保持原 refresh-token 契约，不等于设备撤销；未来启用健康会话的原生退出流程须先调用健康 `logout`，再执行公共退出。再次建立健康会话需要可信私钥与新挑战；已撤销设备连新挑战入会也会被拒绝，必须通过有效批准/恢复路径。
+
+密码组合为 RFC 9180 X25519/HKDF-SHA256/AES-256-GCM 资源密钥封装，以及独立 256 位离线恢复材料派生的签名 verifier 和 AES-GCM 恢复 vault。服务器不执行解密、不持恢复 secret、设备私钥、SQLCipher key 或明文 DEK。不能检查恶意发送方放入密文的字节；客户端资源类型与核验边界仍是必要条件。实现与互操作参考在 `clients/yaohezi-security`，该目录和 HPKE 开发依赖不会被服务端运行时导入。详细威胁边界、AAD/framing 和评审见 `docs/security/yaohezi-m2-protocol.md`、`docs/security/yaohezi-m2-review.md`。
+
+本轮没有部署上述接口，没有完成原生可信设备 UI/Keychain、真机互操作、远程家庭授权、密文修订持久化、私有附件或 AI。不能用本地两个 Node 参考设备代替正式两台 iOS 设备验收。健康开关上线前还须处理已记录的依赖安全告警及产品删除编排；原件/共享/订阅功能开关仍为 false。
