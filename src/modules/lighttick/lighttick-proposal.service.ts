@@ -1,3 +1,4 @@
+import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickChangeProposalRow, LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
 import { assertProposalActionable, transitionPlan, transitionProposal, transitionTask } from "./lighttick-state-machines.ts";
@@ -102,13 +103,23 @@ export class LightTickProposalService {
   }
 
   async accept(owner: LightTickOwner, proposalId: string, baseVersion: number, selection: ProposalAcceptanceSelection = {}) {
+    const result = await this.repository.transaction(owner,async()=>{
+      await this.repository.lockPlanningOwner(owner);
+      return this.acceptLocked(owner,proposalId,baseVersion,selection);
+    });
+    if ("stale" in result) throw result.stale;
+    return result;
+  }
+  private async acceptLocked(owner:LightTickOwner,proposalId:string,baseVersion:number,selection:ProposalAcceptanceSelection){
     const proposal = await this.require(owner, proposalId); assertProposalActionable(proposal.status as "pending", proposal.expiresAt, this.clock());
     if (proposal.version !== baseVersion) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Proposal version is stale.");
     const plan = await this.repository.getPlan(owner, proposal.planId);
     if (!plan || plan.version !== proposal.basePlanVersion || plan.status !== "active") {
       await this.repository.saveProposal({ ...proposal, status: "superseded", decidedAt: this.clock().toISOString() }, proposal.version);
-      throw new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "Base plan changed before proposal acceptance.");
+      return {stale:new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "Base plan changed before proposal acceptance.")};
     }
+    const goal=await this.repository.getGoal(owner,plan.goalId);
+    if(goal&&!["active","draft"].includes(goal.status))throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Stopped goal history cannot accept an executable adjustment.");
     const offered = this.validateDiff(proposal.diff);
     const indices = selection.acceptedDiffIndices ?? offered.map((_, index) => index);
     if (!indices.length || new Set(indices).size !== indices.length || indices.some(index => !Number.isInteger(index) || index < 0 || index >= offered.length))
@@ -122,6 +133,12 @@ export class LightTickProposalService {
       diffs = diffs.map(item => edited.find(candidate => candidate.task_id === item.task_id) ?? item);
     }
     const timestamp = this.clock().toISOString();
+    const allTasks=await this.repository.listTasks(owner),targets=allTasks.filter(t=>t.planId===plan.id);
+    if(diffs.some(d=>!targets.some(t=>t.id===d.task_id&&["pending","in_progress","deferred"].includes(t.status))))throw new ApplicationError(409,"LIGHTTICK_PROPOSAL_STALE","A reviewed task became historical; preserve its facts and review the current work.");
+    if(goal){
+      const projected=targets.filter(t=>t.status!=="completed"&&!diffs.some(d=>d.task_id===t.id&&["cancel_task","defer_task"].includes(d.action))).map(t=>{const diff=diffs.find(d=>d.task_id===t.id);return {...t,estimatedMinutes:diff?.action==="update_task"?diff.estimated_minutes??t.estimatedMinutes:t.estimatedMinutes}});
+      assertScheduledCapacity(goal,projected,allTasks,new Set(targets.filter(t=>t.status!=="completed").map(t=>t.id)),(await this.repository.getProfile(owner))?.timezone??"UTC");
+    }
     return await this.repository.transaction(owner, async () => {
       const newPlan: LightTickPlanRow = { ...plan, id: randomId("lighttick_plan"), status: "active",
         source: `proposal:${proposal.id}`, proposal: { parent_plan_id: plan.id, accepted_diff: diffs },
@@ -132,6 +149,7 @@ export class LightTickProposalService {
       const savedPlan = await this.repository.savePlan(newPlan, this.planWrite(newPlan, "plan_replanned", 1, timestamp));
       const tasks = await this.repository.listTasks(owner, plan.id); const updatedTasks: LightTickTaskRow[] = [];
       for (const task of tasks) {
+        if (!["pending","in_progress"].includes(task.status) && !(task.status === "deferred" && diffs.some(d => d.task_id === task.id && d.action === "update_task"))) continue;
         const diff = diffs.find(item => item.task_id === task.id); let status = task.status; let scheduledFor = task.scheduledFor;
         let title = task.title; let estimatedMinutes = task.estimatedMinutes;
         if (diff?.action === "cancel_task") status = transitionTask(task.status as any, "cancelled");

@@ -147,3 +147,15 @@ for (const resumeMode of [undefined, "original_pace", "recovery_mode"] as const)
     assert.deepEqual((await new LightTickTodayService(repository, clock).get(owner)).executableTasks, []);
   });
 }
+
+test("a migrated recovering manual goal cannot execute its cached standard task before review", async () => {
+  const { repository, goals, tasks, plan, today } = await fixture();
+  const current = await goals.get(owner, plan.goal_id);
+  await repository.saveGoal({ ...current, status: "recovering" }, {
+    event: { ...owner, id: "recovering-fixture", aggregateType: "goal", aggregateId: current.id, aggregateVersion: current.version + 1, eventType: "goal_recovery_started", payload: {}, occurredAt: now, createdAt: now },
+    change: { ...owner, entityType: "goal", entityId: current.id, entityVersion: current.version + 1, operation: "upsert", snapshot: { status: "recovering" }, changedAt: now },
+  }, current.version);
+  const before = await snapshot(repository);
+  await assert.rejects(tasks.command(owner, today.id, today.version, { action: "complete" }), { statusCode: 409 });
+  assert.deepEqual(await snapshot(repository), before);
+});

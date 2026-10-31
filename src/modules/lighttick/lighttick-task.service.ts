@@ -1,3 +1,4 @@
+import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -96,7 +97,7 @@ export class LightTickTaskService {
     if (!["standard", "light", "minimum"].includes(variant))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Task variant is invalid.");
     const current = await this.repository.getTask(owner, taskId);
-    if (current) await this.assertGoalAllowsExecution(owner, current);
+    const goal = current ? await this.assertGoalAllowsExecution(owner, {...current,selectedVariant:variant}) : undefined;
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
     if (!["pending", "in_progress"].includes(current.status))
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Completed or terminal tasks cannot change variant.");
@@ -108,6 +109,7 @@ export class LightTickTaskService {
     const next: LightTickTaskRow = { ...current, lineageId: current.lineageId ?? current.id,
       selectedVariant: variant, title: definition.title, estimatedMinutes: definition.estimatedMinutes,
       completionCriteria: definition.completionCriteria, updatedAt: timestamp };
+    if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(goal,[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
     return await this.repository.saveTask(next, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
         eventType: "task_variant_changed", aggregateVersion: baseVersion + 1,
@@ -150,8 +152,10 @@ export class LightTickTaskService {
     if (!goal) return;
     const variant = task.selectedVariant ?? "standard";
     const pausedAllowed = goal.status === "paused" && goal.pauseMetadata?.keepLightTasks === true && variant !== "standard";
-    if (["completed", "archived"].includes(goal.status) || goal.status === "paused" && !pausedAllowed || goal.status === "recovering" && variant === "standard")
+    const needsReviewedRecovery = goal.status === "recovering" && variant === "standard" && ["manual_native", "local_adoption"].includes((await this.repository.getPlan(owner, task.planId))?.source ?? "");
+    if (["completed", "archived"].includes(goal.status) || goal.status === "paused" && !pausedAllowed || needsReviewedRecovery)
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "The goal is stopped or requires reviewed resumption; cached task commands cannot resume it.");
+    return goal;
   }
 
 }

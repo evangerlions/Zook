@@ -21,7 +21,8 @@ export class LightTickTodayService {
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
     const profile = await this.repository.getProfile(owner); const timezone = profile?.timezone ?? "UTC";
     const businessDate = businessDateAt(this.clock(), timezone);
-    const plans = (await this.repository.listPlans(owner)).filter(plan => plan.status === "active");
+    const allPlans = await this.repository.listPlans(owner);
+    const plans = allPlans.filter(plan => plan.status === "active");
     if (!plans.length) return { businessDate, timezone, executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: 0, emptyState: "no_active_plan" };
     const goals = await this.repository.listGoals(owner);
@@ -31,10 +32,11 @@ export class LightTickTodayService {
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
       emptyState: plans.some(plan => goalById.get(plan.goalId)?.status === "paused") ? "goal_paused" : "no_active_plan" };
     const planById = new Map(availablePlans.map(plan => [plan.id, plan]));
-    const tasks = (await this.repository.listTasks(owner)).filter(task => planById.has(task.planId));
+    const historicalPlans=new Map(allPlans.filter(p=>["active","superseded"].includes(p.status)&&["active","recovering"].includes(goalById.get(p.goalId)?.status??"")).map(p=>[p.id,p]));
+    const tasks = (await this.repository.listTasks(owner)).filter(task => planById.has(task.planId)||task.status==="completed"&&historicalPlans.has(task.planId));
     const scheduledToday = tasks.filter(task => {
-      const plan = planById.get(task.planId)!;
-      if (goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
+      const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
+      if (task.status !== "completed" && goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
       if (!task.scheduledFor && ["manual_native", "local_adoption"].includes(plan.source)) return false;
       if (!task.scheduledFor) return plan.periodStart.slice(0, 10) <= businessDate && plan.periodEnd.slice(0, 10) >= businessDate;
       const date = /^\d{4}-\d{2}-\d{2}$/.test(task.scheduledFor) ? task.scheduledFor : businessDateAt(new Date(task.scheduledFor), timezone);

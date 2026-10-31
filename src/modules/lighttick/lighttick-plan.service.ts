@@ -5,6 +5,7 @@ import { ApplicationError } from "../../shared/errors.ts";
 import { businessDateAt } from "./lighttick-today.service.ts";
 import { randomId } from "../../shared/utils.ts";
 
+import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import { validateTaskDetails, type TaskDetails } from "./lighttick-task-details.ts";
 
 export interface ProposedTaskInput extends TaskDetails { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
@@ -56,6 +57,8 @@ export class LightTickPlanService {
         seen.add(identity);
       }
       const goal = await this.requireGoal(owner, current.goalId);
+      if (!["draft","active"].includes(goal.status)) throw new ApplicationError(409,"LIGHTTICK_STATE_TRANSITION_INVALID","Review the stopped goal before creating executable work.");
+      assertScheduledCapacity(goal,taskInputs,await this.repository.listTasks(owner),new Set(),timezone);
       if (goal.status === "draft") {
         const nextGoal = { ...goal, status: transitionGoal("draft", "active"), updatedAt: timestamp };
         await this.repository.saveGoal(nextGoal, {
