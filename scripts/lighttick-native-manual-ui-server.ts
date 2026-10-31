@@ -33,6 +33,8 @@ const delivery = seed.appConfigs.find(
 )!;
 const configuration = JSON.parse(delivery.configValue);
 configuration.enabled = true;
+// Accept both current native debug baselines; this does not change production configuration.
+configuration.minimumClientVersions = { ios: "0.1.0", android: "0.1.0" };
 configuration.featureFlags = {};
 delivery.configValue = JSON.stringify(configuration);
 const app = await createApplication({
