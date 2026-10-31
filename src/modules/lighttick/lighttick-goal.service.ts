@@ -5,6 +5,8 @@ import { transitionGoal } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 
+import { assertManagedGoalFieldsUnchanged } from './goal-context/confirmed-conditions.ts';
+
 export interface LightTickGoalInput {
   title: string; description?: string; targetDate?: string; constraints: Record<string, unknown>;
   reviewCadence?: LightTickReviewCadencePreference;
@@ -26,6 +28,7 @@ export class LightTickGoalService {
     return goal;
   }
   async create(owner: LightTickOwner, input: LightTickGoalInput): Promise<LightTickGoalRow> {
+    assertManagedGoalFieldsUnchanged({}, input.constraints);
     const timestamp = this.clock().toISOString(); const title = this.validateTitle(input.title);
     const row: LightTickGoalRow = { ...owner, id: randomId("lighttick_goal"), title,
       description: input.description?.trim() || undefined, targetDate: input.targetDate,
@@ -36,6 +39,7 @@ export class LightTickGoalService {
   }
   async update(owner: LightTickOwner, id: string, baseVersion: number, patch: Partial<LightTickGoalInput>): Promise<LightTickGoalRow> {
     const current = await this.get(owner, id); const timestamp = this.clock().toISOString();
+    if (patch.constraints !== undefined) assertManagedGoalFieldsUnchanged(current.constraints, patch.constraints);
     const next = { ...current, title: patch.title === undefined ? current.title : this.validateTitle(patch.title),
       description: patch.description === undefined ? current.description : patch.description.trim() || undefined,
       targetDate: patch.targetDate === undefined ? current.targetDate : patch.targetDate,
@@ -68,6 +72,7 @@ export class LightTickGoalService {
     if (options.expectedResumeAt && Number.isNaN(Date.parse(options.expectedResumeAt)))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Expected resume time is invalid.");
     const next: LightTickGoalRow = { ...current, status,
+      constraints: action === "complete" || action === "archive" ? {...current.constraints,closure_outcome:action === "complete" || current.status === "completed" || current.constraints.closure_outcome === "achieved" ? "achieved" : "ended_without_achievement"} : current.constraints,
       pauseMetadata: action === "pause" ? { reason: options.reason?.trim() || "unspecified", pausedAt: timestamp,
         expectedResumeAt: options.expectedResumeAt, keepLightTasks: options.keepLightTasks === true,
         notificationPolicy: options.notificationPolicy ?? "suppress" } : current.pauseMetadata,

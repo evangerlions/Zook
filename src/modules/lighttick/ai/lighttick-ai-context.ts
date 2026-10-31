@@ -1,3 +1,4 @@
+import { planningConditionContext } from "../goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
@@ -19,10 +20,11 @@ export async function assembleLightTickContext(repository: LightTickRepository, 
   if ((goalId && plan && plan.goalId !== goalId) || (review && goalId && review.goalId !== goalId) ||
     (review && plan && review.goalId !== plan.goalId))
     throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Context resources must belong to the same goal.");
+  const profile = await repository.getProfile(owner);
   return {
     request: input,
-    profile: await repository.getProfile(owner).then(value => value ? ({ timezone: value.timezone, pace: value.pace }) : undefined),
-    goal: goal ? { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: goal.constraints } : undefined,
+    profile: profile ? {timezone:profile.timezone,pace:profile.pace} : undefined,
+    goal: goal ? { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: planningConditionContext(goal,input,profile?.timezone??"UTC") } : undefined,
     plan: plan ? { id: plan.id, status: plan.status, version: plan.version, period_start: plan.periodStart, period_end: plan.periodEnd } : undefined,
     tasks: tasks.map(task => ({ id: task.id, title: task.title, status: task.status, estimated_minutes: task.estimatedMinutes,
       priority: task.priority, scheduled_for: task.scheduledFor, completion_criteria: task.completionCriteria, guidance: task.guidance })),
@@ -71,7 +73,7 @@ export async function assembleChatContext(repository: LightTickRepository, owner
   return {
     request: input,
     profile: profile ? { timezone: profile.timezone, pace: profile.pace } : undefined,
-    goal: { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: goal.constraints },
+    goal: { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: planningConditionContext(goal,input,profile?.timezone??"UTC") },
     plan: plan ? { id: plan.id, status: plan.status, version: plan.version, period_start: plan.periodStart, period_end: plan.periodEnd } : undefined,
     task: task ? { id: task.id, title: task.title, status: task.status, estimated_minutes: task.estimatedMinutes,
       selected_variant: task.selectedVariant ?? "standard" } : undefined,
