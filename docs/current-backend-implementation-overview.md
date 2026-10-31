@@ -815,3 +815,12 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 #### LightTick N2 原生手动计划候选（2026-10-31）
 
 新增同 goal/plan/task 域的手动草稿、编辑、双版本原子确认与持久回执；独立本机目标/行动/复盘转属采用稳定源映射和单向归属。未知投入在数据库保留 NULL，未定日期的手动任务不投影 Today。注册账户不需要 Grow / AI。接口、关闭恢复及旧客户端 schema 2 升级边界见 README_API；迁移 081。真实隔离 PostgreSQL专项覆盖并发、回滚、重连和删除；候选不代表生产或双端上线验收已完成。
+
+
+#### LightTick N3 原生复盘与继续安排（2026-10-31）
+
+原目标/计划/任务域增加指定手写复盘来源、任务版本引用替换和审阅恢复；草稿与复盘保存均不排程，显式确认原子停止选定旧事项并建立新事项，同来源不会因旧计划被取代而再次消费。PUT 复盘按资源 ID/base_version 保留持久回执，来源或任务变化会拒绝确认。
+
+目标 constraints 中保存版本化 confirmed_planning_conditions 审计；持续/临时每日可用分钟按所选窗口解析，更正/撤销保留历史，临时条件不永久化。已有事实不删除，未知投入保持未知；手动确认、旧计划/提案接受和任务强度变更共用容量规则与 owner 锁。私人条件原因/历史不自动进入 AI。生命周期阻止暂停、达成、结束目标的旧任务及定向通知恢复执行，达成与未达成结束分开记录。
+
+接口与关闭恢复见 README_API，固定合同由 api-contracts 生成供双端消费；无新表迁移。真实 PG 专项命令：`LIGHTTICK_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/lighttick-native-continuation-postgres.test.ts`（仅可丢弃数据库，独立 schema）。双端本机 UI 验证不代表真机、真实通知 provider、dev/online 或商店发布完成。
