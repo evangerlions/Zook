@@ -3802,7 +3802,7 @@ paths:
       summary: Edit tasks in the same unconfirmed draft
       description: Registered owner, explicit draft/session/context/plan versions and Idempotency-Key required.
         Updates the same draft ID, never schedules work. Goal or existing-work changes require regeneration.
-        Disabled planning retains reads and accepted-request reconciliation.
+        Disabled planning retains reads and accepted-request reconciliation. Android may use POST with X-HTTP-Method-Override set to PATCH on this same resource; other session actions reject method override.
       parameters:
       - name: session_id
         in: path

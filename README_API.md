@@ -1160,7 +1160,7 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 Canonical OpenAPI 与生成模型已同步；跨端错误/并发样例见 `api-contracts/fixtures/lighttick/planning-errors.json`。本阶段尚未接入 iOS/Android 会话 UI。
 
-Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。
+Android HttpURLConnection 可对会话 context 和同一未确认草案 draft 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。兼容传输与 canonical PATCH 共用相同幂等回执，不重复编辑或排程。
 
 
 ### LightTick App 规划、执行与复盘闭环

@@ -17,8 +17,8 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (request.method === "GET" && match[1] && !match[2]) return context.ok(sessionData(await service.get(owner,match[1])),request.requestId!);
   const override = getHeader(request.headers,"x-http-method-override");
   if (override !== undefined) {
-    if (request.method !== "POST" || match[2] !== "context" || override.toUpperCase() !== "PATCH")
-      planningError(400,"REQ_FIELD_INVALID","Method override is only supported for context PATCH.");
+    if (request.method !== "POST" || !["context","draft"].includes(match[2]) || override.toUpperCase() !== "PATCH")
+      planningError(400,"REQ_FIELD_INVALID","Method override is only supported for context or draft PATCH.");
     request = {...request, method:"PATCH"};
   }
   const action = !match[1] ? "create" : match[2];

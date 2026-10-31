@@ -50,7 +50,7 @@ http.createServer(async(req,res)=>{
  let body="";for await(const chunk of req)body+=chunk;
  const token=runtime.services.tokenService.issueAccessToken(owner.userId,"lighttick");
  const response=await runtime.app.handle({method:req.method as any,path:url.pathname,query:Object.fromEntries(url.searchParams),headers:{...req.headers,authorization:"Bearer "+token} as any,body:body?JSON.parse(body):undefined});
- if(dropEdit&&req.method==="PATCH"&&url.pathname.endsWith("/draft")&&response.statusCode===200){dropEdit=false;res.destroy();return;}
+ if(dropEdit&&(req.method==="PATCH"||req.method==="POST"&&req.headers["x-http-method-override"]==="PATCH")&&url.pathname.endsWith("/draft")&&response.statusCode===200){dropEdit=false;res.writeHead(503,{"Content-Type":"application/json"});res.end(JSON.stringify({code:"LIGHTTICK_AI_UNAVAILABLE",message:"Synthetic accepted edit response unavailable"}));return;}
  res.writeHead(response.statusCode,{"Content-Type":"application/json"});res.end(JSON.stringify(response.body));
  await runtime.queue.processDueJobs(job=>lighttick.worker!.process(job),new Date("2030-01-01"));
  }catch(e){res.writeHead(500);res.end(JSON.stringify({code:"TEST_SERVER_FAILURE"}));}

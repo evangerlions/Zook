@@ -23,9 +23,9 @@ async function setup(options: { budget?: number; dailyMinutes?: number; periodEn
   const runtime = app.services.lighttickRuntime!, repository = runtime.repository;
   runtime.planningEnabled = true;
   const headers = { authorization: "Bearer " + app.services.tokenService.issueAccessToken(owner.userId, "lighttick"), "x-lighttick-task-schema": "2" };
-  const call = (suffix: string, method: any = "GET", body?: unknown, key = "read", userId = owner.userId) => app.app.handle({
+  const call = (suffix: string, method: any = "GET", body?: unknown, key = "read", userId = owner.userId, extraHeaders: Record<string, string> = {}) => app.app.handle({
     method, path: "/api/v1/lighttick/planning-sessions" + suffix, body,
-    headers: { ...headers, authorization: "Bearer " + app.services.tokenService.issueAccessToken(userId, "lighttick"), "idempotency-key": key },
+    headers: { ...headers, authorization: "Bearer " + app.services.tokenService.issueAccessToken(userId, "lighttick"), "idempotency-key": key, ...extraHeaders },
   });
   const createdGoal = await runtime.goals.create(owner, { title: "Build a usable example", constraints: { weekly_available_minutes: options.budget ?? 30 } });
   // A pre-existing active goal with no current work; generation itself must remain inert.
@@ -107,6 +107,55 @@ test("reviewed task PATCH keeps one draft, increments versions, stays inert, and
   assert.deepEqual((await f.call(`/${f.session.id}/confirm`, "POST", command, "confirm-reviewed-tasks")).body.data, first.body.data);
   assert.equal((await f.call(`/${f.session.id}/confirm`, "POST", command, "other-confirmation")).statusCode, 409);
   assert.deepEqual(await f.snapshot(), after);
+});
+
+test("POST override PATCH edits the same draft and replays interchangeably with canonical PATCH once", async () => {
+  const f = await setup(), body = f.edit(), suffix = `/${f.session.id}/draft`, key = "transport-override-edit";
+  const override = { "x-http-method-override": "PATCH" };
+  const response = await f.call(suffix, "POST", body, key, owner.userId, override);
+  assert.equal(response.statusCode, 200, JSON.stringify(response.body));
+  const edited: any = (response.body.data as any).session;
+  assert.equal(edited.draft_plan_id, f.plan.id);
+  assert.equal(edited.version, f.session.version + 1);
+  assert.equal(edited.context_revision, f.session.context_revision);
+  const plan = (await f.repository.getPlan(owner, f.plan.id))!;
+  assert.equal(plan.version, f.plan.version + 1);
+  assert.equal(plan.status, "proposed");
+  assert.equal((await f.repository.listPlans(owner)).length, 1);
+  assert.deepEqual(await f.repository.listTasks(owner), []);
+  const accepted = await f.snapshot();
+  for (const method of ["POST", "PATCH"] as const) {
+    const replay = await f.call(suffix, method, body, key, owner.userId, method === "POST" ? override : {});
+    assert.equal(replay.statusCode, 200, JSON.stringify(replay.body));
+    assert.deepEqual(replay.body.data, response.body.data);
+  }
+  assert.deepEqual(await f.snapshot(), accepted);
+  const confirmation = await f.confirmation();
+  const confirmed = await f.call(`/${f.session.id}/confirm`, "POST", confirmation, "confirm-transport-edit");
+  assert.equal(confirmed.statusCode, 200, JSON.stringify(confirmed.body));
+  assert.equal((await f.repository.listTasks(owner)).length, reviewedTasks().length);
+  const afterConfirmation = await f.snapshot();
+  assert.deepEqual((await f.call(suffix, "POST", body, key, owner.userId, override)).body.data, response.body.data);
+  assert.deepEqual(await f.snapshot(), afterConfirmation);
+});
+
+test("method override rejects unrelated session operations and unsupported transport verbs without writes", async () => {
+  const f = await setup(), before = await f.snapshot();
+  const requests = [
+    { suffix: "", body: { goal_id: f.goal.id }, method: "POST", override: "PATCH" },
+    { suffix: `/${f.session.id}/messages`, body: { base_version: f.session.version, message: "Do not enqueue this" }, method: "POST", override: "PATCH" },
+    { suffix: `/${f.session.id}/drafts`, body: { base_version: f.session.version, context_revision: f.session.context_revision, deep_planning: true }, method: "POST", override: "PATCH" },
+    { suffix: `/${f.session.id}/confirm`, body: await f.confirmation(), method: "POST", override: "PATCH" },
+    { suffix: `/${f.session.id}/draft`, body: f.edit(), method: "POST", override: "DELETE" },
+    { suffix: `/${f.session.id}/draft`, body: f.edit(), method: "PATCH", override: "PATCH" },
+  ];
+  for (const [index, request] of requests.entries()) {
+    const key = `forbidden-method-override-${index}`;
+    const response = await f.call(request.suffix, request.method, request.body, key, owner.userId, { "x-http-method-override": request.override });
+    assert.equal(response.statusCode, 400, JSON.stringify(response.body));
+    assert.equal(await f.repository.getOperation(owner, `planning:${key}`), undefined);
+  }
+  assert.deepEqual(await f.snapshot(), before);
 });
 
 for (const conflict of ["session version", "context revision", "draft id", "plan version", "goal version", "plan source", "session source"] as const) {
