@@ -380,7 +380,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     createCreditsMembershipReader(aiNovelBillingService), logger);
   const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
     aiNovelCreditsService,
-    options.aiNovelCreditsEnabled ?? process.env.AINOVEL_CREDITS_ENABLED === "true",
     aiNovelConversationRecordService,
     async () => (await aiNovelModelSelectionConfigService.getAutoFree()).active,
   );
@@ -427,13 +426,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     })),
   );
   const aiNovelLlmService = new AiNovelLlmService(
+    aiNovelCreditsFlow,
     llmManager,
     embeddingManager,
     aiNovelModelSelectionConfigService,
     logger,
     contentSafetyService,
     aiNovelConversationRecordService,
-    aiNovelCreditsFlow,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);

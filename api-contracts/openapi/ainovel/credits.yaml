@@ -22,7 +22,7 @@ paths:
         Every amount is a JSON integer in micros, not points or a numeric string.
         One writing credit equals 1000000 micros. Clients retain raw micros and
         use a shared formatter for integer-point display; display rounding must
-        never determine admission. enabled=false means enforcement is not live.
+        never determine admission.
         Periodic quota uses an account-specific 168-hour window. Paid membership
         starts at its verified continuous activation anchor; renewal and upgrade
         preserve that window. A purchase after expiry starts a new window.
@@ -65,10 +65,8 @@ components:
       examples: [1000, 19999000]
     CreditsBalanceData:
       type: object
-      required: [enabled, tier, refreshAt, periodicMicros, periodicLimitMicros, giftMicros, remainingMicros]
+      required: [tier, refreshAt, periodicMicros, periodicLimitMicros, giftMicros, remainingMicros]
       properties:
-        enabled:
-          type: boolean
         tier:
           type: string
           enum: [free, plus, pro]

@@ -16,9 +16,9 @@ const usage = { promptTokens: 30000, cachedInputTokens: 24000, completionTokens:
 const request = { sceneKey: "write_turn", messages: [{ role: "user", content: "write" }], context: { billingJobId: "job" } };
 const opts = { userId: "u", requestId: "r", locale: "zh-CN" };
 const response = { sceneKey: "write_turn", completion: { sceneRouteKey: "write_turn", provider: "test", providerModel: "m", content: "text", finishReason: "stop" } };
-function fixture(enabled = true) {
+function fixture() {
   const credits = new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => "free");
-  return { credits, flow: new AiNovelCreditsRequestFlow(credits, enabled) };
+  return { credits, flow: new AiNovelCreditsRequestFlow(credits) };
 }
 async function collect<T>(stream: AsyncIterable<T>) { const result: T[] = []; for await (const value of stream) result.push(value); return result; }
 
@@ -49,10 +49,9 @@ test("quota reply emphasizes membership without removing the refresh option", as
   }
 });
 
-test("enabled flow accepts old callers without any client billing protocol", async () => {
+test("credit flow accepts old callers without any client billing protocol", async () => {
   const { flow } = fixture();
   assert.equal(await flow.complete({ ...request, context: {} }, opts, async () => response), response);
-  assert.equal(await fixture(false).flow.complete({ ...request, context: {} }, {}, async () => response), response);
 });
 
 test("zero balance blocks before execute/provider and returns business SSE without usage", async () => {
