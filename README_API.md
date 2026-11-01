@@ -1046,6 +1046,8 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 
 ### 9.5 FrogSleep 邀请链接与推送
 
+部署 HTTPS handoff 时，将 `deploy_configs/nginx/frogsleep-links.conf.example` 的三个精确路径接入对应槽位 API，避免 Admin SPA fallback 吞掉邀请页。该配置不自动启用 Universal Links/App Links，也不能复用 HabitTap 的 AASA 身份；实际域名、设备唤起与无安装场景仍须单独验收。
+
 FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
 
 ```json

@@ -1,0 +1,25 @@
+# Include INSIDE the existing app-dev.youwoai.net HTTPS server.
+# This is an operator example, not a live configuration. Preserve the existing
+# /api proxy and Admin SPA; only these exact handoff paths go to the API.
+# Confirm DEPLOY_HOST_PORT in the slot env: default dev=3101, online=3100.
+# For online use a separate copy with port 3100 after dev acceptance.
+location = /frogsleep/buddy-invitation {
+    proxy_pass http://127.0.0.1:3101;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    access_log off;
+}
+location = /frogsleep/sleep-buddy-invite {
+    proxy_pass http://127.0.0.1:3101;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    access_log off;
+}
+location = /frogsleep/focus-invite {
+    proxy_pass http://127.0.0.1:3101;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    access_log off;
+}
+# This does not enable Universal Links/App Links. FrogSleep currently uses
+# custom-scheme handoff; do not reuse HabitTap's AASA application identifier.
