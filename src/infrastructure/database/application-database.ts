@@ -6,6 +6,13 @@ import type { FrogSleepAdminStore } from "../../modules/frogsleep/admin/frogslee
 import type { FrogSleepFocusSessionWriteResult } from "../../shared/frogsleep-focus-session.ts";
 import type {
   AnalyticsEventRecord,
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingAdminEventFilter,
+  AiNovelBillingAdminEventPage,
+  AiNovelBillingAdminOrderDetailFilter,
+  AiNovelBillingAdminOrderFilter,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
@@ -53,6 +60,7 @@ import type {
 } from "../../shared/types.ts";
 import type { LlmObservabilityStore } from "./llm-observability-store.ts";
 import type { AiNovelConversationStore } from "./ai-novel-conversation-store.ts";
+import type { AiNovelCreditsStore } from "../../modules/ai-novel/credits/ai-novel-credits-model.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 
@@ -74,6 +82,7 @@ export abstract class ApplicationDatabase {
   abstract getBuddySupportRepository(): BuddySupportRepository;
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;
+  abstract readonly aiNovelCreditsStore: AiNovelCreditsStore;
   abstract getSleepGuestStore(): SleepGuestStore;
   abstract getPersonalSyncRepository(): PersonalSyncRepository;
   abstract getFrogSleepAdminStore(): FrogSleepAdminStore;
@@ -106,13 +115,18 @@ export abstract class ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt?: string,
   ): MaybePromise<AppUserRecord | undefined>;
   abstract finalizeAppUserAccountRegion(
     appId: string,
     userId: string,
     accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
   ): MaybePromise<AppUserRecord | undefined>;
-  abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
+  abstract deleteAppUserRuntimeData(
+    appId: string,
+    userId: string,
+    deletedAt?: string,
+  ): MaybePromise<void>;
 
   abstract findBodyLogProfile(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogProfile']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogProfile']>;
   abstract listBodyLogProfilesByIds(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogProfilesByIds']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogProfilesByIds']>;
@@ -526,6 +540,50 @@ export abstract class ApplicationDatabase {
     dateFrom?: string;
     dateTo?: string;
   }): MaybePromise<AiNovelDailyStatisticsRecord[]>;
+
+  abstract findAiNovelBillingMembership(
+    appId: "ai_novel",
+    userId: string,
+  ): MaybePromise<AiNovelBillingMembershipRecord | undefined>;
+  abstract findAiNovelAlipayOrder(orderId: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder | undefined>;
+  abstract findAiNovelAlipayIdempotency(userId: string, key: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder | undefined>;
+  abstract listAiNovelAlipayOrders(userId: string, filter: { before: string; after?: string; limit: number }): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract listAiNovelAlipayAccess(userId: string, now: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract saveAiNovelAlipayOrder(order: import("../../modules/billing/alipay-models.ts").AlipayOrder): MaybePromise<void>;
+  abstract listBillingAdminMemberships(filter: import("../../shared/types/billing-admin.ts").BillingMembershipFilter): MaybePromise<AiNovelBillingMembershipRecord[]>;
+  abstract getBillingAdminRevenue(filter: import("../../shared/types/billing-admin.ts").BillingSummaryFilter): MaybePromise<import("../../shared/types/billing-admin.ts").BillingRevenueRow[]>;
+  abstract upsertAiNovelBillingMembership(
+    record: AiNovelBillingMembershipRecord,
+  ): MaybePromise<void>;
+  abstract upsertAiNovelBillingTransaction(
+    record: AiNovelBillingTransactionRecord,
+  ): MaybePromise<void>;
+  abstract listAiNovelBillingTransactions(
+    appId: "ai_novel",
+    userId: string,
+  ): MaybePromise<AiNovelBillingTransactionRecord[]>;
+  abstract listAiNovelBillingAdminOrders(
+    filter: AiNovelBillingAdminOrderFilter,
+  ): MaybePromise<AiNovelBillingTransactionRecord[]>;
+  abstract findAiNovelBillingAdminOrder(
+    filter: AiNovelBillingAdminOrderDetailFilter,
+  ): MaybePromise<AiNovelBillingTransactionRecord | undefined>;
+  abstract listAiNovelBillingAdminEvents(
+    filter: AiNovelBillingAdminEventFilter,
+  ): MaybePromise<AiNovelBillingAdminEventPage>;
+  abstract findAiNovelBillingWebhookEvent(
+    appId: "ai_novel",
+    eventId: string,
+  ): MaybePromise<AiNovelBillingWebhookEventRecord | undefined>;
+  abstract insertAiNovelBillingWebhookEvent(
+    record: AiNovelBillingWebhookEventRecord,
+  ): MaybePromise<boolean>;
+  abstract softDeleteAiNovelBillingAccount(
+    appId: "ai_novel",
+    userId: string,
+    deletedAt: string,
+  ): MaybePromise<void>;
 
   // ─── BodyLog 后台打卡管理 ───
 

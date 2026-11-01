@@ -1,5 +1,13 @@
 # API Interface Specification
 
+### AINovel 试运营额度（2026-10-20）
+
+Free / Plus / Pro 的独立 7 天周期额度分别为 200 / 1000 / 4000 credits。
+公开套餐权益中的免费额度倍率由同一额度策略计算，Plus 为 5X，Pro 为 20X，
+随现有 locale 系统本地化下发。既有 Free 账号在同周期首次同步时仅补 180 credits
+差额，保留已消耗量、活动余额与刷新日期；重复读取不重复补发。购买时长与额度
+重置周期无关。个人剩余额度仍通过原有受认证的 credits 接口读取。
+
 ## 1. 文档目标
 
 本文档只面向外部 App / Web / H5 接入方。
@@ -263,6 +271,8 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 `reminder.intervalSeconds` 提供可选升级提醒的次数与最小间隔；`mandatory` 强制升级不受
 提醒次数限制。产物可选提供 `messageI18n`（locale 到文本的映射），客户端只在存在当前
 语言文本时显示；未配置时不显示客户端内置的替代更新消息。
+AINovel 的 `GET /api/v1/ai_novel/public/config` 响应 `data.countryCode` 可选，表示根据当前请求可信代理信息或 IP 推断的 ISO 3166-1 alpha-2 国家代码；无法确定时省略。该响应为请求特定数据，设置 `Cache-Control: private, no-store`。客户端应在返回有效值时更新本地缓存。
+
 AINovel 读取既有 `GET /api/v1/ai_novel/public/config` 时，也会在 `config.releaseUpdate`
 中收到同一份 AINovel 专属投影，便于客户端减少一次请求。
 
@@ -378,10 +388,14 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
+| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
+| `GET`  | `/api/v1/ai_novel/billing/catalog`        | 获取当前渠道可用的 Plus / Pro 月度、季度、年度商品与支付方式；按 app scope 和账号当前权益返回可用性                              |
+| `POST` | `/api/v1/ai_novel/billing/sync`           | 统一同步支付宝或 RevenueCat 会员；客户端不得提交 receipt、token 或用户 ID                                              |
+| `POST` | `/api/v1/ai_novel/billing/webhooks/revenuecat` | 接收 RevenueCat 事件并重新读取服务端订阅快照；仅供 RevenueCat 调用                                                       |
 | `POST` | `/api/v1/ai_novel/ai-output-reports`      | 提交 AI 消息或章节 revision 举报；按客户端 `submissionId` 幂等，举报原文在服务端加密存储                                              |
 | `POST` | `/api/v1/ai_novel/ai-output-reactions`    | 提交最新生成章节的轻量 reaction；当前支持 `chapter_revision + like`                                                                |
 | `POST` | `/api/v1/frogsleep/auth/password/login`    | FrogSleep 密码登录，内部固定使用 `appId=frogsleep`                                                                                   |
@@ -473,6 +487,45 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+19a. AINovel Billing 使用 `/api/v1/ai_novel/billing/...` 产品命名空间。`GET /api/v1/users/me` 的 `data.membership` 只表示当前 Bearer Token app scope 下的权益；同一用户在不同 app 的权益互不通用。App Store 与 Google Play 使用 RevenueCat；CN 中国 Android 应用商店、官网直装 Android、Web、Windows 在显式配置启用后支持一次性支付宝会员。全球 Web / Windows 用户引导至 iOS 或 Android 订阅。
+
+公开 catalog 的每个 product 另含 `benefits:[{key,text,included,order,comingSoon}]` 和 `usage:{credits,resetPeriod:"P7D"}`。文案复用现有 locale query / X-App-Locale / Accept-Language 解析及语言回退，不在 data 回传 locale；客户端只展示排序后的文案及勾选/灰色状态，comingSoon 不显示为已可用。公共额度复用实际创作点策略，不能当个人剩余余额或授权结果。现有 app config `ai_novel.billing_benefits` 可分别覆盖 plus/pro 数组，text 使用 locale→文案的对象，`{credits}` 引用实际档位额度；未配置档位使用默认值。默认提供全部 20 种语言，缺失配置语言沿用共享语言回退。该配置不是计费或权限配置。客户端缓存需包含权益并按请求语言隔离；相同内容不闪烁，内容改变立即更新。
+
+`products[].purchaseSubtitle` 是服务端按同一 locale 系统解析的可选支付按钮副标题（字符串或 null）。未配置、缺失、null 或空白时客户端隐藏整行，不按支付渠道/周期生成默认文案；客户端目录缓存及店铺报价适配必须保留此字段，服务端更新或清空后刷新即生效。
+
+`products[].purchaseTitle` 是可选的本地化主按钮完整文案。非空时直接显示；缺失、null、空白时回退客户端当前语言的默认「立即开通」。客户端不得自动追加价格、分隔符或周期文案，月/季/年规则一致；不覆盖登录或渠道不可用状态。缓存及店铺报价适配同样保留此字段。
+
+catalog 的可选 `display:{title,agreement,plusLabel,proLabel}` 与产品的 `periodLabel` 为完整本地化文案；缺失/null/空白时使用客户端对应的必要多语言默认值。`products[].displayName` 为完整商品名，不解析 productKey 拼接；`badgeText` 为可选营销标签，未配置就隐藏，不按周期推断试用或划线原价。所有展示字段随现有目录缓存保存、更新和清空。`providers[].price.localizedDisplay` 为完整格式化价格；App Store/Google Play 客户端仍以商店 SDK 返回的价格字符串优先，旧响应缺失时仅做金额格式化，不拼营销文案。
+
+支付宝创建订单响应可选 `display:{title,hint,waiting,productName,amountText}` 供当前页二维码弹框直接展示。必要提示缺省使用客户端多语言，商品名缺省显示通用会员标题而非猜测商品 ID。`amountText` 只由订单真实 CNY 金额格式化产生，不接受营销配置覆盖；身份、金额、支付/发放验证仍以 `order` 与现有确认流程为准。
+
+二维码展示配置不作为创建或幂等重试订单的前置校验：无关页面文案不参与此路径，错误格式的配置 JSON 视为没有展示覆盖；无效的二维码本地化字段分别回退为空，其他有效字段仍保留。客户端使用必要默认提示。此容错仅针对可选文案，不放宽订单、鉴权、金额或支付确认校验。支付按钮副标题只显示一行，超出以省略号截断，不换行。
+
+`GET /api/v1/ai_novel/billing/catalog` 支持可选认证，但只返回公开套餐、已配置价格和渠道信息，不读取或写入个人会员数据。不发送 Authorization 时使用 `X-App-Region` 的 CN / GLOBAL 提示（缺省 GLOBAL）；有效 Bearer 使用账号持久地区。无效或过期的认证返回 401，不能降级为匿名请求。响应禁止缓存。个人购买限制由 UserInfo 的 `membership.active`、`expiresAt` 和 `source` 表达：有效且未到期的会员只能在原渠道购买，取消续订不提前解除限制。客户端复用这份会员结构展示限制，不另建重复字段。下单、订单查询、会员查询和购买确认仍要求认证，并独立校验渠道。未登录客户端保留公开价格，购买按钮先打开登录。
+19b. AINovel 商品固定提供 `plus_monthly`、`plus_quarterly`、`plus_yearly`、`pro_monthly`、`pro_quarterly`、`pro_yearly` 六个逻辑商品；价格和 provider ID 由服务端 app-scoped catalog 配置返回，客户端不得提交金额或 provider 订单号。RevenueCat entitlement ID 与业务 tier 分开：`plus` 商品使用 `orangewrite_plus`，`pro` 商品使用 `orangewrite_pro`。若另一渠道仍有有效会员，当前渠道入口返回不可用并提示回到原平台管理。
+19c. 登录后购买、恢复、启动及显式重查调用 `POST /api/v1/ai_novel/billing/sync`，统一入口为 `syncMembership`。body 为 `{provider: alipay|revenuecat, reason?: purchase|restore|app_start|retry, purchaseReference?: {kind: alipay_order|store_transaction,id}}`。引用只定位待验证交易，不是付款凭证；kind须匹配provider。用户/App与支付环境来自认证和服务端策略。返回 `{syncStatus: complete|pending,membership,targetPurchase,pendingOrderCount,checkedAt}`；targetPurchase为null或`{reference,status:pending|paid|closed|failed,entitlementStatus:applied|blocked|not_applicable|pending}`。当前会员与本次付款确认独立：历史订单pending不推翻本次paid/applied；已确认旧付款也可能已过期。普通业务只读本地权益按服务端时间判定，不查询供应商。
+
+19d. RevenueCat webhook 地址为 `POST /api/v1/ai_novel/billing/webhooks/revenuecat`，按 `app_id + event.id` 幂等。部署端必须配置服务端密钥 `REVENUECAT_AI_NOVEL_SECRET_API_KEY`，以及 webhook 的 `REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION`（完整 Authorization header 值）和 `REVENUECAT_AI_NOVEL_APP_ID`、`REVENUECAT_AI_NOVEL_PROJECT_ID`。RC webhook 必须配置相同静态 Authorization header；当前 HTTP 入口 JSON 解析前不保留 raw body，因此不验证 RevenueCat HMAC 签名，不能使用 HMAC-only 部署。Webhook 只触发 RevenueCat customer API 重新读取，绝不单凭 webhook body 授权；未知事件和未知用户记录为 ignored。会员投影和交易证据存 PostgreSQL 的 `ai_novel` app scope；重复同步按 provider transaction ID upsert。账号删除时会员投影软失效，订单证据保留并标记 `account_deleted_at` 供财务审计。
+
+19e. 服务端仅使用 RevenueCat REST V2，没有 V1 fallback；现有数据库结构与客户端接口不变，不需要用户或订单数据迁移。V2 服务端密钥需要客户信息只读权限和 `project_configuration:products:read`，不需要退款、删除或授予权益的写权限。同步完整读取 customer subscriptions / active entitlements、验证 product.app_id、读取 subscription transactions 后统一入库；分页或任一 provider 请求失败都返回 pending，不写入部分结果。会员观察时间在查询发起时确定，避免旧查询晚到覆盖新状态；财务记录按 provider 交易时间排序，普通查询不能伪装成退款撤销。订阅金额读取单笔交易的本币 gross，而不是累计收入。V2 交易金额没有退款事件时间，负收入本身不判定为退款；财务退款/撤销记录依赖明确的已鉴权 webhook 事件，会员失效仍可由 V2 查询独立确认。Webhook 的 `api_version: 1.0` 是事件格式，与 REST V2 无关。
+19f. Google Play 使用六个同名 subscription，各自绑定 `auto-renew` base plan；catalog 返回的 `providerProductId` 为 `<productKey>:auto-renew`，业务 `productKey` 不变。服务端新增 `REVENUECAT_AI_NOVEL_GOOGLE_APP_ID`（RC Google App ID，不是 Android 包名）；现有 `REVENUECAT_AI_NOVEL_APP_ID` 仅校验 Apple。公共 config 的 `billing.revenueCat.publicSdkKeys.android` 下发 Google Public SDK key。未知 base plan、跨 App/store 商品均不能授权；仅 Google Global 包启用购买，商户与凭证未配置前不能视为真实支付可用。
+
+19g. Alipay uses authenticated `POST /api/v1/ai_novel/billing/alipay/orders` (Bearer + `X-App-Id: ai_novel`), body `{productKey,platform,distribution,idempotencyKey,checkoutMode?}`. Supported pairs are `android` with `china_android_store`/`direct_android`, `web/web`, and `windows/windows`, CN accounts only. Mobile Web selects `mobile_web` (`alipay.trade.wap.pay`); desktop Web selects `desktop_web` (`alipay.trade.page.pay`, `FAST_INSTANT_TRADE_PAY`, embedded QR mode 4); Windows and legacy clients select `qr` (`alipay.trade.precreate`), also the default for non-native requests. `desktop_web` returns the existing `{type:"page",url}` signed HTTPS URL for an iframe, without a return URL that could navigate the parent. Browser navigation/frame events are never settlement evidence; continue querying the owned order. The merchant must have computer-website-payment capability enabled. Native Android omits mode; Windows rejects mobile_web. Merchant QR/precreate capability must be enabled separately where required. Six Plus/Pro monthly/quarterly/yearly keys match the store catalog. Server freezes price, mode, merchant identity and ownership before preparing checkout; the same key replays the same order, changed inputs return 409. Response envelope data is `{order,payment}`: payment is `{type:"app",orderString}`, `{type:"page",url}`, `{type:"qr",qrCode}`, or null for terminal/expired checkout. QR responses require SDK signature verification and matching order identity. Network preparation failures remain pending because the provider may have created the order. The provider-facing subject is the CN customer-facing product name (for example `橘子写作 Plus 年度会员`), never an internal product key. This applies to app, mobile/desktop page and QR checkout. Do not log these checkout payloads.
+
+New `orderId` / Alipay `out_trade_no` format is `ow_{and|web|win}_{a01|a03|a12|b01|b03|b12}_{userId first 6 characters}_{16 random hex characters}`. `a` is Plus, `b` Pro; numbers are months. No timestamp or user hash is included. User prefixes may contain ASCII letters/digits, `_` or `-`, and are diagnostic only. Existing `ow_`/`alp_` plus 32-hex IDs remain supported and unchanged. Do not infer ownership or entitlement from order text. Apply migration 073 before deploying the new generator.
+
+Apple App Store, Google Play and Alipay are pairwise exclusive while membership is active and unexpired, including cancelled renewal until expiry. Catalog availability reflects public channel configuration only; personal cross-channel restrictions come from UserInfo membership (active, expiresAt, source). Same-channel purchase and changing channel after expiry remain allowed. RC confirmation/webhook cannot replace an established active channel with another store's higher tier. Verified financial transactions remain recorded, server logs identify `provider_conflict`, and `/billing/sync` returns `pending` for conflicting active evidence rather than falsely confirming activation. Client hints identify the original channel using `membership.source`. These checks do not prevent charges made directly through a store by bypassed or concurrent clients; support resolves exceptional double payments.
+
+19h. `GET /api/v1/ai_novel/billing/alipay/orders/{orderId}` 仅返回已持久化的 `{order,membership}`，不查支付宝、不结算；需主动核实使用上述POST同步入口，purchaseReference.kind=alipay_order。服务端按用户与环境发现订单，本地恢复记录只用于找回丢失的下单身份。明确结果不重查，paid未应用只本地补齐；pending订单逐笔查询，每笔本轮一次。每个支付宝或RC外部HTTP查询超时20秒（RC多页各自20秒），多笔耗时累加；不设置整个同步固定总超时、不自动连重试、不合并不同请求。超时/验签失败保留待确认并继续。所有付款事实经同一短事务结算，网络请求在事务外；同等级按付款时间和稳定订单顺序累计日历月，重复确认不加时。普通读取本地区间，Pro到期可自动回落仍有效Plus。
+
+19i. `POST /api/v1/ai_novel/billing/webhooks/alipay` accepts bounded (16 KiB), non-duplicated form fields. Official `alipay-sdk` validates RSA2 via `checkNotifySignV2`; official order queries use `validateSign:true`. Notify app/seller and all settlement order/amount/trade identifiers must match frozen order facts. Query app identity is tied to configured signed merchant SDK requests, not a presumed response app_id; optional response seller/app fields are validated. Query and notify share atomic, exactly-once settlement. Success acknowledgement is exactly raw text `success` (no quotes/newline). Deleted accounts retain financial evidence without re-granting access.
+
+19j. Configuration is `ALIPAY_AI_NOVEL_{ENABLED,ENVIRONMENT,APP_ID,SELLER_ID,PRIVATE_KEY_PATH,PUBLIC_KEY_PATH,NOTIFY_URL,RETURN_URL}`; enabled defaults false, environment must be explicit and URLs HTTPS. Keys are loaded from private files; do not commit key values. Development defaults CNY Plus 38/98/298 and Pro 88/228/598 are mock placeholders, not an approved production price list. Override all six minor-unit prices with `ALIPAY_AI_NOVEL_PRICES_JSON`. Production additionally requires that full explicit catalog and `ALIPAY_AI_NOVEL_PRICES_APPROVED=true`; key presence alone never enables checkout. Merchant seller ID/configuration and native payment validation remain external gates.
+
+19k. External Alipay refund synchronization and refund execution are not implemented. Paid orders are not polled for later refunds. Verified TRADE_CLOSED after payment is retained in notification history but does not undo the canonical paid amount or grant. Admin pending/closed/failed quoted amounts are not revenue. Docker billing logs contain identifiers/outcomes only, never signed checkout payloads, form fields or keys.
+
+Alipay recovery: the API process runs a startup pass and a one-minute bounded sequential pass (20 orders maximum, no overlapping passes) through `syncAlipayMembership` and the same canonical settlement as notifications. Authenticated GET order reads are pure; clients explicitly call POST membership sync to verify pending payments or reconcile local grants. Each provider HTTP query has a 20-second timeout. Trusted local refunded/revoked facts revoke the corresponding grant during sync without requerying settled payments. Merchant/environment and deleted-account restrictions remain enforced. See [internal recovery operation](docs/ainovel-alipay-recovery.md).
+19l. 创作点统一使用账号独立 7 天窗口，不按自然周/月刷新。Plus / Pro 的起点为服务端验证的连续会员期购买时间；连续续费只延长有效期，升级不移动窗口和已消耗量，中断后的重购开启新窗口。Free 以首次创建额度账户为起点。`GET /api/v1/ai_novel/credits` 返回精确整数微点、权威 tier 和 `refreshAt`；时区只影响客户端时间展示。旧会员缺少可信支付锚点时返回 `AINOVEL_CREDITS_MEMBERSHIP_ANCHOR_UNAVAILABLE`，应同步会员后重试，不伪造余额；过期的并发权益快照返回 `AINOVEL_CREDITS_ENTITLEMENT_STALE`，重试查询。旧测试余额迁移不额外补满。Free 20 / Plus 1,000 / Pro 4,000 仅为开发占位值，周额度成本需重新核定，`AINOVEL_CREDITS_ENABLED` 仍默认关闭；月付/季付/年付商品不受窗口规则影响。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。
 21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、可流式取消的 Pi context compaction 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
@@ -1176,6 +1229,12 @@ Android HttpURLConnection 可对会话 context 和同一未确认草案 draft �
 - 本轮未改变鉴权、app scope 和公共路径；指导字段存储依赖增量迁移 `064_lighttick_task_guidance.sql`。部署迁移及后端后再启用新客户端能力。完整顺序和验证边界见 `docs/lighttick/app-loop-integration.md`。
 
 
+### AINovel usage 校验与缓存输入（2026-10-04）
+
+- Chat usage 可兼容增加 `cachedInputTokens`，表示厂商返回、已包含在 `promptTokens` 中的缓存读取输入子集；不得再次加进 `totalTokens`。字段缺失表示未知，不是零；缓存写入量不能代替缓存读取量。
+- 有效厂商 usage 优先，包括真实的 0。计数必须为安全非负整数、总量等于输入加输出、缓存和 reasoning 不超过各自父项。缺失或异常 usage 不丢弃正文，走现有服务端估算兜底并标记 `estimated: true`；stream 在 done 前输出兜底 usage。异常厂商元数据产生 `invalid_usage_counters` 警告，不打印请求正文。
+- 此改动不启用会员扣点，不改变上下文预算、模型路由、正文/工具进度事件或失败/取消策略。三类倍率、缓存费率快照和余额结算仍为后续实现范围。
+
 ### LightTick 通用规划与个人复盘（2026-09-19）
 
 - `GET /api/v1/lighttick/reflections?goal_id=...`：返回该目标已保存个人复盘，`data.items` 按更新时间倒序。需要注册 LightTick membership，与其他产品/用户隔离。
@@ -1184,6 +1243,25 @@ Android HttpURLConnection 可对会话 context 和同一未确认草案 draft �
 - review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
 - 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
 - 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。
+## AINovel 创作点整数单位
+
+- `GET /api/v1/ai_novel/credits`：返回 `enabled`、会员 `tier`、`refreshAt`，以及 `periodicMicros`、`periodicLimitMicros`、`giftMicros`、`remainingMicros`。
+- Zook 在每次 provider 调用正常完成后，使用服务端 usage（缺失时复用估算）和费率直接原子扣费；无客户端 finish 接口。多轮逐轮扣费，客户端取消、保存或显示失败不会退回已经成功调用的费用。
+- 余额接口需要产品鉴权。全部金额为非负 JSON 整数微点，**1 点 = 1,000,000 微点**，最大安全整数为 `9007199254740991`；不返回浮点点数或金额字符串。客户端公共逻辑保存原始整数，仅在显示时换算并向下取整，不以展示值判断是否有额度。
+- 精确合同见 `api-contracts/openapi/ainovel/credits.yaml`。额度功能默认关闭（`enabled=false`），部署迁移、核对费率和真实联调完成前不得开启真实扣费。
+- 周额度为账户独立的 168 小时窗口，会员从可信连续激活起点计时；续费/升级保留窗口，断档重购开启新窗口。Free 暂从首次建立创作点账户计时。部署须执行 `074_ai_novel_credit_window_anchor.sql`。
+
+## OrangeWrite 全局模型选择
+
+模型目录还返回 `localIcon`（本地图标选择器）和 `onlineIcon`（公共 HTTPS 图片 URL，可为空）；可选 `description` 和 `badge` 为产品配置的介绍与标签。客户端先显示本地资源，在线图片解码出第一帧后替换，加载中或失败继续使用本地资源；更换 URL 后不得暂留上一模型的图标。图片须为客户端可解码的光栅格式，不携带鉴权凭证。列表顺序及隐藏配置由服务端应用后返回，费率仍只从点数计价配置计算。
+
+- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
+- 加密 chat inner body 可选 `modelSelection: {"mode":"auto"}` 或 `{"mode":"manual","modelKey":"qwen3.6-plus"}`；缺省保持 Auto。`sceneKey` 只决定工作流。直接 `model` / `modelKey` / `providerModel` 等旧字段仍拒绝。不可用手动模型返回 `AI_MODEL_NOT_AVAILABLE`，不静默降级为其他模型。
+- Auto 保留现有健康度/权重和跨逻辑模型重试；手动仅允许同一逻辑模型内部的 provider 路由重试。客户端任务启动时固定选择快照，后端每次 HTTP 请求固定收到的选择。embedding 不接受模型选择，仍用专用 embedding 模型。
+- 模型目录 `data.autoFree` 下发 `{ enabled, active, startsAt?, endsAt?, serverTime }`。响应为 `Cache-Control: no-store`。缺省或缺少字段按未启用优惠处理；时间按服务端计算，开始包含、结束不包含。开启且在生效期内，Auto 聊天（包括缺省选择的旧客户端）不受 credits 余额准入限制、不扣 credits；手动聊天及 embedding 仍走原计费路径。每个请求在开始时固定本次计费规则，执行中关停不追溯扣费。无内置固定期限。
+- 客户端从同一目录读取模型和优惠配置，启动/登录、配置更新、回前台及在线每分钟刷新；按 `serverTime` 校正显示时钟，起止边界自动更新标签。配置失败时不宣称免费，旧快照超过两分钟不继续展示优惠。后台手动切换的展示同步存在最长约一分钟轮询延迟，服务端新请求立即按最新配置判断；客户端标签不是免扣授权凭证。
+- 三个倍率复用后台 AINovel 实际点数配置，费率除以 100 得到倍率（1 点=10000 加权 tokens）；缓存费率未配时等于普通输入费率。目录展示基础倍率，已配置的长上下文计价阶梯结算时仍生效。`contextWindowTokens` 为现有 Zook 256000 操作预算，不是假定的上游物理容量；目前无独立模型上下文/输出容量配置。
+- 精确合同见 `api-contracts/openapi/ainovel/models.yaml`。
 
 ### FrogSleep 2A：统一邀请分域决策（2026-10-11）
 
@@ -1495,3 +1573,36 @@ Source identity and version are checked against a currently consented lesson or 
 `public/config.features.conversational_planning` 只有运行时 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 与 delivery `featureFlags.conversationalPlanning=true` 同时开启才为 true；旧响应缺失视为 false，原生据此隐藏增强入口。规划开关关闭时拒绝新的写入；既有会话可读取，已接受的相同 key/body 回执可恢复，恢复不重新启动生成任务。未接受的请求仍拒绝。App 本机/手动基础链不依赖规划开关或 Grow 会话。
 
 Grow 的可选网页入口经 C05 同源受限代理调用现有 `goals`、`manual-plans` 和 continuation 读取路由，只允许基础草稿创建、逐项修改与显式确认；浏览器不接触 Zook token，不将基本计划复制到 Grow 计划库。该入口的 `GROW_NATIVE_BASIC_PLANS_ENABLED` 默认关闭；原生基础能力独立。真实 provider 质量、真机及用户观察证据与工程替身测试分开记录。
+
+### Billing environment isolation
+
+`X-Billing-Environment: production|sandbox` selects independent membership and
+credits records; omitted means production. Only explicit `APP_ENV=local`, `dev`,
+`development` or `test` permits sandbox. Online/unknown environments reject sandbox
+with `403 BILLING_ENVIRONMENT_FORBIDDEN`, even when provider sandbox flags are set.
+Alipay order ownership/access/renewals and RevenueCat snapshots/callbacks retain
+their verified environment. Migration 076 separates existing sandbox projections,
+credits and financial receipt identities; legacy active membership without matching
+verified environment evidence requires resynchronization. Billing, users/me, credits
+and AI callers must use the same header and environment-scoped cache.
+
+### Billing market attribution
+
+Alipay order creation accepts optional `market` build attribution independently
+from distribution and payment source. Android China-store builds may report
+`xiaomi|vivo|oppo|huawei|honor|direct`; Web/Windows/direct Android accept `direct`.
+Missing market is allowed for legacy and generic builds. The server freezes it with
+the idempotent order; replay with a different market returns409. Attribution never
+changes server price, payment verification, membership or credit authorization.
+The Flutter client obtains it from resolved build distribution rather than region.
+
+
+### Membership synchronization transport
+
+Billing sync is cancellable. Callers must allow multiple 20-second provider queries
+to accumulate rather than applying a fixed receive deadline; keep connection/send
+timeouts and use explicit cancellation. Do not automatically retry the entire
+request on transport failures. Alipay QR polling invokes the same POST sync and
+never overlaps. Closing a wait does not cancel payment or erase committed facts.
+RevenueCat SDK purchase transaction identifiers are matched to verified REST V2
+subscription transaction `id`, as specified in the [official transaction reference](https://www.revenuecat.com/docs/api-v2/subscription-transactions). Old active access alone cannot confirm a new purchase.

@@ -9,6 +9,7 @@ import { loadSidebarCollapsed, saveSidebarCollapsed } from "../lib/storage";
 import type { AdminAppSummary } from "../lib/types";
 
 const SERVER_WORKSPACES = [
+  { to: "/billing", label: "会员与支付", code: "BIL", description: "跨应用会员、支付记录与收入概览" },
   { to: "/apps", label: "应用", code: "APP", description: "管理项目空间与接入状态" },
   { to: "/auth-rate-limits", label: "Auth Limits", code: "ARL", description: "维护邮箱 / 短信验证码共用的公共风控阈值" },
   { to: "/mail", label: "邮件服务", code: "MAIL", description: "统一维护公共邮件配置" },
@@ -21,6 +22,7 @@ const SERVER_WORKSPACES = [
 ];
 
 const APP_WORKSPACES = [
+  { to: "/ainovel-usage", label: "付费与用量", code: "USG", description: "观察支付、创作点消耗与每周额度" },
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
   { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
@@ -63,6 +65,7 @@ function formatAdminVersion(rawVersion: string): string {
 function isAppProjectSpace(pathname: string) {
   return pathname === "/config"
     || pathname === "/ai-routing"
+    || pathname === "/ainovel-usage"
     || pathname === "/feedback"
     || pathname === "/conversation-records"
     || pathname === "/conversation-history"
@@ -119,6 +122,7 @@ export function AppShell() {
   const workspaceItems = appProjectSpace
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/ainovel-usage" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/frogsleep" || selectedApp?.appId === "frogsleep")

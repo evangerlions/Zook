@@ -6,6 +6,9 @@ export type LlmUsageSource = "provider" | "estimated" | "missing";
 export type LlmMetricsGranularity = "hour" | "day";
 
 export interface LlmCallObservationRecord {
+  cachedInputTokens?: number;
+  cachedInputPointsPerMillionTokens?: number;
+  pointPricing?: import("../../shared/types/llm.ts").LlmPointPricing;
   callPurpose?: "content_safety";
   callId: string;
   occurredAt: string;
@@ -23,6 +26,9 @@ export interface LlmCallObservationRecord {
   completionTokens?: number;
   reasoningTokens?: number;
   totalTokens?: number;
+  pointMicros?: string;
+  inputPointsPerMillionTokens?: number;
+  outputPointsPerMillionTokens?: number;
   usageSource: LlmUsageSource;
   errorCode?: string;
   errorMessage?: string;
@@ -74,6 +80,9 @@ export interface LlmObservationAggregate {
   reasoningTokens?: number;
   unclassifiedTokens?: number;
   totalTokens?: number;
+  pointMicros?: string;
+  pointPricedRequestCount?: number;
+  pointUnpricedRequestCount?: number;
   providerUsageCount: number;
   estimatedUsageCount: number;
   missingUsageCount: number;

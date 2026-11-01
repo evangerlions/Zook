@@ -29,6 +29,8 @@ export async function completeRequiredToolViaStream(
     usageOwner?: { appId: string; userId: string };
     routingIdentity?: LlmRoutingIdentity;
     forcedToolName: string;
+    onUsageFinalized?: import("../../services/llm-manager-types.ts").LLMCompletionRequest["onUsageFinalized"];
+    requirePointPricing?: boolean;
   },
 ): Promise<LLMCompletionResult> {
   let messages = input.messages;
@@ -60,6 +62,8 @@ export async function completeRequiredToolViaStream(
     const result = await llmManager.completeViaStream(
       {
         modelKey: input.modelKey,
+        onUsageFinalized: input.onUsageFinalized,
+        requirePointPricing: input.requirePointPricing,
         messages: providerMessages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
@@ -72,9 +76,10 @@ export async function completeRequiredToolViaStream(
       { firstContentTimeoutMs: STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS },
     );
     lastResult = result;
-    if (!result.usage || result.usage.estimated) {
+    if (!result.usage) {
       usageComplete = false;
     } else {
+      if (result.usage.estimated) usageComplete = false;
       aggregatedUsage = mergeUsage(aggregatedUsage, result.usage);
     }
     if (findToolCall(result, input.forcedToolName)) {
@@ -126,6 +131,9 @@ function mergeUsage(current: LLMUsage | undefined, next: LLMUsage): LLMUsage {
     promptTokens: current.promptTokens + next.promptTokens,
     completionTokens: current.completionTokens + next.completionTokens,
     totalTokens: current.totalTokens + next.totalTokens,
+    ...(current.estimated || next.estimated ? { estimated: true } : {}),
+    ...(current.cachedInputTokens !== undefined && next.cachedInputTokens !== undefined
+      ? { cachedInputTokens: current.cachedInputTokens + next.cachedInputTokens } : {}),
     ...(current.reasoningTokens !== undefined && next.reasoningTokens !== undefined
       ? { reasoningTokens: current.reasoningTokens + next.reasoningTokens }
       : {}),

@@ -75,6 +75,12 @@ Existing content-safety endpoints keep their Admin session and
 
 ### 3.1 Admin 会话与启动
 
+Admin Web 的 `/_admin/runtime-config.js` 仅在显式 `APP_ENV=local` 且
+`NODE_ENV` 非 production 时提供 `localLoginDefaults`，从本地
+`ADMIN_BASIC_AUTH_USERNAME` / `ADMIN_BASIC_AUTH_PASSWORD` 读取，供表单预填，
+不自动登录。其他环境或配置不完整时省略该字段，前端账密留空；
+不得把本地测试账密硬编码进前端资产。此行为不改变下列认证接口。
+
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `POST` | `/api/v1/admin/auth/login` | 后台登录 |
@@ -197,6 +203,14 @@ admin.delivery_config
 
 ### 3.5 AINovel 模型选择
 
+AINovel 空间 → AI Model 的“Auto 限时免费”表单复用本节配置、保存确认、审计及版本恢复路径。
+`config.autoFree` 可选，格式为 `{ "enabled": true, "startsAt": "2026-10-21T00:00:00Z", "endsAt": "2026-11-01T00:00:00Z" }`。
+缺省关闭；`enabled` 必须为布尔值，起止时间必须带时区，开始包含、结束不包含，结束必须晚于开始。
+两个时间均可留空（立即生效、无限期，直到手动关闭），不内置四周或任何固定截止日期。
+日期选择器按浏览器本地时区展示、保存为 UTC。关停后新请求恢复原额度流程；已开始的请求不追溯扣费。
+仅 Auto 聊天（包括旧客户端未传 modelSelection）免额度准入和扣减；手动模型和 embedding 不豁免。
+客户端从现有模型目录读取同源配置，无需独立促销接口。保存或恢复后下一个请求读取最新配置，无需重启。
+
 AINovel 所有文本场景共用同一组模型权重配置。客户端只提交 `scene_key` 来选择 Prompt/工具工作流，不提交模型键、Provider 或用户档位。
 
 | 方法 | Path | 说明 |
@@ -211,6 +225,24 @@ AINovel 所有文本场景共用同一组模型权重配置。客户端只提交
 ```text
 appId = ai_novel
 configKey = ai_novel.model_selection
+```
+
+可选 `catalog` 数组配置模型选择页展示，每项以逻辑 `modelKey` 标识：`label`、`description`、`badge`、`localIcon`、`onlineIcon`、`sortOrder`（整数，升序）、`enabled`（默认 true）。目录显示开关不修改 Auto 的 `chat.default` 权重池；隐藏后也不能通过手动选择绕过。未设置条目时兼容原目录：使用 common 模型名称、本地品牌图标，无在线图标、介绍或标签；费率仍由 `ai_novel.model_point_pricing` 管理，运行上下文预算仍由服务端固定策略决定。
+
+本地图标选择器：`generic / deepseek / kimi / qwen / doubao / minimax / gemini / claude / grok / zai / openai`，不是任意文件路径。在线图标必须是无 URL 用户名/密码的公共 HTTPS 光栅图片地址，空字符串表示不用在线图片。后台「配置 JSON」可编辑完整目录，权重表单修改和版本恢复会保留它。
+
+```json
+"catalog": [
+  {
+    "modelKey": "qwen3.6-plus",
+    "label": "Qwen 3.6 Plus",
+    "description": "模型介绍",
+    "localIcon": "qwen",
+    "onlineIcon": "",
+    "enabled": true,
+    "sortOrder": 10
+  }
+]
 ```
 
 `PUT model-selection` 请求结构：
@@ -233,6 +265,47 @@ configKey = ai_novel.model_selection
 `chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 必须大于 0、最多两位小数，数组权重总和必须等于 100。Zook 复用通用 LLM routing affinity，以请求 `X-Did` 与认证 UID 计算 `[0,1)` routing unit，再按数组顺序累计权重选择模型；缺少合法 DID 或 UID 时沿用通用 affinity 的随机回退。当前不支持场景级覆盖。
 
 整条配置缺失时使用代码默认路由 `[{ "modelKey": "qwen3.6-plus", "weight": 100 }]`；已保存配置损坏或引用无效模型时，运行时返回 `AI_UPSTREAM_CONFIG_INVALID`，不会静默回退。Provider、`providerModel`、密钥和 Provider 路由权重仍只在 `common.llm_service` 中维护。Embedding 不读取这份配置，继续走既有 `text-embedding-v4` 路由。
+
+### 3.5.1 AINovel 模型点数单价
+
+模型点数单价属于 AINovel 产品配置，不放在 `common.llm_service`。后者继续只负责模型、Provider、上游模型和路由；AINovel 的点数单价单独存放并按逻辑 `modelKey` 版本管理。
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/model-point-pricing` | 获取 AINovel 模型点数单价、当前模型目录和版本历史 |
+| `PUT` | `/api/v1/admin/apps/ai_novel/model-point-pricing` | 更新 AINovel 模型点数单价 |
+| `GET` | `/api/v1/admin/apps/ai_novel/model-point-pricing/revisions/{revision}` | 获取指定历史版本 |
+| `POST` | `/api/v1/admin/apps/ai_novel/model-point-pricing/revisions/{revision}/restore` | 恢复指定历史版本 |
+
+版本化配置键：
+
+```text
+appId = ai_novel
+configKey = ai_novel.model_point_pricing
+```
+
+结构为 `schemaVersion + models[]`，每项按逻辑模型键配置缓存输入、未缓存输入、输出的每百万 tokens 点价。Admin 展示倍率（存储点价除以 100），1× 对应 1 点/10,000 tokens。例如：
+
+```json
+{
+  "config": {
+    "schemaVersion": 1,
+    "models": [
+      {
+        "modelKey": "qwen3.8-flash",
+        "cachedInputPointsPerMillionTokens": 10,
+        "inputPointsPerMillionTokens": 50,
+        "outputPointsPerMillionTokens": 150
+      }
+    ]
+  },
+  "desc": "按参考价格更新费率"
+}
+```
+
+默认费率采用产品确认的三倍率表，参考 OpenRouter 精确型号价格与厂商信息，不代表厂商实际账单。`availableModels[].reference` 标明参考来源和可用性。基础输入/输出同时配置或留空；缓存为空按普通输入费率计，显式 0 表示免费。`contextTiers` 保存长上下文阶梯，Admin 可展开编辑且保存不丢失。
+
+Zook 按可信 provider usage（缺失时复用本地估算）及此配置计算精确整数微点并保存价格快照。该配置仅作用于 ai_novel；Admin 与账户结算消费同一结果。余额见 Writing Credits API；每次成功 provider 调用由 Zook 立即结算；真实额度准入/扣费默认关闭，客户端、迁移和联调完成前不能启用。
 
 ### 3.6 AINovel Feedback
 
@@ -418,6 +491,7 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 - OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
 - Chat route 可选 `openRouter: { provider: { order?, allow_fallbacks?, only?, ignore?, sort?, max_price? } }`，仅允许 `provider="openrouter"` 的 route 使用；其他供应商填写时返回 `ADMIN_LLM_SERVICE_INVALID`。字段使用 OpenRouter 原生名称；供应商列表必须为无重复的合法 slug 数组，`allow_fallbacks` 必须为 boolean，`sort` 为 price/throughput/latency，`max_price.prompt/completion` 为非负 USD / 百万 tokens。未知字段或错误类型拒绝保存。配置通过既有版本保存与运行时读取生效，普通、流式、冒烟和熔断探测均透传；保存的 route 配置优先于调用方 `providerOptions.provider`。未配置时不注入任何默认策略，`{ "provider": {} }` 显式使用 OpenRouter 默认路由；不存在写死的供应商名单，也不改变 Zook 各平台路由权重。管理台仅在 OpenRouter route 显示专属 JSON 输入，RAW JSON 与表单往返保留该字段；切换到其他供应商时清除该专属设置。
 - 阿里云百炼 Token Plan 使用独立 Provider key `bailian_token_plan` 和套餐专属 Base URL `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，不得复用 `bailian_coding`。在 PASSWORDS 中配置 `bailian.token_plan_api_key` 后，启动配置迁移会幂等加入该 Chat Provider 及 `tokenplan-*` 文本模型；不会加入 Embedding，也不会修改 `defaultModelKey` 或既有模型流量权重。当前接入范围仅为 OpenAI Chat Completions 与应用自定义 Function Calling，不使用 Anthropic 端点，也不启用依赖 Responses API 的 Token Plan 内置 Harness 工具。
+- 火山方舟按量 API 使用独立 Chat Provider key `volcengine`，默认 Base URL 为 `https://ark.cn-beijing.volces.com/api/v3`，不可与 `volcengine_agent_plan` 的 `/api/plan/v3` 套餐通道混用。在 PASSWORDS 保存 `vol.api_key`，Provider 的 `apiKey` 填 `{{zook.ps.vol.api_key}}`；逻辑模型的 `routes[].providerModel` 填已开通的 `ep-*` 接入点，不能把接入点作为逻辑模型 key。支持普通/流式 Chat、应用自定义工具调用、usage 统计及现有取消链路，不注册为 Embedding Provider。通用 `enable_thinking` 自动转换成方舟 `thinking.type`，显式 `thinking` 优先。添加 Password 本身不会自动开通模型或修改路由、默认模型及 AINovel 计价配置，需通过现有模型配置保存流程配置。
 - B.AI 使用独立 Chat Provider key `bai` 和 Base URL `https://api.b.ai/v1`。在 PASSWORDS 中配置 `bai.api_key` 后，启动配置迁移会幂等加入 `bai-glm-5.3-flash`；密钥在 `common.llm_service` 中只以 `{{zook.ps.bai.api_key}}` 引用保存。该导入不会改变默认模型、AINovel 选模权重或 embedding 路由。GLM-5.3-Flash 默认使用 `reasoning_effort: "low"`，以为用户可见回复保留输出预算；显式指定的 reasoning effort 优先。`config.bai` 的透明代理使用与 OpenRouter 相同的 `oa-hmac-v1` 和 `X-Proxy-*` 签名信封，但有独立开关、Base URL、Key ID 与 `common.passwords` HMAC key；启用后请求只会发往该受控代理，Secret 缺失时保持直连。
 
 ### 3.12 Admin 指标
@@ -435,7 +509,37 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
 
-### 3.14 BodyLog 管理接口
+### 3.14 Server 会员与支付（只读）
+
+订单列表可传 `environment=PRODUCTION|SANDBOX`，按环境筛选后分页，未知环境不匹配。省略参数保持全环境查询兼容性。后台顶部环境选择同时用于收入概览和订单列表；订单表不重复显示环境列，详情保留环境，会员列表同样按所选环境在服务端分页前过滤，省略 environment 默认 PRODUCTION。
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/billing/apps` | 应用注册表与 `integrated` 标记 |
+| `GET` | `/api/v1/admin/billing/overview` | 按 UTC 日期、币种和所选维度统计购买数、购买金额和退款金额 |
+| `GET` | `/api/v1/admin/billing/memberships` | 按精确用户 ID 查询当前会员快照，包括没有订单的会员 |
+| `GET` | `/api/v1/admin/billing/orders` | 按用户、支付记录 ID、服务商交易号、支付服务商、运行平台、分发类型、状态和时间范围分页查询订单 |
+| `GET` | `/api/v1/admin/billing/orders/{paymentId}` | 查看订单、当前会员投影、RevenueCat 交易与已持久化 webhook 时间线；必须指定 `appId` |
+
+页面入口为 Server `/billing`，不再提供旧的 AINovel 订单页面或旧管理 API。查询接口可选 `appId`，省略或 `all` 表示全部已接入应用。首期仅接入 AINovel 的读取适配器；其他注册应用返回 `409 ADMIN_BILLING_NOT_INTEGRATED`，未知应用返回 `400`。未来产品必须接入独立适配器才会纳入列表与统计，会员身份仍是 `(appId, userId)`，不共享权益。
+
+收入概览默认正式环境 `PRODUCTION`、本月 UTC，允许显式 `SANDBOX`。可选 `from`（包含）与 `to`（不包含），最多 366 天。`groupBy` 为逗号分隔的不重复维度，支持 `appId,productKey,source,market`，默认 `appId`。`source` 称为支付来源（`app_store/play_store/alipay`）；渠道 `market` 指小米/vivo/App Store/Google Play 等分发市场，market作为独立字段和分组维度，不以source替代。RevenueCat属于支付服务商provider。groupBy=market现在表示真实市场，与source分开。至少选择一个维度，空值、重复或未知维度返回 400。按所选维度服务端聚合；返回 `groupBy`，每行包含 `productKey/market`，未选择维度对应的 `appId/productKey/source/market` 为 null。每行 `date` 为 `YYYY-MM-DD` UTC 日期，日期和币种始终保留，按日期倒序后维度/币种排序；无记录日期不补零行。金额单位是各币种的最小单位；购买按 `purchasedAt`，退款按 `refundedAt` 分别归入发生当天。不同币种不相加，不做汇率转换，不代表商店税费扣除后的到账收入。未知金额、币种、环境或发生时间不计入相应统计，软删除用户财务记录仍参与。同步过的交易按主键去重；不推测尚未保存的退款。
+
+会员列表每页默认 50、最多 100，`cursor` 为上页最后的 `userId`，翻页时保持应用和查询条件一致。可传 `expiry=expired`（到期时间不晚于查询时间）或 `expiry=not_expired`（到期时间晚于查询时间），数据库筛选后再分页；无到期时间的记录仅在未指定此筛选时返回。账号删除不改变到期时间筛选结果。它是所选支付环境的当前快照，会员表按 environment 区分，同一用户可在不同环境拥有不同权益。过期或软删除账号的会员 `active=false`。只读查询不刷新供应商状态、修改会员或发起退款。
+
+Billing 管理接口读取 Zook 持久化 RevenueCat / Alipay 共享订单与验证事件，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，事件时间线也分页。RC 金额来自交易/验证事件证据；不足时返回 `null`，不从商品目录推算。Alipay 在创建时即记录 pending 报价，failed/closed/pending 均可查询，但报价不是收入。Alipay checkoutId/canonical providerTransactionId 是稳定商户订单 ID，providerOrderId 是验证后的支付宝 trade_no；providerTransactionId 搜索兼容两者。createdAt 是不可变创建时间，updatedAt 是最新观察时间；Alipay active/expired 筛选按实际已应用权益到期时间。删除后保留财务行并标记 deletedAt。详情 grant 台账仍返回空数组，不提供编辑/退款/赠送能力。已付款 Alipay 不主动轮询外部退款；后续验证 TRADE_CLOSED 保留在事件历史，但不自动撤销金额/权益。
+
+支付深度排查使用 API / Worker 的 Docker 结构化日志，通过 `appId`、`userId`、`paymentId`、`providerEventId` 和 `requestId` 串联完整流程；日志不作为订单事实来源。
+## 橘子写作付费与用量
+
+`GET /api/v1/admin/apps/ai_novel/usage`：必须有 Admin session；Basic Auth 不替代会话；每次读取审计，响应 `Cache-Control: no-store`。只读，不刷新余额或调用支付/模型供应商。
+
+参数：`days=7|30|90`（默认30）；`tier=all|free|plus|pro`（默认all，按消耗时/商品档位）；`environment=production|sandbox`（默认production，仅筛选支付）；可选精确 `userId`。UTC左闭右开，包括今日；窗口还须截至查询时已结束。错误：400非法查询，503不支持报告存储，413超过每类50,000条读取上限（缩短区间或指定用户）；不静默截断全局统计。
+
+返回 `filter`/`reportingSince`/`summary`/`money`/`daily`/`tiers`/`models`/`users`/`simulation`；精确用户查询另附最多100条 `detailEvents` 与 `detailPayments`。金额为分币种整数最小货币单位，points是微点证据换算的展示值（不用于重新扣费）；事件原始两池/平台承担为十进制字符串微点。`users` 是区间扣点前200位样本，不是全体用户分页；页面明确样本范围。余额只代表最后存储快照，含观察时间/刷新边界。消耗目前不按商店Sandbox分离，不计算利润/ROI，厂商金额成本不可统计。
+
+迁移075在现有余额/receipt事务里同时保存不可变扣减/赠送/拦截事件和窗口快照；失败或取消不生成新扣费，成功调用已扣点不回退。完整覆盖、档位稳定、已结束且活跃的七天窗口才参加分布、P50/P95、用尽率和重放。迁移前历史不回填；首个部分窗口、升级/到期变化窗口不伪装成完整数据。重放独立选择档位，只继承时间/用户过滤，使用已观察两池消耗，不预测未满足需求，无应用写接口。
+### 3.15 BodyLog 管理接口
 
 所有接口都需要已认证的 Admin 会话。路径固定使用 BodyLog app workspace：`/api/v1/admin/apps/bodylog/...`。读取操作写入 Admin read audit；更改操作需要 Admin session 并写入操作审计。
 
@@ -544,3 +648,57 @@ The Admin page `/bodylog/retention` distinguishes optional observed invitation e
 `bodylog.retention-experiment` requires the design fields in [the pre-registration plan](bodylog-retention-experiment-plan.md) to enable assignment. No new write/toggle UI is introduced. The example remains disabled and lacks a real owner. Fixed alpha/power sample planning uses a normal approximation and is not an inference result or an automated operational stop monitor.
 
 Late events that predate the currently published experiment revision remain consented observation facts but are not relabeled into the new cohort. Report owners must keep the experiment ID/design stable through follow-up and the late-arrival window; this conservative exclusion cannot recover an overwritten historical assignment.
+
+## AINovel 支付按钮副标题配置
+
+复用现有应用配置及版本记录：AINovel (`ai_novel`) 的
+`ai_novel.billing_benefits` 根对象可选增加 `purchaseSubtitle`，值为 locale→文案对象，
+例如 `{"purchaseSubtitle":{"zh-CN":"测试副标题 from server","en-US":"Test subtitle from server"}}`。
+合并更新时保留已有 plus/pro 权益数组；未配置、null、空对象或全空白时不显示副标题。
+文案通过公开套餐接口下发，复用现有 locale 选择和 fallback。默认无副标题，不将测试文案写为生产默认值。
+
+同一根对象可选 `purchaseTitle` locale→文案对象，用于主按钮完整文案。
+未配置、null 或解析后为空时，客户端使用当前语言的「立即开通」默认文案；
+非空时直接显示服务端值，客户端不拼接价格或分隔符。登录/渠道不可用状态不会被覆盖。主副标题相互独立。
+
+同一配置支持可选展示字段，均沿用现有 locale→文案与语言回退（不新增接口）：
+
+```json
+{
+  "display": {
+    "title": {"zh-CN":"会员","en-US":"Membership"},
+    "agreement": {"zh-CN":"已阅读并同意付费服务协议、扣款授权协议"},
+    "plusLabel": {"en-US":"Plus"},
+    "proLabel": {"en-US":"Pro"}
+  },
+  "products": {
+    "plus_monthly": {
+      "displayName": {"zh-CN":"Plus 月度会员","en-US":"Plus monthly membership"},
+      "periodLabel": {"zh-CN":"月度","en-US":"Monthly"},
+      "badgeText": {"zh-CN":"推荐","en-US":"Recommended"}
+    }
+  },
+  "checkoutDisplay": {
+    "title": {"zh-CN":"支付宝扫码付款"},
+    "hint": {"zh-CN":"打开支付宝扫一扫"},
+    "waiting": {"zh-CN":"等待支付完成"}
+  }
+}
+```
+
+以上仅为配置结构示例，不默认启用推荐标签。只支持已有六个商品的展示覆盖，不改变档位、渠道、权益或价格；更新时保留其他根字段及 plus/pro 权益数组。必要字段删除/null/空白回退客户端翻译；可选副标题和 badgeText 则隐藏。完整商品名直接下发，客户端不拼接。二维码 amountText 不能配置，由订单真实金额生成。配置清空会在下一次目录刷新生效。
+
+创建/幂等重试订单时仅尽力读取二维码文案，不校验无关的 display 页面字段；错误 JSON 或无效二维码文案字段不阻断支付，回退客户端默认值，有效字段继续下发。不要依赖此容错放宽公开目录配置格式。副标题展示为单行，超出省略，运营配置应保持简短。
+
+### Membership environment
+
+Membership projections and credit usage default to production. Admin membership browsing selects environment through `environment=PRODUCTION|SANDBOX`, defaulting to production; this read-only query does not change product entitlement access. Product requests cannot select sandbox online. Financial order lists retain their explicit sandbox/production evidence
+filter. Order-detail membership comparison uses that transaction's environment.
+
+会员接口 `GET /api/v1/admin/billing/memberships` 接受 `environment=PRODUCTION|SANDBOX`（默认正式），在到期筛选和分页前选择会员快照；空值或非法值返回400。每条会员返回 `environment: production|sandbox`。顶部环境切换同时切换收入、会员与订单，重置会员筛选和游标，提示当前只显示正式或沙箱会员。不存在将沙箱会员合并进正式列表的行为。
+
+后台“支付记录与事件”默认选中已支付（`status=provider_paid`），首次加载、刷新、切换应用/环境及清空筛选后均默认查询已支付。可取消状态选择查询全部，或选择待付款、已关闭等其他状态。接口省略status的全状态查询语义保持不变。
+
+支付后台术语与取值展示统一：`provider` 为支付服务商，`source/purchaseSource` 为支付来源，`platform` 为运行平台，`distribution` 为分发类型，`environment` 为支付环境。筛选请求保留接口原始枚举，所有tab的表格和详情共用展示映射（App Store / Google Play / 支付宝 / RevenueCat / iOS等）。例如source=play_store和distribution=google_play都显示Google Play，但字段语义不合并。未知值显示未知并保留原值，不默认归类；未采集market时不推断小米/vivo。
+
+Market取值为app_store/google_play/xiaomi/vivo/oppo/huawei/honor/direct；未知为null。勾选市场后null作为“未知渠道”组保留收入，不丢弃金额。App Store/Google Play由确切交易商店证据识别；Alipay由订单构建market归因保留，通用china_android_store或alipay不能推断小米/vivo。迁移077只回填明确的商店或官方直发记录。订单列表和详情返回market并复用统一显示字典。

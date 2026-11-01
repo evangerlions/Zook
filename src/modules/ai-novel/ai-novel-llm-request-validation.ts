@@ -33,7 +33,7 @@ export function assertNoClientModelSelection(body: Record<string, unknown>): voi
     if (body[field] !== undefined) {
       badRequest(
         "REQ_INVALID_BODY",
-        `${field} is not allowed. Use sceneKey or scene_key to select the AINovel scene.`,
+        `${field} is not allowed. Use sceneKey for workflow and modelSelection for model preference.`,
       );
     }
   }

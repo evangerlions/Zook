@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { randomUUID } from 'node:crypto';
+import { Pool } from 'pg';
+import { PostgresDatabase } from '../../src/infrastructure/database/postgres/postgres-database.ts';
+import { buildDefaultSeed } from '../../src/infrastructure/database/prisma/default-seed.ts';
+import { AiNovelBillingService } from '../../src/services/ainovel-billing.service.ts';
+import { StructuredLogger } from '../../src/infrastructure/logging/pino-logger.module.ts';
+import { inBillingEnvironment } from '../../src/modules/billing/billing-environment.ts';
+import { confirmAlipayOrder } from '../../src/services/ainovel-alipay-confirmation.ts';
+import type { AlipayGateway } from '../../src/modules/billing/alipay-models.ts';
+const url=process.env.BILLING_TEST_DATABASE_URL;
+test('real PostgreSQL concurrent instances share canonical grants, rollback and pure local access', {skip:!url},async()=>{
+ const seed=buildDefaultSeed();const now=new Date('2026-10-26T10:00:00Z');
+ const userId='sync_pg_'+randomUUID();const tradeId=Date.now().toString()+Math.floor(Math.random()*1e9).toString();
+ seed.appUsers!.push({id:userId,appId:'ai_novel',userId,status:'ACTIVE',accountRegion:'CN',joinedAt:now.toISOString()});
+ const first=await PostgresDatabase.create(url!,seed);const second=await PostgresDatabase.create(url!);
+ const pool=new Pool({connectionString:url});let calls=0;
+ const gateway:AlipayGateway={payment:async()=>({type:'app',orderString:'signed'}),verifyNotify:async()=>true,query:async id=>{
+  calls++;return{code:'10000',out_trade_no:id,app_id:'merchant',seller_id:'seller',trade_no:tradeId,total_amount:'38.00',trade_status:'TRADE_SUCCESS',gmt_payment:'2026-10-26 18:00:00'};
+ }};
+ const options={now:()=>now,alipay:{allowSandbox:true,enabled:true,appId:'merchant',sellerId:'seller',environment:'sandbox' as const,
+  notifyUrl:'https://example.test/notify',returnUrl:'https://example.test/return',gateway,now:()=>now}};
+ const logger=new StructuredLogger('test');const a=new AiNovelBillingService(first,options,logger);const b=new AiNovelBillingService(second,options,logger);
+ try{await inBillingEnvironment('sandbox',async()=>{
+  const id=(await a.alipay.create(userId,'CN',{productKey:'plus_monthly',platform:'android',distribution:'direct_android',idempotencyKey:'pg_sync_order'})).order.orderId;
+  await Promise.all(Array.from({length:8},(_,i)=>(i%2?a:b).syncMembership({userId:userId,provider:'alipay',requestId:'pg_'+i,purchaseReference:{kind:'alipay_order',id}})));
+  const member=await a.getMembership(userId);assert.equal(member.active,true);assert.equal(member.expiresAt,'2026-11-26T10:00:00.000Z');
+  assert.equal((await first.listAiNovelBillingTransactions('ai_novel',userId)).length,1);
+  const count=calls;await b.syncMembership({userId:userId,provider:'alipay',requestId:'known'});assert.equal(calls,count);
+  const order=(await first.findAiNovelAlipayOrder(id))!;
+  await assert.rejects(()=>first.withExclusiveSession(async()=>{await first.saveAiNovelAlipayOrder({...order,membershipExpiresAt:'2099-01-01T00:00:00Z'});throw new Error('rollback');}));
+  assert.equal((await first.findAiNovelAlipayOrder(id))!.membershipExpiresAt,order.membershipExpiresAt);
+  const before=(await pool.query('SELECT record FROM zook_ai_novel_alipay_orders WHERE order_id=$1',[id])).rows;
+  await a.getMembership(userId);assert.deepEqual((await pool.query('SELECT record FROM zook_ai_novel_alipay_orders WHERE order_id=$1',[id])).rows,before);
+  const transaction=(await first.listAiNovelBillingTransactions('ai_novel',userId))[0];
+  const refund={...transaction,status:'revoked',refundedAt:now.toISOString(),refundAmountMinor:3800,observedAt:now.toISOString()};
+  await first.upsertAiNovelBillingTransaction(refund);
+  const queryCount=calls;
+  const refunded=await b.syncMembership({userId:userId,provider:'alipay',requestId:'refunded'});
+  assert.equal(refunded.syncStatus,'complete');assert.equal(refunded.pendingOrderCount,0);
+  const target=await a.syncMembership({userId:userId,provider:'alipay',requestId:'refunded_target',purchaseReference:{kind:'alipay_order',id}});
+  assert.equal(target.targetPurchase?.entitlementStatus,'blocked');
+  assert.equal(calls,queryCount);assert.equal((await a.getMembership(userId)).active,false);
+  assert.equal((await first.findAiNovelAlipayOrder(id))!.membershipApplied,false);
+  assert.deepEqual((await first.listAiNovelBillingTransactions('ai_novel',userId))[0],refund);
+  await confirmAlipayOrder(first,options.alipay,await gateway.query(id),'notify',new Date(now.getTime()+60_000));
+  assert.equal((await a.getMembership(userId)).active,false);
+  assert.deepEqual((await first.listAiNovelBillingTransactions('ai_novel',userId))[0],refund);
+ });}finally{await Promise.all([first.close(),second.close(),pool.end()]);}
+});

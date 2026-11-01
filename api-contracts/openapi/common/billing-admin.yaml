@@ -1,0 +1,540 @@
+openapi: 3.1.1
+info:
+  title: Server Billing Admin API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: >
+    Admin-only read APIs across integrated apps, initially AINovel. This contract is separate
+    from the Flutter client bundle. Docker stdout logs remain the deep-dive
+    diagnostic source; these endpoints read the durable billing records.
+servers:
+  - url: https://api.zook.dev
+security:
+  - adminSession: []
+tags:
+  - name: admin-billing
+    description: AINovel payment order investigation.
+paths:
+  /api/v1/admin/billing/apps:
+    get:
+      operationId: listBillingAdminApps
+      summary: List registered apps and billing integration status
+      tags: [admin-billing]
+      responses:
+        "200":
+          description: Apps with appId, appName and integrated boolean.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingAppsResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/admin/billing/overview:
+    get:
+      operationId: getBillingAdminOverview
+      summary: Daily UTC revenue by selectable dimensions and currency, never converted or settled revenue
+      tags: [admin-billing]
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+        - name: environment
+          in: query
+          schema: { type: string, enum: [PRODUCTION, SANDBOX], default: PRODUCTION }
+        - name: groupBy
+          in: query
+          description: Comma-separated distinct dimensions. Defaults to appId; source means payment origin; market is an independent distribution-market dimension. Unknown market is grouped as null. UTC date and currency always remain separate. Omitted dimensions return null.
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 4
+            uniqueItems: true
+            default: [appId]
+            items: { type: string, enum: [appId, productKey, source, market] }
+        - name: from
+          in: query
+          description: Inclusive UTC timestamp; default start of current UTC month.
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Exclusive timestamp; default now, maximum window 366 days.
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Confirmed purchase and refund totals excluding unknown amounts and environments.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingOverviewResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/NotIntegrated" }
+  /api/v1/admin/billing/memberships:
+    get:
+      operationId: listBillingAdminMemberships
+      summary: Current membership snapshots in the selected environment, including soft-deleted users
+      tags: [admin-billing]
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+        - name: environment
+          in: query
+          description: Admin read-only environment filter applied before expiry filtering and pagination; defaults to production. Does not grant sandbox access to product requests.
+          schema: { type: string, enum: [PRODUCTION, SANDBOX], default: PRODUCTION }
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/Limit"
+        - name: expiry
+          in: query
+          description: Filter by expiry timestamp before pagination. Missing expiry timestamps match neither option; account deletion does not change expiry.
+          schema: { type: string, enum: [expired, not_expired] }
+        - name: cursor
+          in: query
+          description: Last userId from previous page; same app and filters.
+          schema: { type: string, minLength: 1, maxLength: 200 }
+      responses:
+        "200":
+          description: Snapshot membership page with effective active flag and nextCursor.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingMembershipsResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/NotIntegrated" }
+  /api/v1/admin/billing/orders:
+    get:
+      operationId: listBillingAdminOrders
+      summary: List AINovel billing orders
+      tags: [admin-billing]
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+        - name: environment
+          in: query
+          description: Filter before pagination; unknown environments excluded when specified. Omission includes all environments.
+          schema: { type: string, enum: [PRODUCTION, SANDBOX] }
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/PaymentId"
+        - $ref: "#/components/parameters/ProviderTransactionId"
+        - name: provider
+          in: query
+          schema: { type: string, enum: [revenuecat, alipay] }
+        - name: checkoutId
+          in: query
+          schema: { type: string, maxLength: 128 }
+        - $ref: "#/components/parameters/Platform"
+        - $ref: "#/components/parameters/Distribution"
+        - $ref: "#/components/parameters/PaymentStatus"
+        - name: createdFrom
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: createdTo
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Paginated AINovel billing orders.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBillingOrderListResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/NotIntegrated" }
+  /api/v1/admin/billing/orders/{paymentId}:
+    get:
+      operationId: getBillingAdminOrder
+      summary: Get an AINovel billing order detail
+      tags: [admin-billing]
+      parameters:
+        - name: appId
+          in: query
+          required: true
+          description: Explicit integrated app; all is not accepted for details.
+          schema: { type: string, minLength: 1 }
+        - $ref: "#/components/parameters/PaymentIdPath"
+        - name: eventsCursor
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 512 }
+        - name: eventsLimit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: AINOVEL billing order detail with bounded event history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBillingOrderDetailResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/NotIntegrated" }
+components:
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: adminSession
+  parameters:
+    AppId:
+      name: appId
+      in: query
+      required: false
+      description: Omit or use all for all integrated apps; unintegrated apps return 409.
+      schema: { type: string, default: all }
+    UserId:
+      name: userId
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    PaymentId:
+      name: paymentId
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 512 }
+    PaymentIdPath:
+      name: paymentId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 512 }
+    ProviderTransactionId:
+      name: providerTransactionId
+      in: query
+      required: false
+      description: Exact canonical transaction ID or Alipay providerOrderId (real trade_no).
+      schema: { type: string, minLength: 1, maxLength: 256 }
+    Platform:
+      name: platform
+      in: query
+      required: false
+      schema: { type: string, enum: [ios, android, macos, web, windows] }
+    Distribution:
+      name: distribution
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [app_store, google_play, china_android_store, direct_android, web, windows]
+    PaymentStatus:
+      name: status
+      in: query
+      required: false
+      schema: { $ref: "#/components/schemas/AdminBillingStatus" }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 512 }
+  responses:
+    NotIntegrated:
+      description: Registered app has no billing reporting adapter (not zero revenue).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+    BadRequest:
+      description: Invalid filter or pagination parameter.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+    Unauthorized:
+      description: Admin session is missing or expired.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+    NotFound:
+      description: Billing order is not found in the authorized app scope.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+  schemas:
+    BillingAppsResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: array
+          items:
+            type: object
+            required: [appId, appName, integrated]
+            properties:
+              appId: { type: string }
+              appName: { type: string }
+              integrated: { type: boolean }
+    BillingOverviewResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          properties:
+            from: { type: string, format: date-time }
+            to: { type: string, format: date-time }
+            environment: { type: string, enum: [PRODUCTION, SANDBOX] }
+            groupBy:
+              type: array
+              items: { type: string, enum: [appId, productKey, source, market] }
+              description: Selected dimensions in canonical appId/productKey/source/market order.
+            integratedApps: { type: array, items: { type: string } }
+            rows:
+              type: array
+              items:
+                type: object
+                required: [date, appId, productKey, source, market, currency, purchaseCount, grossMinor, refundMinor]
+                properties:
+                  date: { type: string, format: date, description: 'UTC event day; purchase and refund dates are independent. Newest first; days without events omitted.' }
+                  appId: { type: [string, "null"], description: Null when appId is not selected. }
+                  productKey: { type: [string, "null"], description: Canonical product code or null when not selected. }
+                  source: { type: [string, "null"], description: Payment source or null when source is not selected. }
+                  market: { type: [string, "null"], description: Distribution market; null is unknown or dimension not selected. Never inferred from Alipay or generic Android platform. }
+                  currency: { type: string }
+                  purchaseCount: { type: integer, minimum: 0 }
+                  grossMinor: { type: integer, minimum: 0 }
+                  refundMinor: { type: integer, minimum: 0 }
+    BillingMembershipsResponse:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          properties:
+            nextCursor: { type: [string, "null"] }
+            items:
+              type: array
+              items:
+                type: object
+                required: [appId, userId, environment, active, state, lastSyncedAt]
+                properties:
+                  environment: { type: string, enum: [production, sandbox] }
+                  appId: { type: string }
+                  userId: { type: string }
+                  active: { type: boolean }
+                  state: { type: string }
+                  tier: { type: [string, "null"] }
+                  planKey: { type: [string, "null"] }
+                  expiresAt: { type: [string, "null"], format: date-time }
+                  autoRenew: { type: [boolean, "null"] }
+                  source: { type: [string, "null"] }
+                  managementUrl: { type: [string, "null"] }
+                  lastSyncedAt: { type: string, format: date-time }
+                  accountDeletedAt: { type: [string, "null"], format: date-time }
+    AdminBillingStatus:
+      type: string
+      enum:
+        [provider_paid, entitlement_active, expired, refunded, revoked, unknown, pending, closed, failed]
+    AdminBillingPaymentStatus:
+      type: string
+      enum: [provider_paid, refunded, unknown, pending, closed, failed]
+    AdminBillingEntitlementStatus:
+      type: string
+      enum: [active, cancelled, grace_period, expired, revoked, unknown]
+    AdminBillingOrder:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          paymentId,
+          appId,
+          userId,
+          provider,
+          productKey,
+          paymentStatus,
+          entitlementStatus,
+          entitlementKey,
+          tier,
+          purchaseSource,
+          market,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        paymentId: { type: string }
+        appId: { type: string }
+        userId: { type: string }
+        accountRegion: { type: string, const: UNKNOWN }
+        platform: { type: [string, "null"], enum: [ios, android, macos, web, windows, null] }
+        distribution: { type: string, enum: [app_store, google_play, china_android_store, direct_android, web, windows] }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        productKey: { type: string }
+        entitlementKey: { type: string }
+        tier: { type: string, enum: [plus, pro] }
+        billingPeriod: { type: [string, "null"], enum: [P1M, P3M, P1Y, null] }
+        purchaseSource: { type: string, enum: [app_store, play_store, alipay] }
+        market: { type: [string, "null"], enum: [app_store, google_play, xiaomi, vivo, oppo, huawei, honor, direct, null] }
+        catalogRevision: { type: [string, "null"] }
+        providerProductId: { type: string }
+        providerPackageId: { type: "null" }
+        providerEntitlementId: { type: string }
+        durationSeconds: { type: [integer, "null"], minimum: 0 }
+        amountMinor: { type: [integer, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
+        paymentStatus:
+          { $ref: "#/components/schemas/AdminBillingPaymentStatus" }
+        entitlementStatus:
+          { $ref: "#/components/schemas/AdminBillingEntitlementStatus" }
+        checkoutId: { type: [string, "null"] }
+        providerOrderId: { type: [string, "null"] }
+        providerTransactionId: { type: string }
+        environment:
+          { type: [string, "null"], enum: [PRODUCTION, SANDBOX, null] }
+        paidAt: { type: [string, "null"], format: date-time }
+        expiresAt: { type: [string, "null"], format: date-time }
+        deletedAt: { type: [string, "null"], format: date-time }
+        redactedAt: { type: "null" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminBillingTransaction:
+      type: object
+      additionalProperties: false
+      required: [transactionId, provider, transactionKind, status, occurredAt]
+      properties:
+        transactionId: { type: string }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        transactionKind:
+          { type: string, enum: [purchase, renewal, refund, revoke] }
+        providerOrderId: { type: [string, "null"] }
+        providerTransactionId: { type: string }
+        relatedTransactionId: { type: "null" }
+        providerRefundId: { type: "null" }
+        refundAmountMinor: { type: [integer, "null"], minimum: 0 }
+        refundReason: { type: "null" }
+        status: { $ref: "#/components/schemas/AdminBillingPaymentStatus" }
+        amountMinor: { type: [integer, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
+        occurredAt: { type: string, format: date-time }
+    AdminBillingEvent:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          eventId,
+          appId,
+          provider,
+          source,
+          eventType,
+          providerEventId,
+          affectedUserIds,
+          verificationResult,
+          processingStatus,
+          occurredAt,
+          processedAt,
+          accountDeletedAt,
+        ]
+      properties:
+        eventId: { type: string }
+        appId: { type: string, const: ai_novel }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        source: { type: string, const: webhook }
+        eventType: { type: string }
+        providerEventId: { type: string }
+        affectedUserIds:
+          type: array
+          items: { type: string }
+        verificationResult: { type: string, const: verified }
+        processingStatus: { type: string, enum: [processed, ignored] }
+        occurredAt: { type: [string, "null"], format: date-time }
+        processedAt: { type: string, format: date-time }
+        accountDeletedAt: { type: [string, "null"], format: date-time }
+    AdminBillingOrderListData:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingOrder" }
+        nextCursor: { type: [string, "null"] }
+    AdminBillingOrderDetailData:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          order,
+          currentMembership,
+          transactions,
+          entitlementGrants,
+          events,
+          eventsNextCursor,
+        ]
+      properties:
+        order: { $ref: "#/components/schemas/AdminBillingOrder" }
+        currentMembership:
+          oneOf:
+            - { type: "null" }
+            - $ref: "#/components/schemas/AdminBillingCurrentMembership"
+        transactions:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingTransaction" }
+        entitlementGrants:
+          type: array
+          maxItems: 0
+          items: { type: object }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingEvent" }
+        eventsNextCursor: { type: [string, "null"] }
+    AdminBillingCurrentMembership:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          active,
+          state,
+          tier,
+          planKey,
+          expiresAt,
+          autoRenew,
+          source,
+          lastSyncedAt,
+          deletedAt,
+        ]
+      properties:
+        active: { type: boolean }
+        state:
+          {
+            type: string,
+            enum: [free, active, cancelled, grace_period, expired],
+          }
+        tier: { type: [string, "null"], enum: [plus, pro, null] }
+        planKey: { type: [string, "null"] }
+        expiresAt: { type: [string, "null"], format: date-time }
+        autoRenew: { type: [boolean, "null"] }
+        source: { type: [string, "null"], enum: [app_store, play_store, alipay, null] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        deletedAt: { type: [string, "null"], format: date-time }
+    AdminBillingOrderListResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/AdminBillingOrderListData" }
+        requestId: { type: string }
+    AdminBillingOrderDetailResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/AdminBillingOrderDetailData" }
+        requestId: { type: string }
+    AdminErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }

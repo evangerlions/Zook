@@ -1,4 +1,6 @@
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
+
+import { billingSandboxAllowed } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -20,9 +22,13 @@ import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-m
 import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
+import { AiNovelCreditsService } from "./modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { createCreditsMembershipReader } from "./modules/ai-novel/credits/credits-membership-reader.ts";
+import { AiNovelCreditsRequestFlow } from "./modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
 import { AiNovelSkillService } from "./modules/ai-novel/ai-novel-skill.service.ts";
 import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
+import { AiNovelModelPointPricingConfigService } from "./modules/ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -78,6 +84,8 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { AiNovelBillingService } from "./services/ainovel-billing.service.ts";
+import { alipayEnvironmentOptions } from "./services/ainovel-alipay-gateway.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
@@ -105,6 +113,19 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     emitToConsole: options.emitLogs ?? false,
     sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
+  const aiNovelBillingService = new AiNovelBillingService(database, {
+    alipay: { ...(options.alipay ?? alipayEnvironmentOptions()), allowSandbox: options.billingEnvironment?.allowSandbox ?? billingSandboxAllowed() },
+    secretApiKey: options.revenueCat?.secretApiKey ?? process.env.REVENUECAT_AI_NOVEL_SECRET_API_KEY,
+    revenueCatProjectId: options.revenueCat?.projectId ?? process.env.REVENUECAT_AI_NOVEL_PROJECT_ID,
+    webhookAuthorization: options.revenueCat?.webhookAuthorization ?? process.env.REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION,
+    revenueCatAppId: options.revenueCat?.appId ?? process.env.REVENUECAT_AI_NOVEL_APP_ID,
+    revenueCatGoogleAppId: options.revenueCat?.googleAppId ?? process.env.REVENUECAT_AI_NOVEL_GOOGLE_APP_ID,
+    allowSandbox: (options.billingEnvironment?.allowSandbox ?? billingSandboxAllowed()) &&
+      (options.revenueCat?.allowSandbox ?? process.env.REVENUECAT_AI_NOVEL_ALLOW_SANDBOX === "true"),
+    fetcher: options.revenueCat?.fetcher,
+    timeoutMs: options.revenueCat?.timeoutMs,
+    now: options.revenueCat?.now,
+  }, logger);
   const telemetryGateway = createApplicationTelemetryGateway(options, logger);
   if (localRunFileLogSink) {
     logger.info("local run file logging enabled", {
@@ -208,11 +229,17 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
   const llmModelHealthService = new LlmModelHealthService(commonLlmConfigService, llmHealthService);
+  const aiNovelModelPointPricingConfigService = new AiNovelModelPointPricingConfigService(
+    appConfigService,
+    commonLlmConfigService,
+    logger,
+  );
   const aiNovelModelSelectionConfigService = new AiNovelModelSelectionConfigService(
     appConfigService,
     commonLlmConfigService,
     llmModelHealthService,
     logger,
+    aiNovelModelPointPricingConfigService,
   );
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
@@ -332,6 +359,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   } = createApplicationAiRuntime({
     database,
     commonLlmConfigService,
+    aiNovelModelPointPricingConfigService,
     commonPasswordConfigService,
     llmHealthService,
     llmMetricsService,
@@ -348,12 +376,21 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
   );
   const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
+  const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore,
+    createCreditsMembershipReader(aiNovelBillingService), logger);
+  const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
+    aiNovelCreditsService,
+    options.aiNovelCreditsEnabled ?? process.env.AINOVEL_CREDITS_ENABLED === "true",
+    aiNovelConversationRecordService,
+    async () => (await aiNovelModelSelectionConfigService.getAutoFree()).active,
+  );
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
     appI18nConfigService,
     appAiRoutingConfigService,
     aiNovelModelSelectionConfigService,
+    aiNovelModelPointPricingConfigService,
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
@@ -396,6 +433,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     logger,
     contentSafetyService,
     aiNovelConversationRecordService,
+    aiNovelCreditsFlow,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
@@ -495,8 +533,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     validationPipe,
     commonTestAccountService,
     kvManager,
+    aiNovelBillingService,
     frogsleepEnabled,
-    lighttickEnabled, lighttickRuntime,
+    lighttickEnabled, lighttickRuntime, options.billingEnvironment ?? { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" },
   );
   app.analyticsService = analyticsService;
   return {
@@ -531,11 +570,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       userService,
       appAiRoutingConfigService,
       aiNovelModelSelectionConfigService,
+      aiNovelModelPointPricingConfigService,
       tokenService,
       authService,
       getuiGyOneClickLoginService,
       qrLoginService,
       analyticsService,
+      aiNovelBillingService,
       adminConsoleService,
       llmManager,
       embeddingManager,

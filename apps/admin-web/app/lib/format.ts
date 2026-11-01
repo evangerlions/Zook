@@ -1,6 +1,14 @@
 import type { NoticeState } from "./types";
 
 export function formatTimestamp(value?: string): string {
+  return formatTimestampWithPrecision(value, false);
+}
+
+export function formatTimestampSeconds(value?: string): string {
+  return formatTimestampWithPrecision(value, true);
+}
+
+function formatTimestampWithPrecision(value: string | undefined, seconds: boolean): string {
   if (!value) {
     return "—";
   }
@@ -16,6 +24,7 @@ export function formatTimestamp(value?: string): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    ...(seconds ? { second: "2-digit" as const } : {}),
   }).format(date);
 }
 

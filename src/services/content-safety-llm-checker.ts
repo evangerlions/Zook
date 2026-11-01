@@ -58,7 +58,14 @@ export class LlmContentSafetyChecker {
     try {
       const result = await withContentSafetyTimeout(config.llm.useJev
         ? this.requireJevClient().complete(text, config.llm.timeoutMs)
-        : this.llmManager.complete({ ...llmInput, callPurpose: "content_safety" }), config.llm.timeoutMs);
+        : this.llmManager.complete({
+          ...llmInput,
+          callPurpose: "content_safety",
+          usageOwner: {
+            appId: command.appId,
+            ...(command.userId ? { userId: command.userId } : {}),
+          },
+        }), config.llm.timeoutMs);
       return await this.handleLlmResult(command, config, text, startedAt, llmInput, result);
     } catch (error) {
       return await this.handleLlmError(command, config, text, startedAt, llmInput, error);

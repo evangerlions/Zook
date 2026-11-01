@@ -163,8 +163,8 @@ export class AuthSessionManager {
 
   private async deleteAppAccountData(appId: string, userId: string, now: Date): Promise<AccountDeletionResult> {
     return await this.database.withAppUserDataTransaction(appId, userId, async () => {
-      await this.database.deleteAppUserRuntimeData(appId, userId);
-      await this.database.updateAppUserStatus(appId, userId, "DELETED");
+      await this.database.deleteAppUserRuntimeData(appId, userId, now.toISOString());
+      await this.database.updateAppUserStatus(appId, userId, "DELETED", now.toISOString());
       const revokedSessions = await this.revokeAllSessions(appId, userId, now);
       return { deleted: true, revokedSessions };
     });

@@ -13,6 +13,9 @@ import type { DatabaseSeed } from "./shared/types.ts";
 import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
+  alipay?: import("./modules/billing/alipay-models.ts").AlipayOptions;
+  /** Rollout gate: enable after pricing, migrations and server settlement validation. */
+  aiNovelCreditsEnabled?: boolean;
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;
@@ -45,6 +48,7 @@ export interface CreateApplicationOptions {
   publicSmsTestBypassEnabled?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
+  billingEnvironment?: { allowSandbox: boolean; defaultEnvironment?: import("./modules/billing/billing-environment.ts").BillingEnvironment };
   databaseUrl?: string;
   migrationDatabaseUrl?: string;
   /**
@@ -78,4 +82,16 @@ export interface CreateApplicationOptions {
   lighttickSeedEnabled?: boolean;
   /** Optional product-owned persistence adapter, primarily for deterministic tests. */
   lighttickRepository?: LightTickRepository;
+  /** RevenueCat server credentials; never returned to clients or included in logs. */
+  revenueCat?: {
+    secretApiKey?: string;
+    projectId?: string;
+    webhookAuthorization?: string;
+    appId?: string;
+    googleAppId?: string;
+    allowSandbox?: boolean;
+    fetcher?: typeof fetch;
+    timeoutMs?: number;
+    now?: () => Date;
+  };
 }

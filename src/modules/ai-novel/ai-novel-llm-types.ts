@@ -37,6 +37,7 @@ export interface AiNovelUsagePayload {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  cachedInputTokens?: number;
   reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
@@ -44,6 +45,7 @@ export interface AiNovelUsagePayload {
 }
 
 export type AiNovelChatStreamChunk =
+  | { type: "client_action"; action: { id: string; name: "open_membership"; arguments: { reason: "quota_insufficient" }; trigger: "after_response_rendered" } }
   | {
       type: "local_debug_llm_request";
       payload: AiNovelLocalDebugLlmRequestPayload;

@@ -9,6 +9,9 @@ import type {
   ResolvedLLMModel,
 } from "./llm-manager.ts";
 import { estimateEmbeddingUsage } from "./llm-usage-estimator.ts";
+import { normalizeLlmUsage } from "./llm-usage-normalizer.ts";
+import { LlmCallObservationSession } from "./llm-call-observation.ts";
+import { calculateLlmPointMicros } from "./llm-point-pricing.ts";
 import {
   hasStableLlmRoutingInputs,
   resolveLlmRoutingUnit,
@@ -18,12 +21,15 @@ import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../sha
 import { evaluateLlmRoutes, selectLlmRoute } from "./llm-routing-score.ts";
 
 export interface EmbeddingRequest {
+  signal?: AbortSignal;
+  onUsageFinalized?: import("./llm-manager-types.ts").LLMCompletionRequest["onUsageFinalized"];
+  requirePointPricing?: boolean;
   modelKey: string;
   input: string[];
   providerOptions?: Record<string, unknown>;
   usageOwner?: {
     appId: string;
-    userId: string;
+    userId?: string;
   };
   routingIdentity?: LlmRoutingIdentity;
 }
@@ -77,12 +83,15 @@ export class EmbeddingManager {
 
   async embed(request: EmbeddingRequest): Promise<EmbeddingResult> {
     const resolution = await this.resolveRequest(request);
+    if (request.requirePointPricing && calculateLlmPointMicros({ promptTokens: 0, completionTokens: 0, totalTokens: 0 }, resolution.request.model.pointPricing) === undefined) {
+      throw new ApplicationError(503, "AINOVEL_CREDITS_PRICE_UNAVAILABLE", "The embedding model does not have valid point pricing.");
+    }
     const startedAt = this.getNow();
     const observation = this.startObservation(resolution, startedAt);
 
     try {
       const result = await this.providers[resolution.request.model.provider].embed(resolution.request);
-      const usage = result.usage ?? estimateEmbeddingUsage(resolution.request.input);
+      const usage = normalizeLlmUsage(result.usage) ?? estimateEmbeddingUsage(resolution.request.input);
       const completedAt = this.getNow();
       await observation?.finalize({ usage, completedAt });
       await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
@@ -143,6 +152,10 @@ export class EmbeddingManager {
       };
       const { routingIdentity: _routingIdentity, ...providerRequest } = request;
       void _routingIdentity;
+      const pointPricing = await this.resolvePointPricing(
+        request.usageOwner?.appId,
+        modelKey,
+      );
       return {
         request: {
           ...providerRequest,
@@ -152,6 +165,7 @@ export class EmbeddingManager {
             modelKey,
             resolvedModelKey: selection.routeModelKey,
             providerModel: selection.route.providerModel,
+            ...(pointPricing ? { pointPricing } : {}),
             providerConfig: {
               baseUrl: selection.provider.baseUrl,
               apiKey: selection.provider.apiKey,
@@ -175,6 +189,10 @@ export class EmbeddingManager {
 
     const { routingIdentity: _routingIdentity, ...providerRequest } = request;
     void _routingIdentity;
+    const pointPricing = await this.resolvePointPricing(
+      request.usageOwner?.appId,
+      modelKey,
+    );
     return {
       request: {
         ...providerRequest,
@@ -184,6 +202,7 @@ export class EmbeddingManager {
           modelKey,
           resolvedModelKey: modelKey,
           providerModel: resolvedModel.providerModel,
+          ...(pointPricing ? { pointPricing } : {}),
         },
       },
       routeRef: {
@@ -268,6 +287,10 @@ export class EmbeddingManager {
     };
   }
 
+  private resolvePointPricing(appId: string | undefined, modelKey: string) {
+    return this.options.pointPricingResolver?.({ appId, modelKey });
+  }
+
   private startObservation(
     resolution: Awaited<ReturnType<EmbeddingManager["resolveRequest"]>>,
     startedAt: Date,
@@ -275,16 +298,20 @@ export class EmbeddingManager {
     const recorder = this.options.llmCallObservationRecorder ??
       this.options.llmMetricsService?.observationRecorder;
     const route = resolution.routeRef;
-    return recorder?.start({
+    const context = {
+      onUsageFinalized: resolution.request.onUsageFinalized,
+      appId: resolution.request.usageOwner?.appId,
       routingModelKey: route.modelKey,
       provider: route.provider,
       providerModel: route.providerModel,
-      operation: "embedding",
-      responseMode: "non_stream",
+      operation: "embedding" as const,
+      responseMode: "non_stream" as const,
       routingConfigRevision: resolution.routingConfigRevision,
+      pointPricing: resolution.request.model.pointPricing,
       startedAt,
       now: this.options.now,
-    });
+    };
+    return recorder?.start(context) ?? (context.onUsageFinalized ? new LlmCallObservationSession(undefined, context) : undefined);
   }
 
 
@@ -297,7 +324,7 @@ export class EmbeddingManager {
     usage: LLMUsage,
     occurredAt: Date,
   ): Promise<void> {
-    if (!owner) {
+    if (!owner?.userId) {
       return;
     }
     try {

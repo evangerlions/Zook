@@ -1,6 +1,7 @@
 
 
 export interface RuntimeConfig {
+  localLoginDefaults?: { username: string; password: string };
   brandName: string;
   defaultAppId: string;
   version: string;

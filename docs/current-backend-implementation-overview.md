@@ -1,5 +1,9 @@
 # 当前后端实现概览
 
+## AINovel Alipay backend MVP
+
+CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Production is disabled by default and additionally gated by complete merchant configuration and approved explicit prices. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
+
 ## FrogSleep 搭子 PostgreSQL 并发门禁
 
 搭子领域 slot、relationship 与原子接受的真实并发验证使用独立命令：
@@ -123,6 +127,16 @@ BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周
 
 1. `src/modules/app-registry/app-registry.service.ts`
 2. `src/services/versioned-app-config.service.ts`
+
+### 2.3.1 AINovel RevenueCat 会员同步（支付测试准备）
+
+AINovel 的 App Store / Google Play 会员状态可通过 RevenueCat 与 Zook 同步：
+
+1. `POST /api/v1/ai_novel/billing/sync` 从 Bearer Token 解析 Zook 用户 ID，服务端查询 RevenueCat subscriber；客户端不能传 user ID、receipt、product 或 entitlement。
+2. 仅 `plus` / `pro` / `max` 对应的配置商品与同档 entitlement 可以更新 `ai_novel` 会员投影；`GET /api/v1/users/me` 返回该投影。重复同步按 provider transaction ID upsert。
+3. RevenueCat webhook 使用部署配置的静态 `Authorization` 和 app ID 校验，再查询 RevenueCat subscriber 作为权益依据；事件按 `app_id + event.id` 去重。
+4. RevenueCat 不可用时返回 pending 与现存状态，但有效期已过的会员不会继续被当作 active；grace period 使用其有效截止时间。账号删除与迟到的同步写入由同一数据库 session 顺序化，交易证据软脱敏保留。
+5. 当前实现覆盖 RevenueCat 同步、webhook、会员投影，以及 Server Admin 的跨应用只读会员列表、收入概览和订单详情。经过授权的 webhook 会把交易 ID、商品、状态、平台、Sandbox 标记和可用的实付金额 / 币种写入同一交易表；数据库另存 webhook 事件 allowlist 字段，并以 `(app_id, event.id)` 幂等。Admin 查询支持稳定 cursor、订单详情、当前会员投影、事件分页和读取审计；账号删除仅标记交易行并保留财务证据。收入金额缺失时保持 `null`，不能由商品标价反推。当前尚无独立 checkout ID、provider order ID 或 entitlement-grant 台账；支付宝 checkout / webhook 明确未实现。订单记录和 Docker stdout 全流程日志是两个不同概念：后台订单页用于查询持久化事实，容器日志用于 deep-dive。接口合同见 `api-contracts/openapi/ainovel/billing.yaml`、`billing-provider.yaml` 与 `api-contracts/openapi/common/billing-admin.yaml`。
 
 ### 2.4 RBAC 权限模型
 
@@ -350,6 +364,21 @@ AINovel 的既有 `GET /api/v1/ai_novel/public/config` 也会带上同一份
 4. 整条配置不存在时使用代码默认 `qwen3.6-plus: 100`；配置损坏或引用失效模型时明确返回 `AI_UPSTREAM_CONFIG_INVALID`
 5. Provider、上游 `providerModel`、密钥、Provider 路由权重和健康路由仍由 `common.llm_service` 负责
 6. Embedding 使用代码中固定的 `text-embedding-v4` common model key，其 Provider 路由仍归 `common.llm_service`
+
+### 2.14.1 AINovel 产品级模型点数费率
+
+AINovel 点数费率独立存放在版本化 App 配置 `ai_novel.model_point_pricing`，由 Admin Web 的 AINovel AI Model 页面维护，不混入 `common.llm_service`。配置按逻辑模型键分别保存输入和输出每百万 tokens 点数；后台同时展示 OpenRouter 美元/M token 参考价、匹配情况和备注。
+
+初始代码值按 OpenRouter 模型目录参考价乘以 `10,000 点/USD` 换算，仅是运营复核前的内部统计草案，不代表会员月额度或实际模型账单。当前包括 OrangeWrite 使用的 chat、embedding 和内容安全模型键；没有精确 OpenRouter 型号的 Doubao Seed / Text Embedding v4 标为近似参考。缺少费率表示未计价，0/0 才表示显式免费。
+
+LLM/Embedding 运行时只对 `usageOwner.appId = ai_novel` 的实际请求解析这份费率，使用同一 provider usage / 本地估算 pipeline 产生点数观测；其它产品不套用 AINovel 费率。该能力只供后台观测与未来结算复用，当前没有会员余额扣减。
+
+对应核心文件：
+
+1. `src/modules/ai-novel/ai-novel-model-point-pricing-config.service.ts`
+2. `src/modules/ai-novel/ai-novel-model-point-pricing-defaults.ts`
+3. `src/services/llm-point-pricing.ts`
+4. `src/app/admin-ai-novel-model-point-pricing-routes.ts`
 
 对应核心文件：
 
@@ -702,6 +731,9 @@ LightTick App 闭环增量：计划确认已原子保存 guidance、完成标准
 
 LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲突保护）、整个计划/日期范围复盘、独立AI分析记录及计划重复任务确认保护；见 README_API.md。真实模型质量与设备发布门禁仍需独立验收。
 
+### 橘子写作付费与用量（2026-10-11）
+
+Admin 橘子写作空间新增只读 `/ainovel-usage`，GET `/api/v1/admin/apps/ai_novel/usage`。迁移075在现有扣费事务里同步保存调用级两池/平台承担证据、赠送/拦截事件、窗口快照；不另行计算扣费、不修改额度/费率。仅完整覆盖、稳定、已结束的活跃七天窗口用于分布与只读调额重放。财务依据已有支付证据，按币种/环境区分；历史消耗不回填，厂商金额成本不可统计，消耗不按Sandbox隔离，不推算利润。窗口提前重置或已知会员到期会排除不完整样本。上线仍需应用迁移及实际环境验证，测试数据不能当成生产客户证据。
 
 ### FrogSleep 后端四项闭环修复（2026-10-18，未发布）
 

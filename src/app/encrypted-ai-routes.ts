@@ -266,12 +266,18 @@ export function buildEncryptedAiErrorPayload(this: BackendRouteContext,
   data: unknown;
   requestId: string;
 } {
+  const details = error.details && typeof error.details === "object"
+    ? error.details as Record<string, unknown> : {};
+  const action = details.clientAction as Record<string, unknown> | undefined;
+  const publicAction = error.code === "AINOVEL_QUOTA_INSUFFICIENT" &&
+    action?.name === "open_membership" && typeof action.id === "string"
+    ? { clientAction: action } : undefined;
   return {
     code: error.code,
     message: localizePublicErrorMessage.call(this, error, request),
     data: shouldExposeLocalAiDebugFields.call(this, request)
-      ? buildLocalAiErrorDebugDetails.call(this, error)
-      : null,
+      ? { ...buildLocalAiErrorDebugDetails.call(this, error), ...publicAction }
+      : publicAction ?? null,
     requestId,
   };
 }

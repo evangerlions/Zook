@@ -8,7 +8,7 @@ type PostgresQuery = (
 ) => Promise<QueryResult<QueryResultRow>>;
 
 const APP_USER_COLUMNS =
-  "id, app_id, user_id, status, account_region, joined_at";
+  "id, app_id, user_id, status, account_region, joined_at, updated_at";
 
 export class PostgresAppUserStore {
   constructor(private readonly query: PostgresQuery) {}
@@ -53,13 +53,14 @@ export class PostgresAppUserStore {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt?: string,
   ): Promise<AppUserRecord | undefined> {
     const result = await this.query(
       `UPDATE zook_app_users
-       SET status = $3, updated_at = NOW()
+       SET status = $3, updated_at = COALESCE($4::timestamptz, NOW())
        WHERE app_id = $1 AND user_id = $2
        RETURNING ${APP_USER_COLUMNS}`,
-      [appId, userId, status],
+      [appId, userId, status, updatedAt ?? null],
     );
     return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
   }

@@ -323,6 +323,19 @@ components:
       type: object
       additionalProperties: true
       properties:
+        appReview:
+          type: object
+          description: Optional review invitation configuration; missing or disabled values turn the feature off.
+          properties:
+            enabled: { type: boolean }
+            markets:
+              type: object
+              description: Market IDs are app_store, google_play, xiaomi, vivo, oppo, huawei, and honor; domestic URLs must be verified before enabling.
+              additionalProperties:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  url: { type: string, description: Verified https or market URL for domestic app listing. }
         app:
           type: string
           example: make_ai_novel_great_again
@@ -330,11 +343,41 @@ components:
           $ref: "#/components/schemas/KickoffPublicConfig"
         releaseUpdate:
           $ref: "#/components/schemas/PublicReleaseUpdateConfig"
+        billing:
+          $ref: "#/components/schemas/BillingPublicConfig"
+    BillingPublicConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        revenueCat:
+          $ref: "#/components/schemas/RevenueCatPublicConfig"
+    RevenueCatPublicConfig:
+      type: object
+      additionalProperties: false
+      required: [enabled, configVersion, proxyUrl, publicSdkKeys]
+      properties:
+        enabled: { type: boolean }
+        configVersion: { type: string, minLength: 1 }
+        proxyUrl:
+          type: [string, "null"]
+          format: uri
+          description: Optional RevenueCat SDK proxy URL. Must be applied before SDK setup.
+        publicSdkKeys:
+          type: object
+          additionalProperties: false
+          required: [ios, android, web]
+          properties:
+            ios: { type: [string, "null"], minLength: 1 }
+            android: { type: [string, "null"], minLength: 1 }
+            web: { type: [string, "null"], minLength: 1 }
     PublicConfigData:
       type: object
       required: [appId, config]
       properties:
         appId: { type: string, example: ai_novel }
+        countryCode:
+          type: string
+          description: Estimated country of the current request, when available (ISO 3166-1 alpha-2).
         config:
           $ref: "#/components/schemas/AINovelPublicConfig"
         updatedAt: { type: string, format: date-time }
@@ -346,4 +389,4 @@ components:
         message: { type: string, example: success }
         requestId: { type: string }
         data:
-          $ref: '#/components/schemas/PublicConfigData'
+          $ref: "#/components/schemas/PublicConfigData"

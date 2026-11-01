@@ -22,6 +22,9 @@ import { AiOutputReportingService } from "../services/ai-output-reporting.servic
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
+import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
+import { BillingAdminService } from "../services/billing-admin.service.ts";
+import { AiNovelUsageAdminService } from "../services/ai-novel-usage-admin.service.ts";
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import type { AccountRegion, AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -66,8 +69,12 @@ function parseBasicAuthorization(
 }
 
 export class BackendRouteContext {
+  resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
+    async () => undefined;
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
+  public readonly billingAdminService: BillingAdminService;
+  public readonly aiNovelUsageAdminService: AiNovelUsageAdminService;
 
   constructor(
     protected readonly database: ApplicationDatabase,
@@ -90,7 +97,11 @@ export class BackendRouteContext {
     protected readonly kvManager: KVManager,
     protected readonly routeAuditInterceptor: AuditInterceptor,
     protected readonly adminSensitiveOperationService: AdminSensitiveOperationService,
-  ) {}
+    protected readonly aiNovelBillingService: AiNovelBillingService,
+  ) {
+    this.billingAdminService = new BillingAdminService(database);
+    this.aiNovelUsageAdminService = new AiNovelUsageAdminService(database.aiNovelCreditsStore);
+  }
 
   public async authenticate(
     request: HttpRequest,
@@ -196,6 +207,29 @@ export class BackendRouteContext {
     resourceId: string, requestId?: string, privacy: "aggregates_only" | "metadata_only" = "aggregates_only"): Promise<void> {
     await this.routeAuditInterceptor.record({ appId: resourceId, actorUserId: adminUser, action, resourceType,
       resourceId, payload: { requestId, privacy } });
+  }
+
+  public async recordAdminBillingReadAudit(input: {
+    adminUser: string;
+    action: string;
+    appId: string;
+    resourceId: string;
+    resourceOwnerUserId?: string;
+    requestId?: string;
+    filterNames?: string[];
+  }): Promise<void> {
+    await this.routeAuditInterceptor.record({
+      appId: input.appId,
+      actorUserId: input.adminUser,
+      action: input.action,
+      resourceType: "billing_order",
+      resourceId: input.resourceId,
+      resourceOwnerUserId: input.resourceOwnerUserId,
+      payload: {
+        requestId: input.requestId,
+        filterNames: input.filterNames,
+      },
+    });
   }
 
   public validateAdminCredentials(username: string, password: string): string {

@@ -3448,7 +3448,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
           timeoutMs: 30000,
         },
         {
-          key: "volcengine",
+          key: "unavailable-fixture",
           label: "火山引擎",
           enabled: true,
           baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -3469,7 +3469,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
               weight: 80,
             },
             {
-              provider: "volcengine",
+              provider: "unavailable-fixture",
               providerModel: "kimi-2.5",
               enabled: true,
               weight: 20,
@@ -3548,7 +3548,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
     callId: "admin_metric_volcengine",
     occurredAt: now.toISOString(),
     routingModelKey: "kimi2.5",
-    provider: "volcengine",
+    provider: "unavailable-fixture",
     providerModel: "kimi-2.5",
     operation: "chat",
     responseMode: "stream",
@@ -3578,7 +3578,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(metricsResponse.body.data.models.items[0]?.modelKey, "kimi/kimi-k2.5");
   assert.deepEqual(
     metricsResponse.body.data.providers.map((item: { provider: string }) => item.provider),
-    ["bailian", "volcengine"],
+    ["bailian", "unavailable-fixture"],
   );
 
   const defaultMetricsResponse = await runtime.app.handle({
@@ -3607,12 +3607,12 @@ test("admin llm service API stores versioned common config and exposes metrics",
     headers,
     query: {
       range: "24h",
-      provider: "volcengine",
+      provider: "unavailable-fixture",
     },
   });
 
   assert.equal(providerMetricsResponse.statusCode, 200);
-  assert.equal(providerMetricsResponse.body.data.provider, "volcengine");
+  assert.equal(providerMetricsResponse.body.data.provider, "unavailable-fixture");
   assert.equal(providerMetricsResponse.body.data.summary.requestCount, 1);
   assert.equal(providerMetricsResponse.body.data.summary.successRate, 0);
   assert.equal(providerMetricsResponse.body.data.models.items[0]?.summary.requestCount, 1);
@@ -3636,15 +3636,15 @@ test("admin llm service API stores versioned common config and exposes metrics",
     headers,
     query: {
       range: "24h",
-      provider: "volcengine",
+      provider: "unavailable-fixture",
     },
   });
 
   assert.equal(providerDetailResponse.statusCode, 200);
-  assert.equal(providerDetailResponse.body.data.provider, "volcengine");
+  assert.equal(providerDetailResponse.body.data.provider, "unavailable-fixture");
   assert.equal(providerDetailResponse.body.data.summary.requestCount, 1);
   assert.equal(providerDetailResponse.body.data.routes.length, 1);
-  assert.equal(providerDetailResponse.body.data.routes[0]?.provider, "volcengine");
+  assert.equal(providerDetailResponse.body.data.routes[0]?.provider, "unavailable-fixture");
 
   const revisionResponse = await runtime.app.handle({
     method: "GET",
@@ -3846,7 +3846,7 @@ test("admin llm smoke test API runs a selected route and enforces its cooldown",
       defaultModelKey: "kimi2.5",
       providers: [
         {
-          key: "volcengine",
+          key: "unavailable-fixture",
           label: "火山引擎",
           enabled: true,
           baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -3869,7 +3869,7 @@ test("admin llm smoke test API runs a selected route and enforces its cooldown",
           strategy: "fixed",
           routes: [
             {
-              provider: "volcengine",
+              provider: "unavailable-fixture",
               providerModel: "kimi-2.5",
               enabled: true,
               weight: 100,
@@ -3896,7 +3896,7 @@ test("admin llm smoke test API runs a selected route and enforces its cooldown",
     body: {
       mode: "route",
       modelKey: "kimi2.5",
-      provider: "volcengine",
+      provider: "unavailable-fixture",
     },
   });
 
@@ -3904,14 +3904,14 @@ test("admin llm smoke test API runs a selected route and enforces its cooldown",
   assert.deepEqual(firstResponse.body.data.target, {
     mode: "route",
     modelKey: "kimi2.5",
-    provider: "volcengine",
+    provider: "unavailable-fixture",
   });
   assert.equal(firstResponse.body.data.summary.totalCount, 1);
   assert.equal(firstResponse.body.data.summary.failureCount, 1);
   assert.equal(firstResponse.body.data.items[0]?.status, "failed");
   assert.equal(
     firstResponse.body.data.items[0]?.details.request?.provider,
-    "volcengine",
+    "unavailable-fixture",
   );
   assert.equal(
     firstResponse.body.data.items[0]?.details.request?.providerModel,

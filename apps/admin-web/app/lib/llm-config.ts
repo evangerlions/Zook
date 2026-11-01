@@ -125,6 +125,8 @@ export function createEmptyLlmSummary() {
     providerUsageCount: 0,
     estimatedUsageCount: 0,
     missingUsageCount: 0,
+    pointPricedRequestCount: 0,
+    pointUnpricedRequestCount: 0,
   };
 }
 

@@ -107,6 +107,16 @@ export class HttpGeoResolver implements GeoResolver {
 export class RequestEmailContextService {
   constructor(private readonly geoResolver: GeoResolver = new NoopGeoResolver()) {}
 
+  async resolveNetworkCountry(request: HttpRequest): Promise<string | undefined> {
+    const country = request.trustedProxy
+      ? normalizeCountryCode(getHeader(request.headers, "x-country-code"))
+      : undefined;
+    if (country) return country;
+    return request.ipAddress
+      ? await this.geoResolver.resolveCountryCode(request.ipAddress)
+      : undefined;
+  }
+
   async resolve(request: HttpRequest, now = new Date()): Promise<ResolvedEmailRequestContext> {
     const trustedProxyCountryCode = request.trustedProxy
       ? normalizeCountryCode(getHeader(request.headers, "x-country-code"))

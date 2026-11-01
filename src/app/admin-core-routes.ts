@@ -128,12 +128,17 @@ export async function handleGetPublicAppConfig(this: BackendRouteContext,
 ): Promise<HttpResponse<PublicAppConfigDocument>> {
   await assertPublicAppScope.call(this, request, appId);
 
-  const result = await this.adminConsoleService.getPublicConfig(appId);
+  const config = await this.adminConsoleService.getPublicConfig(appId);
+  const countryCode = appId === 'ai_novel'
+    ? await this.resolveNetworkCountry(request)
+    : undefined;
+  const result = countryCode ? { ...config, countryCode } : config;
   this.requireValidPublicContract(
     PublicContractValidator.validatePublicConfigData(result),
     request,
   );
-  return this.ok(result, request.requestId as string);
+  return this.ok(result, request.requestId as string,
+    appId === 'ai_novel' ? { 'Cache-Control': 'private, no-store' } : undefined);
 }
 
 export async function handleGetPublicReleaseUpdate(

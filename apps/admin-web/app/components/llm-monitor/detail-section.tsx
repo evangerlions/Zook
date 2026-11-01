@@ -7,6 +7,7 @@ import {
   buildLatencyOption,
   formatLatency,
   formatMetricNumber,
+  formatPointNumber,
   formatTokenNumber,
 } from "./llm-monitor-view-model";
 import { SuccessRateBadge } from "./success-rate-badge";
@@ -29,7 +30,7 @@ export function DetailSection({
       <header className="card-header">
         <div>
           <h2>{title} · {metrics.range} 深度分析</h2>
-          <p>顶部调用/Token 趋势已同步当前筛选；这里补充延迟分布和可排序的精确时间桶数据。</p>
+          <p>顶部点数统计已同步当前筛选；这里补充模型实际消耗点数、Token 明细和延迟分布。</p>
         </div>
         <Tag color="blue">筛选范围</Tag>
       </header>
@@ -74,6 +75,9 @@ function detailColumns(granularity: "hour" | "day"): ColumnsType<LlmHourlySeries
     { title: "失败", dataIndex: "failureCount", width: 82, sorter: (a, b) => a.failureCount - b.failureCount, render: formatMetricNumber },
     { title: "超时", dataIndex: "timeoutCount", width: 82, sorter: (a, b) => a.timeoutCount - b.timeoutCount, render: formatMetricNumber },
     { title: "取消", dataIndex: "cancelledCount", width: 82, sorter: (a, b) => a.cancelledCount - b.cancelledCount, render: formatMetricNumber },
+    { title: "消耗点数", dataIndex: "totalPoints", width: 124, sorter: (a, b) => (a.totalPoints ?? -1) - (b.totalPoints ?? -1), render: formatPointNumber },
+    { title: "已计价请求", dataIndex: "pointPricedRequestCount", width: 100, render: (value) => formatMetricNumber(value) },
+    { title: "未计价请求", dataIndex: "pointUnpricedRequestCount", width: 100, render: (value) => formatMetricNumber(value) },
     { title: "总 Token", dataIndex: "totalTokens", width: 112, sorter: (a, b) => (a.totalTokens ?? 0) - (b.totalTokens ?? 0), render: formatTokenNumber },
     { title: "Prompt", dataIndex: "promptTokens", width: 96, sorter: optionalNumberSorter("promptTokens"), render: formatTokenNumber },
     { title: "可见输出", dataIndex: "visibleOutputTokens", width: 100, sorter: optionalNumberSorter("visibleOutputTokens"), render: formatTokenNumber },

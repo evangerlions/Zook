@@ -42,6 +42,7 @@ export interface HttpResponse<T> {
   body: ResultEnvelope<T>;
   contentType?: string;
   streamBody?: AsyncIterable<string>;
+  rawBody?: string;
 }
 
 export interface ResultEnvelope<T> {

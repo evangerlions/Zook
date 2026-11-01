@@ -2,6 +2,8 @@ import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
+
+import { billingRequestEnvironment, billingSandboxAllowed, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -78,6 +80,7 @@ import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
+import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
 import { tryHandleBodyLogManagementRoutes } from "./bodylog-admin-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
@@ -85,6 +88,13 @@ const DEFAULT_RUNTIME_VERSION = "0.1.0";
 function resolveRuntimeVersion(rawVersion = process.env.APP_VERSION): string {
   const normalized = rawVersion?.trim();
   return normalized || DEFAULT_RUNTIME_VERSION;
+}
+
+function isRevenueCatBillingRequest(method: string, path: string): boolean {
+  return method === "POST" && (
+    path === "/api/v1/ai_novel/billing/sync" ||
+    path === "/api/v1/ai_novel/billing/webhooks/revenuecat"
+  );
 }
 
 /**
@@ -148,9 +158,11 @@ export class BackendApplication extends BackendRouteContext {
     private readonly validationPipe: ValidationPipe,
     private readonly commonTestAccountService: CommonTestAccountService,
     private readonly kvManager: KVManager,
+    private readonly aiNovelBillingService: AiNovelBillingService,
     private readonly frogsleepEnabled = false,
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
+    private readonly billingPolicy: { allowSandbox: boolean; defaultEnvironment?: import("../modules/billing/billing-environment.ts").BillingEnvironment } = { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" as const },
   ) {
     super(
       database,
@@ -173,7 +185,10 @@ export class BackendApplication extends BackendRouteContext {
       kvManager,
       auditInterceptor,
       adminSensitiveOperationService,
+      aiNovelBillingService,
     );
+    this.resolveNetworkCountry = (request) =>
+      requestEmailContextService.resolveNetworkCountry(request);
   }
 
   async handle(request: HttpRequest): Promise<HttpResponse<unknown>> {
@@ -181,11 +196,12 @@ export class BackendApplication extends BackendRouteContext {
     request.cookies ??= parseCookies(request.headers.cookie);
     const execute = async () => {
       request.adminSession = await this.resolveAdminSession(request);
-      return await this.dispatch(request);
+      return await inBillingEnvironment(billingRequestEnvironment(request, this.billingPolicy), () => this.dispatch(request));
     };
     const startedAt = Date.now();
     try {
       const ownsTransaction = isAuthCodeDeliveryRequest(request) ||
+        isRevenueCatBillingRequest(request.method, request.path) ||
         (request.method === "GET" && request.path === "/api/health") ||
         (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));
       const response = ownsTransaction ? await execute() : await this.database.withExclusiveSession(execute);

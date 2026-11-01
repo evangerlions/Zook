@@ -2,15 +2,20 @@ import { cleanQuery } from './admin-api-query.ts';
 import { adminBodyLogApi } from './admin-bodylog-api.ts';
 import { adminLlmApi } from './admin-llm-api.ts';
 import type {
+  AdminBillingOrderDetail,
+  AdminBillingOrderPage,
+  BillingOrderStatus,
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
+  AdminAiNovelModelPointPricingDocument,
   AdminAiNovelConversationRecordDocument,
   AdminAiNovelDebugTraceDocument,
   AdminAiNovelDebugTraceListDocument,
   AiNovelTraceKind,
   AiNovelTraceStatus,
   AiNovelModelSelectionConfig,
+  AiNovelModelPointPricingConfig,
   AdminAppLogSecretRevealDocument,
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
@@ -174,6 +179,31 @@ export const adminApi = {
         method: "POST",
         body: { desc: desc || undefined },
       },
+    );
+  },
+  getAiNovelModelPointPricing() {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath("/apps/ai_novel/model-point-pricing"),
+    );
+  },
+  getAiNovelModelPointPricingRevision(revision: number) {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath(`/apps/ai_novel/model-point-pricing/revisions/${revision}`),
+    );
+  },
+  updateAiNovelModelPointPricing(
+    config: AiNovelModelPointPricingConfig,
+    desc?: string,
+  ) {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath("/apps/ai_novel/model-point-pricing"),
+      { method: "PUT", body: { config, desc: desc || undefined } },
+    );
+  },
+  restoreAiNovelModelPointPricing(revision: number, desc?: string) {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath(`/apps/ai_novel/model-point-pricing/revisions/${revision}/restore`),
+      { method: "POST", body: { desc: desc || undefined } },
     );
   },
   getAiRoutingRevision(appId: string, revision: number) {
@@ -398,6 +428,39 @@ export const adminApi = {
     const query = new URLSearchParams(cleanQuery({ limit: input.limit ? String(input.limit) : undefined, status }));
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
+  },
+  getBillingOrders(input: {
+    environment?: "PRODUCTION" | "SANDBOX";
+    appId?: string;
+    provider?: "revenuecat" | "alipay";
+    userId?: string;
+    paymentId?: string;
+    providerTransactionId?: string;
+    platform?: string;
+    distribution?: string;
+    status?: BillingOrderStatus;
+    createdFrom?: string;
+    createdTo?: string;
+    limit?: number;
+    cursor?: string;
+  } = {}) {
+    const query = new URLSearchParams(cleanQuery({
+      ...input,
+      limit: input.limit === undefined ? undefined : String(input.limit),
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminBillingOrderPage>(adminPath(`/billing/orders${suffix}`));
+  },
+  getBillingOrder(paymentId: string, input: { appId: string; eventsCursor?: string; eventsLimit?: number }) {
+    const query = new URLSearchParams(cleanQuery({
+      eventsCursor: input.eventsCursor,
+      appId: input.appId,
+      eventsLimit: input.eventsLimit === undefined ? undefined : String(input.eventsLimit),
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminBillingOrderDetail>(adminPath(
+      `/billing/orders/${encodeURIComponent(paymentId)}${suffix}`,
+    ));
   },
   getAiNovelConversationRecords(input: { uid?: string; did?: string; page?: number }) {
     const query = new URLSearchParams(cleanQuery({

@@ -1,0 +1,78 @@
+export type AiNovelBillingState = "free" | "active" | "cancelled" | "grace_period" | "expired";
+export type AiNovelBillingSource = "app_store" | "play_store" | "alipay";
+export type AiNovelBillingTier = "plus" | "pro";
+export type AiNovelBillingPlatform = "ios" | "android" | "macos" | "web" | "windows";
+
+export interface AiNovelBillingMembershipInfo {
+  active: boolean;
+  state: AiNovelBillingState;
+  tier: AiNovelBillingTier | null;
+  planKey: string | null;
+  expiresAt: string | null;
+  autoRenew: boolean | null;
+  source: AiNovelBillingSource | null;
+  managementUrl: string | null;
+}
+
+export interface AiNovelBillingMembershipRecord extends AiNovelBillingMembershipInfo {
+  environment?: import("../../modules/billing/billing-environment.ts").BillingEnvironment;
+  /** Internal continuous-membership start; never reset by renewal or upgrade. */
+  creditWindowAnchorAt?: string;
+  appId: "ai_novel";
+  userId: string;
+  lastSyncedAt: string;
+  accountDeletedAt: string | null;
+}
+
+export type AiNovelBillingTransactionStatus =
+  | "provider_paid"
+  | "entitlement_active"
+  | "expired"
+  | "refunded"
+  | "revoked"
+  | "pending"
+  | "closed"
+  | "failed"
+  | "unknown";
+
+export interface AiNovelBillingTransactionRecord {
+  market?: import("../../modules/billing/billing-market.ts").BillingMarket | null;
+  appId: "ai_novel";
+  userId: string;
+  provider: "revenuecat" | "alipay";
+  providerTransactionId: string;
+  createdAt?: string;
+  providerOrderId?: string | null;
+  checkoutId?: string | null;
+  distribution?: "china_android_store" | "direct_android" | "web" | "windows" | null;
+  productId: string;
+  productKey: string;
+  source: AiNovelBillingSource;
+  platform: AiNovelBillingPlatform | null;
+  status: AiNovelBillingTransactionStatus;
+  purchasedAt: string | null;
+  originalPurchaseDate: string | null;
+  expiresAt: string | null;
+  refundedAt: string | null;
+  autoRenew: boolean | null;
+  isSandbox: boolean | null;
+  amountMinor: number | null;
+  refundAmountMinor: number | null;
+  currency: string | null;
+  observedAt: string;
+  accountDeletedAt: string | null;
+}
+
+export interface AiNovelBillingWebhookEventRecord {
+  appId: "ai_novel";
+  eventId: string;
+  eventType: string;
+  userId: string | null;
+  affectedUserIds: string[];
+  productId: string | null;
+  providerTransactionId: string | null;
+  status: "processed" | "ignored";
+  occurredAt: string | null;
+  processedAt: string;
+  accountDeletedAt: string | null;
+}
