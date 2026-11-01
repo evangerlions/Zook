@@ -2,6 +2,12 @@
 
 本轮延续先 dev 后 online，Render 不变。源码从最新 origin/main `5e784ca` 开始；该基线已补齐 BodyLog 邀请码能力，不再沿用上一份历史报告的“尚未实现”结论。修复后必须经原 release_dev.sh 发布并核对实际版本，再记录公网结果；不把本地准备写成现网通过。
 
+## 本地最终结果
+
+Node22.22.0：全后端2196项全部通过，0失败/0跳过（含独立新建PostgreSQL的邀请排序）；根/后台audit均0；851个源文件行数门禁通过；API合同、后台类型/构建及LightTick/Yaohezi专项类型通过。独立BodyLog PostgreSQL5项和Sleep正式身份升级/注销真实HTTP+PostgreSQL1项通过，均不连接现网。Python部署专项31项中30通过、1项真实Docker opt-in跳过；本机Docker daemon未运行，不把该项写作已通过。外部TLS SMTP与实际支付宝SDK兼容专项已通过，未发送外部邮件。
+
+独立审查发现的operator隔离三处问题均修复，并实跑18个拒绝场景、配置幂等与自定义镜像回归。广泛历史后端tsc仍有既有诊断，不能用专项类型通过替代其完成；本轮抽取对照基线无新增实质诊断。
+
 ## 已补的代码与门禁
 
 - 后台 server 对三个精确 GET 邀请路径转发同槽位 API，保留 query/deep-link/302，强制 no-store/no-referrer、拒绝其他方法，公开错误脱敏，阻止 absolute URL 替换上游；原 API SSE 行为保留。
