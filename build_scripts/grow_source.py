@@ -52,9 +52,11 @@ def selected(name):
         raise ValueError('Unsafe archive path.')
     if name in ('Dockerfile', '.dockerignore', 'requirements.txt', 'requirements.lock'):
         return True
-    if any(part.startswith('.env') or part in ('tests', '__pycache__', '.venv', 'runtime', 'node_modules') for part in path.parts):
+    if any(part.startswith('.') or part in ('tests', '__pycache__', '.venv', 'runtime', 'node_modules') for part in path.parts):
         return False
     if path.suffix.lower() in ('.db', '.log', '.pyc', '.sqlite', '.sqlite3', '.pem', '.key', '.p12', '.pfx', '.dump', '.bak') or path.name == 'pending_sync.json':
+        return False
+    if path.name.startswith(('test_', 'test-', 'requirements-test')):
         return False
     if name.startswith('知行成长/server/'):
         return True

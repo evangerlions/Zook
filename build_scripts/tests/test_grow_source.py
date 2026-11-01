@@ -22,13 +22,15 @@ def archive(files):
 
 class GrowSourceTest(unittest.TestCase):
     def test_exact_lock_and_no_secret_build_context(self):
-        files={'Dockerfile':b'FROM python:3.12-slim-bookworm\n', 'requirements.lock':b'locked', 'requirements.txt':b'-r requirements.lock', '.dockerignore':b'**/.env', '知行成长/server/app.py':b'app', '知行成长/server/.env':b'secret', '知行成长/server/tests/test.py':b'test', 'private.md':b'private'}
+        files={'Dockerfile':b'FROM python:3.12-slim-bookworm\n', 'requirements.lock':b'locked', 'requirements.txt':b'-r requirements.lock', '.dockerignore':b'**/.env', '知行成长/server/app.py':b'app', '知行成长/server/.env':b'secret', '知行成长/server/tests/test.py':b'test', '知行成长/server/.gstack/captures/private.png':b'private','知行成长/server/test_private.py':b'test','private.md':b'private'}
         data=archive(files)
         lock={'schema_version':1,'repository':'xiaohao19910303/grow','commit':'a'*40,'archive_sha256':hashlib.sha256(data).hexdigest(),'dockerfile_sha256':hashlib.sha256(files['Dockerfile']).hexdigest(),'requirements_lock_sha256':hashlib.sha256(files['requirements.lock']).hexdigest(),'base_image':'python@sha256:'+'b'*64,'protocol_version':1}
         with tempfile.TemporaryDirectory() as d:
             s.extract_context(data,lock,Path(d))
             self.assertFalse((Path(d)/'private.md').exists());self.assertFalse((Path(d)/'知行成长/server/.env').exists())
             self.assertFalse((Path(d)/'知行成长/server/tests/test.py').exists())
+            self.assertFalse((Path(d)/'知行成长/server/.gstack').exists())
+            self.assertFalse((Path(d)/'知行成长/server/test_private.py').exists())
             self.assertIn(lock['base_image'],(Path(d)/'Dockerfile').read_text())
         lock['archive_sha256']='0'*64
         with tempfile.TemporaryDirectory() as d:
