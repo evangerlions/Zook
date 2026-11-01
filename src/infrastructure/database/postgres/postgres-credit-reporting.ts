@@ -1,3 +1,4 @@
+import { billingEnvironment } from "../../../modules/billing/billing-environment.ts";
 import type { PoolClient } from "pg";
 import type { CreditsTransaction } from "../../../modules/ai-novel/credits/ai-novel-credits-model.ts";
 import {
@@ -14,26 +15,26 @@ export async function persistCreditReporting(
   if (invalidated)
     await client.query(
       `UPDATE zook_ai_novel_credit_windows SET payload=payload || '{"stable":false}'::jsonb
-    WHERE user_id=$1 AND period_key=$2`,
-      [userId, invalidated],
+    WHERE user_id=$1 AND period_key=$2 AND environment=$3`,
+      [userId, invalidated, billingEnvironment()],
     );
   const window = reportedWindow(state);
   if (window)
     await client.query(
       `
-    INSERT INTO zook_ai_novel_credit_windows(user_id,period_key,refresh_at,payload) VALUES($1,$2,$3,$4::jsonb)
-    ON CONFLICT(user_id,period_key) DO UPDATE SET payload = EXCLUDED.payload || jsonb_build_object(
+    INSERT INTO zook_ai_novel_credit_windows(user_id,period_key,refresh_at,payload,environment) VALUES($1,$2,$3,$4::jsonb,$5)
+    ON CONFLICT(user_id,environment,period_key) DO UPDATE SET payload = EXCLUDED.payload || jsonb_build_object(
       'stable', (zook_ai_novel_credit_windows.payload->>'stable')::boolean AND (EXCLUDED.payload->>'stable')::boolean,
       'covered', (zook_ai_novel_credit_windows.payload->>'covered')::boolean AND (EXCLUDED.payload->>'covered')::boolean,
       'firstExhaustAt', COALESCE(zook_ai_novel_credit_windows.payload->>'firstExhaustAt', EXCLUDED.payload->>'firstExhaustAt'))`,
-      [userId, window.start, window.end, JSON.stringify(window)],
+      [userId, window.start, window.end, JSON.stringify(window), billingEnvironment()],
     );
   const event = state.reporting?.event;
   if (!event) return;
   // Duplicate debits must fail the whole transaction, not silently hide a debit.
   await client.query(
-    `INSERT INTO zook_ai_novel_credit_events(user_id,event_id,occurred_at,payload)
-    VALUES($1,$2,$3,$4::jsonb) ${event.kind === "debit" ? "" : "ON CONFLICT DO NOTHING"}`,
-    [userId, event.id, event.at, JSON.stringify(event)],
+    `INSERT INTO zook_ai_novel_credit_events(user_id,event_id,occurred_at,payload,environment)
+    VALUES($1,$2,$3,$4::jsonb,$5) ${event.kind === "debit" ? "" : "ON CONFLICT DO NOTHING"}`,
+    [userId, event.id, event.at, JSON.stringify(event), billingEnvironment()],
   );
 }

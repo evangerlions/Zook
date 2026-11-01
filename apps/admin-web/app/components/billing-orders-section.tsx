@@ -1,3 +1,4 @@
+import { BILLING_TERMS, billingTermValue } from "../lib/billing-terms";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
   Alert,
@@ -12,6 +13,7 @@ import {
   Table,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
 } from "antd";
 import type { Dayjs } from "dayjs";
@@ -46,17 +48,34 @@ interface BillingFilters {
   createdTo?: string;
 }
 
-export function BillingOrdersSection({ appId, environment }: { appId: string; environment: "PRODUCTION" | "SANDBOX" }) {
+function renderOrderIdentifier(value: string | null | undefined) {
+  if (!value) return "—";
+  return (
+    <Tooltip title={value} trigger={["hover", "focus"]} styles={{ root: { overflowWrap: "anywhere" } }}>
+      <span tabIndex={0} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value}
+      </span>
+    </Tooltip>
+  );
+}
+
+const DEFAULT_ORDER_STATUS: BillingOrderStatus = "provider_paid";
+
+export function BillingOrdersSection({ appId, environment, initialUserId }: {
+  appId: string;
+  environment: "PRODUCTION" | "SANDBOX";
+  initialUserId?: string;
+}) {
   const { setNotice } = useAdminSession();
   const ordersRequest = useRef(0);
   const detailRequest = useRef(0);
-  const [filters, setFilters] = useState<BillingFilters>({});
-  const [userId, setUserId] = useState("");
+  const [filters, setFilters] = useState<BillingFilters>({ status: DEFAULT_ORDER_STATUS, userId: initialUserId });
+  const [userId, setUserId] = useState(initialUserId ?? "");
   const [transactionId, setTransactionId] = useState("");
   const [provider, setProvider] = useState<"revenuecat" | "alipay">();
   const [platform, setPlatform] = useState<string>();
   const [distribution, setDistribution] = useState<string>();
-  const [status, setStatus] = useState<BillingOrderStatus>();
+  const [status, setStatus] = useState<BillingOrderStatus | undefined>(DEFAULT_ORDER_STATUS);
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [page, setPage] = useState<AdminBillingOrderPage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -110,10 +129,11 @@ export function BillingOrdersSection({ appId, environment }: { appId: string; en
     setProvider(undefined);
     setPlatform(undefined);
     setDistribution(undefined);
-    setStatus(undefined);
+    setStatus(DEFAULT_ORDER_STATUS);
     setDateRange(null);
-    setFilters({});
-    void loadOrders({});
+    const defaults = { status: DEFAULT_ORDER_STATUS };
+    setFilters(defaults);
+    void loadOrders(defaults);
   }
 
   async function openOrder(order: AdminBillingOrder) {
@@ -190,41 +210,28 @@ export function BillingOrdersSection({ appId, environment }: { appId: string; en
           />
           <Select
             allowClear
-            aria-label="支付渠道"
+            aria-label={BILLING_TERMS.provider.label}
             onChange={setProvider}
-            options={[{ value: "revenuecat", label: "RevenueCat" }, { value: "alipay", label: "支付宝" }]}
-            placeholder="支付渠道"
+            options={BILLING_TERMS.provider.options}
+            placeholder={BILLING_TERMS.provider.label}
             style={{ width: 150 }}
             value={provider}
           />
           <Select
             allowClear
-            aria-label="平台"
+            aria-label={BILLING_TERMS.platform.label}
             onChange={setPlatform}
-            options={[
-              { value: "ios", label: "iOS" },
-              { value: "android", label: "Android" },
-              { value: "macos", label: "macOS" },
-              { value: "web", label: "Web" },
-              { value: "windows", label: "Windows" },
-            ]}
-            placeholder="平台"
+            options={BILLING_TERMS.platform.options}
+            placeholder={BILLING_TERMS.platform.label}
             style={{ width: 130 }}
             value={platform}
           />
           <Select
             allowClear
-            aria-label="商店"
+            aria-label={BILLING_TERMS.distribution.label}
             onChange={setDistribution}
-            options={[
-              { value: "app_store", label: "App Store" },
-              { value: "google_play", label: "Google Play" },
-              { value: "china_android_store", label: "国内 Android 商店" },
-              { value: "direct_android", label: "Android 官方包" },
-              { value: "web", label: "Web" },
-              { value: "windows", label: "Windows" },
-            ]}
-            placeholder="商店"
+            options={BILLING_TERMS.distribution.options}
+            placeholder={BILLING_TERMS.distribution.label}
             style={{ width: 150 }}
             value={distribution}
           />
@@ -247,15 +254,12 @@ export function BillingOrdersSection({ appId, environment }: { appId: string; en
         <Table<AdminBillingOrder>
           columns={[
             { title: "下单时间", dataIndex: "createdAt", width: 200, render: formatTimestampSeconds },
-            { title: "用户 ID", dataIndex: "userId", width: 170, ellipsis: true },
+            { title: "用户 ID", dataIndex: "userId", width: 170, ellipsis: { showTitle: false }, render: renderOrderIdentifier },
             {
               title: "商品",
               width: 150,
               render: (_, order) => <Space direction="vertical" size={0}><strong>{billingProductLabel(order)}</strong><Typography.Text type="secondary">{order.productKey}</Typography.Text></Space>,
             },
-            { title: "平台", dataIndex: "platform", width: 100, render: (value) => value ?? "—" },
-            { title: "渠道", dataIndex: "provider", width: 115, render: (value) => value === "alipay" ? "支付宝" : "RevenueCat" },
-            { title: "交易金额", width: 135, render: (_, order) => formatBillingMoney(order.amountMinor, order.currency) },
             {
               title: "状态",
               width: 210,
@@ -263,15 +267,20 @@ export function BillingOrdersSection({ appId, environment }: { appId: string; en
                 <Tag color={billingStatusColor(order.paymentStatus)}>{billingStatusLabel(order.paymentStatus)}</Tag>
               ),
             },
-            { title: "交易 ID", dataIndex: "providerTransactionId", ellipsis: true },
-            { title: "操作", width: 90, render: (_, order) => <Button size="small" onClick={() => void openOrder(order)}>详情</Button> },
+            { title: "交易金额", width: 135, render: (_, order) => formatBillingMoney(order.amountMinor, order.currency) },
+            { title: BILLING_TERMS.platform.label, dataIndex: "platform", width: 100, render: (value) => billingTermValue("platform", value) },
+            { title: BILLING_TERMS.provider.label, dataIndex: "provider", width: 115, render: (value) => billingTermValue("provider", value) },
+            { title: BILLING_TERMS.source.label, dataIndex: "purchaseSource", width: 115, render: (value) => billingTermValue("source", value) },
+            { title: BILLING_TERMS.market.label, dataIndex: "market", width: 120, render: (value) => billingTermValue("market", value) },
+            { title: "交易 ID", dataIndex: "providerTransactionId", ellipsis: { showTitle: false }, render: renderOrderIdentifier },
+            { title: "操作", fixed: "right", width: 90, render: (_, order) => <Button size="small" onClick={() => void openOrder(order)}>详情</Button> },
           ]}
           dataSource={page?.items ?? []}
           loading={loading}
           pagination={false}
           rowKey="paymentId"
           locale={{ emptyText: <Empty description="暂无支付记录" /> }}
-          scroll={{ x: 1250 }}
+          scroll={{ x: 1520 }}
         />
         {page?.nextCursor ? (
           <div style={{ display: "flex", justifyContent: "center", paddingTop: 16 }}>
@@ -292,12 +301,15 @@ export function BillingOrdersSection({ appId, environment }: { appId: string; en
             <Descriptions bordered column={2} size="small" title="订单">
               <Descriptions.Item label="支付记录 ID">{detail.order.paymentId}</Descriptions.Item>
               <Descriptions.Item label="用户 ID">{detail.order.userId}</Descriptions.Item>
-              <Descriptions.Item label="支付平台">{detail.order.provider === "alipay" ? "支付宝" : "RevenueCat"} · {detail.order.platform ?? "未知平台"}</Descriptions.Item>
-              <Descriptions.Item label="商店">{detail.order.distribution}</Descriptions.Item>
-              <Descriptions.Item label="商品">{detail.order.productKey}</Descriptions.Item>
+              <Descriptions.Item label={BILLING_TERMS.provider.label}>{billingTermValue("provider", detail.order.provider)}</Descriptions.Item>
+              <Descriptions.Item label={BILLING_TERMS.market.label}>{billingTermValue("market", detail.order.market)}</Descriptions.Item>
+              <Descriptions.Item label={BILLING_TERMS.source.label}>{billingTermValue("source", detail.order.purchaseSource)}</Descriptions.Item>
+              <Descriptions.Item label={BILLING_TERMS.platform.label}>{billingTermValue("platform", detail.order.platform)}</Descriptions.Item>
+              <Descriptions.Item label={BILLING_TERMS.distribution.label}>{billingTermValue("distribution", detail.order.distribution)}</Descriptions.Item>
+              <Descriptions.Item label="商品代号">{detail.order.productKey}</Descriptions.Item>
               <Descriptions.Item label="金额">{formatBillingMoney(detail.order.amountMinor, detail.order.currency)}</Descriptions.Item>
               <Descriptions.Item label="支付状态"><Tag color={billingStatusColor(detail.order.paymentStatus)}>{billingStatusLabel(detail.order.paymentStatus)}</Tag></Descriptions.Item>
-              <Descriptions.Item label="环境">{detail.order.environment ?? "未知"}</Descriptions.Item>
+              <Descriptions.Item label={BILLING_TERMS.environment.label}>{billingTermValue("environment", detail.order.environment)}</Descriptions.Item>
               <Descriptions.Item label="购买时间">{formatTimestamp(detail.order.paidAt ?? undefined)}</Descriptions.Item>
               <Descriptions.Item label="到期时间">{formatTimestamp(detail.order.expiresAt ?? undefined)}</Descriptions.Item>
               <Descriptions.Item label="账号删除标记">{formatTimestamp(detail.order.deletedAt ?? undefined)}</Descriptions.Item>
@@ -311,7 +323,7 @@ export function BillingOrdersSection({ appId, environment }: { appId: string; en
             <Descriptions bordered column={2} size="small" title="当前会员状态">
               <Descriptions.Item label="有效">{detail.currentMembership ? detail.currentMembership.active ? "是" : "否" : "暂无同步记录"}</Descriptions.Item>
               <Descriptions.Item label="状态">{detail.currentMembership?.state ?? "—"}</Descriptions.Item>
-              <Descriptions.Item label="档位 / 商品">{detail.currentMembership?.planKey ?? "—"}</Descriptions.Item>
+              <Descriptions.Item label="商品代号">{detail.currentMembership?.planKey ?? "—"}</Descriptions.Item>
               <Descriptions.Item label="到期">{formatTimestamp(detail.currentMembership?.expiresAt ?? undefined)}</Descriptions.Item>
               <Descriptions.Item label="自动续订">{detail.currentMembership?.autoRenew == null ? "未知" : detail.currentMembership.autoRenew ? "是" : "否"}</Descriptions.Item>
               <Descriptions.Item label="最后同步">{formatTimestamp(detail.currentMembership?.lastSyncedAt ?? undefined)}</Descriptions.Item>

@@ -1941,6 +1941,31 @@ export const AINovelPublicConfigSchema = {
   "type": "object",
   "additionalProperties": true,
   "properties": {
+    "appReview": {
+      "type": "object",
+      "description": "Optional review invitation configuration; missing or disabled values turn the feature off.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "markets": {
+          "type": "object",
+          "description": "Market IDs are app_store, google_play, xiaomi, vivo, oppo, huawei, and honor; domestic URLs must be verified before enabling.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "url": {
+                "type": "string",
+                "description": "Verified https or market URL for domestic app listing."
+              }
+            }
+          }
+        }
+      }
+    },
     "app": {
       "type": "string",
       "example": "make_ai_novel_great_again"
@@ -2427,6 +2452,15 @@ export const AINovelPublicConfigSchema = {
 } as const;
 
 export type AINovelPublicConfig = {
+  "appReview"?: {
+  "enabled"?: boolean;
+  "markets"?: {
+  [key: string]: {
+  "enabled"?: boolean;
+  "url"?: string;
+};
+};
+};
   "app"?: string;
   "kickoff"?: {
   "recommendedPrompts"?: string[];
@@ -2542,6 +2576,31 @@ export const PublicConfigDataSchema = {
       "type": "object",
       "additionalProperties": true,
       "properties": {
+        "appReview": {
+          "type": "object",
+          "description": "Optional review invitation configuration; missing or disabled values turn the feature off.",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "markets": {
+              "type": "object",
+              "description": "Market IDs are app_store, google_play, xiaomi, vivo, oppo, huawei, and honor; domestic URLs must be verified before enabling.",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Verified https or market URL for domestic app listing."
+                  }
+                }
+              }
+            }
+          }
+        },
         "app": {
           "type": "string",
           "example": "make_ai_novel_great_again"
@@ -3037,6 +3096,15 @@ export type PublicConfigData = {
   "appId": string;
   "countryCode"?: string;
   "config": {
+  "appReview"?: {
+  "enabled"?: boolean;
+  "markets"?: {
+  [key: string]: {
+  "enabled"?: boolean;
+  "url"?: string;
+};
+};
+};
   "app"?: string;
   "kickoff"?: {
   "recommendedPrompts"?: string[];
@@ -4396,6 +4464,22 @@ export const AlipayCreateRequestSchema = {
         "windows"
       ]
     },
+    "market": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "xiaomi",
+        "vivo",
+        "oppo",
+        "huawei",
+        "honor",
+        "direct",
+        null
+      ],
+      "description": "Optional distribution-market attribution frozen with the order; it never changes payment authorization or price. Generic Android store builds may omit it. Web/Windows/direct Android accept only direct."
+    },
     "idempotencyKey": {
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{8,128}$"
@@ -4404,9 +4488,10 @@ export const AlipayCreateRequestSchema = {
       "type": "string",
       "enum": [
         "mobile_web",
+        "desktop_web",
         "qr"
       ],
-      "description": "Web mobile uses mobile_web; desktop Web and Windows use qr. Omit for native Android."
+      "description": "Web mobile uses mobile_web; desktop Web uses desktop_web (signed page.pay URL embedded in the client). Windows and legacy clients use qr. Omit for native Android."
     }
   }
 } as const;
@@ -4415,8 +4500,9 @@ export type AlipayCreateRequest = {
   "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
   "platform": "android" | "web" | "windows";
   "distribution": "china_android_store" | "direct_android" | "web" | "windows";
+  "market"?: "xiaomi" | "vivo" | "oppo" | "huawei" | "honor" | "direct" | null;
   "idempotencyKey": string;
-  "checkoutMode"?: "mobile_web" | "qr";
+  "checkoutMode"?: "mobile_web" | "desktop_web" | "qr";
 };
 
 export const AlipayOrderSchema = {
@@ -4604,6 +4690,43 @@ export const AlipayCreateDataSchema = {
     "payment"
   ],
   "properties": {
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "waiting": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "productName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "amountText": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "description": "Complete QR checkout display strings. Amount text is formatted from the returned order's authoritative CNY amount, never marketing configuration."
+    },
     "order": {
       "type": "object",
       "additionalProperties": false,
@@ -4764,6 +4887,13 @@ export const AlipayCreateDataSchema = {
 } as const;
 
 export type AlipayCreateData = {
+  "display"?: {
+  "title"?: string | null;
+  "hint"?: string | null;
+  "waiting"?: string | null;
+  "productName"?: string | null;
+  "amountText"?: string | null;
+};
   "order": {
   "orderId": string;
   "provider": string;
@@ -4795,7 +4925,6 @@ export const AlipayQueryDataSchema = {
   "additionalProperties": false,
   "required": [
     "order",
-    "syncStatus",
     "membership"
   ],
   "properties": {
@@ -4890,13 +5019,6 @@ export const AlipayQueryDataSchema = {
           ]
         }
       }
-    },
-    "syncStatus": {
-      "type": "string",
-      "enum": [
-        "synchronized",
-        "pending"
-      ]
     },
     "membership": {
       "type": "object",
@@ -4999,7 +5121,6 @@ export type AlipayQueryData = {
   "membershipApplied": boolean;
   "conflict": "provider_conflict" | null;
 };
-  "syncStatus": "synchronized" | "pending";
   "membership": {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
@@ -5099,12 +5220,12 @@ export type BillingTier = "plus" | "pro";
 export const SyncStatusSchema = {
   "type": "string",
   "enum": [
-    "synchronized",
+    "complete",
     "pending"
   ]
 } as const;
 
-export type SyncStatus = "synchronized" | "pending";
+export type SyncStatus = "complete" | "pending";
 
 export const MoneySchema = {
   "type": "object",
@@ -5114,6 +5235,13 @@ export const MoneySchema = {
     "currency"
   ],
   "properties": {
+    "localizedDisplay": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Complete formatted price. Native store SDK price strings take precedence on store distributions."
+    },
     "amountMinor": {
       "type": "integer",
       "format": "int64",
@@ -5128,6 +5256,7 @@ export const MoneySchema = {
 } as const;
 
 export type Money = {
+  "localizedDisplay"?: string | null;
   "amountMinor": number;
   "currency": string;
 };
@@ -5142,6 +5271,27 @@ export const BillingProductSchema = {
     "providers"
   ],
   "properties": {
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Complete localized product name; never derive it by parsing productKey."
+    },
+    "periodLabel": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Complete period label; missing or blank uses the localized client period default."
+    },
+    "badgeText": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional complete promotional badge. No client-generated trial or recommendation fallback."
+    },
     "productKey": {
       "type": "string",
       "enum": [
@@ -5201,6 +5351,20 @@ export const BillingProductSchema = {
           }
         }
       }
+    },
+    "purchaseSubtitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional server-localized purchase-button subtitle. Missing, null or blank hides the line; clients must not fabricate fallback copy."
+    },
+    "purchaseTitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional localized complete purchase-button label. Display directly without appending prices or separators. Missing, null or blank uses the client's localized default. Does not override login or unavailable states."
     },
     "usage": {
       "type": "object",
@@ -5287,6 +5451,13 @@ export const BillingProductSchema = {
                   "currency"
                 ],
                 "properties": {
+                  "localizedDisplay": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Complete formatted price. Native store SDK price strings take precedence on store distributions."
+                  },
                   "amountMinor": {
                     "type": "integer",
                     "format": "int64",
@@ -5311,6 +5482,9 @@ export const BillingProductSchema = {
 } as const;
 
 export type BillingProduct = {
+  "displayName"?: string | null;
+  "periodLabel"?: string | null;
+  "badgeText"?: string | null;
   "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
   "tier": "plus" | "pro";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
@@ -5323,6 +5497,8 @@ export type BillingProduct = {
   "comingSoon": boolean;
 }
 )[];
+  "purchaseSubtitle"?: string | null;
+  "purchaseTitle"?: string | null;
   "usage"?: {
   "credits": number;
   "resetPeriod": string;
@@ -5336,6 +5512,7 @@ export type BillingProduct = {
   "providerPackageId"?: string | null;
   "providerEntitlementId"?: string | null;
   "price": {
+  "localizedDisplay"?: string | null;
   "amountMinor": number;
   "currency": string;
 } | unknown;
@@ -5406,6 +5583,13 @@ export const BillingProductProviderSchema = {
             "currency"
           ],
           "properties": {
+            "localizedDisplay": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Complete formatted price. Native store SDK price strings take precedence on store distributions."
+            },
             "amountMinor": {
               "type": "integer",
               "format": "int64",
@@ -5434,6 +5618,7 @@ export type BillingProductProvider = {
   "providerPackageId"?: string | null;
   "providerEntitlementId"?: string | null;
   "price": {
+  "localizedDisplay"?: string | null;
   "amountMinor": number;
   "currency": string;
 } | unknown;
@@ -5449,6 +5634,55 @@ export const CatalogDataSchema = {
     "products"
   ],
   "properties": {
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "agreement": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "plusLabel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "proLabel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "defaultProductKey": {
+          "type": "string",
+          "description": "Initial logical product selection; a presentation preference, not a purchase instruction."
+        },
+        "paidServiceUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional HTTP(S) paid service agreement URL."
+        },
+        "debitAuthorizationUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional HTTP(S) debit authorization agreement URL."
+        }
+      },
+      "description": "Optional server-localized necessary labels. Missing or blank fields use existing client localization defaults. Consent and tier identity are unchanged."
+    },
     "accountRegion": {
       "type": "string",
       "enum": [
@@ -5490,6 +5724,27 @@ export const CatalogDataSchema = {
           "providers"
         ],
         "properties": {
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Complete localized product name; never derive it by parsing productKey."
+          },
+          "periodLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Complete period label; missing or blank uses the localized client period default."
+          },
+          "badgeText": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional complete promotional badge. No client-generated trial or recommendation fallback."
+          },
           "productKey": {
             "type": "string",
             "enum": [
@@ -5549,6 +5804,20 @@ export const CatalogDataSchema = {
                 }
               }
             }
+          },
+          "purchaseSubtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional server-localized purchase-button subtitle. Missing, null or blank hides the line; clients must not fabricate fallback copy."
+          },
+          "purchaseTitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional localized complete purchase-button label. Display directly without appending prices or separators. Missing, null or blank uses the client's localized default. Does not override login or unavailable states."
           },
           "usage": {
             "type": "object",
@@ -5635,6 +5904,13 @@ export const CatalogDataSchema = {
                         "currency"
                       ],
                       "properties": {
+                        "localizedDisplay": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "Complete formatted price. Native store SDK price strings take precedence on store distributions."
+                        },
                         "amountMinor": {
                           "type": "integer",
                           "format": "int64",
@@ -5662,11 +5938,23 @@ export const CatalogDataSchema = {
 } as const;
 
 export type CatalogData = {
+  "display"?: {
+  "title"?: string | null;
+  "agreement"?: string | null;
+  "plusLabel"?: string | null;
+  "proLabel"?: string | null;
+  "defaultProductKey"?: string;
+  "paidServiceUrl"?: string | null;
+  "debitAuthorizationUrl"?: string | null;
+};
   "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "platform": "ios" | "android" | "macos" | "web" | "windows";
   "distribution": "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
   "products": (
 {
+  "displayName"?: string | null;
+  "periodLabel"?: string | null;
+  "badgeText"?: string | null;
   "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
   "tier": "plus" | "pro";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
@@ -5679,6 +5967,8 @@ export type CatalogData = {
   "comingSoon": boolean;
 }
 )[];
+  "purchaseSubtitle"?: string | null;
+  "purchaseTitle"?: string | null;
   "usage"?: {
   "credits": number;
   "resetPeriod": string;
@@ -5692,6 +5982,7 @@ export type CatalogData = {
   "providerPackageId"?: string | null;
   "providerEntitlementId"?: string | null;
   "price": {
+  "localizedDisplay"?: string | null;
   "amountMinor": number;
   "currency": string;
 } | unknown;
@@ -5706,15 +5997,84 @@ export const SyncDataSchema = {
   "additionalProperties": false,
   "required": [
     "syncStatus",
-    "membership"
+    "membership",
+    "targetPurchase",
+    "pendingOrderCount",
+    "checkedAt"
   ],
   "properties": {
     "syncStatus": {
       "type": "string",
       "enum": [
-        "synchronized",
+        "complete",
         "pending"
       ]
+    },
+    "targetPurchase": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reference",
+            "status",
+            "entitlementStatus"
+          ],
+          "properties": {
+            "reference": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "id"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "alipay_order",
+                    "store_transaction"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              }
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "closed",
+                "failed"
+              ]
+            },
+            "entitlementStatus": {
+              "type": "string",
+              "enum": [
+                "applied",
+                "blocked",
+                "not_applicable",
+                "pending"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pendingOrderCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "checkedAt": {
+      "type": "string",
+      "format": "date-time"
     },
     "membership": {
       "type": "object",
@@ -5803,7 +6163,17 @@ export const SyncDataSchema = {
 } as const;
 
 export type SyncData = {
-  "syncStatus": "synchronized" | "pending";
+  "syncStatus": "complete" | "pending";
+  "targetPurchase": {
+  "reference": {
+  "kind": "alipay_order" | "store_transaction";
+  "id": string;
+};
+  "status": "pending" | "paid" | "closed" | "failed";
+  "entitlementStatus": "applied" | "blocked" | "not_applicable" | "pending";
+} | unknown;
+  "pendingOrderCount": number;
+  "checkedAt": string;
   "membership": {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
@@ -5819,7 +6189,40 @@ export type SyncData = {
 export const SyncRequestSchema = {
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "provider"
+  ],
   "properties": {
+    "provider": {
+      "type": "string",
+      "description": "Historical payment provider identifiers used by membership conflict records.",
+      "enum": [
+        "revenuecat",
+        "alipay"
+      ]
+    },
+    "purchaseReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "alipay_order",
+            "store_transaction"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
     "reason": {
       "type": "string",
       "enum": [
@@ -5834,6 +6237,11 @@ export const SyncRequestSchema = {
 } as const;
 
 export type SyncRequest = {
+  "provider": "revenuecat" | "alipay";
+  "purchaseReference"?: {
+  "kind": "alipay_order" | "store_transaction";
+  "id": string;
+};
   "reason"?: "purchase" | "restore" | "app_start" | "retry";
 };
 
@@ -56149,7 +56557,6 @@ export const GeneratedPublicContractNames = [
   "BuddySharingGrantUpdateRequest",
   "BuddySharingSelectionRequest",
   "BuddyStructuredShareRequest",
-  "CatalogData",
   "BuddySupportAckData",
   "BuddySupportAckRequest",
   "BuddySupportCapability",
@@ -56167,6 +56574,7 @@ export const GeneratedPublicContractNames = [
   "BuddySupportPermissionRequest",
   "BuddySupportResolveRequest",
   "BuddySupportSendRequest",
+  "CatalogData",
   "ChangePasswordRequest",
   "CreditMicros",
   "CreditsBalanceData",

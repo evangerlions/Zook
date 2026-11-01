@@ -1,3 +1,4 @@
+import { billingTermValue } from "./billing-terms.ts";
 import type { AdminBillingOrder, BillingOrderStatus } from "./types";
 
 export const BILLING_STATUS_OPTIONS: Array<{ value: BillingOrderStatus; label: string }> = [
@@ -51,7 +52,7 @@ export function formatBillingMoney(amountMinor: number | null, currency: string 
 }
 
 export function billingProductLabel(order: AdminBillingOrder): string {
-  const tier = order.tier === "plus" ? "Plus" : order.tier === "pro" ? "Pro" : order.tier;
+  const tier = billingTermValue("tier", order.tier);
   const period = order.billingPeriod === "P1M" ? "月度" : order.billingPeriod === "P3M" ? "季度" : order.billingPeriod === "P1Y" ? "年度" : "";
   return [tier, period].filter(Boolean).join(" · ");
 }

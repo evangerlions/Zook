@@ -57,11 +57,11 @@ test("billing orders offer Alipay provider and CN distribution filters", async (
     return { items: [], nextCursor: null };
   } });
   let tree = view.render();
-  const provider = view.find(tree, "Select", (props) => props["aria-label"] === "支付渠道")!;
+  const provider = view.find(tree, "Select", (props) => props["aria-label"] === "支付服务商")!;
   assert.ok(provider);
   assert.ok(provider.props.options.some((option: { value: string }) => option.value === "alipay"));
   provider.props.onChange("alipay");
-  view.find(tree, "Select", (props) => props["aria-label"] === "商店")!.props.onChange("web");
+  view.find(tree, "Select", (props) => props["aria-label"] === "分发类型")!.props.onChange("web");
   tree = view.render();
   view.find(tree, "Button", (props) => props.children === "查询")!.props.onClick();
   await view.flush();
@@ -109,7 +109,7 @@ test("billing lives only in Server sidebar and has independent app selection wit
   assert.match(server, /to: "\/billing"/);
   assert.doesNotMatch(shell.slice(shell.indexOf("const APP_WORKSPACES")), /billing-orders|pathname === "\/billing"/);
   const route = await source("routes/billing.tsx");
-  assert.match(route, /useState\("all"\)/); assert.match(route, /该应用尚未接入支付管理/);
+  assert.match(route, /useState\("ai_novel"\)/); assert.match(route, /该应用尚未接入支付管理/);
   assert.doesNotMatch(route, /selectedAppId/); assert.match(route, /key=\{appId\}/);
   assert.match(await source("routes.ts"), /route\("billing", "routes\/billing.tsx"\)/);
 });
@@ -143,7 +143,7 @@ test("billing UI guards stale reads and keeps revenue separate from membership e
   const overview = await source("components/billing-overview-section.tsx");
   assert.match(await source("routes/billing.tsx"), /useState<BillingEnvironment>\(loadBillingEnvironment\)/);
   assert.match(overview, /environment: BillingEnvironment/); assert.match(overview, /不同|币种/);
-  assert.match(await source("components/billing-memberships-section.tsx"), /此列表包含测试及正式会员/);
+  assert.match(await source("components/billing-memberships-section.tsx"), /当前仅显示/);
 });
 
 test("billing money uses currency minor units and never fabricates unknown prices", () => {
@@ -173,4 +173,87 @@ test("billing API client uses shared routes and explicitly scopes order details"
     assert.equal(urls[2].searchParams.get("expiry"), "expired");
     assert.equal(urls[4].searchParams.get("appId"), "ai_novel");
   } finally { globalThis.fetch = original; }
+});
+
+test("orders default to successful payments and clearing restores that default while all statuses remain selectable", async () => {
+  const queries: Array<Record<string, unknown>> = [];
+  const view = await billingOrdersViewHarness({ getBillingOrders: async (query: Record<string, unknown>) => {
+    queries.push(query); return { items: [], nextCursor: null };
+  }});
+  let tree = view.render();
+  const status = () => view.find(tree, "Select", props => props["aria-label"] === "订单状态")!;
+  assert.equal(status().props.value, "provider_paid");
+  view.find(tree, "Button", props => props.children === "刷新")!.props.onClick();
+  await view.flush();
+  assert.equal(queries.at(-1)!.status, "provider_paid");
+  status().props.onChange("pending"); tree=view.render();
+  view.find(tree, "Button", props => props.children === "查询")!.props.onClick(); await view.flush();
+  assert.equal(queries.at(-1)!.status,"pending");
+  status().props.onChange(undefined); tree=view.render();
+  view.find(tree, "Button", props => props.children === "查询")!.props.onClick(); await view.flush();
+  assert.equal(queries.at(-1)!.status,undefined);
+  view.find(tree, "Button", props => props.children === "清空")!.props.onClick(); await view.flush(); tree=view.render();
+  assert.equal(queries.at(-1)!.status,"provider_paid");
+  assert.equal(status().props.value,"provider_paid");
+});
+
+
+test('order filters, cells and detail share concept names and values without rewriting query codes',async()=>{
+  const order={paymentId:'alice:paid',provider:'alipay',purchaseSource:'alipay',platform:'web',distribution:'web',productKey:'plus_yearly'};
+  const view=await billingOrdersViewHarness({getBillingOrder:async()=>({order,transactions:[],events:[],currentMembership:null})});
+  let tree=view.render();const columns=view.find(tree,'Table')!.props.columns;
+  assert.equal(columns.find((column:any)=>column.dataIndex==='provider').render('revenuecat'),'RevenueCat');
+  assert.equal(columns.find((column:any)=>column.dataIndex==='provider').render('unexpected'),'未知（unexpected）');
+  assert.equal(columns.find((column:any)=>column.dataIndex==='purchaseSource').render('play_store'),'Google Play');
+  assert.equal(columns.find((column:any)=>column.dataIndex==='platform').render('ios'),'iOS');
+  const provider=view.find(tree,'Select',props=>props['aria-label']==='支付服务商')!;
+  assert.equal(provider.props.options[0].value,'revenuecat');
+  assert.equal(provider.props.options[0].label,'RevenueCat');
+  const platform=view.find(tree,'Select',props=>props['aria-label']==='运行平台')!;
+  assert.ok(platform.props.options.some((option:any)=>option.value==='ios'&&option.label==='iOS'));
+  columns.find((column:any)=>column.title==='操作').render(null,order).props.onClick();await view.flush();tree=view.render();
+  for(const [label,value] of [['支付服务商','支付宝'],['支付来源','支付宝'],['运行平台','Web'],['分发类型','Web']]){
+    assert.equal(view.find(tree,'DescriptionItem',props=>props.label===label)!.props.children,value);
+  }
+});
+
+
+test("truncated order identifiers expose their complete value on hover and keyboard focus", async () => {
+  const view = await billingOrdersViewHarness({});
+  const columns = view.find(view.render(), "Table")!.props.columns;
+  for (const field of ["userId", "providerTransactionId"]) {
+    const column = columns.find((column: { dataIndex: string }) => column.dataIndex === field);
+    const value = `${field}_abcdefghijklmnopqrstuvwxyz0123456789`;
+    assert.equal(column.ellipsis.showTitle, false);
+    const cell = column.render(value);
+    const tooltip = view.find(cell, "Tooltip")!;
+    assert.equal(tooltip.props.title, value);
+    assert.equal(Array.from(tooltip.props.trigger).join(","), "hover,focus");
+    const text = view.find(cell, "span")!;
+    assert.equal(text.props.tabIndex, 0);
+    assert.equal(text.props.children, value);
+    assert.equal(column.render(null), "—");
+  }
+});
+
+
+test("payment details remain the final right-fixed column during horizontal scrolling", async () => {
+  const view = await billingOrdersViewHarness({});
+  const table = view.find(view.render(), "Table")!;
+  const columns = table.props.columns;
+  const action = columns.at(-1);
+  assert.equal(action.title, "操作");
+  assert.equal(action.fixed, "right");
+  assert.equal(action.width, 90);
+  assert.ok(table.props.scroll.x > 0);
+  const button = action.render(null, { paymentId: "user:order" });
+  assert.equal(button.props.children, "详情");
+});
+
+test("payment status and amount are the fourth and fifth order columns", async () => {
+  const view = await billingOrdersViewHarness({});
+  const columns = view.find(view.render(), "Table")!.props.columns;
+  assert.deepEqual(Array.from(columns.slice(0, 5), (column: any) => column.title),
+    ["下单时间", "用户 ID", "商品", "状态", "交易金额"]);
+  assert.equal(columns.at(-1).fixed, "right");
 });

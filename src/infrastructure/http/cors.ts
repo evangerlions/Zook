@@ -16,6 +16,7 @@ const CORS_ALLOWED_HEADERS = [
   "Idempotency-Key",
   "If-Match",
   "X-App-Id",
+  "X-Billing-Environment",
   "X-Platform",
   "X-App-Version",
   "X-Request-Id",

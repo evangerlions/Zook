@@ -10,7 +10,7 @@ test("public benefits use the actual weekly quota and distinguish tiers without 
   const catalog = buildAiNovelBillingCatalog({accountRegion: "CN", platform: "web", distribution: "web", locale: "zh-CN"});
   for (const product of catalog.products) {
     assert.deepEqual(product.usage, {credits: LOCAL_CREDIT_QUOTAS[product.tier], resetPeriod: "P7D"});
-    assert.equal(product.benefits?.[0].text, `每周享有 ${LOCAL_CREDIT_QUOTAS[product.tier]} credits（${LOCAL_CREDIT_QUOTAS[product.tier] / LOCAL_CREDIT_QUOTAS.free}X 免费额度）`);
+    assert.equal(product.benefits?.find(b => b.key === "usage")?.text, `每周享有 ${LOCAL_CREDIT_QUOTAS[product.tier]} credits（${LOCAL_CREDIT_QUOTAS[product.tier] / LOCAL_CREDIT_QUOTAS.free}X 免费额度）`);
     assert.equal(product.benefits?.some(b => /审校|每月|tokens/.test(b.text)), false);
     assert.equal(product.benefits?.find(b => b.key === "sync")?.comingSoon, true);
     assert.match(product.benefits!.find(b => b.key === "sync")!.text, /即将推出/);
@@ -30,7 +30,7 @@ test("configuration controls text, order and inclusion, preserving canonical quo
   ]});
   assert.deepEqual(billingBenefits("plus", "zh-CN", config).map(b => [b.key, b.text, b.included]),
     [["first", "First 1000", true], ["later", "稍后", false]]);
-  assert.equal(billingBenefits("pro", "en-US", config).length, 6);
+  assert.equal(billingBenefits("pro", "en-US", config).length, 7);
   assert.throws(() => parseBillingBenefitsConfig('{"plus":[{}]}'));
 });
 
@@ -38,10 +38,10 @@ test("every supported locale has complete copy and substituted allowances", () =
   for (const locale of DEFAULT_APP_I18N_SETTINGS.supportedLocales) {
     for (const tier of ["plus", "pro"] as const) {
       const benefits = billingBenefits(tier, locale);
-      assert.equal(benefits.length, 6);
+      assert.equal(benefits.length, 7);
       assert.equal(benefits.every(b => b.text.length > 0 && !b.text.includes("{credits}")), true);
-      assert.equal(benefits[0].text.includes(String(LOCAL_CREDIT_QUOTAS[tier])), true);
-      if (locale !== "en-US") assert.notEqual(benefits[0].text, billingBenefits(tier, "en-US")[0].text);
+      assert.equal(benefits[1].text.includes(String(LOCAL_CREDIT_QUOTAS[tier])), true);
+      if (locale !== "en-US") assert.notEqual(benefits[1].text, billingBenefits(tier, "en-US")[1].text);
     }
   }
 });
@@ -53,15 +53,32 @@ test("guest catalog reuses request locale precedence, fallback and app config", 
     query: {platform: "web", distribution: "web", ...(locale ? {locale} : {})}});
   const chinese = await request({"x-app-locale": "zh-CN", "accept-language": "en-US"});
   assert.equal(chinese.statusCode, 200);
-  assert.equal(chinese.body.data.products[0].benefits[0].text, "每周享有 1000 credits（5X 免费额度）");
+  assert.equal(chinese.body.data.products[0].benefits[1].text, "每周享有 1000 credits（5X 免费额度）");
   const english = await request({"x-app-locale": "zh-CN"}, "en-US");
-  assert.equal(english.body.data.products[0].benefits[0].text, "1000 credits every week (5X the Free allowance)");
+  assert.equal(english.body.data.products[0].benefits[1].text, "1000 credits every week (5X the Free allowance)");
   const traditional = await request({"accept-language": "zh-HK"});
-  assert.equal(traditional.body.data.products[0].benefits[0].text, "每週享有 1000 credits（5X 免費額度）");
+  assert.equal(traditional.body.data.products[0].benefits[1].text, "每週享有 1000 credits（5X 免費額度）");
   await runtime.database.upsertAppConfig({id: "benefits_test", appId: "ai_novel", configKey: BILLING_BENEFITS_CONFIG_KEY,
     configValue: JSON.stringify({plus: [{key: "custom", text: {"zh-CN": "配置下发"}, included: false, order: 1, comingSoon: false}]}),
     updatedAt: new Date().toISOString()});
   const custom = await request({"x-app-locale": "zh-CN"});
   assert.equal(custom.body.data.products[0].benefits[0].text, "配置下发");
   assert.equal(custom.body.data.products[0].benefits[0].included, false);
+});
+
+
+test("Plus and Pro lead with shared membership, separate from upcoming work sync", () => {
+  for (const locale of DEFAULT_APP_I18N_SETTINGS.supportedLocales) {
+    for (const tier of ["plus", "pro"] as const) {
+      const benefits = billingBenefits(tier, locale);
+      assert.equal(benefits[0].key, "cross_platform_membership");
+      assert.equal(benefits[0].included, true);
+      assert.equal(benefits[0].comingSoon, false);
+      assert.equal(benefits[0].order, 0);
+      if (locale === "zh-CN") assert.equal(benefits[0].text, "会员权益三端互通");
+      else if (locale !== "en-US") assert.notEqual(benefits[0].text, billingBenefits(tier, "en-US")[0].text);
+      assert.equal(benefits.at(-1)!.key, "sync");
+      assert.equal(benefits.at(-1)!.comingSoon, true);
+    }
+  }
 });

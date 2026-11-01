@@ -48,6 +48,7 @@ export interface CreateApplicationOptions {
   publicSmsTestBypassEnabled?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
+  billingEnvironment?: { allowSandbox: boolean; defaultEnvironment?: import("./modules/billing/billing-environment.ts").BillingEnvironment };
   databaseUrl?: string;
   migrationDatabaseUrl?: string;
   /**

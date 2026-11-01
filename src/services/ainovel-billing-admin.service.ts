@@ -1,3 +1,5 @@
+import { billingMarket } from "../modules/billing/billing-market.ts";
+import { inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import { effectiveBillingMembership } from "../modules/billing/billing-admin-membership.ts";
 import type { AiNovelBillingTier } from "../shared/types.ts";
@@ -85,7 +87,8 @@ export class AiNovelBillingAdminService {
       after: eventsAfter,
       limit: eventsLimit,
     });
-    const persistedMembership = await this.database.findAiNovelBillingMembership("ai_novel", transaction.userId);
+    const persistedMembership = await inBillingEnvironment(transaction.isSandbox ? "sandbox" : "production",
+      () => this.database.findAiNovelBillingMembership("ai_novel", transaction.userId));
     const membership = persistedMembership ? effectiveBillingMembership(persistedMembership) : undefined;
     return {
       order: toAdminOrder(transaction),
@@ -256,7 +259,7 @@ function toAdminOrder(record: AiNovelBillingTransactionRecord): AiNovelBillingAd
     entitlementKey: tier,
     tier,
     billingPeriod: period === "monthly" ? "P1M" : period === "quarterly" ? "P3M" : period === "yearly" ? "P1Y" : null,
-    purchaseSource: record.source,
+    purchaseSource: record.source, market: billingMarket(record),
     catalogRevision: null,
     providerProductId: record.productId,
     providerPackageId: null,

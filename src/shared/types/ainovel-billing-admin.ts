@@ -68,6 +68,7 @@ export interface AiNovelBillingAdminOrder {
   tier: string;
   billingPeriod: "P1M" | "P3M" | "P1Y" | null;
   purchaseSource: string;
+  market: import("../../modules/billing/billing-market.ts").BillingMarket | null;
   catalogRevision: null;
   providerProductId: string;
   providerPackageId: null;

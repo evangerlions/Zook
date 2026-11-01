@@ -39,6 +39,7 @@ for (const platform of ["android", "web"] as const) {
     assert.equal(biz.seller_id, "test_seller");
     assert.equal(biz.out_trade_no, "alp_test");
     assert.equal(biz.total_amount, "38.00");
+    assert.equal(biz.subject, "橘子写作 Plus 月度会员");
   });
 }
 
@@ -86,3 +87,60 @@ test("precreate rejects wrong order identity and sanitizes provider exceptions",
     await assert.rejects(qrGateway.payment(order("web")), /Alipay QR checkout unavailable/);
   }
 });
+
+
+test("desktop embedded cashier is signed with frozen order facts and no parent return", async () => {
+  const payment = await gateway.payment({ ...order("web"), checkoutMode: "desktop_web" });
+  assert.equal(payment.type, "page");
+  if (payment.type !== "page") throw new Error("Expected page payment");
+  const url = new URL(payment.url);
+  assert.equal(url.origin, "https://openapi-sandbox.dl.alipaydev.com");
+  const params = url.searchParams;
+  assert.equal(params.get("method"), "alipay.trade.page.pay");
+  assert.equal(params.get("app_id"), "test_app");
+  assert.equal(params.get("notify_url"), notifyUrl);
+  assert.equal(params.has("return_url"), false);
+  assert.equal(params.get("sign_type"), "RSA2");
+  assert.ok(params.get("sign"));
+  const biz = JSON.parse(params.get("biz_content")!);
+  assert.equal(biz.product_code, "FAST_INSTANT_TRADE_PAY");
+  assert.equal(biz.qr_pay_mode, "4");
+  assert.equal(biz.qrcode_width, 220);
+  assert.equal(biz.out_trade_no, "alp_test");
+  assert.equal(biz.total_amount, "38.00");
+  assert.equal(biz.seller_id, "test_seller");
+  assert.equal(biz.time_expire, "2026-10-04 08:30:00");
+});
+
+
+for (const [productKey, name] of [
+  ["plus_monthly", "橘子写作 Plus 月度会员"],
+  ["plus_quarterly", "橘子写作 Plus 季度会员"],
+  ["plus_yearly", "橘子写作 Plus 年度会员"],
+  ["pro_monthly", "橘子写作 Pro 月度会员"],
+  ["pro_quarterly", "橘子写作 Pro 季度会员"],
+  ["pro_yearly", "橘子写作 Pro 年度会员"],
+] as const) {
+  test(`${productKey} sends a customer-facing subject in every Alipay cashier`, async () => {
+    for (const [platform, checkoutMode] of [
+      ["android", undefined], ["web", "mobile_web"], ["web", "desktop_web"],
+    ] as const) {
+      const payment = await gateway.payment({ ...order(platform), productKey, checkoutMode });
+      const params = payment.type === "app" ? new URLSearchParams(payment.orderString)
+        : new URL(payment.type === "page" ? payment.url : "").searchParams;
+      const biz = JSON.parse(params.get("biz_content")!);
+      assert.equal(biz.subject, name);
+      assert.ok(!biz.subject.includes(productKey));
+      assert.equal(biz.out_trade_no, "alp_test");
+      assert.equal(biz.total_amount, "38.00");
+    }
+    for (const platform of ["web", "windows"] as const) {
+      const client = { exec: async (_method: string, params: any) => {
+        assert.equal(params.bizContent.subject, name);
+        return { code: "10000", out_trade_no: "alp_test", qr_code: "https://qr.alipay.com/test" };
+      }} as unknown as AlipaySdk;
+      await new OfficialAlipayGateway({}, async () => client)
+        .payment({ ...order(platform), productKey, checkoutMode: "qr" });
+    }
+  });
+}

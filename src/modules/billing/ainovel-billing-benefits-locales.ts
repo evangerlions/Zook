@@ -33,3 +33,27 @@ export const FREE_ALLOWANCE_MULTIPLIER: Record<string, string> = {
   "nl-NL": " ({multiple} keer het gratis tegoed)", "sv-SE": " ({multiple} gånger gratiskvoten)",
   "bn-BD": " (ফ্রি কোটার {multiple} গুণ)", "sw-KE": " (mara {multiple} ya kiwango cha bure)",
 };
+
+
+/** Membership access is shared; this does not promise work-data synchronization. */
+export const CROSS_PLATFORM_MEMBERSHIP: Record<string, string> = {
+  "zh-CN": "会员权益三端互通", "zh-TW": "會員權益三端互通",
+  "en-US": "Membership benefits across all three platforms",
+  "ja-JP": "会員特典は3つのプラットフォームで共通",
+  "ko-KR": "세 플랫폼에서 멤버십 혜택 공유",
+  "es-ES": "Ventajas de miembro en las tres plataformas",
+  "pt-BR": "Benefícios de membro nas três plataformas",
+  "de-DE": "Mitgliedschaftsvorteile auf allen drei Plattformen",
+  "fr-FR": "Avantages membres sur les trois plateformes",
+  "hi-IN": "तीनों प्लेटफ़ॉर्म पर सदस्यता के लाभ",
+  "id-ID": "Manfaat keanggotaan di ketiga platform",
+  "it-IT": "Vantaggi dell’abbonamento su tutte e tre le piattaforme",
+  "tr-TR": "Üç platformda da üyelik avantajları",
+  "vi-VN": "Quyền lợi thành viên dùng chung trên cả ba nền tảng",
+  "th-TH": "ใช้สิทธิประโยชน์สมาชิกได้ทั้งสามแพลตฟอร์ม",
+  "pl-PL": "Korzyści członkostwa na wszystkich trzech platformach",
+  "nl-NL": "Lidmaatschapsvoordelen op alle drie de platforms",
+  "sv-SE": "Medlemsförmåner på alla tre plattformar",
+  "bn-BD": "তিনটি প্ল্যাটফর্মেই সদস্যপদের সুবিধা",
+  "sw-KE": "Manufaa ya uanachama kwenye majukwaa yote matatu",
+};

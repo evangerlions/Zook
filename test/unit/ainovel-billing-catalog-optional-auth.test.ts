@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
 import { createApplication } from "../support/create-test-application.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 
@@ -27,7 +29,8 @@ test("catalog exposes public prices without membership reads; UserInfo owns pers
   assert.equal(guest.statusCode, 200);
   assert.equal(guest.body.data.products.length, 6);
   const offer = guest.body.data.products[0].providers[0];
-  assert.deepEqual(offer.price, { amountMinor: 3800, currency: "CNY" });
+  assert.deepEqual(offer.price, { amountMinor: 3800, currency: "CNY",
+    localizedDisplay: "¥38.00" });
   assert.equal(offer.available, true);
   assert.equal(offer.blockedReason, null);
   assert.equal(Object.hasOwn(guest.body.data, "membership"), false);

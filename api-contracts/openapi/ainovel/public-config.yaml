@@ -323,6 +323,19 @@ components:
       type: object
       additionalProperties: true
       properties:
+        appReview:
+          type: object
+          description: Optional review invitation configuration; missing or disabled values turn the feature off.
+          properties:
+            enabled: { type: boolean }
+            markets:
+              type: object
+              description: Market IDs are app_store, google_play, xiaomi, vivo, oppo, huawei, and honor; domestic URLs must be verified before enabling.
+              additionalProperties:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  url: { type: string, description: Verified https or market URL for domestic app listing. }
         app:
           type: string
           example: make_ai_novel_great_again

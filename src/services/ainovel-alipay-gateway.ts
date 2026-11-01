@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { AlipaySdk } from "alipay-sdk";
+import { alipayProductName } from "../modules/billing/alipay-product-name.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import { normalizeAlipayPrivateKey } from "../modules/billing/alipay-key-format.ts";
 import type { AlipayGateway, AlipayOptions, AlipayOrder, AlipayPayment } from "../modules/billing/alipay-models.ts";
@@ -16,19 +17,27 @@ export class OfficialAlipayGateway implements AlipayGateway {
         return new AlipaySdk({ appId: this.options.appId!, privateKey: normalizeAlipayPrivateKey(privateKey), alipayPublicKey,
           keyType: "PKCS8", signType: "RSA2", camelcase: false,
           gateway: this.options.environment === "sandbox" ? "https://openapi-sandbox.dl.alipaydev.com/gateway.do" : "https://openapi.alipay.com/gateway.do",
-          timeout: 8000 });
+          timeout: 20_000 });
       });
   }
   async payment(order: AlipayOrder): Promise<AlipayPayment> {
     const sdk = await this.client();
     const bizContent = { out_trade_no: order.orderId, ...(order.sellerId ? { seller_id: order.sellerId } : {}),
-      total_amount: (order.amountMinor / 100).toFixed(2), subject: `OrangeWrite ${order.productKey}`,
+      total_amount: (order.amountMinor / 100).toFixed(2), subject: alipayProductName(order.productKey),
       time_expire: new Date(Date.parse(order.expiresAt) + 8 * 3600000).toISOString().slice(0, 19).replace("T", " "),
       product_code: order.platform === "android" ? "QUICK_MSECURITY_PAY" : "QUICK_WAP_WAY" };
     const params = { bizContent, notifyUrl: this.options.notifyUrl, returnUrl: this.options.returnUrl };
     if (order.platform === "android") return { type: "app", orderString: sdk.sdkExecute("alipay.trade.app.pay", params) };
     if (order.platform === "web" && order.checkoutMode === "mobile_web") {
       return { type: "page", url: sdk.pageExecute("alipay.trade.wap.pay", "GET", params) };
+    }
+    if (order.platform === "web" && order.checkoutMode === "desktop_web") {
+      // No returnUrl: the cashier must not navigate the merchant's parent page.
+      // Order query/notify remains the only settlement authority.
+      return { type: "page", url: sdk.pageExecute("alipay.trade.page.pay", "GET", {
+        notifyUrl: this.options.notifyUrl,
+        bizContent: { ...bizContent, product_code: "FAST_INSTANT_TRADE_PAY", qr_pay_mode: "4", qrcode_width: 220 },
+      }) };
     }
     try {
       const { product_code: _unused, ...qrContent } = bizContent;
@@ -43,10 +52,13 @@ export class OfficialAlipayGateway implements AlipayGateway {
       throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay QR checkout unavailable.");
     }
   }
-  async query(orderId: string): Promise<Record<string, unknown>> {
+  async query(orderId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    signal?.throwIfAborted();
     try {
-      return await (await this.client()).exec("alipay.trade.query", { bizContent: {
+      const response = await (await this.client()).exec("alipay.trade.query", { bizContent: {
         out_trade_no: orderId, query_options: ["trade_settle_info"] } }, { validateSign: true });
+      signal?.throwIfAborted();
+      return response;
     } catch (error) {
       // The SDK's exception can embed raw signed response data. Never propagate it to request logs.
       const invalidSignature = error instanceof Error && error.message.startsWith("验签失败");

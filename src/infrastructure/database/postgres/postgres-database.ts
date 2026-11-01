@@ -107,6 +107,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private get alipayOrders() { return new PostgresAlipayOrders((sql, values) => this.query(sql, values)); }
   override findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
   override findAiNovelAlipayIdempotency(user: string, key: string) { return this.alipayOrders.findIdempotency(user, key); }
+  override listAiNovelAlipayOrders(user: string, filter: { before: string; after?: string; limit: number }) { return this.alipayOrders.listOrders(user, filter); }
   override listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
   override listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) { return this.alipayOrders.listRecovery(environment, merchant, seller, limit); }
   override saveAiNovelAlipayOrder(order: AlipayOrder) { return this.alipayOrders.save(order); }

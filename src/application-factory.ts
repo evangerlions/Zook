@@ -1,4 +1,6 @@
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
+
+import { billingSandboxAllowed } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -112,14 +114,14 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
   const aiNovelBillingService = new AiNovelBillingService(database, {
-    alipay: options.alipay ?? alipayEnvironmentOptions(),
+    alipay: { ...(options.alipay ?? alipayEnvironmentOptions()), allowSandbox: options.billingEnvironment?.allowSandbox ?? billingSandboxAllowed() },
     secretApiKey: options.revenueCat?.secretApiKey ?? process.env.REVENUECAT_AI_NOVEL_SECRET_API_KEY,
     revenueCatProjectId: options.revenueCat?.projectId ?? process.env.REVENUECAT_AI_NOVEL_PROJECT_ID,
     webhookAuthorization: options.revenueCat?.webhookAuthorization ?? process.env.REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION,
     revenueCatAppId: options.revenueCat?.appId ?? process.env.REVENUECAT_AI_NOVEL_APP_ID,
     revenueCatGoogleAppId: options.revenueCat?.googleAppId ?? process.env.REVENUECAT_AI_NOVEL_GOOGLE_APP_ID,
-    allowSandbox: options.revenueCat?.allowSandbox ??
-      process.env.REVENUECAT_AI_NOVEL_ALLOW_SANDBOX === "true",
+    allowSandbox: (options.billingEnvironment?.allowSandbox ?? billingSandboxAllowed()) &&
+      (options.revenueCat?.allowSandbox ?? process.env.REVENUECAT_AI_NOVEL_ALLOW_SANDBOX === "true"),
     fetcher: options.revenueCat?.fetcher,
     timeoutMs: options.revenueCat?.timeoutMs,
     now: options.revenueCat?.now,
@@ -533,7 +535,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     kvManager,
     aiNovelBillingService,
     frogsleepEnabled,
-    lighttickEnabled, lighttickRuntime,
+    lighttickEnabled, lighttickRuntime, options.billingEnvironment ?? { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" },
   );
   app.analyticsService = analyticsService;
   return {

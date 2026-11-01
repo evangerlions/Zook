@@ -31,6 +31,7 @@ export interface AdminBillingOrder {
   tier: string;
   billingPeriod: "P1M" | "P3M" | "P1Y" | null;
   purchaseSource: string;
+  market: string | null;
   amountMinor: number | null;
   currency: string | null;
   paymentStatus: BillingPaymentStatus;

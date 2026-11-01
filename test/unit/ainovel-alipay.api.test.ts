@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
+const productionTest = baseTest;
 import { createServer } from "node:http";
 import { createApplication } from "../support/create-test-application.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
@@ -25,7 +28,13 @@ async function fixture(overrides: Record<string, unknown> = {}) {
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const headers = { "x-app-id": "ai_novel", authorization: `Bearer ${token}` };
   const create = (body = { productKey: "plus_monthly", platform: "android", distribution: "direct_android", idempotencyKey: "test_key_0001" }) => runtime.app.handle({ method: "POST", path: ORDERS, headers, body });
-  const query = (id: string) => runtime.app.handle({ method: "GET", path: `${ORDERS}/${id}`, headers });
+  const query = async (id: string) => {
+    const sync = await runtime.app.handle({ method: "POST", path: "/api/v1/ai_novel/billing/sync", headers,
+      body: { provider: "alipay", purchaseReference: { kind: "alipay_order", id } } });
+    if (sync.statusCode !== 200) return sync;
+    const read = await runtime.app.handle({ method: "GET", path: `${ORDERS}/${id}`, headers });
+    return { ...read, body: { ...read.body, data: { ...read.body.data, syncStatus: sync.body.data.syncStatus } } };
+  };
   const fields = (id: string, extra: Record<string, string> = {}) => ({ out_trade_no: id, app_id: "merchant", seller_id: "seller", trade_no: "202610040000000001", total_amount: "38.00", trade_status: "TRADE_SUCCESS", gmt_payment: "2026-10-04 18:00:00", sign_type: "RSA2", sign: "test_valid", ...extra });
   const notify = (id: string, extra?: Record<string, string>) => runtime.app.handle({ method: "POST", path: NOTIFY, headers: { "content-type": "application/x-www-form-urlencoded" }, body: Buffer.from(new URLSearchParams(fields(id, extra)).toString()) });
   return { ...runtime, create, query, notify, fields, setResponse: (value: Record<string, unknown>) => { response = value; }, headers };
@@ -42,6 +51,51 @@ test("Alipay authenticated routes persist pending and replay owned idempotency w
   const list = await admin.listOrders({ provider: "alipay", status: "pending", distribution: "direct_android", checkoutId: id });
   assert.equal(list.items.length, 1); assert.equal(list.items[0].paymentStatus, "pending");
   assert.equal((await admin.listOrders({ status: "provider_paid" })).items.length, 0);
+});
+
+test("checkout display is localized without changing owned order money or idempotency", async () => {
+  const f = await fixture();
+  await f.database.upsertAppConfig({ id: "checkout_display", appId: "ai_novel", configKey: "ai_novel.billing_benefits",
+    configValue: JSON.stringify({ products: { plus_monthly: { displayName: { "en-US": "Server product" } } },
+      checkoutDisplay: { hint: { "en-US": "Server hint" }, amountText: { "en-US": "not money" } } }), updatedAt: NOW.toISOString() });
+  const first = await f.create();
+  assert.equal(first.statusCode, 200);
+  assert.equal(first.body.data.display.productName, "Server product");
+  assert.equal(first.body.data.display.hint, "Server hint");
+  assert.equal(first.body.data.display.amountText, "¥38.00");
+  assert.equal(first.body.data.order.amountMinor, 3800);
+  assert.equal((await f.create()).body.data.order.orderId, first.body.data.order.orderId);
+});
+
+test("invalid optional display never blocks new orders or owned idempotent replay", async () => {
+  const f = await fixture();
+  const first = await f.create();
+  const id = first.body.data.order.orderId;
+  const values = [
+    '{"display":{"title":"Membership"},"checkoutDisplay":{"hint":{"en-US":"Valid hint"}}}',
+    '{"checkoutDisplay":{"title":123,"hint":false,"waiting":{"en-US":"Still waiting"}},"products":{"plus_monthly":{"displayName":[]}}}',
+    '{broken json', 'null', '[]',
+  ];
+  for (const configValue of values) {
+    await f.database.upsertAppConfig({ id: "invalid_checkout_display", appId: "ai_novel", configKey: "ai_novel.billing_benefits",
+      configValue, updatedAt: NOW.toISOString() });
+    const replay = await f.create();
+    assert.equal(replay.statusCode, 200, configValue);
+    assert.equal(replay.body.data.order.orderId, id);
+    assert.equal(replay.body.data.order.amountMinor, 3800);
+    if (configValue === values[0]) assert.equal(replay.body.data.display.hint, "Valid hint");
+    else assert.equal(replay.body.data.display.title, null);
+    if (configValue === values[1]) {
+      assert.equal(replay.body.data.display.hint, null);
+      assert.equal(replay.body.data.display.productName, null);
+      assert.equal(replay.body.data.display.waiting, "Still waiting");
+    }
+    const fresh = await f.create({ productKey: "plus_monthly", platform: "android", distribution: "direct_android",
+      idempotencyKey: `new_display_fallback_${values.indexOf(configValue)}` });
+    assert.equal(fresh.statusCode, 200, configValue);
+    assert.notEqual(fresh.body.data.order.orderId, id);
+    assert.equal(fresh.body.data.order.amountMinor, 3800);
+  }
 });
 
 test("legacy alp orders remain queryable and settle without rewriting their IDs", async () => {
@@ -157,7 +211,7 @@ test("failed native signing is terminal without leaking SDK errors", async () =>
   const gateway: AlipayGateway = { payment: async () => { throw new Error("SECRET_PROVIDER_PAYLOAD"); }, query: async () => { throw new Error("must_not_query"); }, verifyNotify: async () => false };
   const f = await fixture({ gateway }); assert.equal((await f.create()).statusCode, 503);
   const row = (await new AiNovelBillingAdminService(f.database).listOrders({ status: "failed" })).items[0];
-  const query = await f.query(row.checkoutId!); assert.equal(query.body.data.order.status, "failed"); assert.equal(query.body.data.syncStatus, "synchronized");
+  const query = await f.query(row.checkoutId!); assert.equal(query.body.data.order.status, "failed"); assert.equal(query.body.data.syncStatus, "complete");
   assert.ok(!JSON.stringify(f.logger.records).includes("SECRET_PROVIDER_PAYLOAD"));
 });
 
@@ -195,7 +249,7 @@ test("RC synchronization cannot erase expired Alipay or its active Plus fallback
   let time = new Date("2026-11-05T10:00:00Z");
   const service = new AiNovelBillingService(f.database, { secretApiKey: "test", revenueCatProjectId: "proj_test", revenueCatAppId: "rc_test", now: () => time,
     fetcher: fixtureFetcher(async () => Response.json(snapshot({ entitlements: {}, subscriptions: {} })), "rc_test") }, f.logger);
-  const sync = () => service.sync({ userId: "user_alice", requestId: "fallback_test", reason: "retry" });
+  const sync = () => service.syncMembership({ provider: "revenuecat", userId: "user_alice", requestId: "fallback_test", reason: "retry" });
   assert.equal((await sync()).membership.planKey, "plus_yearly"); assert.equal((await service.getMembership("user_alice")).active, true);
   time = new Date("2027-11-05T10:00:00Z");
   const expired = (await sync()).membership; assert.equal(expired.active, false); assert.equal(expired.source, "alipay"); assert.equal(expired.state, "expired");
@@ -231,4 +285,39 @@ test("actual HTTP form Buffer acknowledgement is exactly success, bounded, and l
     const oversized = await fetch(`http://127.0.0.1:${address.port}${NOTIFY}`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "a=" + "x".repeat(16384) }); assert.equal(oversized.status, 400);
     const logs = JSON.stringify(f.logger.records); assert.ok(logs.includes("notify_settled")); assert.ok(!logs.includes("secret_checkout_payload")); assert.ok(!logs.includes("test_valid"));
   } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+
+test("desktop cashier mode persists, replays and cannot cross platform or mode", async () => {
+  const f = await fixture();
+  const body = { productKey: "plus_monthly", platform: "web", distribution: "web",
+    idempotencyKey: "desktop_cashier_01", checkoutMode: "desktop_web" };
+  const create = (input: unknown) => f.app.handle({ method: "POST", path: ORDERS, headers: f.headers, body: input });
+  const first = await create(body);
+  assert.equal(first.statusCode, 200);
+  const id = first.body.data.order.orderId;
+  assert.equal(first.body.data.payment.type, "page");
+  assert.equal((await f.database.findAiNovelAlipayOrder(id))!.checkoutMode, "desktop_web");
+  assert.equal((await create(body)).body.data.order.orderId, id);
+  assert.equal((await create({ ...body, checkoutMode: "qr" })).statusCode, 409);
+  for (const [platform, distribution] of [["windows", "windows"], ["android", "direct_android"]]) {
+    assert.equal((await create({ ...body, platform, distribution })).statusCode, 400);
+  }
+});
+
+test('Alipay market attribution is persisted independently, frozen on replay and retained during settlement',async()=>{
+  const f=await fixture();
+  const input={productKey:'plus_yearly',platform:'android',distribution:'china_android_store',idempotencyKey:'market_key_123',market:'xiaomi'};
+  const create=(body:Record<string,unknown>)=>f.app.handle({method:'POST',path:ORDERS,headers:f.headers,body});
+  const response=await create(input);assert.equal(response.statusCode,200);
+  const id=response.body.data.order.orderId;
+  assert.equal((await f.database.findAiNovelAlipayOrder(id))?.market,'xiaomi');
+  assert.equal((await create({...input,market:'vivo'})).statusCode,409);
+  assert.equal((await create({...input,market:'app_store'})).statusCode,400);
+  f.setResponse({...f.fields(id,{total_amount:'298.00'}),code:'10000'});
+  assert.equal((await f.query(id)).body.data.order.status,'paid');
+  assert.equal((await f.database.listAiNovelBillingTransactions('ai_novel','user_alice')).find(tx=>tx.checkoutId===id)?.market,'xiaomi');
+  const admin=new AiNovelBillingAdminService(f.database);
+  assert.equal((await admin.listOrders({checkoutId:id})).items[0].market,'xiaomi');
+  await f.close();
 });

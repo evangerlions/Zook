@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
 import { RevenueCatCustomerApi } from "../../src/services/ainovel-revenuecat-client.ts";
 import { RevenueCatV2ReadSession } from "../../src/services/ainovel-revenuecat-read-session.ts";
 import { normalizeRevenueCatSnapshot } from "../../src/modules/billing/ainovel-revenuecat-normalizer.ts";
@@ -144,15 +146,21 @@ test("overlapping lookups keep start order even if the earlier lookup finishes l
   let productCalls = 0;
   let productReached!: () => void;
   const reached = new Promise<void>(resolve => { productReached = resolve; });
+  let clock = new Date("2026-09-24T00:00:00.000Z");
   const api = new RevenueCatCustomerApi({ secretApiKey: "unit-test-key", projectId: "proj_test", appId: "app_test",
-    now: () => new Date("2026-09-24"),
+    now: () => clock,
     fetcher: async (input, init) => {
       if (String(input).includes("/products/") && ++productCalls === 1) { productReached(); await blocked; }
       return fixture(input, init);
     } });
   const earlier = api.getSnapshot("user");
   await reached;
+  clock = new Date("2026-09-24T00:00:01.000Z");
   const later = await api.getSnapshot("user");
+  clock = new Date("2026-09-24T00:00:02.000Z");
   release();
-  assert.ok((await earlier).observedAt < later.observedAt);
+  const earlierResult = await earlier;
+  assert.equal(earlierResult.observedAt, "2026-09-24T00:00:00.000Z");
+  assert.equal(later.observedAt, "2026-09-24T00:00:01.000Z");
+  assert.ok(earlierResult.observedAt < later.observedAt);
 });

@@ -91,7 +91,7 @@ test("revenue defaults production, preserves deleted financial records, separate
   ]) await runtime.database.upsertAiNovelBillingTransaction(row);
   // Retried observations must not duplicate amounts.
   await runtime.database.upsertAiNovelBillingTransaction(transaction("cny", { amountMinor: 3800, currency: "CNY", source: "play_store" }));
-  const response = await runtime.get("overview", window);
+  const response = await runtime.get("overview", { ...window, groupBy: "appId,source" });
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.environment, "PRODUCTION");
   const usd = response.body.data.rows.find((row: { currency: string }) => row.currency === "USD");
@@ -146,7 +146,7 @@ test("Postgres revenue aggregates in SQL with parameters, excludes unknown envir
     sql = text; params = values;
     return { rows: [{ date: "2026-09-10", app_id: "ai_novel", source: "app_store", currency: "USD", purchase_count: "2", gross_minor: "1998", refund_minor: "0" }], rowCount: 1, command: "SELECT", oid: 0, fields: [] };
   }, { ...window, sandbox: false });
-  assert.match(sql, /GROUP BY date, app_id, source, currency/); assert.match(sql, /is_sandbox = \$3/);
+  assert.match(sql, /GROUP BY date, currency, app_id/); assert.match(sql, /is_sandbox = \$3/);
   assert.match(sql, /AT TIME ZONE 'UTC'/); assert.match(sql, /UNION ALL/); assert.equal(rows[0].date, "2026-09-10");
   assert.match(sql, /refunded_at >= \$1/); assert.deepEqual(params, [window.from, window.to, false]); assert.equal(rows[0].grossMinor, 1998);
   await assert.rejects(queryBillingRevenue(async () => ({ rows: [{ purchase_count: "1", gross_minor: "9007199254740992", refund_minor: "0" }], rowCount: 1, command: "SELECT", oid: 0, fields: [] }), { ...window, sandbox: false }), /safe integer/);
@@ -163,5 +163,97 @@ test("Postgres membership expiry filtering occurs before LIMIT with parameterize
   assert.match(sql, /expires_at <= \$5::timestamptz/);
   assert.match(sql, /expires_at > \$5::timestamptz/);
   assert.ok(sql.indexOf("expires_at <=") < sql.indexOf("LIMIT"));
-  assert.deepEqual(params, [null, null, 2, "expired", "2026-10-11T12:00:00Z"]);
+  assert.deepEqual(params, [null, null, 2, "expired", "2026-10-11T12:00:00Z", "production"]);
+});
+
+
+test("revenue dimensions combine products and sources by default and split only selected dimensions", async () => {
+  const records = [transaction("a"), transaction("b", {productKey:"pro_yearly"}),
+    transaction("c", {source:"play_store"}), transaction("d", {source:"play_store",productKey:"pro_yearly"})];
+  const base = {...window,sandbox:false};
+  const defaults = aggregateBillingRevenue(records,base);
+  assert.equal(defaults.length,1);
+  assert.equal(defaults[0].appId,"ai_novel");
+  assert.equal(defaults[0].source,null);
+  assert.equal(defaults[0].productKey,null);
+  assert.equal(defaults[0].purchaseCount,4);
+  for (const groupBy of [["appId","productKey"],["appId","source"],["source"],["productKey"]] as const) {
+    const rows = aggregateBillingRevenue(records,{...base,groupBy:[...groupBy]});
+    assert.equal(rows.length,2);
+    assert.equal(rows.reduce((sum,row)=>sum+row.grossMinor,0),3996);
+  }
+  const detailed = aggregateBillingRevenue(records,{...base,groupBy:["appId","productKey","source"]});
+  assert.equal(detailed.length,4);
+  assert.equal(new Set(detailed.map(row=>`${row.productKey}:${row.source}`)).size,4);
+  const runtime = await setup();
+  for(const record of records) await runtime.database.upsertAiNovelBillingTransaction(record);
+  const response = await runtime.get("overview",{...window,groupBy:"source,productKey,appId"});
+  assert.equal(response.statusCode,200);
+  assert.deepEqual(response.body.data.groupBy,["appId","productKey","source"]);
+  assert.equal(response.body.data.rows.length,4);
+  const defaultResponse = await runtime.get("overview",window);
+  assert.deepEqual(defaultResponse.body.data.groupBy,["appId"]);
+  assert.equal(defaultResponse.body.data.rows.length,1);
+  for(const groupBy of ["","unknown","appId,appId","source,","appId; DROP TABLE users"]){
+    assert.equal((await runtime.get("overview",{...window,groupBy})).statusCode,400);
+  }
+  await runtime.close();
+});
+
+test("Postgres grouping uses only selected whitelist fields in purchase and refund aggregation", async () => {
+  let sql="";
+  await queryBillingRevenue(async text=>{sql=text;return {rows:[],rowCount:0,command:"SELECT",oid:0,fields:[]};},
+    {...window,sandbox:true,groupBy:["productKey","source"]});
+  assert.match(sql,/NULL::text AS app_id, product_key, source/);
+  assert.match(sql,/GROUP BY date, currency, product_key, source ORDER BY/);
+  assert.equal((sql.match(/app_id, product_key, source, market, currency, [01] AS/g)??[]).length,2);
+});
+
+
+test("membership admin respects selected environment before pagination and expiry filtering", async () => {
+  const runtime=await setup();
+  const member={appId:"ai_novel" as const,userId:"member_environment",active:true,state:"active" as const,tier:"plus" as const,
+    planKey:"plus_yearly",expiresAt:"2099-01-01T00:00:00Z",autoRenew:false,source:"alipay" as const,
+    managementUrl:null,lastSyncedAt:new Date().toISOString(),accountDeletedAt:null};
+  await runtime.database.upsertAiNovelBillingMembership({...member,environment:"sandbox"});
+  await runtime.database.upsertAiNovelBillingMembership({...member,environment:"production",active:false,state:"expired",expiresAt:"2020-01-01T00:00:00Z"});
+  for(const environment of ["PRODUCTION","SANDBOX"]){
+    const response=await runtime.get("memberships",{environment,userId:member.userId,limit:"1"});
+    assert.equal(response.statusCode,200);
+    assert.equal(response.body.data.items.length,1);
+    const item=response.body.data.items[0];
+    assert.equal(item.environment,environment.toLowerCase());
+    assert.equal(item.active,environment==="SANDBOX");
+    const expired=await runtime.get("memberships",{environment,userId:member.userId,expiry:"expired"});
+    assert.equal(expired.body.data.items.length,environment==="PRODUCTION"?1:0);
+  }
+  for(const environment of ["","all","invalid"]){
+    assert.equal((await runtime.get("memberships",{environment})).statusCode,400);
+  }
+  assert.equal((await runtime.get("memberships",{userId:member.userId})).body.data.items[0].environment,"production");
+  await runtime.close();
+});
+
+test("payment source is a distinct dimension and market must not alias it", async()=>{
+  const runtime=await setup();
+  await runtime.database.upsertAiNovelBillingTransaction(transaction('source_dimension'));
+  const response=await runtime.get('overview',{...window,groupBy:'appId,productKey,source'});
+  assert.equal(response.statusCode,200);
+  assert.deepEqual(response.body.data.groupBy,['appId','productKey','source']);
+  assert.equal(response.body.data.rows[0].source,'app_store');
+  const market=await runtime.get('overview',{...window,groupBy:'market'});
+  assert.equal(market.statusCode,200);
+  assert.equal(market.body.data.rows[0].market,'app_store');
+  assert.equal(market.body.data.rows[0].source,null);
+  await runtime.close();
+});
+
+test('market grouping separates Xiaomi and vivo purchases using the same Alipay source and preserves unknown provenance',()=>{
+  const records=[transaction('xiaomi',{source:'alipay',market:'xiaomi'}),transaction('vivo',{source:'alipay',market:'vivo'}),transaction('legacy',{source:'alipay',market:null})];
+  const base={...window,sandbox:false};
+  const grouped=aggregateBillingRevenue(records,{...base,groupBy:['source','market']});
+  assert.equal(grouped.length,3);
+  assert.deepEqual(new Set(grouped.map(row=>row.market)),new Set(['xiaomi','vivo',null]));
+  assert.ok(grouped.every(row=>row.source==='alipay'));
+  assert.equal(aggregateBillingRevenue(records,{...base,groupBy:['source']})[0].purchaseCount,3);
 });

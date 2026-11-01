@@ -1,3 +1,4 @@
+import * as billingTerms from "../../apps/admin-web/app/lib/billing-terms.ts";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -41,6 +42,7 @@ test("billing page owns one top-level environment selector and restores it on re
   let index = 0;
   const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
   const modules: Record<string, unknown> = {
+    "../lib/billing-terms": billingTerms,
     "react": { useEffect: () => undefined, useState: (initial: any) => {
       const position = index++;
       if (!(position in cells)) cells[position] = typeof initial === "function" ? initial() : initial;
@@ -67,7 +69,7 @@ test("billing page owns one top-level environment selector and restores it on re
   let tree = render();
   const filters = tree.props.children[1];
   const application = filters.props.children.find((node: any) => node?.props?.["aria-label"] === "支付应用筛选");
-  const environment = filters.props.children.find((node: any) => node?.props?.["aria-label"] === "统计环境");
+  const environment = filters.props.children.find((node: any) => node?.props?.["aria-label"] === "支付环境");
   assert.ok(application && environment, "both selectors must share the top filter row");
   environment.props.onChange("SANDBOX");
   assert.equal(saved, "SANDBOX");
@@ -76,10 +78,11 @@ test("billing page owns one top-level environment selector and restores it on re
   const tabs = tree.props.children[3].props.children[1];
   assert.equal(tabs.props.items[0].children.props.environment, "SANDBOX");
   assert.equal(tabs.props.items[0].children.props.appId, "ai_novel");
+  assert.equal(tabs.props.items[1].children.props.environment, "SANDBOX");
   cells = []; // A browser refresh remounts the page.
   tree = render();
-  assert.equal(tree.props.children[1].props.children.find((node: any) => node?.props?.["aria-label"] === "统计环境").props.value, "SANDBOX");
+  assert.equal(tree.props.children[1].props.children.find((node: any) => node?.props?.["aria-label"] === "支付环境").props.value, "SANDBOX");
   const overview = await readFile(new URL("../../apps/admin-web/app/components/billing-overview-section.tsx", import.meta.url), "utf8");
-  assert.doesNotMatch(overview, /aria-label="统计环境"|setEnvironment/);
+  assert.doesNotMatch(overview, /setEnvironment/);
   assert.match(overview, /const query = \{ appId, environment,/);
 });

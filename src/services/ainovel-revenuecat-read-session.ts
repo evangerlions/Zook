@@ -6,7 +6,7 @@ const MAX_PAGES = 50;
 export class RevenueCatV2ReadSession {
   private readonly root: string;
   constructor(projectId: string, private readonly key: string,
-    private readonly fetcher: typeof fetch, private readonly signal: AbortSignal) {
+    private readonly fetcher: typeof fetch, private readonly signal: AbortSignal, private readonly timeoutMs = 20_000) {
     this.root = `/v2/projects/${encodeURIComponent(projectId)}`;
   }
   items(value: unknown): RevenueCatResource[] {
@@ -37,9 +37,13 @@ export class RevenueCatV2ReadSession {
   private url(path: string): URL { return new URL(`${this.root}${path}`, ORIGIN); }
   private async read(url: URL): Promise<RevenueCatResource> {
     this.signal.throwIfAborted();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const signal = AbortSignal.any([this.signal, controller.signal]);
+    try {
     const response = await this.fetcher(url.href, {
       method: "GET", headers: { Accept: "application/json", Authorization: `Bearer ${this.key}` },
-      redirect: "error", signal: this.signal,
+      redirect: "error", signal,
     });
     if (!response.ok) throw new RevenueCatApiError("request_failed", {
       httpStatus: response.status, failureKind: "http_error",
@@ -51,10 +55,15 @@ export class RevenueCatV2ReadSession {
       if (Buffer.byteLength(text, "utf8") > MAX_RESPONSE_BYTES) throw new Error("oversized");
       const body: unknown = JSON.parse(text);
       if (!isObject(body)) throw new Error("invalid object");
+      signal.throwIfAborted();
       return body;
     } catch {
-      this.signal.throwIfAborted();
+      signal.throwIfAborted();
       throw new RevenueCatApiError("invalid_response", { httpStatus: response.status });
     }
+    } catch (error) {
+      if (controller.signal.aborted) throw new RevenueCatApiError("request_failed", { failureKind: "timeout" });
+      throw error;
+    } finally { clearTimeout(timer); }
   }
 }

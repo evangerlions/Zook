@@ -166,11 +166,13 @@ test("AINovel billing admin provider_paid filter uses displayed payment evidence
 });
 
 test("AINovel billing admin detail returns provider evidence and event timeline", async () => {
+  // This detail fixture describes a sandbox transaction.
   const runtime = await createApplication(adminOptions);
   await runtime.database.upsertAiNovelBillingTransaction(
     { ...transaction("tx_001", "2026-09-23T10:00:00.000Z"), accountDeletedAt: "2026-09-24T00:00:00.000Z" },
   );
   await runtime.database.upsertAiNovelBillingMembership({
+    environment: "sandbox",
     appId: "ai_novel",
     userId: "user_alice",
     active: true,
