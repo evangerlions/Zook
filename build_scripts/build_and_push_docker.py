@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+import grow_deploy
 
 
 DEFAULT_TAG_SUFFIX = "localdeploy"
@@ -621,6 +622,14 @@ def resolve_project_name(image_name: str, slot_name: str) -> str:
 
 def resolve_current_release(project_name: str, state_file: Path) -> dict[str, str] | None:
     running_image = get_service_image(project_name, "api")
+    active = load_state(state_file).get("active_release")
+    if isinstance(active, dict) and active.get("group_version") == 1:
+        expected = active.get("images", {}).get("api")
+        if running_image in (expected, active.get("image")):
+            return active
+        if running_image:
+            raise ScriptError("Running image differs from the stored release group; reconcile before deploying.")
+        return active  # Missing containers must never stringify/bypass group recovery.
     if running_image:
         release = release_from_image(running_image)
         if release:
@@ -724,19 +733,23 @@ def collect_preserved_release_images(deploy_root: Path) -> set[str]:
     if not deploy_root.exists():
         return preserved
 
-    for state_file in deploy_root.glob(f"*/{STATE_FILE_NAME}"):
+    for state_file in [*deploy_root.glob(f"*/{STATE_FILE_NAME}"), *deploy_root.glob("*/grow-pending.json")]:
         try:
             state = load_state(state_file)
         except (OSError, json.JSONDecodeError) as error:
-            print(f"warning: failed to read deployment state {state_file}: {error}")
-            continue
+            raise ScriptError(f"Cannot safely clean images: unreadable deployment state {state_file}") from error
 
-        for key in ("active_release", "previous_release"):
+        for key in ("active_release", "previous_release", "target", "previous"):
             release = state.get(key)
             if isinstance(release, dict):
                 image_ref = release.get("image")
                 if isinstance(image_ref, str) and image_ref.strip():
                     preserved.add(image_ref.strip())
+                for image in release.get("images", {}).values():
+                    if isinstance(image,str): preserved.add(image)
+                for component in release.get("components", {}).values():
+                    if isinstance(component,dict) and isinstance(component.get("build_ref"),str):
+                        preserved.add(component["build_ref"])
 
     return preserved
 
@@ -778,6 +791,14 @@ def cleanup_old_release_images(
     for image_ref, _created_at in managed_images:
         if image_ref in protected_images:
             continue
+        if any(value.startswith("sha256:") for value in protected_images):
+            try:
+                identity = command_output(["docker","image","inspect",image_ref,"--format","{{.Id}}"])
+                if identity in protected_images:
+                    continue
+            except subprocess.CalledProcessError:
+                # Unknown identity must never be cleaned while release groups reference IDs.
+                continue
         try:
             run_command(["docker", "image", "rm", image_ref])
             removed_images.append(image_ref)
@@ -897,6 +918,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_TAG_SUFFIX,
         help=f"Suffix appended to the generated image tag. Default: {DEFAULT_TAG_SUFFIX}.",
     )
+    parser.add_argument("--compose-overlay",action="append",default=[],help="Optional additional Compose file; captured in Grow release snapshots.")
     parser.add_argument(
         "--skip-git-sync",
         action="store_true",
@@ -959,7 +981,7 @@ def main() -> int:
     project_name = resolve_project_name(image_name, slot_name)
     branch = resolve_branch(repo_root, args.branch)
     warn_legacy_network_mode(os.getenv("DEPLOY_NETWORK_MODE"))
-    compose_files = [compose_file]
+    compose_files = [compose_file] + [ensure_existing_file(repo_root / value,"Compose overlay") for value in args.compose_overlay]
     keep_releases = resolve_keep_releases(args)
     builder_prune_until = resolve_builder_prune_until(args)
     dirty_checkout = assert_repo_ready_for_sync(repo_root, skip_git_sync=args.skip_git_sync, allow_dirty=args.allow_dirty)
@@ -984,6 +1006,10 @@ def main() -> int:
             print("warning: repository has uncommitted changes, tagging image as dirty.")
 
         image_full_name = f"{image_name}:{image_tag}"
+        if not args.dry_run and (state_dir / "grow-pending.json").exists():
+            if grow_deploy.reconcile(state_file,state_dir / "grow-pending.json",deploy_root,sys.modules[__name__]):
+                print("Recovered pending Grow group; rerun the requested deployment after inspection.")
+                return 1
         previous_release = resolve_current_release(project_name, state_file)
 
         bind_ip = os.getenv("DEPLOY_HOST_BIND_IP", DEFAULT_BIND_IP).strip() or DEFAULT_BIND_IP
@@ -1040,6 +1066,16 @@ def main() -> int:
             health_path=health_path,
             admin_health_path=admin_health_path,
         )
+
+        if os.getenv("GROW_DEPLOY_ENABLED") == "1" or ((previous_release or {}).get("group_version") == 1 and not (previous_release or {}).get("group_retired")) or (state_dir / "grow-pending.json").exists():
+            return grow_deploy.execute(repo=repo_root, args=args, project=project_name, slot=slot_name,
+                state_file=state_file, compose_files=compose_files, compose_env=compose_env,
+                new_release={"image":image_full_name,"image_name":image_name,"image_tag":image_tag,
+                             "branch":branch,"commit":commit_sha,"version":version or "","version_source":version_source or ""},
+                previous=previous_release,
+                health={"bind_ip":bind_ip,"host_port":host_port,"health_path":health_path,
+                        "admin_host_port":admin_host_port,"admin_health_path":admin_health_path},
+                engine=sys.modules[__name__])
 
         if args.dry_run:
             print("dry-run enabled, skip git-changing operations after planning, docker build, and docker compose up.")
@@ -1183,6 +1219,6 @@ if __name__ == "__main__":
         if error.stderr:
             print(error.stderr, file=sys.stderr, end="" if error.stderr.endswith("\n") else "\n")
         raise SystemExit(error.returncode)
-    except ScriptError as error:
+    except (ScriptError, ValueError) as error:
         print(error, file=sys.stderr)
         raise SystemExit(1)
