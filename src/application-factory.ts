@@ -101,9 +101,10 @@ import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-con
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
+  const yaoheziEnabled = options.yaoheziEnabled ?? process.env.YAOHEZI_ENABLED?.trim().toLowerCase() === "true";
   const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
   const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled, includeYaohezi: yaoheziEnabled });
   const {kvManager,managedStateStore,seed,database,lighttickRepository,cache,queue}=await createApplicationInfrastructure(options,baseSeed);
   const lighttickRuntime = createApplicationLightTickRuntime(lighttickRepository, queue);
   const localRunFileLogSink = createLocalRunFileLogSink({
@@ -536,6 +537,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     aiNovelBillingService,
     frogsleepEnabled,
     lighttickEnabled, lighttickRuntime, options.billingEnvironment ?? { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" },
+    yaoheziEnabled,
+    options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
   app.analyticsService = analyticsService;
   return {
