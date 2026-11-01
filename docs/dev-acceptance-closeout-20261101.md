@@ -62,7 +62,8 @@ FROGSLEEP_DEV_BASE_URL=https://app-dev.youwoai.net FROGSLEEP_DEV_ACCOUNT="$SMOKE
 新后台转发随Git镜像部署，通常无需改 Nginx 即可修复原SPA fallback。若外层代理并未转给本后台，或需关闭token日志，再由服务器所有者按 `deploy_configs/nginx/frogsleep-links.conf.example` 在对应HTTPS server应用精确location，核定端口、`nginx -t`后reload。不能假定新server已控制外层访问/错误日志。Sleep当前是自定义scheme接力；AASA/assetlinks及已安装/未安装行为仍独立验收，禁止复用HabitTap的应用身份。
 
 ```bash
-python3 build_scripts/frogsleep_domain_acceptance.py --base-url https://app-dev.youwoai.net --expected-version <本次实际版本>
+read -r -p '本次实际版本: ' ZOOK_VERIFIED_DEV_VERSION
+python3 build_scripts/frogsleep_domain_acceptance.py --base-url https://app-dev.youwoai.net --expected-version "$ZOOK_VERIFIED_DEV_VERSION"
 ```
 
 Grow仍缺本人管理的隔离dev HTTPS域名/证书、独立数据库/角色/Fernet密钥、测试GitHub来源凭据及显式账户绑定；未准备前保持GROW_DEPLOY_ENABLED=0。Render不改指向、不迁移个人历史。课程/笔记/计划同ID、账号隔离、重启重试六项实际故事完成后才能签验收回执和推进online。
