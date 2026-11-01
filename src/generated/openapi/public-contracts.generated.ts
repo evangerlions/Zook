@@ -54148,12 +54148,30 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
       "type": "string"
     },
     "date_anchor": {
-      "type": "string",
-      "format": "date"
+      "description": "Calendar night key; legacy ISO timestamps use their written calendar date without timezone conversion.",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
     },
     "dateAnchor": {
-      "type": "string",
-      "format": "date"
+      "description": "Compatibility alias for date_anchor.",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
     },
     "joint_activity_id": {
       "type": "string",
@@ -54184,8 +54202,8 @@ export type FrogSleepSharedSleepSessionRequest = (
 {
   "relationship_id": string;
   "relationshipId"?: string;
-  "date_anchor"?: string;
-  "dateAnchor"?: string;
+  "date_anchor"?: string | string;
+  "dateAnchor"?: string | string;
   "joint_activity_id"?: string;
   "jointActivityId"?: string;
   [key: string]: unknown;
@@ -54194,8 +54212,8 @@ export type FrogSleepSharedSleepSessionRequest = (
 {
   "relationship_id"?: string;
   "relationshipId": string;
-  "date_anchor"?: string;
-  "dateAnchor"?: string;
+  "date_anchor"?: string | string;
+  "dateAnchor"?: string | string;
   "joint_activity_id"?: string;
   "jointActivityId"?: string;
   [key: string]: unknown;
