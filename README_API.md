@@ -1606,3 +1606,14 @@ request on transport failures. Alipay QR polling invokes the same POST sync and
 never overlaps. Closing a wait does not cancel payment or erase committed facts.
 RevenueCat SDK purchase transaction identifiers are matched to verified REST V2
 subscription transaction `id`, as specified in the [official transaction reference](https://www.revenuecat.com/docs/api-v2/subscription-transactions). Old active access alone cannot confirm a new purchase.
+
+
+### BodyLog addressed group invitation codes (2026-11-01)
+
+`GET /api/v1/bodylog/public/config` advertises `groupInvitationCodes=true` when these contracts are implemented. Absent capability means the client must hide manual code joining. The `accountSocial` permission gate remains authoritative; capability does not enable production features.
+
+- `POST /api/v1/bodylog/groups/{groupId}/invite` accepts `{userId}` for a leader/admin and returns `{invited:true,code,expiresAt,invitationUrl,invitationToken}`. The six-character uppercase code is bound to the invited account and reuses the persisted addressed invitation grant, with a seven-day expiry. Renewing a pending invitation rotates its grant and invalidates the old code. The URL/token are not log or analytics data.
+- `GET /api/v1/bodylog/groups/preview?code=ABC234` requires the invited account and returns only `{id,name,currentMembers,maxMembers,expiresAt}`. It does not reveal habit/member data or join automatically. Wrong account, removed invitation or unknown code returns404; expired returns410; malformed returns400. Ambiguous codes fail closed. The bounded account lookup rejects excessive invitation records with429.
+- `POST /api/v1/bodylog/groups/join-by-code` accepts `{code,expectedGroupId?}`. A preview identity mismatch returns409 without writing. Success returns the direct group document. Repeated redemption by the same account returns the existing group, with no repeated joined activity. A fresh admission enforces the group capacity and per-account quota atomically in PostgreSQL. Removed/archived groups cannot be reopened by replay.
+
+No database migration is required. Existing group-member invitation tokens are retained after acceptance to recover same-account code retries during their original validity period; they are not returned in member lists, and removed/left records are ineligible. Concurrent renewal cannot turn an active member back into pending. Free/Premium limits remain 2/5 groups and 3/5 members. This source change does not certify deployment, signed device acceptance or real push delivery.

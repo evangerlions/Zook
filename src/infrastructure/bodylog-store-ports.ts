@@ -82,6 +82,8 @@ export interface BodyLogBuddyStore {
 }
 
 export interface BodyLogGroupStore {
+  listGroupInvitations(appId: string, userId: string): MaybePromise<GroupMemberRecord[]>;
+  activateGroupMember(record: GroupMemberRecord, token: string, groupLimit: number): MaybePromise<"joined" | "alreadyMember" | "full" | "limit" | "invalid">;
   insertCheckInGroup(record: CheckInGroupRecord): MaybePromise<void>;
   findCheckInGroup(groupId: string): MaybePromise<CheckInGroupRecord | undefined>;
   updateCheckInGroup(record: CheckInGroupRecord): MaybePromise<void>;
