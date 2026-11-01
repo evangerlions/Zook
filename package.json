@@ -52,8 +52,13 @@
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "alipay-sdk": "4.14.0",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "10.1.4",
     "pg": "^8.20.0",
     "redis": "^5.11.0"
+  },
+  "overrides": {
+    "alipay-sdk": {
+      "urllib": "4.9.1"
+    }
   }
 }
