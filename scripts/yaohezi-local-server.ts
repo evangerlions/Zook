@@ -3,7 +3,7 @@ import { Client } from "pg";
 import { createServer as createHTTPServer } from "node:http";
 import { createServer as createTCPServer, createConnection } from "node:net";
 import { spawn } from "node:child_process";
-import { randomBytes, randomInt } from "node:crypto";
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { userInfo } from "node:os";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -12,6 +12,8 @@ import { createApplication } from "../src/app.module.ts";
 import { KVManager } from "../src/infrastructure/kv/kv-manager.ts";
 import { RefreshTokenStore } from "../src/services/refresh-token-store.ts";
 import { readRequestBody } from "../src/infrastructure/http/request-body.ts";
+
+import { DevelopmentPasswordHasher } from "../src/modules/auth/password-hasher.ts";
 
 const pgPort = Number(process.env.YAOHEZI_LOCAL_PG_PORT ?? 5432);
 const httpPort = Number(process.env.YAOHEZI_LOCAL_HTTP_PORT ?? 18763);
@@ -73,7 +75,7 @@ try {
   let redirectLogin = false;
   const databaseUrl = `postgresql://${encodeURIComponent(user)}@127.0.0.1:${pgPort}/${name}`;
   runtime = await createApplication({ databaseUrl, migrationDatabaseUrl: databaseUrl, kvManager: kv,
-    yaoheziEnabled: true, frogsleepEnabled: false, lighttickEnabled: false, queueBackend: "memory",
+    yaoheziEnabled: true, yaoheziHealthEnabled: process.env.YAOHEZI_LOCAL_HEALTH_DEVICES === "1", frogsleepEnabled: false, lighttickEnabled: false, queueBackend: "memory",
     fileStorageRoot: resolve(output, "files"), accessTokenSecret: randomBytes(48).toString("hex"),
     publicSmsTestBypassEnabled: false,
     smsVerificationSender: { async sendVerificationCode(command) {
@@ -93,6 +95,14 @@ try {
       if (url.pathname.startsWith("/__local/")) {
         if (request.headers["x-yaohezi-local-fixture"] !== "ios-account-tests-v1") return send(403, { code: "LOCAL_FIXTURE_ONLY" });
         if (url.pathname === "/__local/health") return send(200, { fixture: "yaohezi-local-ios-v1", ...counters });
+        if (url.pathname === "/__local/native-account" && request.method === "POST") {
+          const id = randomUUID(), account = `native-${id}@example.test`, password = randomBytes(24).toString("base64url");
+          const hasher = new DevelopmentPasswordHasher();
+          await runtime!.database.insertUser({ id, email: account, passwordHash: hasher.hash(password),
+            passwordAlgo: hasher.algorithm, status: "ACTIVE", createdAt: new Date().toISOString() });
+          // No tokens, memberships or health grants. The test must authenticate through normal /auth/login.
+          return send(200, { account, password });
+        }
         if (url.pathname === "/__local/phones") {
           if (allowedPhones.length >= 100) return send(429, { code: "LOCAL_FIXTURE_RESTART_REQUIRED" });
           const phones: string[] = [];

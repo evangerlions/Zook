@@ -221,3 +221,69 @@ test("M2 real PostgreSQL/Redis/HTTP: trusted devices, scoped keys, recovery and 
   });
 
 });
+
+test("M2 device-signed close can cancel unknown-bearer session creation before or after commit", async t => {
+  const f=await healthFixture(t),subjectId=randomUUID(),device=await newDevice();
+  const recovery=newRecovery(f.accountId,subjectId,1,[]);
+  const boot=await f.challenge("bootstrap",subjectId,device);
+  assert.equal((await f.health("bootstrap",signed("bootstrap",f.proof(boot,device,{confirmed:true,recovery:recovery.material}),device.signingPrivateKey))).status,200);
+  const proof=async()=>{const c=await f.challenge("sessions",subjectId,device);return signed("sessions",f.proof(c,device),device.signingPrivateKey);};
+  const close=(operationId:string,signer=device)=>f.health("close-sessions",signed("close-sessions",{version:1,subjectId,operationId:randomUUID(),actorAccountId:f.accountId,
+    actorDeviceId:device.descriptor.deviceId,expiresAt:Date.now()+240_000,creationOperationIds:[operationId]},signer.signingPrivateKey));
+  const pending=await proof();
+  assert.equal((await close(pending.command.operationId)).status,200);
+  const late=await f.health("sessions",pending);
+  assert.equal(late.code,"YAOHEZI_SESSION_CREATION_CLOSED");
+  const committed=await proof(),session=await f.health("sessions",committed);assert.equal(session.status,200);
+  assert.equal(session.data.creationOperationId,committed.command.operationId);
+  const other=await newDevice();assert.equal((await close(committed.command.operationId,other)).status,403);
+  assert.equal((await close(committed.command.operationId)).status,200);
+  assert.equal((await close(committed.command.operationId)).status,200,"Repeated negative cleanup is idempotent");
+  const inspect=signed("inspect",f.management(subjectId,device,session.data),device.signingPrivateKey);
+  assert.equal((await f.health("inspect",inspect,session.data.sessionToken)).code,"YAOHEZI_HEALTH_SESSION_REQUIRED");
+  const fresh=await f.session(subjectId,device);assert.equal(fresh.role,"owner");
+});
+
+
+test("M2 creation cleanup isolates devices/accounts, survives revocation and serializes concurrent creation", async t => {
+  const f=await healthFixture(t),subjectId=randomUUID(),primary=await newDevice(),secondary=await newDevice();
+  const recovery=newRecovery(f.accountId,subjectId,1,[]);
+  const boot=await f.challenge("bootstrap",subjectId,primary);
+  assert.equal((await f.health("bootstrap",signed("bootstrap",f.proof(boot,primary,{confirmed:true,recovery:recovery.material}),primary.signingPrivateKey))).status,200);
+  const primarySession=await f.session(subjectId,primary);
+  const candidate=await f.challenge("enroll",subjectId,secondary);
+  const enroll=signed("enroll",f.management(subjectId,primary,primarySession,{candidate:signed("enroll-proof",f.proof(candidate,secondary),secondary.signingPrivateKey),role:"owner",resources:[]}),primary.signingPrivateKey);
+  assert.equal((await f.health("enroll",enroll,primarySession.sessionToken)).status,200);
+  const secondarySession=await f.session(subjectId,secondary);
+  const closeProof=(device:typeof primary,ids:string[],extras={})=>signed("close-sessions",{
+    version:1,subjectId,operationId:randomUUID(),actorAccountId:f.accountId,actorDeviceId:device.descriptor.deviceId,
+    expiresAt:Date.now()+240_000,creationOperationIds:ids,...extras},device.signingPrivateKey);
+  const creationId=secondarySession.creationOperationId;
+  assert.equal((await f.health("close-sessions",closeProof(primary,[creationId]))).status,200);
+  const inspect=()=>signed("inspect",f.management(subjectId,secondary,secondarySession),secondary.signingPrivateKey);
+  assert.equal((await f.health("inspect",inspect(),secondarySession.sessionToken)).status,200,"One device cannot revoke another device's creation even within the same account");
+  const other=await f.loginAccount();
+  assert.equal((await f.health("close-sessions",closeProof(secondary,[creationId]),undefined,other.accessToken)).status,403);
+  assert.equal((await f.health("close-sessions",closeProof(secondary,[creationId],{expiresAt:Date.now()-1}))).status,403);
+  assert.equal((await f.health("close-sessions",closeProof(secondary,[creationId,creationId]))).status,400);
+  assert.equal((await f.health("inspect",inspect(),secondarySession.sessionToken)).status,200,"Rejected cleanup leaves the session usable");
+
+  const ch=await f.challenge("sessions",subjectId,secondary);
+  const pending=signed("sessions",f.proof(ch,secondary),secondary.signingPrivateKey);
+  const [created,closed]=await Promise.all([f.health("sessions",pending),f.health("close-sessions",closeProof(secondary,[pending.command.operationId]))]);
+  assert.equal(closed.status,200);
+  assert.ok(created.status===200 || created.code==="YAOHEZI_SESSION_CREATION_CLOSED");
+  const rows=await f.runtime.database.query("SELECT revoked FROM zook_yaohezi_health_sessions WHERE subject_id=$1 AND device_id=$2 AND creation_operation_id=$3",[subjectId,secondary.descriptor.deviceId,pending.command.operationId]);
+  assert.ok(rows.rows.every(row=>row.revoked),"After cleanup commits, no ordering may leave an active session");
+  assert.equal((await f.health("sessions",pending)).code,"YAOHEZI_SESSION_CREATION_CLOSED");
+
+  const next=newRecovery(f.accountId,subjectId,2,[]);
+  const revoke=signed("revoke-device",f.management(subjectId,primary,primarySession,{targetDeviceId:secondary.descriptor.deviceId,recovery:next.material}),primary.signingPrivateKey);
+  assert.equal((await f.health("revoke-device",revoke,primarySession.sessionToken)).status,200);
+  const cleanup=closeProof(secondary,[creationId]);
+  assert.equal((await f.health("close-sessions",cleanup)).status,200,"Revoked device retains only negative cleanup capability");
+  assert.equal((await f.health("close-sessions",cleanup)).status,200,"Exact request replay is safe");
+  await f.reopen();
+  assert.equal((await f.health("close-sessions",cleanup)).status,200,"Tombstones and cleanup survive reconnect");
+  assert.equal((await f.health("challenges",{subjectId,purpose:"sessions",device:secondary.descriptor})).status,403);
+});

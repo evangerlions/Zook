@@ -1571,7 +1571,8 @@ Source identity and version are checked against a currently consented lesson or 
 | --- | --- | --- |
 | `challenges` | `subjectId + purpose + device` | 生成绑定账号/主体/不可变签名和封装公钥的五分钟单次挑战；每账号五分钟最多 20 次 |
 | `bootstrap` | 首次设备签名、明确本人确认、独立恢复 verifier/密文包 | 仅无历史健康 authority 时建立首个本人设备；self_asserted 不是患者身份验证 |
-| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话；数据库只存 hash |
+| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话及 `creationOperationId`；数据库只存 token hash；创建操作号不可重建会话 |
+| `close-sessions` | 本设备 `close-sessions` 签名及普通账号 Bearer；无需健康 bearer | 将本设备指定创建操作号永久关闭并撤销已创建的会话；可先于或后于创建提交，不受设备撤销影响；仅限本账号/主体/设备 |
 | `recovery` | 同一 owner 账号 | 返回 verifier/加密恢复包；账号本身不能解密或恢复设备信任 |
 | `recover` | 新设备挑战签名 + 当前恢复 verifier 的恢复签名 | 新恢复材料、epoch/version 必须接续；原子撤销所有旧设备授权/会话，移除所有中继能力包，仅信任新设备 |
 | `enroll` | owner 健康会话及签名、新设备自身挑战签名 | 同账号设备批准，必须核对完整指纹；可给 owner 或限定资源的 reader；不是家人邀请 |
@@ -1658,3 +1659,8 @@ request on transport failures. Alipay QR polling invokes the same POST sync and
 never overlaps. Closing a wait does not cancel payment or erase committed facts.
 RevenueCat SDK purchase transaction identifiers are matched to verified REST V2
 subscription transaction `id`, as specified in the [official transaction reference](https://www.revenuecat.com/docs/api-v2/subscription-transactions). Old active access alone cannot confirm a new purchase.
+### 药盒子原生退出的创建操作号屏障（2026-10-31）
+
+客户端须在 `sessions` HTTP 前将命令 `operationId` 安全驻留。响应丢失时不可重发创建以索取 token。`close-sessions` 请求为 `{command,signature}`，Ed25519 domain 为 `close-sessions`；command 严格字段为 `version:1, subjectId, operationId, actorAccountId, actorDeviceId, expiresAt, creationOperationIds:[UUID]`（1–100 个不重复值，expiresAt 当前后 5 分钟内）。响应 `{closed:true,creationOperationIds}`。设备公钥必须与该主体下永久绑定记录完全一致；已撤设备仅能提交此负向关闭操作，不能恢复授权。
+
+迁移 `083_yaohezi_session_creation_cleanup.sql` 为现有会话增加可空创建操作号（不猜测历史操作号）及永久关闭表。新创建在相同账号→主体事务锁内检查关闭表，命中返回 `YAOHEZI_SESSION_CREATION_CLOSED`；重复创建返回操作冲突或挑战已消费，绝不再次返回 token。客户端确认全部创建操作号关闭后才删除对应本机清理条目。旧 `logout` 单会话接口仍保留；普通账号退出应在其 refresh 被撤销前完成健康清理，失败保留原账号清理条目并停止本机连接。

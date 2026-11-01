@@ -2568,7 +2568,8 @@ export const YaoheziHealthSessionDataSchema = {
     "keyEpoch",
     "grantVersion",
     "role",
-    "resources"
+    "resources",
+    "creationOperationId"
   ],
   "properties": {
     "sessionToken": {
@@ -2611,6 +2612,11 @@ export const YaoheziHealthSessionDataSchema = {
         "format": "uuid"
       },
       "maxItems": 100
+    },
+    "creationOperationId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f-]{36}$"
     }
   }
 } as const;
@@ -2624,6 +2630,7 @@ export type YaoheziHealthSessionData = {
   "grantVersion": number;
   "role": "owner" | "reader";
   "resources": string[];
+  "creationOperationId": string;
 };
 
 export const YaoheziHealthRecoveryDataSchema = {
@@ -2704,6 +2711,120 @@ export type YaoheziHealthRecoveryData = {
   "ciphertext": string;
 };
 };
+};
+
+export const YaoheziHealthCloseSessionsRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "subjectId",
+        "operationId",
+        "actorAccountId",
+        "actorDeviceId",
+        "expiresAt",
+        "creationOperationIds"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "creationOperationIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f-]{36}$"
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthCloseSessionsRequest = {
+  "command": {
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorAccountId": string;
+  "actorDeviceId": string;
+  "expiresAt": number;
+  "creationOperationIds": string[];
+};
+  "signature": string;
+};
+
+export const YaoheziHealthCloseSessionsDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "closed",
+    "creationOperationIds"
+  ],
+  "properties": {
+    "closed": {
+      "type": "boolean",
+      "const": true
+    },
+    "creationOperationIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^[0-9a-f-]{36}$"
+      }
+    }
+  }
+} as const;
+
+export type YaoheziHealthCloseSessionsData = {
+  "closed": boolean;
+  "creationOperationIds": string[];
 };
 
 export const PasswordLoginRequestSchema = {
@@ -59587,6 +59708,8 @@ export const GeneratedPublicContractNames = [
   "YaoheziHealthBootstrapRequest",
   "YaoheziHealthChallengeData",
   "YaoheziHealthChallengeRequest",
+  "YaoheziHealthCloseSessionsData",
+  "YaoheziHealthCloseSessionsRequest",
   "YaoheziHealthEnrollRequest",
   "YaoheziHealthInspectData",
   "YaoheziHealthInspectRequest",

@@ -8,6 +8,7 @@ import { canonical, decode, digest, inScope, reject, requireSignature, type Devi
 import { authority, audit, authorized, grant, owner, receipt, record, transaction, type GrantRow, type HealthTransaction } from "./postgres-yaohezi-health-context.ts";
 import { addGrant, bootstrap, consumeChallenge, issueChallenge, recover, rotate, type ChallengeRequest } from "./postgres-yaohezi-health-trust.ts";
 
+interface CloseSessionsCommand {version:1;subjectId:string;operationId:string;actorAccountId:string;actorDeviceId:string;expiresAt:number;creationOperationIds:string[]}
 export class PostgresYaoheziHealthStore implements YaoheziHealthStore {
   constructor(private readonly pool: Pool) {}
   async handle(action: string, account: YaoheziAccountScope, body: unknown, sessionToken?: string): Promise<unknown> {
@@ -18,6 +19,7 @@ export class PostgresYaoheziHealthStore implements YaoheziHealthStore {
       if (action==="recovery") { const a=authority(tx);return {subjectId,recovery:{version:a.recovery_version,publicKey:a.recovery_public_key,vault:a.recovery_vault},keyEpoch:a.key_epoch}; }
       if (action==="bootstrap") return bootstrap(tx,body as Signed<DeviceProofCommand>);
       if (action==="recover") return recover(tx,body as Signed<DeviceProofCommand>,(body as {recoverySignature:string}).recoverySignature);
+      if (action==="close-sessions") return this.closeSessions(tx,body as Signed<CloseSessionsCommand>);
       if (action==="sessions") return this.session(tx,body as Signed<DeviceProofCommand>);
       const proof=body as Signed<ManagementCommand>;
       const actor=await authorized(tx,action,proof,sessionToken);
@@ -30,12 +32,31 @@ export class PostgresYaoheziHealthStore implements YaoheziHealthStore {
   private async session(tx: HealthTransaction, proof: Signed<DeviceProofCommand>) {
     const a=authority(tx),c=proof.command,g=await grant(tx,c.device.deviceId);
     if (g.signingKey!==c.device.signingKey || g.wrappingKey!==c.device.wrappingKey) reject("YAOHEZI_DEVICE_BINDING_MISMATCH");
+    const cancelled=await tx.db.query("SELECT 1 FROM zook_yaohezi_closed_session_creations WHERE subject_id=$1 AND device_id=$2 AND creation_operation_id=$3",[tx.subjectId,g.deviceId,c.operationId]);
+    if (cancelled.rowCount) reject("YAOHEZI_SESSION_CREATION_CLOSED");
+    const prior=await tx.db.query("SELECT 1 FROM zook_yaohezi_health_sessions WHERE subject_id=$1 AND device_id=$2 AND creation_operation_id=$3",[tx.subjectId,g.deviceId,c.operationId]);
     await consumeChallenge(tx,"sessions",proof);
+    if (prior.rowCount) reject("YAOHEZI_OPERATION_CONFLICT",409);
     const token=randomBytes(32).toString("base64url"),expiresAt=new Date(Date.now()+900_000).toISOString();
-    await tx.db.query(`INSERT INTO zook_yaohezi_health_sessions(token_hash,subject_id,device_id,user_id,grant_version,key_epoch,expires_at)
-      VALUES($1,$2,$3,$4,$5,$6,$7)`,[digest(token),tx.subjectId,g.deviceId,tx.account.userId,g.grantVersion,a.key_epoch,expiresAt]);
+    await tx.db.query(`INSERT INTO zook_yaohezi_health_sessions(token_hash,subject_id,device_id,user_id,grant_version,key_epoch,expires_at,creation_operation_id)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[digest(token),tx.subjectId,g.deviceId,tx.account.userId,g.grantVersion,a.key_epoch,expiresAt,c.operationId]);
     await audit(tx,"sessions",c.operationId,g.deviceId);
-    return {sessionToken:token,expiresAt,subjectId:tx.subjectId,deviceId:g.deviceId,keyEpoch:a.key_epoch,grantVersion:g.grantVersion,role:g.role,resources:g.resources};
+    return {creationOperationId:c.operationId,sessionToken:token,expiresAt,subjectId:tx.subjectId,deviceId:g.deviceId,keyEpoch:a.key_epoch,grantVersion:g.grantVersion,role:g.role,resources:g.resources};
+  }
+  /** Negative capability only: immutable device possession can close its OWN creations, even after grant revocation. */
+  private async closeSessions(tx:HealthTransaction,proof:Signed<CloseSessionsCommand>) {
+    const c=proof.command;
+    if(c.actorAccountId!==tx.account.userId || c.subjectId!==tx.subjectId || c.expiresAt<=Date.now() || c.expiresAt>Date.now()+300_000) reject("YAOHEZI_TRUST_REQUIRED");
+    const found=await tx.db.query(`SELECT d.signing_key FROM zook_yaohezi_health_devices d JOIN zook_yaohezi_health_grants g USING(device_id)
+      WHERE g.subject_id=$1 AND d.device_id=$2 AND d.user_id=$3`,[tx.subjectId,c.actorDeviceId,tx.account.userId]);
+    if(!found.rowCount) reject("YAOHEZI_TRUST_REQUIRED");
+    requireSignature("close-sessions",c,proof.signature,found.rows[0].signing_key);
+    for(const id of c.creationOperationIds) {
+      await tx.db.query("INSERT INTO zook_yaohezi_closed_session_creations(subject_id,device_id,creation_operation_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",[tx.subjectId,c.actorDeviceId,id]);
+      await tx.db.query("UPDATE zook_yaohezi_health_sessions SET revoked=true WHERE subject_id=$1 AND device_id=$2 AND creation_operation_id=$3",[tx.subjectId,c.actorDeviceId,id]);
+    }
+    await audit(tx,"close-sessions",c.operationId,c.actorDeviceId);
+    return {closed:true,creationOperationIds:c.creationOperationIds};
   }
   private async protected(tx: HealthTransaction, action: string, proof: Signed<ManagementCommand>, actor: GrantRow, sessionToken:string): Promise<unknown> {
     const c=proof.command,a=authority(tx);
