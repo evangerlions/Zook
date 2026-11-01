@@ -58,8 +58,14 @@ xcodebuild test -workspace HealthTimeline.xcworkspace -scheme HealthTimeline \
 
 ## M2 本地验证
 
-`npm run verify:yaohezi-local` 包含账号、主体路由、健康设备三组集成，共 18 个 test/subtest。M2 使用正常随机短信验证码及真实 Redis/PG/HTTP，覆盖设备批准、资源版本钥、只读签名改药与跨主体拒绝、撤销并发顺序、重开、三条恢复路径、旧恢复根拒绝、快照时效、伪造授权和限流。
+`npm run verify:yaohezi-local` 包含账号、主体路由、健康设备三组集成，共 20 个 test/subtest。M2 使用正常随机短信验证码及真实 Redis/PG/HTTP，覆盖设备批准、资源版本钥、只读签名改药与跨主体拒绝、撤销并发顺序、重开、三条恢复路径、旧恢复根拒绝、快照时效、伪造授权和限流。
 
 `npm run typecheck:yaohezi-security` 严格检查协议、客户端参考和 PG 实现；`npm test` 运行全仓单元。加密测试含 RFC 8032/9180 公共向量、恢复 AAD、HPKE 负向及未来版本钥轮换。向量里的私钥是公开测试资料。
 
-`npm run dev:yaohezi-local` 继续是账号 UI fixture，默认不启用 M2；无需开启健康接口即可重复 iOS 账号验收。M2 没有原生设备界面入口。测试 PG 库和证据保留，HTTP 与私有 Redis 验收后自动停止，不改用户 Redis 6379。
+`npm run dev:yaohezi-local` 继续是账号 UI fixture，默认不启用 M2；无需开启健康接口即可重复 iOS 账号验收。原生入口需单独在 Debug 设置 `YAOHEZI_LOCAL_HEALTH_DEVICES=1`，fixture 同名开关才能开放设备接口；Release 不读此环境变量。测试 PG 库和证据保留，HTTP 与私有 Redis 验收后自动停止，不改用户 Redis 6379。
+
+### iOS 原生可信设备联调
+
+启动 `YAOHEZI_LOCAL_HEALTH_DEVICES=1 npm run dev:yaohezi-local`。iOS 本地测试组为 `NativeHealthIntegrationTests`、`NativeHealthJournalTests`、`NativeHealthCryptoTests`、`HealthDeviceStoreTests`，UI 组为 `NativeHealthDeviceUITests`。测试经正常登录/挑战/签名/PG 与 Redis；每次独立账号、设备 Keychain service 与 SQLCipher 目录，无生产认证绕过。loopback fixture 的受测试头保护 `POST /__local/native-account` 仅插入随机合成密码用户，不产生 token/membership/健康授权；随后必须调用正常 `/api/v1/auth/login`。该控制路由不属于部署运行时、App 或公共合同。
+
+覆盖：原生首设备、另机批准与 HPKE 资源版本钥、稳定本人主体接入、恢复材料替换、旧设备/旧材料拒绝、退出保留原本地本人和家人库。故障测试在真实服务提交后丢弃 bootstrap ACK 或延迟 session 回复，验证同材料重开恢复、创建号持久化、退出清理及旧异步上下文不复活。密钥恢复不恢复临床记录，本轮不启用 M3。

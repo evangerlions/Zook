@@ -1492,7 +1492,8 @@ Source identity and version are checked against a currently consented lesson or 
 | --- | --- | --- |
 | `challenges` | `subjectId + purpose + device` | 生成绑定账号/主体/不可变签名和封装公钥的五分钟单次挑战；每账号五分钟最多 20 次 |
 | `bootstrap` | 首次设备签名、明确本人确认、独立恢复 verifier/密文包 | 仅无历史健康 authority 时建立首个本人设备；self_asserted 不是患者身份验证 |
-| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话；数据库只存 hash |
+| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话及 `creationOperationId`；数据库只存 token hash；创建操作号不可重建会话 |
+| `close-sessions` | 本设备 `close-sessions` 签名及普通账号 Bearer；无需健康 bearer | 将本设备指定创建操作号永久关闭并撤销已创建的会话；可先于或后于创建提交，不受设备撤销影响；仅限本账号/主体/设备 |
 | `recovery` | 同一 owner 账号 | 返回 verifier/加密恢复包；账号本身不能解密或恢复设备信任 |
 | `recover` | 新设备挑战签名 + 当前恢复 verifier 的恢复签名 | 新恢复材料、epoch/version 必须接续；原子撤销所有旧设备授权/会话，移除所有中继能力包，仅信任新设备 |
 | `enroll` | owner 健康会话及签名、新设备自身挑战签名 | 同账号设备批准，必须核对完整指纹；可给 owner 或限定资源的 reader；不是家人邀请 |
@@ -1524,3 +1525,9 @@ Source identity and version are checked against a currently consented lesson or 
 `POST /api/v1/lighttick/local-adoptions` 是独立审阅授权的单向转属。请求明确列出选中的目标及其行动、复盘、历史，必须包含关系闭包；不包含草稿和未选择对象。登录、游客升级及记录授权不触发本机计划上传。使用本机持久随机 workspace/source proof 生成稳定源映射，proof 不存入回执、操作日志或数据库。回执含 owner、各本机 ID 对应的云端 ID；同源重复请求只返回已有映射，换账户或改变已转属源内容返回 409。真实完成与复盘时间、未知日期/投入以及原历史保留，导入不虚构一次当下执行。客户端必须在发请求前冻结所选本机源；结果待核对时只恢复原账户、原 payload/key；成功后本机保留只读来源和回执，正式修改改走云端对象。
 
 账户删除清除产品内容、映射内容与回执，仅保留不可逆源散列墓碑，阻止复制旧本机文件复活已删数据。`LIGHTTICK_MANUAL_PLANNING_ENABLED=0` 可关闭新写入，既有手动计划读取与已有原请求回执恢复仍可用；不清空本机输入。共用 fixture：`api-contracts/fixtures/lighttick/native-manual-loop.json`。本轮仅研发候选，实际部署及商店开放另行验收。
+
+#### 原生退出的创建操作号屏障（2026-10-31）
+
+客户端须在 `sessions` HTTP 前将命令 `operationId` 安全驻留。响应丢失时不可重发创建以索取 token。`close-sessions` 请求为 `{command,signature}`，Ed25519 domain 为 `close-sessions`；command 严格字段为 `version:1, subjectId, operationId, actorAccountId, actorDeviceId, expiresAt, creationOperationIds:[UUID]`（1–100 个不重复值，expiresAt 当前后 5 分钟内）。响应 `{closed:true,creationOperationIds}`。设备公钥必须与该主体下永久绑定记录完全一致；已撤设备仅能提交此负向关闭操作，不能恢复授权。
+
+迁移 `083_yaohezi_session_creation_cleanup.sql` 为现有会话增加可空创建操作号（不猜测历史操作号）及永久关闭表。新创建在相同账号→主体事务锁内检查关闭表，命中返回 `YAOHEZI_SESSION_CREATION_CLOSED`；重复创建返回操作冲突或挑战已消费，绝不再次返回 token。客户端确认全部创建操作号关闭后才删除对应本机清理条目。旧 `logout` 单会话接口仍保留；普通账号退出应在其 refresh 被撤销前完成健康清理，失败保留原账号清理条目并停止本机连接。

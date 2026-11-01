@@ -10,7 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
-    "yaohezi/api.yaml": ['YaoheziMeData', 'YaoheziHealthChallengeRequest', 'YaoheziHealthRecoveryRequest', 'YaoheziHealthBootstrapRequest', 'YaoheziHealthSessionRequest', 'YaoheziHealthRecoverRequest', 'YaoheziHealthEnrollRequest', 'YaoheziHealthInspectRequest', 'YaoheziHealthRevokeDeviceRequest', 'YaoheziHealthRotateKeysRequest', 'YaoheziHealthLogoutRequest', 'YaoheziHealthKeyCapsulesRequest', 'YaoheziHealthVerifyOperationRequest', 'YaoheziHealthRevision', 'YaoheziHealthKeyCapsule', 'YaoheziHealthInspectData', 'YaoheziHealthChallengeData', 'YaoheziHealthSessionData', 'YaoheziHealthRecoveryData'],
+    "yaohezi/api.yaml": ['YaoheziMeData', 'YaoheziHealthChallengeRequest', 'YaoheziHealthRecoveryRequest', 'YaoheziHealthBootstrapRequest', 'YaoheziHealthSessionRequest', 'YaoheziHealthRecoverRequest', 'YaoheziHealthEnrollRequest', 'YaoheziHealthInspectRequest', 'YaoheziHealthRevokeDeviceRequest', 'YaoheziHealthRotateKeysRequest', 'YaoheziHealthLogoutRequest', 'YaoheziHealthKeyCapsulesRequest', 'YaoheziHealthVerifyOperationRequest', 'YaoheziHealthRevision', 'YaoheziHealthKeyCapsule', 'YaoheziHealthInspectData', 'YaoheziHealthChallengeData', 'YaoheziHealthSessionData', 'YaoheziHealthRecoveryData', 'YaoheziHealthCloseSessionsRequest', 'YaoheziHealthCloseSessionsData'],
     "common/auth.yaml": [
         "PasswordLoginRequest",
         "EmailCodeRequest",

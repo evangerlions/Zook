@@ -92,6 +92,7 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "YAOHEZI_SESSION_CREATION_CLOSED"
   | "YAOHEZI_ACTION_DENIED"
   | "YAOHEZI_APP_SCOPE_MISMATCH"
   | "YAOHEZI_CHALLENGE_LIMIT"
