@@ -702,3 +702,8 @@ filter. Order-detail membership comparison uses that transaction's environment.
 支付后台术语与取值展示统一：`provider` 为支付服务商，`source/purchaseSource` 为支付来源，`platform` 为运行平台，`distribution` 为分发类型，`environment` 为支付环境。筛选请求保留接口原始枚举，所有tab的表格和详情共用展示映射（App Store / Google Play / 支付宝 / RevenueCat / iOS等）。例如source=play_store和distribution=google_play都显示Google Play，但字段语义不合并。未知值显示未知并保留原值，不默认归类；未采集market时不推断小米/vivo。
 
 Market取值为app_store/google_play/xiaomi/vivo/oppo/huawei/honor/direct；未知为null。勾选市场后null作为“未知渠道”组保留收入，不丢弃金额。App Store/Google Play由确切交易商店证据识别；Alipay由订单构建market归因保留，通用china_android_store或alipay不能推断小米/vivo。迁移077只回填明确的商店或官方直发记录。订单列表和详情返回market并复用统一显示字典。
+
+
+### 后台 Web server 的公开邀请转发
+
+`apps/admin-web/server.ts` 的三个精确 GET handoff 路径转发到已配置同槽位 API：`/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。这些是公开预览接力，不授予管理权限、不会自动接受邀请；其他方法405。保留 query、手动302跳转，强制 no-store/no-referrer，公开错误隐藏上游和令牌。请求的 absolute-form URL 不得替换 ADMIN_API_PROXY_TARGET 的 origin。现有 `/api/*` 流式代理保持原行为。外层 Nginx 的日志与 Universal/App Links 仍独立验收。
