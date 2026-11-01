@@ -1,5 +1,7 @@
+import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
+import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -182,6 +184,8 @@ export class BackendApplication extends BackendRouteContext {
       adminSensitiveOperationService,
       aiNovelBillingService,
     );
+    this.resolveNetworkCountry = (request) =>
+      requestEmailContextService.resolveNetworkCountry(request);
   }
 
   async handle(request: HttpRequest): Promise<HttpResponse<unknown>> {
@@ -189,43 +193,22 @@ export class BackendApplication extends BackendRouteContext {
     request.cookies ??= parseCookies(request.headers.cookie);
     const execute = async () => {
       request.adminSession = await this.resolveAdminSession(request);
-      const startedAt = Date.now();
-
-      try {
-        const response = await this.dispatch(request);
-        this.requestLoggingInterceptor.log(
-          request,
-          response,
-          Date.now() - startedAt,
-        );
-        return response;
-      } catch (error) {
-        const response = this.httpExceptionFilter.catch(
-          error,
-          request,
-          request.requestId,
-        );
-        this.requestLoggingInterceptor.log(
-          request,
-          response,
-          Date.now() - startedAt,
-          error,
-        );
-        return response;
-      }
+      return await this.dispatch(request);
     };
-
-    if (
-      request.method === "GET" && request.path === "/api/health"
-    ) {
-      return execute();
+    const startedAt = Date.now();
+    try {
+      const ownsTransaction = isAuthCodeDeliveryRequest(request) ||
+        isRevenueCatBillingRequest(request.method, request.path) ||
+        (request.method === "GET" && request.path === "/api/health") ||
+        (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));
+      const response = ownsTransaction ? await execute() : await this.database.withExclusiveSession(execute);
+      this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
+      return response;
+    } catch (error) {
+      const response = this.httpExceptionFilter.catch(error, request, request.requestId);
+      this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
+      return response;
     }
-
-    if (isRevenueCatBillingRequest(request.method, request.path)) return execute();
-
-    // A swallowed HTTP error must not turn a resource transaction failure into a commit.
-    if (this.frogsleepEnabled && ownsPrivateSleepTransaction(request)) return execute();
-    return this.database.withExclusiveSession(execute);
   }
 
   get runtimeServices() {
@@ -339,6 +322,8 @@ export class BackendApplication extends BackendRouteContext {
       }
     }
 
+    const recordTransferResponse=await tryHandleRecordTransferRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(recordTransferResponse)return recordTransferResponse;
     const actionResponse=await tryHandleLightTickActionRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(actionResponse)return actionResponse;
     const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);

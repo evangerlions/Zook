@@ -1,3 +1,4 @@
+import { PostgresBodyLogRetentionStore } from "./postgres-bodylog-retention.ts";
 import type { Pool } from "pg";
 import type {
   BodyLogAdminStore,
@@ -99,6 +100,7 @@ export function createBodyLogPostgresStores(
   // functional stores. Binding the raw pool would commit partial operations.
   const scopedPool = { query } as unknown as Pool;
   return {
+    retention: new PostgresBodyLogRetentionStore(query),
     jobs: {
       runOnce: (key, job) => execute(async () => {
         const claimed = await query('INSERT INTO bodylog_settlement_jobs (key) VALUES ($1) ON CONFLICT DO NOTHING RETURNING key', [key]);

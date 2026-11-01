@@ -1,10 +1,12 @@
 import { createClient, type RedisClientType } from "redis";
+import { atomicChangeScript, type KVAtomicChange } from "./kv-atomic.ts";
 
 export interface KVBackend {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, ttlSeconds?: number): Promise<void>;
   setIfAbsent(key: string, value: string, ttlSeconds?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
+  applyAtomic(change: KVAtomicChange): Promise<boolean>;
   assertReady(): Promise<void>;
   incrementCounters?(key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void>;
   getCounters?(key: string): Promise<Record<string, number>>;
@@ -55,6 +57,12 @@ class RedisKVBackend implements KVBackend {
   async delete(key: string): Promise<void> {
     await this.ensureConnected();
     await this.client.del(key);
+  }
+
+  async applyAtomic(change: KVAtomicChange): Promise<boolean> {
+    await this.ensureConnected();
+    const result = await this.client.eval(atomicChangeScript, { arguments: [JSON.stringify(change)] });
+    return result === 1;
   }
 
   async incrementCounters(key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void> {
@@ -144,6 +152,25 @@ export class InMemoryKVBackend implements KVBackend {
     this.store.delete(key);
   }
 
+  async applyAtomic(change: KVAtomicChange): Promise<boolean> {
+    const read = (key: string) => {
+      const entry = this.store.get(key);
+      return entry && (!entry.expiresAt || entry.expiresAt > Date.now()) ? entry.value : null;
+    };
+    if (change.compare?.some(item => read(item.key) !== item.value)) return false;
+    const arrays = new Map<string, string[]>();
+    for (const item of change.append ?? []) {
+      const values: string[] = arrays.get(item.key) ?? JSON.parse(read(item.key) ?? "[]");
+      if (!values.includes(item.value)) values.push(item.value);
+      arrays.set(item.key, values);
+    }
+    for (const item of change.set) this.store.set(item.key, {
+      value: item.value, expiresAt: item.ttlSeconds ? Date.now() + item.ttlSeconds * 1000 : undefined,
+    });
+    for (const [key, values] of arrays) this.store.set(key, { value: JSON.stringify(values) });
+    return true;
+  }
+
   async incrementCounters(key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void> {
     const current = this.store.get(key);
     const counts: Record<string, number> = current && (!current.expiresAt || current.expiresAt > Date.now())
@@ -200,6 +227,14 @@ export class KVManager {
 
   async setStringIfAbsent(scope: string, key: string, value: string, ttlSeconds?: number): Promise<boolean> {
     return await this.backend.setIfAbsent(this.buildStorageKey(scope, key), value, ttlSeconds);
+  }
+
+  async applyAtomic(scope: string, change: KVAtomicChange): Promise<boolean> {
+    return await this.backend.applyAtomic({
+      compare: change.compare?.map(item => ({ ...item, key: this.buildStorageKey(scope, item.key) })),
+      set: change.set.map(item => ({ ...item, key: this.buildStorageKey(scope, item.key) })),
+      append: change.append?.map(item => ({ ...item, key: this.buildStorageKey(scope, item.key) })),
+    });
   }
 
   async incrementCounters(scope: string, key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void> {

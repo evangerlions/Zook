@@ -1,3 +1,6 @@
+import {PostgresUserStore} from "./postgres-users.ts";
+import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
+import { PostgresRbacStore } from './postgres-rbac.ts';
 import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
 import { PostgresPersonalSyncRepository } from "./postgres-personal-sync.ts";
 import { PostgresFrogSleepAdminStore } from "./postgres-frogsleep-admin.ts";
@@ -99,11 +102,6 @@ import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
   parseAppConfig,
-  parsePermission,
-  parseRole,
-  parseRolePermission,
-  parseUser,
-  parseUserRole,
 } from "./postgres-row-parsers.ts";
 export class PostgresDatabase extends ApplicationDatabase {
   private get alipayOrders() { return new PostgresAlipayOrders((sql, values) => this.query(sql, values)); }
@@ -161,6 +159,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
     this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
+  private readonly users = new PostgresUserStore((sql,values) => this.query(sql,values));
+  private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
+  getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
   getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
   getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect(), () => this.sessionContext.getStore()); }
   getFrogSleepAdminStore() { return new PostgresFrogSleepAdminStore((sql, values) => this.query(sql, values)); }
@@ -171,6 +172,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   getGrowthStore(): BodyLogGrowthStore { return this.bodyLogStores.growth; }
   getBodyLogNotificationStore(): BodyLogNotificationStore { return this.bodyLogStores.notification; }
   getBodyLogFeatureFlagStore(): BodyLogFeatureFlagStore { return this.bodyLogStores.flags; }
+  getBodyLogRetentionStore(): BodyLogStores['retention'] { return this.bodyLogStores.retention; }
   getBodyLogJobStore(): BodyLogStores['jobs'] { return this.bodyLogStores.jobs; }
   getBodyLogAdminStore(): BodyLogAdminStore { return this.bodyLogStores.admin; }
   static async create(
@@ -195,9 +197,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     const existingClient = this.sessionContext.getStore();
-    if (existingClient) {
-      return await fn();
-    }
+    if (existingClient) return await fn();
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
@@ -211,6 +211,19 @@ export class PostgresDatabase extends ApplicationDatabase {
     } finally {
       client.release();
     }
+  }
+  override async withNewUserTransaction<T>(_userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      await this.query("SAVEPOINT auth_registration");
+      try {
+        const result = await fn();
+        await this.query("RELEASE SAVEPOINT auth_registration");
+        return result;
+      } catch (error) {
+        await this.query("ROLLBACK TO SAVEPOINT auth_registration");
+        throw error;
+      }
+    });
   }
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
   override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
@@ -333,6 +346,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
   override async findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByTokenHash(appId, tokenHash); }
   override async findBodyLogInvitationByCode(appId: string, code: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByCode(appId, code); }
+  override async updateBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.updateInvitation(record); }
   override async insertBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.insertInvitation(record); }
   override async listBodyLogInvitations(appId: string, inviterUserId: string): Promise<BodyLogInvitationRecord[]> { return await this.bodyLogInvitations.listInvitations(appId, inviterUserId); }
   override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }
@@ -344,140 +358,21 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): Promise<void> { await this.bodyLogChallenges.insertMembers(records); }
   override async updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): Promise<void> { await this.bodyLogChallenges.updateMember(record); }
   override async listBodyLogChallengeMembers(appId: string): Promise<BodyLogChallengeMemberRecord[]> { return await this.bodyLogChallenges.listMembers(appId); }
-  override async listRoles(appId?: string): Promise<RoleRecord[]> {
-    const result = appId
-      ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])
-      : await this.query("SELECT id, app_id, code, name, status FROM zook_roles ORDER BY id ASC");
-    return result.rows.map(parseRole);
-  }
-  override async findRole(appId: string, roleCode: string): Promise<RoleRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 AND code = $2 LIMIT 1",
-      [appId, roleCode],
-    );
-    return result.rows[0] ? parseRole(result.rows[0]) : undefined;
-  }
-  override async insertRoles(records: RoleRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_roles (id, app_id, code, name, status)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO UPDATE SET
-           app_id = EXCLUDED.app_id,
-           code = EXCLUDED.code,
-           name = EXCLUDED.name,
-           status = EXCLUDED.status,
-           updated_at = NOW()`,
-        [record.id, record.appId, record.code, record.name, record.status],
-      );
-    }
-  }
-  override async listPermissions(): Promise<PermissionRecord[]> {
-    const result = await this.query("SELECT id, code, name, status FROM zook_permissions ORDER BY id ASC");
-    return result.rows.map(parsePermission);
-  }
-  override async insertRolePermissions(records: RolePermissionRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_role_permissions (id, role_id, permission_id)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (id) DO UPDATE SET
-           role_id = EXCLUDED.role_id,
-           permission_id = EXCLUDED.permission_id,
-           updated_at = NOW()`,
-        [record.id, record.roleId, record.permissionId],
-      );
-    }
-  }
-  override async findUserRole(appId: string, userId: string, roleId: string): Promise<UserRoleRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, user_id, role_id FROM zook_user_roles WHERE app_id = $1 AND user_id = $2 AND role_id = $3 LIMIT 1",
-      [appId, userId, roleId],
-    );
-    return result.rows[0] ? parseUserRole(result.rows[0]) : undefined;
-  }
-  override async insertUserRole(record: UserRoleRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_user_roles (id, app_id, user_id, role_id)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (id) DO NOTHING`,
-      [record.id, record.appId, record.userId, record.roleId],
-    );
-  }
-  override async getPermissionCodes(appId: string, userId: string): Promise<string[]> {
-    const result = await this.query(
-      `SELECT DISTINCT p.code
-       FROM zook_user_roles ur
-       JOIN zook_role_permissions rp ON rp.role_id = ur.role_id
-       JOIN zook_permissions p ON p.id = rp.permission_id
-       WHERE ur.app_id = $1 AND ur.user_id = $2
-       ORDER BY p.code ASC`,
-      [appId, userId],
-    );
-    return result.rows.map((row) => String(row.code));
-  }
+  override async listRoles(appId?: string): Promise<RoleRecord[]> { return await this.rbac.listRoles(appId); }
+  override async findRole(appId: string, roleCode: string): Promise<RoleRecord | undefined> { return await this.rbac.findRole(appId, roleCode); }
+  override async insertRoles(records: RoleRecord[]): Promise<void> { return await this.rbac.insertRoles(records); }
+  override async listPermissions(): Promise<PermissionRecord[]> { return await this.rbac.listPermissions(); }
+  override async insertRolePermissions(records: RolePermissionRecord[]): Promise<void> { return await this.rbac.insertRolePermissions(records); }
+  override async findUserRole(appId: string, userId: string, roleId: string): Promise<UserRoleRecord | undefined> { return await this.rbac.findUserRole(appId, userId, roleId); }
+  override async insertUserRole(record: UserRoleRecord): Promise<void> { return await this.rbac.insertUserRole(record); }
+  override async getPermissionCodes(appId: string, userId: string): Promise<string[]> { return await this.rbac.getPermissionCodes(appId, userId); }
 
-  override async findUserById(userId: string): Promise<UserRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, email, phone, password_hash, password_algo, status, created_at FROM zook_users WHERE id = $1 LIMIT 1",
-      [userId],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByAccount(account: string): Promise<UserRecord | undefined> {
-    const normalized = account.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(email, '')) = $1 OR lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByPhone(phone: string): Promise<UserRecord | undefined> {
-    const normalized = phone.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async insertUser(record: UserRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_users (id, email, phone, password_hash, password_algo, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz)
-       ON CONFLICT (id) DO UPDATE SET
-         email = EXCLUDED.email,
-         phone = EXCLUDED.phone,
-         password_hash = EXCLUDED.password_hash,
-         password_algo = EXCLUDED.password_algo,
-         status = EXCLUDED.status,
-         created_at = EXCLUDED.created_at,
-         updated_at = NOW()`,
-      [record.id, record.email ?? null, record.phone ?? null, record.passwordHash, record.passwordAlgo, record.status, record.createdAt],
-    );
-  }
-
-  override async updateUserEmail(userId: string, email: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET email = $2, updated_at = NOW() WHERE id = $1",
-      [userId, email],
-    );
-  }
-
-  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET password_hash = $2, password_algo = $3, updated_at = NOW() WHERE id = $1",
-      [userId, passwordHash, passwordAlgo],
-    );
-  }
+  override async findUserById(userId: string) { return await this.users.findUserById(userId); }
+  override async findUserByAccount(account: string) { return await this.users.findUserByAccount(account); }
+  override async findUserByPhone(phone: string) { return await this.users.findUserByPhone(phone); }
+  override async insertUser(record: UserRecord) { return await this.users.insertUser(record); }
+  override async updateUserEmail(userId: string, email: string) { return await this.users.updateUserEmail(userId,email); }
+  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string) { return await this.users.updateUserPassword(userId,passwordHash,passwordAlgo); }
 
   override async insertAuditLog(record: AuditLogRecord): Promise<void> {
     await this.query(
@@ -674,6 +569,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listFrogSleepBuddySharingGrants(appId: string, relationshipId: string): Promise<FrogSleepBuddySharingGrantRecord[]> { return await this.buddyGrowth.listGrants(appId, relationshipId); }
   override async findFrogSleepBuddySharingGrant(appId: string, grantId: string): Promise<FrogSleepBuddySharingGrantRecord | undefined> { return await this.buddyGrowth.findGrant(appId, grantId); }
   override async updateFrogSleepBuddySharingGrant(appId: string, grantId: string, expectedVersion: number, state: FrogSleepBuddySharingGrantRecord["state"]): Promise<FrogSleepBuddySharingGrantRecord | undefined> { return await this.buddyGrowth.updateGrant(appId, grantId, expectedVersion, state); }
+  override async markFrogSleepBuddyInvitationRead(appId: string, bundleId: string, userId: string) { return await this.buddyGrowth.markInvitationRead(appId, bundleId, userId); }
   override async upsertFrogSleepBuddyInvitationBundle(record: FrogSleepBuddyInvitationBundleRecord): Promise<FrogSleepBuddyInvitationBundleRecord> { return await this.buddyGrowth.upsertBundle(record); } override async findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): Promise<FrogSleepBuddyInvitationBundleRecord | undefined> { return await this.buddyGrowth.findBundle(appId, bundleId); } override async listFrogSleepBuddyInvitationBundles(input: { appId: string; userId: string; direction: "incoming" | "outgoing"; recipientEmailHash?: string; recipientEmail?: string }): Promise<FrogSleepBuddyInvitationBundleRecord[]> { return await this.buddyGrowth.listBundles(input); }
   override async findFrogSleepBuddyInvitationBundleByCode(appId: string, code: string): Promise<FrogSleepBuddyInvitationBundleRecord | undefined> { return await this.buddyGrowth.findBundleByCode(appId, code); } override async findFrogSleepBuddyInvitationBundleByToken(appId: string, token: string): Promise<FrogSleepBuddyInvitationBundleRecord | undefined> { return await this.buddyGrowth.findBundleByToken(appId, token); } override async enqueueFrogSleepBuddyInvitationEmailDelivery(record: FrogSleepBuddyInvitationEmailDeliveryRecord): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord> { return await this.buddyGrowth.enqueueInvitationEmailDelivery(record); } override async findFrogSleepBuddyInvitationEmailDelivery(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined> { return await this.buddyGrowth.findInvitationEmailDelivery(appId, invitationId); } override async findFrogSleepBuddyInvitationEmailDeliveryByProviderMessageId(providerMessageId: string): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined> { return await this.buddyGrowth.findInvitationEmailDeliveryByProviderMessageId(providerMessageId); }
   override async listFrogSleepBuddyInvitationEmailDeliveries(filter: { invitationId?: string; status?: FrogSleepBuddyInvitationEmailDeliveryRecord["status"]; limit?: number } = {}): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord[]> { return await this.buddyGrowth.listInvitationEmailDeliveries(filter); } override async claimReadyFrogSleepBuddyInvitationEmailDeliveries(nowIso: string, limit: number): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord[]> { return await this.buddyGrowth.claimReadyInvitationEmailDeliveries(nowIso, limit); } override async updateFrogSleepBuddyInvitationEmailDelivery(id: string, patch: Partial<Omit<FrogSleepBuddyInvitationEmailDeliveryRecord, "id" | "appId" | "invitationId" | "createdAt">>): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined> { return await this.buddyGrowth.updateInvitationEmailDelivery(id, patch); } override async insertFrogSleepBuddyInvitationEmailAttempt(record: FrogSleepBuddyInvitationEmailAttemptRecord): Promise<FrogSleepBuddyInvitationEmailAttemptRecord> { return await this.buddyGrowth.insertInvitationEmailAttempt(record); } override async listFrogSleepBuddyInvitationEmailAttempts(appId: string, deliveryId: string): Promise<FrogSleepBuddyInvitationEmailAttemptRecord[]> { return await this.buddyGrowth.listInvitationEmailAttempts(appId, deliveryId); }
@@ -728,9 +624,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async deleteBodyLogHabitTemplate(appId: string, id: string) { return await this.bodyLogAdmin.deleteBodyLogHabitTemplate(appId, id); }
 
   private async initialize(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
+    if (this.initialized) return;
 
     await this.withExclusiveSession(async () => {
       await seedPostgresDefaults(this.seed, {
@@ -743,17 +637,10 @@ export class PostgresDatabase extends ApplicationDatabase {
     });
     this.initialized = true;
   }
-
-  private async listRolePermissions(): Promise<RolePermissionRecord[]> {
-    const result = await this.query("SELECT id, role_id, permission_id FROM zook_role_permissions ORDER BY id ASC");
-    return result.rows.map(parseRolePermission);
-  }
-
+  private async listRolePermissions(): Promise<RolePermissionRecord[]> { return await this.rbac.listRolePermissions(); }
   private async query(sql: string, values: unknown[] = []) {
     const client = this.sessionContext.getStore();
-    if (client) {
-      return await client.query(sql, values);
-    }
+    if (client) return await client.query(sql, values);
     return await this.pool.query(sql, values);
   }
 }

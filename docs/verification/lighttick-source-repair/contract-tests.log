@@ -1,0 +1,20 @@
+(node:57224) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ canonical P0 input schemas cover null/modes, conditional dates and explicit operations (4.009541ms)
+✔ stable P0 errors preserve only safe recovery metadata in the Zook envelope (3.042208ms)
+✔ canonical output fixtures include nullable schedules and v2 facts without private inventory (22.131709ms)
+(node:57225) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ source contract requires explicit normalized proof, binding, version and signed origin context (2.47875ms)
+(node:57226) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated public contracts include restored AI Novel and BodyLog schemas (0.996417ms)
+✔ in-repository OpenAPI source reproduces committed runtime contracts (1003.196709ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1266.690708

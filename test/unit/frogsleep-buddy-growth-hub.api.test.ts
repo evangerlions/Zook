@@ -97,8 +97,10 @@ test("structured shares, bounded reactions, joint activities, pagination, and re
   const redacted = await app.app.handle({ method: "GET", path: "/api/v1/frogsleep/buddy/activity",
     headers: auth(bob), query: { limit: "10" }, requestId: "hub_activity_redacted" } as never);
   const redactedShare = redacted.body.data.items.find((item: any) => item.id === share.body.data.id);
-  assert.equal(redactedShare.redacted, true);
-  assert.equal(JSON.stringify(redactedShare).includes("420"), false);
+  assert.deepEqual(redactedShare, {
+    id: share.body.data.id, artifact_type: "buddy_share",
+    redacted: true, unavailable_reason: "sharing_disabled",
+  });
   const activityEvents = app.database.frogSleepBuddyNotificationOutbox.filter(item => item.targetId === joint.body.data.id);
   assert.equal(activityEvents.filter(item => item.eventType === "joint_activity_invited").length, 1);
   assert.equal(activityEvents.some(item => item.deduplicationKey.startsWith("joint-completed:")), false,

@@ -37,7 +37,7 @@ export class BuddyJointActivityService {
       .filter(item => ["active", "accepted"].includes(item.status ?? ""));
     for (const relationship of relationships) {
       const records = await allBuddyRecords(this.database, { kind: "buddy_joint_activity", relationshipId: relationship.id });
-      for (const record of records.filter(item => item.status === "accepted")) {
+      for (const record of records.filter(item => ["accepted", "expired"].includes(item.status ?? ""))) {
         await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
           try {
             const current = await this.require(userId, record.id);
@@ -93,14 +93,15 @@ export class BuddyJointActivityService {
   }
 
   private async reconcile(record: FrogSleepEntityRecord) {
-    if (record.status !== "accepted") return record;
+    if (!["accepted", "expired"].includes(record.status ?? "")) return record;
     const relation = (await buddyRelationships(this.database, record.ownerUserId!)).find(item => item.id === record.relationshipId);
     if (!relation || !["active", "accepted"].includes(relation.status ?? "")) return record;
     const starts = record.payload.participant_started_at as Record<string, string> ?? {};
     const progress: Record<string, { status: string; completed_at?: string; minutes?: number }> = {};
     for (const userId of [record.ownerUserId!, record.partnerUserId!]) {
       const facts = await completionFacts(this.database, relation, userId);
-      const fact = facts.find(fact => fact.kind === (record.payload.type === "joint_focus" ? "focus" : "sleep") &&
+      const fact = facts.find(fact => (!record.payload.sleep_session_id || fact.kind !== "sleep" || fact.id === record.payload.sleep_session_id) &&
+        fact.kind === (record.payload.type === "joint_focus" ? "focus" : "sleep") &&
         !!starts[userId] && (fact.kind === "sleep"
           ? fact.startsAt >= String(record.payload.accepted_at) && fact.occurredAt >= starts[userId]
           : fact.startsAt >= starts[userId]) && fact.occurredAt <= String(record.payload.expires_at) &&

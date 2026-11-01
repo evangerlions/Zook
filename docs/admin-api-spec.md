@@ -624,3 +624,27 @@ resource 白名单：accounts、invitations、relationships、grants、sleep_ses
 未登录返回401，仅 Basic Auth 不能调用这些新增会话接口；缺二次授权返回403。非法资源或分页返回400；跨 App/不存在的 job 返回404 `FROGSLEEP_JOB_NOT_FOUND`。重试仅 FAILED/ENQUEUE_FAILED 且retryCount<5；SENT/预算耗尽、设备 processing/outcome_unknown 返回409 `FROGSLEEP_RETRY_NOT_ALLOWED`。已QUEUED重复请求返回当前排队事实、不再次入队。队列失败返回200 `{queued:false,notificationJobId}`，前端提示失败且保留恢复记录；成功后 worker 重新检查静默、撤权、关系、设备归属和能力开关。
 
 邮件provider_accepted不是delivered；未知邮件结果不提供重投入口。现有邀请邮件诊断接口保留原认证/掩码合同，不被新管理路由拦截。页面只读用户关系/方向授权，不替用户授权、解除或拉黑。
+
+## BodyLog campaign review and retention metrics (2026-10-28)
+
+All paths use `/api/v1/admin/apps/bodylog`, require a validated admin Session cookie, and write an audit record. Product Bearer tokens, synthetic user/device headers and Basic-auth credentials alone do not authorize these operations.
+
+- `POST /campaigns/{campaignId}/participations/{userId}/review`, body `{approved:boolean}`: only a `manual_review` participation can transition to `verified`/`rejected`. Stores `session.username` as the reviewer; audit action `bodylog.campaign.review` records the actor, target and decision. Review mutation and audit share the exclusive PostgreSQL transaction. Clients cannot supply this decision via submission/claim. Public participation responses omit the internal reviewer identity.
+- `GET /retention/metrics`: aggregate experiment cohorts and unique-user invitation funnel; audit action `bodylog.retention.metrics`. D1/D7 denominator includes only users exposed to the completed-plan continuation screen whose target UTC action day has ended. Experiments remain separate; user identifiers and health details are not returned. Default disabled experiments do not produce treatment cohorts.
+
+Campaign config `bodylog.campaigns` is a JSON array. Each definition needs a unique opaque `id`, `status`, `title`, `subtitle`, ISO `startsAt`/`endsAt`, `rules:string[]`, `reward:{type:"premium",durationDays:1..31,displayText}`, and `platformPolicy:{allowedPlatforms:string[],freeFormAllowed:boolean,oauthPlatforms:[],manualReviewPlatforms:string[]}`. All allowed platforms must be handled by manual review. Empty/unconfigured means no campaign entry. Use the existing authenticated app-config revision workflow; no default campaign is enabled by this change.
+
+Experiment config `bodylog.retention-experiment` defaults off. Example reviewable configuration: `{ "id":"continuation-v1", "enabled":false, "treatmentPercent":10 }`. Named release and analysis owners, opt-in funnel checks, sample size and mature D7 observation must be recorded before enabling or claiming an effect. The treatment emphasizes an existing local habit after the completed plan; the control retains the existing continuation hint and executable habit list.
+
+### BodyLog retention operations additions (2026-10-29)
+
+The existing session-only `GET /api/v1/admin/apps/bodylog/retention/metrics` now also returns:
+- `invitationBusiness:{attributed,pending,qualified,rewardedInvitees,rewardedInviters}` from stored attribution facts. Qualified includes rewarded accounts. Reading never reconciles qualification or issues grants.
+- `rewards:[{source,type,state,count}]` from the persisted grant ledger. Premium state is active/queued/expired; non-Premium awards use issued. Only aggregate counts leave the server; no user/installation/token identifiers are returned.
+- `experiment:{id,enabled,valid,errors,requiredPerVariant,design}` with disabled-by-default validated readiness. Incomplete/invalid configuration returns disabled assignment. Invalid designs are not rendered as a valid plan.
+
+The Admin page `/bodylog/retention` distinguishes optional observed invitation events from authoritative qualification/reward counts, preserves null immature rates, and reads cumulative UTC cohorts. Exposure and action must share both experiment and variant; maturity begins exactly at the following UTC midnight.
+
+`bodylog.retention-experiment` requires the design fields in [the pre-registration plan](bodylog-retention-experiment-plan.md) to enable assignment. No new write/toggle UI is introduced. The example remains disabled and lacks a real owner. Fixed alpha/power sample planning uses a normal approximation and is not an inference result or an automated operational stop monitor.
+
+Late events that predate the currently published experiment revision remain consented observation facts but are not relabeled into the new cohort. Report owners must keep the experiment ID/design stable through follow-up and the late-arrival window; this conservative exclusion cannot recover an overwritten historical assignment.

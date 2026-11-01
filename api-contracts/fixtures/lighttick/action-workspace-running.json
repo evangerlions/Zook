@@ -35,8 +35,14 @@
           "minutes": 0,
           "completed": 0,
           "minimum": 0,
-          "interrupted": 0
-        }
+          "interrupted": 0,
+          "partial": 0
+        },
+        "schema_version": 1,
+        "completion_mode": "time",
+        "estimated_minutes": null,
+        "completed_at": null,
+        "completion_record_id": null
       }
     ],
     "execution": {
@@ -57,11 +63,31 @@
         "course": "",
         "plan_id": "",
         "lesson_no": 1
-      }
+      },
+      "schema_version": 1,
+      "record_kind": "session",
+      "completion_mode": "time",
+      "completion_effect": "none",
+      "planned_date": "2026-10-20",
+      "date_basis": "legacy_planned"
     },
     "server_time": "2026-10-20T12:00:00.000Z",
     "workspace_version": 2,
-    "reminder_delivery": "native-foreground-and-calendar"
+    "reminder_delivery": "native-foreground-and-calendar",
+    "action_schema_version": 2,
+    "capabilities": {
+      "nullable_schedule": true,
+      "completion_modes": [
+        "time",
+        "content",
+        "check"
+      ],
+      "content_receipts": [],
+      "actual_fact_dates": true,
+      "connection_write_enabled": false,
+      "source_delivery_enabled": false,
+      "v2_import_enabled": false
+    }
   },
   "requestId": "fixture-shared-action"
 }

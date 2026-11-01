@@ -2534,6 +2534,10 @@ export const PublicConfigDataSchema = {
       "type": "string",
       "example": "ai_novel"
     },
+    "countryCode": {
+      "type": "string",
+      "description": "Estimated country of the current request, when available (ISO 3166-1 alpha-2)."
+    },
     "config": {
       "type": "object",
       "additionalProperties": true,
@@ -3031,6 +3035,7 @@ export const PublicConfigDataSchema = {
 
 export type PublicConfigData = {
   "appId": string;
+  "countryCode"?: string;
   "config": {
   "app"?: string;
   "kickoff"?: {
@@ -6701,6 +6706,1047 @@ export type AiNovelStatisticsSnapshotResponse = {
   "requestId"?: string;
 };
 
+export const BodyLogInvitationPreviewDataSchema = {
+  "type": "object",
+  "required": [
+    "intent",
+    "code",
+    "expiresAt"
+  ],
+  "properties": {
+    "intent": {
+      "type": "string",
+      "enum": [
+        "general",
+        "buddy",
+        "group"
+      ]
+    },
+    "code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogInvitationPreviewData = {
+  "intent": "general" | "buddy" | "group";
+  "code": string | null;
+  "expiresAt": string;
+};
+
+export const BodyLogEffectiveEntitlementSchema = {
+  "type": "object",
+  "required": [
+    "isPremium",
+    "sources",
+    "premiumUntil"
+  ],
+  "properties": {
+    "isPremium": {
+      "type": "boolean"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "premiumUntil": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogEffectiveEntitlement = {
+  "isPremium": boolean;
+  "sources": string[];
+  "premiumUntil": string | null;
+};
+
+export const BodyLogPromotionalEntitlementSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "userId",
+    "source",
+    "sourceId",
+    "type",
+    "value",
+    "startsAt",
+    "endsAt",
+    "createdAt",
+    "campaignId",
+    "participationId",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "invitation",
+        "campaign",
+        "buddy",
+        "group"
+      ]
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "const": "premium"
+    },
+    "value": {
+      "type": "string"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "campaignId": {
+      "type": "string"
+    },
+    "participationId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "queued",
+        "expired"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogPromotionalEntitlement = {
+  "id": string;
+  "userId": string;
+  "source": "invitation" | "campaign" | "buddy" | "group";
+  "sourceId": string;
+  "type": string;
+  "value": string;
+  "startsAt": string;
+  "endsAt": string;
+  "createdAt": string;
+  "campaignId": string;
+  "participationId": string;
+  "status": "active" | "queued" | "expired";
+};
+
+export const BodyLogAccountEntitlementsDataSchema = {
+  "type": "object",
+  "required": [
+    "effective",
+    "promotional"
+  ],
+  "properties": {
+    "effective": {
+      "type": "object",
+      "required": [
+        "isPremium",
+        "sources",
+        "premiumUntil"
+      ],
+      "properties": {
+        "isPremium": {
+          "type": "boolean"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "premiumUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "promotional": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "source",
+          "sourceId",
+          "type",
+          "value",
+          "startsAt",
+          "endsAt",
+          "createdAt",
+          "campaignId",
+          "participationId",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "invitation",
+              "campaign",
+              "buddy",
+              "group"
+            ]
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "const": "premium"
+          },
+          "value": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "campaignId": {
+            "type": "string"
+          },
+          "participationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "queued",
+              "expired"
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogAccountEntitlementsData = {
+  "effective": {
+  "isPremium": boolean;
+  "sources": string[];
+  "premiumUntil": string | null;
+};
+  "promotional": (
+{
+  "id": string;
+  "userId": string;
+  "source": "invitation" | "campaign" | "buddy" | "group";
+  "sourceId": string;
+  "type": string;
+  "value": string;
+  "startsAt": string;
+  "endsAt": string;
+  "createdAt": string;
+  "campaignId": string;
+  "participationId": string;
+  "status": "active" | "queued" | "expired";
+}
+)[];
+};
+
+export const BodyLogUnifiedMissionSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "source",
+    "planId",
+    "day",
+    "completed",
+    "target",
+    "completedUnits",
+    "completedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "sevenDayPlan",
+        "invitation"
+      ]
+    },
+    "planId": {
+      "type": "string"
+    },
+    "day": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "target": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completedUnits": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogUnifiedMission = {
+  "id": string;
+  "source": "sevenDayPlan" | "invitation";
+  "planId": string;
+  "day": number;
+  "completed": boolean;
+  "target": number;
+  "completedUnits": number;
+  "completedAt": string | null;
+};
+
+export const BodyLogUnifiedRewardSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "source",
+    "type",
+    "value",
+    "status",
+    "createdAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "sevenDayPlan",
+        "invitation",
+        "campaign",
+        "buddy",
+        "group"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "badge",
+        "premium"
+      ]
+    },
+    "value": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "claimed",
+        "claimable",
+        "progressing"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "planId": {
+      "type": "string"
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "claimedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogUnifiedReward = {
+  "id": string;
+  "source": "sevenDayPlan" | "invitation" | "campaign" | "buddy" | "group";
+  "type": "badge" | "premium";
+  "value": string;
+  "status": "claimed" | "claimable" | "progressing";
+  "createdAt": string;
+  "planId"?: string;
+  "sourceId"?: string;
+  "startsAt"?: string;
+  "endsAt"?: string | null;
+  "claimedAt"?: string | null;
+};
+
+export const BodyLogCampaignParticipationSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "campaignId",
+    "status",
+    "verificationLevel",
+    "rewardClaimStatus",
+    "retryRemaining",
+    "reviewTargetHours",
+    "expiresAt"
+  ],
+  "properties": {
+    "id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "campaignId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "created",
+        "manual_review",
+        "verified",
+        "rejected",
+        "claimed"
+      ]
+    },
+    "verificationLevel": {
+      "type": "string",
+      "enum": [
+        "none",
+        "manual_review_required",
+        "public_link_verified",
+        "rejected"
+      ]
+    },
+    "rewardClaimStatus": {
+      "type": "string",
+      "enum": [
+        "not_eligible",
+        "ready_to_claim",
+        "claimed"
+      ]
+    },
+    "retryRemaining": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reviewTargetHours": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "claimCode": {
+      "type": "string"
+    },
+    "submittedUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "normalizedUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "rejection": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryAllowed": {
+          "type": "boolean"
+        },
+        "retryRemaining": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "shareCopy": {
+      "type": "object",
+      "required": [
+        "title",
+        "text",
+        "requiredCode"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "requiredCode": {
+          "type": "string"
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogCampaignParticipation = {
+  "id": string | null;
+  "campaignId": string;
+  "status": "none" | "created" | "manual_review" | "verified" | "rejected" | "claimed";
+  "verificationLevel": "none" | "manual_review_required" | "public_link_verified" | "rejected";
+  "rewardClaimStatus": "not_eligible" | "ready_to_claim" | "claimed";
+  "retryRemaining": number;
+  "reviewTargetHours": number;
+  "expiresAt": string;
+  "updatedAt"?: string;
+  "claimCode"?: string;
+  "submittedUrl"?: string;
+  "normalizedUrl"?: string;
+  "platform"?: string;
+  "rejection"?: {
+} | null;
+  "shareCopy"?: {
+  "title": string;
+  "text": string;
+  "requiredCode": string;
+};
+};
+
+export const BodyLogCampaignSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "status",
+    "title",
+    "subtitle",
+    "startsAt",
+    "endsAt",
+    "reward",
+    "rules",
+    "platformPolicy",
+    "participation"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "const": "active"
+    },
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reward": {
+      "type": "object",
+      "required": [
+        "type",
+        "durationDays",
+        "displayText"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "premium"
+        },
+        "durationDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31
+        },
+        "displayText": {
+          "type": "string"
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "platformPolicy": {
+      "type": "object",
+      "required": [
+        "allowedPlatforms",
+        "freeFormAllowed",
+        "oauthPlatforms",
+        "manualReviewPlatforms"
+      ],
+      "properties": {
+        "allowedPlatforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "freeFormAllowed": {
+          "type": "boolean"
+        },
+        "oauthPlatforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manualReviewPlatforms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "participation": {
+      "type": "object",
+      "required": [
+        "id",
+        "campaignId",
+        "status",
+        "verificationLevel",
+        "rewardClaimStatus",
+        "retryRemaining",
+        "reviewTargetHours",
+        "expiresAt"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "campaignId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "none",
+            "created",
+            "manual_review",
+            "verified",
+            "rejected",
+            "claimed"
+          ]
+        },
+        "verificationLevel": {
+          "type": "string",
+          "enum": [
+            "none",
+            "manual_review_required",
+            "public_link_verified",
+            "rejected"
+          ]
+        },
+        "rewardClaimStatus": {
+          "type": "string",
+          "enum": [
+            "not_eligible",
+            "ready_to_claim",
+            "claimed"
+          ]
+        },
+        "retryRemaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviewTargetHours": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "claimCode": {
+          "type": "string"
+        },
+        "submittedUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "normalizedUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "rejection": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAllowed": {
+              "type": "boolean"
+            },
+            "retryRemaining": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "shareCopy": {
+          "type": "object",
+          "required": [
+            "title",
+            "text",
+            "requiredCode"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "requiredCode": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogCampaign = {
+  "id": string;
+  "status": string;
+  "title": string;
+  "subtitle": string;
+  "startsAt": string;
+  "endsAt": string;
+  "reward": {
+  "type": string;
+  "durationDays": number;
+  "displayText": string;
+};
+  "rules": string[];
+  "platformPolicy": {
+  "allowedPlatforms": string[];
+  "freeFormAllowed": boolean;
+  "oauthPlatforms": string[];
+  "manualReviewPlatforms": string[];
+};
+  "participation": {
+  "id": string | null;
+  "campaignId": string;
+  "status": "none" | "created" | "manual_review" | "verified" | "rejected" | "claimed";
+  "verificationLevel": "none" | "manual_review_required" | "public_link_verified" | "rejected";
+  "rewardClaimStatus": "not_eligible" | "ready_to_claim" | "claimed";
+  "retryRemaining": number;
+  "reviewTargetHours": number;
+  "expiresAt": string;
+  "updatedAt"?: string;
+  "claimCode"?: string;
+  "submittedUrl"?: string;
+  "normalizedUrl"?: string;
+  "platform"?: string;
+  "rejection"?: {
+} | null;
+  "shareCopy"?: {
+  "title": string;
+  "text": string;
+  "requiredCode": string;
+};
+};
+};
+
+export const BodyLogCampaignClaimDataSchema = {
+  "type": "object",
+  "required": [
+    "reward",
+    "effectiveEntitlement"
+  ],
+  "properties": {
+    "reward": {
+      "type": "object",
+      "required": [
+        "claimStatus",
+        "entitlementId",
+        "entitlementStatus",
+        "startsAt",
+        "endsAt"
+      ],
+      "properties": {
+        "claimStatus": {
+          "type": "string",
+          "const": "claimed"
+        },
+        "entitlementId": {
+          "type": "string"
+        },
+        "entitlementStatus": {
+          "type": "string",
+          "enum": [
+            "active",
+            "queued",
+            "expired"
+          ]
+        },
+        "startsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endsAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "effectiveEntitlement": {
+      "type": "object",
+      "required": [
+        "isPremium",
+        "sources",
+        "premiumUntil"
+      ],
+      "properties": {
+        "isPremium": {
+          "type": "boolean"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "premiumUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogCampaignClaimData = {
+  "reward": {
+  "claimStatus": string;
+  "entitlementId": string;
+  "entitlementStatus": "active" | "queued" | "expired";
+  "startsAt": string;
+  "endsAt": string;
+};
+  "effectiveEntitlement": {
+  "isPremium": boolean;
+  "sources": string[];
+  "premiumUntil": string | null;
+};
+};
+
+export const BodyLogRetentionEventRequestSchema = {
+  "type": "object",
+  "required": [
+    "eventId",
+    "name",
+    "properties",
+    "timestamp",
+    "consent"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "enum": [
+        "growth_card_opened",
+        "local_goal_completed",
+        "invitation_created",
+        "invitation_opened",
+        "invitation_attributed",
+        "buddy_encouragement_sent",
+        "seven_day_plan_opened",
+        "seven_day_plan_completed",
+        "reward_claimed"
+      ]
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "dashboard",
+            "home",
+            "invitation",
+            "buddy",
+            "plan"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "active",
+            "completed",
+            "queued"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "open",
+            "complete",
+            "retry",
+            "claim"
+          ]
+        }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "consent": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type BodyLogRetentionEventRequest = {
+  "eventId": string;
+  "name": "growth_card_opened" | "local_goal_completed" | "invitation_created" | "invitation_opened" | "invitation_attributed" | "buddy_encouragement_sent" | "seven_day_plan_opened" | "seven_day_plan_completed" | "reward_claimed";
+  "properties": {
+  "source"?: "dashboard" | "home" | "invitation" | "buddy" | "plan";
+  "state"?: "active" | "completed" | "queued";
+  "action"?: "open" | "complete" | "retry" | "claim";
+};
+  "timestamp": string;
+  "consent": boolean;
+};
+
+export const BodyLogRetentionAssignmentSchema = {
+  "type": "object",
+  "required": [
+    "experimentId",
+    "variant"
+  ],
+  "properties": {
+    "experimentId": {
+      "type": "string"
+    },
+    "variant": {
+      "type": "string",
+      "enum": [
+        "control",
+        "treatment"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogRetentionAssignment = {
+  "experimentId": string;
+  "variant": "control" | "treatment";
+};
+
 export const BodyLogProfileUpdateRequestSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -6918,13 +7964,29 @@ export const BodyLogInvitationAttributeRequestSchema = {
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "token",
     "installId"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "token"
+      ]
+    },
+    {
+      "required": [
+        "code"
+      ]
+    }
   ],
   "properties": {
     "token": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z2-9]{6}$"
     },
     "installId": {
       "type": "string",
@@ -6933,10 +7995,7 @@ export const BodyLogInvitationAttributeRequestSchema = {
   }
 } as const;
 
-export type BodyLogInvitationAttributeRequest = {
-  "token": string;
-  "installId": string;
-};
+export type BodyLogInvitationAttributeRequest = unknown | unknown;
 
 export const BodyLogInvitationProgressRequestSchema = {
   "type": "object",
@@ -8123,6 +9182,7272 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickManualTaskReferenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickManualTaskReference = {
+  "id": string;
+  "version": number;
+};
+
+export const LightTickConfirmedConditionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "sequence",
+    "scope",
+    "starts_on",
+    "ends_on",
+    "daily_minutes",
+    "active",
+    "reason",
+    "confirmed_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "ongoing",
+        "temporary"
+      ]
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "daily_minutes": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickConfirmedCondition = {
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+};
+
+export const LightTickDailyLimitSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "minutes",
+    "condition_id",
+    "condition_version",
+    "known_minutes",
+    "unknown_count",
+    "over_limit"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "minutes": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "condition_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "condition_version": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "known_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "unknown_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "over_limit": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickDailyLimit = {
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+};
+
+export const LightTickContinuationGoalSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "status",
+    "version",
+    "completion_criteria",
+    "closure_outcome"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "paused",
+        "recovering",
+        "completed",
+        "archived"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "completion_criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "closure_outcome": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "achieved",
+            "ended_without_achievement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickContinuationGoal = {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+
+export const LightTickContinuationPlanSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "status",
+    "period_start",
+    "period_end",
+    "source_reflection_id",
+    "source_reflection_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "status": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_reflection_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_reflection_version": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickContinuationPlan = {
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "source_reflection_id": string | unknown;
+  "source_reflection_version": number | unknown;
+};
+
+export const LightTickReflectionSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "goal_id",
+    "content",
+    "next_action",
+    "period_start",
+    "period_end"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "next_action": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickReflectionSource = {
+  "id": string;
+  "version": number;
+  "goal_id": string;
+  "content": string;
+  "next_action": string;
+  "period_start": string;
+  "period_end": string;
+};
+
+export const LightTickReflectionDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "goal_id",
+    "period_start",
+    "period_end",
+    "content",
+    "next_action",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "content": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReflectionData = {
+  "id": string;
+  "goal_id": string;
+  "plan_id"?: string;
+  "period_start": string;
+  "period_end": string;
+  "content": string;
+  "next_action": string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickContinuationContextSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "continuation_enabled",
+    "goal",
+    "period_start",
+    "period_end",
+    "tasks",
+    "reflections",
+    "plans",
+    "conditions",
+    "daily_limits"
+  ],
+  "properties": {
+    "continuation_enabled": {
+      "type": "boolean"
+    },
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "status",
+        "version",
+        "completion_criteria",
+        "closure_outcome"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "paused",
+            "recovering",
+            "completed",
+            "archived"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "closure_outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "achieved",
+                "ended_without_achievement"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "completion_criteria",
+          "notes",
+          "completed_at",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "plan_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineage_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "actual_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "reflections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "goal_id",
+          "period_start",
+          "period_end",
+          "content",
+          "next_action",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "goal_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "content": {
+            "type": "string"
+          },
+          "next_action": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "status",
+          "period_start",
+          "period_end",
+          "source_reflection_id",
+          "source_reflection_version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "source_reflection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_reflection_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "sequence",
+          "scope",
+          "starts_on",
+          "ends_on",
+          "daily_minutes",
+          "active",
+          "reason",
+          "confirmed_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ongoing",
+              "temporary"
+            ]
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daily_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "daily_limits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "minutes",
+          "condition_id",
+          "condition_version",
+          "known_minutes",
+          "unknown_count",
+          "over_limit"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "condition_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "condition_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "known_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "unknown_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "over_limit": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickContinuationContext = {
+  "continuation_enabled": boolean;
+  "goal": {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "reflections": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id"?: string;
+  "period_start": string;
+  "period_end": string;
+  "content": string;
+  "next_action": string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "source_reflection_id": string | unknown;
+  "source_reflection_version": number | unknown;
+}
+)[];
+  "conditions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+  "daily_limits": (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+};
+
+export const LightTickConditionCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "base_version",
+    "condition_version",
+    "scope",
+    "starts_on",
+    "ends_on",
+    "daily_minutes",
+    "active",
+    "reason"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]{8,128}$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "condition_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "ongoing",
+        "temporary"
+      ]
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "daily_minutes": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  }
+} as const;
+
+export type LightTickConditionCommand = {
+  "id": string;
+  "base_version": number;
+  "condition_version": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+};
+
+export const LightTickConditionsLogSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "revisions"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "revisions": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "sequence",
+          "scope",
+          "starts_on",
+          "ends_on",
+          "daily_minutes",
+          "active",
+          "reason",
+          "confirmed_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ongoing",
+              "temporary"
+            ]
+          },
+          "starts_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daily_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickConditionsLog = {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+
+export const LightTickConditionResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goal",
+    "condition"
+  ],
+  "properties": {
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "status",
+        "version",
+        "completion_criteria",
+        "closure_outcome"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "active",
+            "paused",
+            "recovering",
+            "completed",
+            "archived"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "closure_outcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "achieved",
+                "ended_without_achievement"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "sequence",
+        "scope",
+        "starts_on",
+        "ends_on",
+        "daily_minutes",
+        "active",
+        "reason",
+        "confirmed_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "ongoing",
+            "temporary"
+          ]
+        },
+        "starts_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "ends_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "daily_minutes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickConditionResult = {
+  "goal": {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+  "condition": {
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+};
+};
+
+export const LightTickContinuationContextEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "continuation_enabled",
+        "goal",
+        "period_start",
+        "period_end",
+        "tasks",
+        "reflections",
+        "plans",
+        "conditions",
+        "daily_limits"
+      ],
+      "properties": {
+        "continuation_enabled": {
+          "type": "boolean"
+        },
+        "goal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "status",
+            "version",
+            "completion_criteria",
+            "closure_outcome"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "paused",
+                "recovering",
+                "completed",
+                "archived"
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "closure_outcome": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "ended_without_achievement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "reflections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "goal_id",
+              "period_start",
+              "period_end",
+              "content",
+              "next_action",
+              "version",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "goal_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "plan_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "period_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "period_end": {
+                "type": "string",
+                "format": "date"
+              },
+              "content": {
+                "type": "string"
+              },
+              "next_action": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "status",
+              "period_start",
+              "period_end",
+              "source_reflection_id",
+              "source_reflection_version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "period_start": {
+                "type": "string",
+                "format": "date"
+              },
+              "period_end": {
+                "type": "string",
+                "format": "date"
+              },
+              "source_reflection_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "source_reflection_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "sequence",
+              "scope",
+              "starts_on",
+              "ends_on",
+              "daily_minutes",
+              "active",
+              "reason",
+              "confirmed_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "ongoing",
+                  "temporary"
+                ]
+              },
+              "starts_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "ends_on": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "daily_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "daily_limits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "minutes",
+              "condition_id",
+              "condition_version",
+              "known_minutes",
+              "unknown_count",
+              "over_limit"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "over_limit": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickContinuationContextEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "continuation_enabled": boolean;
+  "goal": {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "reflections": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id"?: string;
+  "period_start": string;
+  "period_end": string;
+  "content": string;
+  "next_action": string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "plans": (
+{
+  "id": string;
+  "title": string;
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "source_reflection_id": string | unknown;
+  "source_reflection_version": number | unknown;
+}
+)[];
+  "conditions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+  "daily_limits": (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+};
+  "requestId"?: string;
+};
+
+export const LightTickConditionResultEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal",
+        "condition"
+      ],
+      "properties": {
+        "goal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "title",
+            "status",
+            "version",
+            "completion_criteria",
+            "closure_outcome"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "paused",
+                "recovering",
+                "completed",
+                "archived"
+              ]
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "closure_outcome": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "achieved",
+                    "ended_without_achievement"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "condition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "sequence",
+            "scope",
+            "starts_on",
+            "ends_on",
+            "daily_minutes",
+            "active",
+            "reason",
+            "confirmed_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "ongoing",
+                "temporary"
+              ]
+            },
+            "starts_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "ends_on": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "daily_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "confirmed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+} as const;
+
+export type LightTickConditionResultEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "goal": {
+  "id": string;
+  "title": string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "version": number;
+  "completion_criteria": string;
+  "closure_outcome": (
+"achieved" | "ended_without_achievement"
+) | unknown;
+};
+  "condition": {
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+};
+};
+  "requestId"?: string;
+};
+
+export const LightTickManualActionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "scheduled_for",
+    "estimated_minutes",
+    "completion_criteria",
+    "guidance"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "scheduled_for": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "completion_criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "guidance": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "source_task_id": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickManualAction = {
+  "id": string;
+  "title": string;
+  "scheduled_for": string | null;
+  "estimated_minutes": number | null;
+  "completion_criteria": string;
+  "guidance": string;
+  "source_task_id"?: string;
+};
+
+export const LightTickManualDraftSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "completion_criteria",
+    "period_start",
+    "period_end",
+    "tasks"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "completion_criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "scheduled_for",
+          "estimated_minutes",
+          "completion_criteria",
+          "guidance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "scheduled_for": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "source_task_id": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "source_reflection_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "source_reflection_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "replace_tasks": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
+    "resume_goal": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickManualDraft = {
+  "goal_id"?: string;
+  "title": string;
+  "completion_criteria": string;
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string | null;
+  "estimated_minutes": number | null;
+  "completion_criteria": string;
+  "guidance": string;
+  "source_task_id"?: string;
+}
+)[];
+  "source_reflection_id"?: string;
+  "source_reflection_version"?: number;
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+  "resume_goal"?: boolean;
+};
+
+export const LightTickManualEditSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "completion_criteria",
+    "period_start",
+    "period_end",
+    "tasks",
+    "base_version"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "completion_criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "scheduled_for",
+          "estimated_minutes",
+          "completion_criteria",
+          "guidance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "scheduled_for": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "source_task_id": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickManualEdit = {
+  "goal_id"?: string;
+  "title": string;
+  "completion_criteria": string;
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string | null;
+  "estimated_minutes": number | null;
+  "completion_criteria": string;
+  "guidance": string;
+  "source_task_id"?: string;
+}
+)[];
+  "base_version": number;
+};
+
+export const LightTickManualConfirmSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "goal_base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "goal_base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickManualConfirm = {
+  "base_version": number;
+  "goal_base_version": number;
+};
+
+export const LightTickManualTaskSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "plan_id",
+    "title",
+    "status",
+    "scheduled_date",
+    "estimated_duration_minutes",
+    "completion_criteria",
+    "notes",
+    "completed_at",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "plan_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "status": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "scheduled_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "estimated_duration_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "completion_criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "lineage_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "actual_minutes": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickManualTask = {
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+};
+
+export const LightTickManualPlanSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "goal_version",
+    "version",
+    "status",
+    "draft",
+    "preserved_tasks",
+    "tasks"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "goal_version": {
+      "type": "integer"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "active"
+      ]
+    },
+    "draft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "completion_criteria",
+        "period_start",
+        "period_end",
+        "tasks"
+      ],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "scheduled_for",
+              "estimated_minutes",
+              "completion_criteria",
+              "guidance"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "scheduled_for": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "guidance": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "source_task_id": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "source_reflection_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "source_reflection_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "replace_tasks": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "resume_goal": {
+          "type": "boolean"
+        }
+      }
+    },
+    "preserved_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "completion_criteria",
+          "notes",
+          "completed_at",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "plan_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineage_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "actual_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "completion_criteria",
+          "notes",
+          "completed_at",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "plan_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineage_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "actual_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "source_reflection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "goal_id",
+        "content",
+        "next_action",
+        "period_start",
+        "period_end"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "goal_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "next_action": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "daily_limits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "minutes",
+          "condition_id",
+          "condition_version",
+          "known_minutes",
+          "unknown_count",
+          "over_limit"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "condition_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "condition_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "known_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "unknown_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "over_limit": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "replaced_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "completion_criteria",
+          "notes",
+          "completed_at",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "plan_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "scheduled_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "completion_criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lineage_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "actual_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickManualPlan = {
+  "id": string;
+  "goal_id": string;
+  "goal_version": number;
+  "version": number;
+  "status": "proposed" | "active";
+  "draft": {
+  "goal_id"?: string;
+  "title": string;
+  "completion_criteria": string;
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string | null;
+  "estimated_minutes": number | null;
+  "completion_criteria": string;
+  "guidance": string;
+  "source_task_id"?: string;
+}
+)[];
+  "source_reflection_id"?: string;
+  "source_reflection_version"?: number;
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+  "resume_goal"?: boolean;
+};
+  "preserved_tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "source_reflection"?: {
+  "id": string;
+  "version": number;
+  "goal_id": string;
+  "content": string;
+  "next_action": string;
+  "period_start": string;
+  "period_end": string;
+};
+  "daily_limits"?: (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+  "replaced_tasks"?: (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+};
+
+export const LightTickManualPlanEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "goal_id",
+        "goal_version",
+        "version",
+        "status",
+        "draft",
+        "preserved_tasks",
+        "tasks"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "goal_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "goal_version": {
+          "type": "integer"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "active"
+          ]
+        },
+        "draft": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "completion_criteria",
+            "period_start",
+            "period_end",
+            "tasks"
+          ],
+          "properties": {
+            "goal_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "completion_criteria": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            },
+            "tasks": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 50,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "scheduled_for",
+                  "estimated_minutes",
+                  "completion_criteria",
+                  "guidance"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "scheduled_for": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "guidance": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "source_task_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                }
+              }
+            },
+            "source_reflection_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "source_reflection_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "replace_tasks": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                }
+              }
+            },
+            "resume_goal": {
+              "type": "boolean"
+            }
+          }
+        },
+        "preserved_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "source_reflection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "goal_id",
+            "content",
+            "next_action",
+            "period_start",
+            "period_end"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "goal_id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "content": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "next_action": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "period_start": {
+              "type": "string",
+              "format": "date"
+            },
+            "period_end": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "daily_limits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "minutes",
+              "condition_id",
+              "condition_version",
+              "known_minutes",
+              "unknown_count",
+              "over_limit"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "condition_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "known_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "unknown_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "over_limit": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "replaced_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "completion_criteria",
+              "notes",
+              "completed_at",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 30
+              },
+              "scheduled_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "completion_criteria": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "lineage_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "actual_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickManualPlanEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "id": string;
+  "goal_id": string;
+  "goal_version": number;
+  "version": number;
+  "status": "proposed" | "active";
+  "draft": {
+  "goal_id"?: string;
+  "title": string;
+  "completion_criteria": string;
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string | null;
+  "estimated_minutes": number | null;
+  "completion_criteria": string;
+  "guidance": string;
+  "source_task_id"?: string;
+}
+)[];
+  "source_reflection_id"?: string;
+  "source_reflection_version"?: number;
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+  "resume_goal"?: boolean;
+};
+  "preserved_tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "source_reflection"?: {
+  "id": string;
+  "version": number;
+  "goal_id": string;
+  "content": string;
+  "next_action": string;
+  "period_start": string;
+  "period_end": string;
+};
+  "daily_limits"?: (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+  "replaced_tasks"?: (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+};
+  "requestId"?: string;
+};
+
+export const LightTickManualListEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "goal_id",
+              "goal_version",
+              "version",
+              "status",
+              "draft",
+              "preserved_tasks",
+              "tasks"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "goal_version": {
+                "type": "integer"
+              },
+              "version": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "proposed",
+                  "active"
+                ]
+              },
+              "draft": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "completion_criteria",
+                  "period_start",
+                  "period_end",
+                  "tasks"
+                ],
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "period_start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "period_end": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "tasks": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "title",
+                        "scheduled_for",
+                        "estimated_minutes",
+                        "completion_criteria",
+                        "guidance"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        },
+                        "scheduled_for": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "format": "date"
+                        },
+                        "estimated_minutes": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "completion_criteria": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "guidance": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "source_task_id": {
+                          "type": "string",
+                          "maxLength": 128
+                        }
+                      }
+                    }
+                  },
+                  "source_reflection_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "source_reflection_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "replace_tasks": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "version"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        }
+                      }
+                    }
+                  },
+                  "resume_goal": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "preserved_tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "goal_id",
+                    "plan_id",
+                    "title",
+                    "status",
+                    "scheduled_date",
+                    "estimated_duration_minutes",
+                    "completion_criteria",
+                    "notes",
+                    "completed_at",
+                    "version"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "goal_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "plan_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "maxLength": 30
+                    },
+                    "scheduled_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "estimated_duration_minutes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "completed_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineage_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "actual_minutes": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "goal_id",
+                    "plan_id",
+                    "title",
+                    "status",
+                    "scheduled_date",
+                    "estimated_duration_minutes",
+                    "completion_criteria",
+                    "notes",
+                    "completed_at",
+                    "version"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "goal_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "plan_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "maxLength": 30
+                    },
+                    "scheduled_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "estimated_duration_minutes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "completed_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineage_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "actual_minutes": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "source_reflection": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version",
+                  "goal_id",
+                  "content",
+                  "next_action",
+                  "period_start",
+                  "period_end"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "goal_id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "next_action": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "period_start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "period_end": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              },
+              "daily_limits": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "date",
+                    "minutes",
+                    "condition_id",
+                    "condition_version",
+                    "known_minutes",
+                    "unknown_count",
+                    "over_limit"
+                  ],
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "minutes": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "condition_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "condition_version": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "known_minutes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "unknown_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "over_limit": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              },
+              "replaced_tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "goal_id",
+                    "plan_id",
+                    "title",
+                    "status",
+                    "scheduled_date",
+                    "estimated_duration_minutes",
+                    "completion_criteria",
+                    "notes",
+                    "completed_at",
+                    "version"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "goal_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "plan_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "status": {
+                      "type": "string",
+                      "maxLength": 30
+                    },
+                    "scheduled_date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "estimated_duration_minutes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "completion_criteria": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "completed_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lineage_id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "actual_minutes": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickManualListEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "goal_id": string;
+  "goal_version": number;
+  "version": number;
+  "status": "proposed" | "active";
+  "draft": {
+  "goal_id"?: string;
+  "title": string;
+  "completion_criteria": string;
+  "period_start": string;
+  "period_end": string;
+  "tasks": (
+{
+  "id": string;
+  "title": string;
+  "scheduled_for": string | null;
+  "estimated_minutes": number | null;
+  "completion_criteria": string;
+  "guidance": string;
+  "source_task_id"?: string;
+}
+)[];
+  "source_reflection_id"?: string;
+  "source_reflection_version"?: number;
+  "replace_tasks"?: (
+{
+  "id": string;
+  "version": number;
+}
+)[];
+  "resume_goal"?: boolean;
+};
+  "preserved_tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "tasks": (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+  "source_reflection"?: {
+  "id": string;
+  "version": number;
+  "goal_id": string;
+  "content": string;
+  "next_action": string;
+  "period_start": string;
+  "period_end": string;
+};
+  "daily_limits"?: (
+{
+  "date": string;
+  "minutes": number | unknown;
+  "condition_id": string | unknown;
+  "condition_version": number | unknown;
+  "known_minutes": number;
+  "unknown_count": number;
+  "over_limit": boolean;
+}
+)[];
+  "replaced_tasks"?: (
+{
+  "id": string;
+  "goal_id": string;
+  "plan_id": string;
+  "title": string;
+  "status": string;
+  "scheduled_date": string | null;
+  "estimated_duration_minutes": number | null;
+  "completion_criteria": string;
+  "notes": string;
+  "completed_at": string | null;
+  "version": number;
+  "lineage_id"?: string;
+  "actual_minutes"?: number | unknown;
+}
+)[];
+}
+)[];
+};
+  "requestId"?: string;
+};
+
+export const LightTickLocalGoalSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "criteria",
+    "status",
+    "archived"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "achieved",
+        "ended"
+      ]
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickLocalGoal = {
+  "id": string;
+  "title": string;
+  "criteria": string;
+  "status": "active" | "paused" | "achieved" | "ended";
+  "archived": boolean;
+};
+
+export const LightTickLocalActionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "title",
+    "date",
+    "estimated_minutes",
+    "criteria",
+    "details",
+    "completed_at",
+    "archived",
+    "source_reflection_id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "details": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "source_reflection_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickLocalAction = {
+  "id": string;
+  "goal_id": string;
+  "title": string;
+  "date": string | null;
+  "estimated_minutes": number | null;
+  "criteria": string;
+  "details": string;
+  "completed_at": string | null;
+  "archived": boolean;
+  "source_reflection_id": string | null;
+};
+
+export const LightTickLocalReflectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "goal_id",
+    "action_id",
+    "result",
+    "obstacles",
+    "next_step",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "goal_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "action_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "result": {
+      "type": "string",
+      "maxLength": 1800
+    },
+    "obstacles": {
+      "type": "string",
+      "maxLength": 1800
+    },
+    "next_step": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickLocalReflection = {
+  "id": string;
+  "goal_id": string;
+  "action_id": string | null;
+  "result": string;
+  "obstacles": string;
+  "next_step": string;
+  "created_at": string;
+};
+
+export const LightTickLocalEventSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "entity_id",
+    "kind",
+    "value",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "entity_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "value": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickLocalEvent = {
+  "id": string;
+  "entity_id": string;
+  "kind": string;
+  "value": string;
+  "created_at": string;
+};
+
+export const LightTickLocalAdoptionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "workspace_id",
+    "source_secret",
+    "goals",
+    "actions",
+    "reflections",
+    "events"
+  ],
+  "properties": {
+    "workspace_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "source_secret": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 128,
+      "writeOnly": true,
+      "pattern": "^[a-zA-Z0-9-]+$"
+    },
+    "goals": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "criteria",
+          "status",
+          "archived"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "achieved",
+              "ended"
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "actions": {
+      "type": "array",
+      "maxItems": 250,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "title",
+          "date",
+          "estimated_minutes",
+          "criteria",
+          "details",
+          "completed_at",
+          "archived",
+          "source_reflection_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "criteria": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "details": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "source_reflection_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "reflections": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "goal_id",
+          "action_id",
+          "result",
+          "obstacles",
+          "next_step",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "goal_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "action_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 1800
+          },
+          "obstacles": {
+            "type": "string",
+            "maxLength": 1800
+          },
+          "next_step": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "entity_id",
+          "kind",
+          "value",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "entity_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLocalAdoption = {
+  "workspace_id": string;
+  "source_secret": string;
+  "goals": (
+{
+  "id": string;
+  "title": string;
+  "criteria": string;
+  "status": "active" | "paused" | "achieved" | "ended";
+  "archived": boolean;
+}
+)[];
+  "actions": (
+{
+  "id": string;
+  "goal_id": string;
+  "title": string;
+  "date": string | null;
+  "estimated_minutes": number | null;
+  "criteria": string;
+  "details": string;
+  "completed_at": string | null;
+  "archived": boolean;
+  "source_reflection_id": string | null;
+}
+)[];
+  "reflections": (
+{
+  "id": string;
+  "goal_id": string;
+  "action_id": string | null;
+  "result": string;
+  "obstacles": string;
+  "next_step": string;
+  "created_at": string;
+}
+)[];
+  "events": (
+{
+  "id": string;
+  "entity_id": string;
+  "kind": string;
+  "value": string;
+  "created_at": string;
+}
+)[];
+};
+
+export const LightTickLocalMappingSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "local_id",
+    "cloud_id"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "goal",
+        "action",
+        "reflection"
+      ]
+    },
+    "local_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "cloud_id": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickLocalMapping = {
+  "kind": "goal" | "action" | "reflection";
+  "local_id": string;
+  "cloud_id": string;
+};
+
+export const LightTickLocalReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receipt_id",
+    "owner_id",
+    "mappings",
+    "adopted_at"
+  ],
+  "properties": {
+    "receipt_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "owner_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "local_id",
+          "cloud_id"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "goal",
+              "action",
+              "reflection"
+            ]
+          },
+          "local_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "cloud_id": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "adopted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickLocalReceipt = {
+  "receipt_id": string;
+  "owner_id": string;
+  "mappings": (
+{
+  "kind": "goal" | "action" | "reflection";
+  "local_id": string;
+  "cloud_id": string;
+}
+)[];
+  "adopted_at": string;
+};
+
+export const LightTickLocalReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_id",
+        "owner_id",
+        "mappings",
+        "adopted_at"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "owner_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "local_id",
+              "cloud_id"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "goal",
+                  "action",
+                  "reflection"
+                ]
+              },
+              "local_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "cloud_id": {
+                "type": "string",
+                "maxLength": 128
+              }
+            }
+          }
+        },
+        "adopted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLocalReceiptEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "receipt_id": string;
+  "owner_id": string;
+  "mappings": (
+{
+  "kind": "goal" | "action" | "reflection";
+  "local_id": string;
+  "cloud_id": string;
+}
+)[];
+  "adopted_at": string;
+};
+  "requestId"?: string;
+};
+
+export const LightTickRecordSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "raw_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prompt_kind": {
+      "type": "string",
+      "enum": [
+        "free",
+        "learning",
+        "difficulty",
+        "decision"
+      ],
+      "default": "free"
+    },
+    "guided_answers": {
+      "type": "object",
+      "maxProperties": 12,
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      }
+    },
+    "adopted_summary": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "summary_basis_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "archived_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "imported_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "missing_versions": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "required": [
+        "instance",
+        "id",
+        "imported_at",
+        "missing_versions"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "raw_text",
+    "record_date",
+    "prompt_kind",
+    "guided_answers",
+    "tags",
+    "version",
+    "created_at",
+    "updated_at"
+  ]
+} as const;
+
+export type LightTickRecord = {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+
+export const LightTickRecordSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "instance": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "imported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "missing_versions": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  },
+  "required": [
+    "instance",
+    "id",
+    "imported_at",
+    "missing_versions"
+  ]
+} as const;
+
+export type LightTickRecordSource = {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+
+export const LightTickRecordLinkTicketEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "expires_at",
+        "user_id",
+        "scope"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{36}$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "const": "records"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickRecordLinkTicketEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "code": string;
+  "expires_at": string;
+  "user_id": string;
+  "scope": string;
+};
+  "requestId": string;
+};
+
+export const LightTickRecordLinkStatusEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "scope"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": [
+            "unlinked",
+            "prepared",
+            "staged",
+            "active",
+            "readonly",
+            "cancelled"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "const": "records"
+        },
+        "binding_id": {
+          "type": "string"
+        },
+        "target_user_id": {
+          "type": "string"
+        },
+        "operation_id": {
+          "type": "string"
+        },
+        "snapshot_hash": {
+          "type": "string"
+        },
+        "source_instance": {
+          "type": "string"
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickRecordLinkStatusEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "phase": "unlinked" | "prepared" | "staged" | "active" | "readonly" | "cancelled";
+  "scope": string;
+  "binding_id"?: string;
+  "target_user_id"?: string;
+  "operation_id"?: string;
+  "snapshot_hash"?: string;
+  "source_instance"?: string;
+  "receipt"?: {
+  [key: string]: unknown;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickRecordRecoveryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "export"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "const": "readonly"
+        },
+        "export": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "exported_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "records": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "record": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "raw_text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 10000
+                      },
+                      "record_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "prompt_kind": {
+                        "type": "string",
+                        "enum": [
+                          "free",
+                          "learning",
+                          "difficulty",
+                          "decision"
+                        ],
+                        "default": "free"
+                      },
+                      "guided_answers": {
+                        "type": "object",
+                        "maxProperties": 12,
+                        "additionalProperties": {
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 50
+                        }
+                      },
+                      "adopted_summary": {
+                        "type": "string",
+                        "maxLength": 10000
+                      },
+                      "summary_basis_version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "archived_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "source": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "instance": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "imported_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "missing_versions": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 1
+                            }
+                          }
+                        },
+                        "required": [
+                          "instance",
+                          "id",
+                          "imported_at",
+                          "missing_versions"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "raw_text",
+                      "record_date",
+                      "prompt_kind",
+                      "guided_answers",
+                      "tags",
+                      "version",
+                      "created_at",
+                      "updated_at"
+                    ]
+                  },
+                  "versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "raw_text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 10000
+                        },
+                        "record_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "prompt_kind": {
+                          "type": "string",
+                          "enum": [
+                            "free",
+                            "learning",
+                            "difficulty",
+                            "decision"
+                          ],
+                          "default": "free"
+                        },
+                        "guided_answers": {
+                          "type": "object",
+                          "maxProperties": 12,
+                          "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 2000
+                          }
+                        },
+                        "tags": {
+                          "type": "array",
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          }
+                        },
+                        "adopted_summary": {
+                          "type": "string",
+                          "maxLength": 10000
+                        },
+                        "summary_basis_version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "archived_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "source": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "instance": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "imported_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "missing_versions": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 1
+                              }
+                            }
+                          },
+                          "required": [
+                            "instance",
+                            "id",
+                            "imported_at",
+                            "missing_versions"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "raw_text",
+                        "record_date",
+                        "prompt_kind",
+                        "guided_answers",
+                        "tags",
+                        "version",
+                        "created_at",
+                        "updated_at"
+                      ]
+                    }
+                  },
+                  "source_history": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Owner-only immutable original source entry, observed versions, AI attempts and operation metadata; credentials are forbidden."
+                  }
+                },
+                "required": [
+                  "record",
+                  "versions"
+                ]
+              }
+            }
+          },
+          "required": [
+            "format_version",
+            "exported_at",
+            "records"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickRecordRecoveryEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "phase": string;
+  "export": {
+  "format_version": number;
+  "exported_at": string;
+  "records": (
+{
+  "record": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "versions": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "source_history"?: {
+  [key: string]: unknown;
+};
+}
+)[];
+};
+};
+};
+
+export const LightTickRecordWriteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "raw_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "prompt_kind": {
+      "type": "string",
+      "enum": [
+        "free",
+        "learning",
+        "difficulty",
+        "decision"
+      ],
+      "default": "free"
+    },
+    "guided_answers": {
+      "type": "object",
+      "maxProperties": 12,
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2000
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      }
+    },
+    "adopted_summary": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "summary_basis_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "raw_text",
+    "record_date",
+    "base_version"
+  ]
+} as const;
+
+export type LightTickRecordWriteRequest = {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind"?: "free" | "learning" | "difficulty" | "decision";
+  "guided_answers"?: {
+  [key: string]: string;
+};
+  "tags"?: string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "base_version": number;
+};
+
+export const LightTickRecordVersionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "base_version"
+  ]
+} as const;
+
+export type LightTickRecordVersionRequest = {
+  "base_version": number;
+};
+
+export const LightTickRecordEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "record_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "prompt_kind": {
+          "type": "string",
+          "enum": [
+            "free",
+            "learning",
+            "difficulty",
+            "decision"
+          ],
+          "default": "free"
+        },
+        "guided_answers": {
+          "type": "object",
+          "maxProperties": 12,
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
+        },
+        "adopted_summary": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "summary_basis_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "archived_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "instance": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "imported_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "missing_versions": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "required": [
+            "instance",
+            "id",
+            "imported_at",
+            "missing_versions"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "raw_text",
+        "record_date",
+        "prompt_kind",
+        "guided_answers",
+        "tags",
+        "version",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "requestId": string;
+};
+
+export const LightTickRecordPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "raw_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "record_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "prompt_kind": {
+                "type": "string",
+                "enum": [
+                  "free",
+                  "learning",
+                  "difficulty",
+                  "decision"
+                ],
+                "default": "free"
+              },
+              "guided_answers": {
+                "type": "object",
+                "maxProperties": 12,
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                }
+              },
+              "adopted_summary": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "summary_basis_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "archived_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "imported_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "missing_versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                },
+                "required": [
+                  "instance",
+                  "id",
+                  "imported_at",
+                  "missing_versions"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raw_text",
+              "record_date",
+              "prompt_kind",
+              "guided_answers",
+              "tags",
+              "version",
+              "created_at",
+              "updated_at"
+            ]
+          }
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items",
+        "has_more"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordPageEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "has_more": boolean;
+  "next_cursor"?: string;
+};
+  "requestId": string;
+};
+
+export const LightTickRecordVersionsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "raw_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "record_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "prompt_kind": {
+                "type": "string",
+                "enum": [
+                  "free",
+                  "learning",
+                  "difficulty",
+                  "decision"
+                ],
+                "default": "free"
+              },
+              "guided_answers": {
+                "type": "object",
+                "maxProperties": 12,
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                }
+              },
+              "adopted_summary": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "summary_basis_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "archived_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "imported_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "missing_versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                },
+                "required": [
+                  "instance",
+                  "id",
+                  "imported_at",
+                  "missing_versions"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raw_text",
+              "record_date",
+              "prompt_kind",
+              "guided_answers",
+              "tags",
+              "version",
+              "created_at",
+              "updated_at"
+            ]
+          }
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordVersionsEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "items": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickRecordHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "raw_text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10000
+            },
+            "record_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "prompt_kind": {
+              "type": "string",
+              "enum": [
+                "free",
+                "learning",
+                "difficulty",
+                "decision"
+              ],
+              "default": "free"
+            },
+            "guided_answers": {
+              "type": "object",
+              "maxProperties": 12,
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50
+              }
+            },
+            "adopted_summary": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "summary_basis_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "archived_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "source": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "instance": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "imported_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "missing_versions": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              "required": [
+                "instance",
+                "id",
+                "imported_at",
+                "missing_versions"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "raw_text",
+            "record_date",
+            "prompt_kind",
+            "guided_answers",
+            "tags",
+            "version",
+            "created_at",
+            "updated_at"
+          ]
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "raw_text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10000
+              },
+              "record_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "prompt_kind": {
+                "type": "string",
+                "enum": [
+                  "free",
+                  "learning",
+                  "difficulty",
+                  "decision"
+                ],
+                "default": "free"
+              },
+              "guided_answers": {
+                "type": "object",
+                "maxProperties": 12,
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                }
+              },
+              "adopted_summary": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "summary_basis_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "id": {
+                "type": "string"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "archived_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "imported_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "missing_versions": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                },
+                "required": [
+                  "instance",
+                  "id",
+                  "imported_at",
+                  "missing_versions"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "raw_text",
+              "record_date",
+              "prompt_kind",
+              "guided_answers",
+              "tags",
+              "version",
+              "created_at",
+              "updated_at"
+            ]
+          }
+        },
+        "source_history": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Owner-only immutable source history without credentials."
+        }
+      },
+      "required": [
+        "record",
+        "versions"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordHistoryEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "record": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "versions": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "source_history"?: {
+  [key: string]: unknown;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickRecordExportEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "exported_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "record": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "raw_text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "record_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "prompt_kind": {
+                    "type": "string",
+                    "enum": [
+                      "free",
+                      "learning",
+                      "difficulty",
+                      "decision"
+                    ],
+                    "default": "free"
+                  },
+                  "guided_answers": {
+                    "type": "object",
+                    "maxProperties": 12,
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 2000
+                    }
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 50
+                    }
+                  },
+                  "adopted_summary": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "summary_basis_version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "archived_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "instance": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "imported_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "missing_versions": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    },
+                    "required": [
+                      "instance",
+                      "id",
+                      "imported_at",
+                      "missing_versions"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "raw_text",
+                  "record_date",
+                  "prompt_kind",
+                  "guided_answers",
+                  "tags",
+                  "version",
+                  "created_at",
+                  "updated_at"
+                ]
+              },
+              "versions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "raw_text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 10000
+                    },
+                    "record_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "prompt_kind": {
+                      "type": "string",
+                      "enum": [
+                        "free",
+                        "learning",
+                        "difficulty",
+                        "decision"
+                      ],
+                      "default": "free"
+                    },
+                    "guided_answers": {
+                      "type": "object",
+                      "maxProperties": 12,
+                      "additionalProperties": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "maxItems": 20,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 50
+                      }
+                    },
+                    "adopted_summary": {
+                      "type": "string",
+                      "maxLength": 10000
+                    },
+                    "summary_basis_version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "archived_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "source": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "instance": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "imported_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "missing_versions": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 1
+                          }
+                        }
+                      },
+                      "required": [
+                        "instance",
+                        "id",
+                        "imported_at",
+                        "missing_versions"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "raw_text",
+                    "record_date",
+                    "prompt_kind",
+                    "guided_answers",
+                    "tags",
+                    "version",
+                    "created_at",
+                    "updated_at"
+                  ]
+                }
+              },
+              "source_history": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Owner-only immutable original source entry, observed versions, AI attempts and operation metadata; credentials are forbidden."
+              }
+            },
+            "required": [
+              "record",
+              "versions"
+            ]
+          }
+        }
+      },
+      "required": [
+        "format_version",
+        "exported_at",
+        "records"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ]
+} as const;
+
+export type LightTickRecordExportEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "format_version": number;
+  "exported_at": string;
+  "records": (
+{
+  "record": {
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+};
+  "versions": (
+{
+  "raw_text": string;
+  "record_date": string;
+  "prompt_kind": "free" | "learning" | "difficulty" | "decision";
+  "guided_answers": {
+  [key: string]: string;
+};
+  "tags": string[];
+  "adopted_summary"?: string;
+  "summary_basis_version"?: number;
+  "id": string;
+  "version": number;
+  "archived_at"?: string;
+  "created_at": string;
+  "updated_at": string;
+  "source"?: {
+  "instance": string;
+  "id": string;
+  "imported_at": string;
+  "missing_versions": number[];
+};
+}
+)[];
+  "source_history"?: {
+  [key: string]: unknown;
+};
+}
+)[];
+};
+  "requestId": string;
+};
+
 export const LightTickActionTargetSchema = {
   "type": "object",
   "properties": {
@@ -8155,14 +16480,4234 @@ export const LightTickActionTargetSchema = {
   "required": [
     "kind"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "article"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "course"
+        ],
+        "properties": {
+          "course": {
+            "type": "string",
+            "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "plan"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "plan_id",
+          "lesson_no"
+        ],
+        "properties": {
+          "plan_id": {
+            "type": "string",
+            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+          },
+          "lesson_no": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "renzhi"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "lesson_no"
+        ],
+        "properties": {
+          "lesson_no": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "yingyu"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "course"
+        ],
+        "properties": {
+          "course": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "biaoda"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "course"
+        ],
+        "properties": {
+          "course": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickActionTarget = {
+export type LightTickActionTarget = (
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+);
+
+export const LightTickPracticeFollowUpRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "feedback_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "source_version": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "parent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "parent_revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  },
+  "required": [
+    "key",
+    "revision",
+    "feedback_id",
+    "source_version",
+    "title",
+    "date"
+  ]
+} as const;
+
+export type LightTickPracticeFollowUpRequest = {
+  "key": string;
+  "revision": number;
+  "feedback_id": string;
+  "source_version": string;
+  "title": string;
+  "date": string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "parent_revision"?: number | null;
+};
+
+export const LightTickPracticeFollowUpContextEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "origin_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "feedback_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "feedback": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "outcome": {
+              "type": "string",
+              "enum": [
+                "applied",
+                "not_applied",
+                "unknown"
+              ]
+            },
+            "result": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "evidence": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "next_step": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "id",
+            "created_at",
+            "outcome",
+            "result",
+            "evidence",
+            "next_step"
+          ],
+          "additionalProperties": false
+        },
+        "source_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "source_title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10000
+        },
+        "parents": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "period": {
+                "type": "string",
+                "enum": [
+                  "year",
+                  "month",
+                  "week"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "timezone": {
+                "type": "string"
+              },
+              "target_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "period",
+              "revision",
+              "start_date",
+              "end_date",
+              "timezone",
+              "target_minutes"
+            ]
+          }
+        }
+      },
+      "required": [
+        "available",
+        "origin_id",
+        "feedback_id",
+        "revision",
+        "feedback",
+        "source_version",
+        "source_title",
+        "parents"
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickPracticeFollowUpContextEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "available": boolean;
+  "origin_id": string;
+  "feedback_id": string;
+  "revision": number;
+  "feedback": {
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+};
+  "source_version": string | null;
+  "source_title": string | null;
+  "parents": (
+{
+  "id": string;
+  "title": string;
+  "period": "year" | "month" | "week";
+  "revision": number;
+  "start_date": string;
+  "end_date": string;
+  "timezone": string;
+  "target_minutes": number | null;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickActionCapabilitiesSchema = {
+  "type": "object",
+  "properties": {
+    "nullable_schedule": {
+      "const": true
+    },
+    "completion_modes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "time",
+          "content",
+          "check"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "content_receipts": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "article",
+          "plan"
+        ]
+      },
+      "maxItems": 2
+    },
+    "actual_fact_dates": {
+      "const": true
+    },
+    "connection_write_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "source_delivery_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "v2_import_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "practice_follow_up": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enables explicitly reviewed follow-ups; feedback alone never creates one."
+    },
+    "learning_practice": {
+      "type": "boolean",
+      "description": "Only permits practice writes when the separately configured connection write gate is enabled."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "nullable_schedule",
+    "completion_modes",
+    "content_receipts",
+    "actual_fact_dates",
+    "connection_write_enabled",
+    "source_delivery_enabled",
+    "v2_import_enabled"
+  ]
+} as const;
+
+export type LightTickActionCapabilities = {
+  "nullable_schedule": unknown;
+  "completion_modes": (
+"time" | "content" | "check"
+)[];
+  "content_receipts": (
+"article" | "plan"
+)[];
+  "actual_fact_dates": unknown;
+  "connection_write_enabled": boolean;
+  "source_delivery_enabled": boolean;
+  "v2_import_enabled": boolean;
+  "practice_follow_up"?: boolean;
+  "learning_practice"?: boolean;
+};
+
+export const LightTickActionScheduleRequestSchema = {
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "target": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "library",
+                "book",
+                "renzhi",
+                "yingyu",
+                "biaoda",
+                "plan",
+                "article"
+              ]
+            },
+            "course": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "renzhi"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "lesson_no"
+                ],
+                "properties": {
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "yingyu"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "biaoda"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "properties": {
+            "kind": {
+              "enum": [
+                "article",
+                "plan"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "target_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    }
+  },
+  "required": [
+    "title",
+    "target",
+    "date",
+    "key"
+  ],
+  "additionalProperties": false,
+  "description": "Deduplicates non-archived content by normalized source, timezone and date (null uses its own bucket). target_minutes is a legacy estimate alias only; conflicting estimates are rejected. Sources must exist in the private verified owner inventory."
+} as const;
+
+export type LightTickActionScheduleRequest = {
+  "title": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) & (
+{
+  "kind"?: "article" | "plan";
+}
+);
+  "date": string | null;
+  "timezone"?: string;
+  "target_minutes"?: number | null;
+  "estimated_minutes"?: number | null;
+  "key": string;
+};
+
+export const LightTickActionCreateResultSchema = {
+  "type": "object",
+  "properties": {
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "year",
+              "month",
+              "week",
+              "day"
+            ]
+          },
+          "horizon": {
+            "type": "string",
+            "enum": [
+              "short",
+              "long"
+            ]
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "target_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "minimum_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "target_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "reminder": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "if_then": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "library",
+                      "book",
+                      "renzhi",
+                      "yingyu",
+                      "biaoda",
+                      "plan",
+                      "article"
+                    ]
+                  },
+                  "course": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "article"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "plan"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "plan_id",
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "plan_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                        },
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "renzhi"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "yingyu"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "biaoda"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completion_mode": {
+            "type": "string",
+            "enum": [
+              "time",
+              "content",
+              "check"
+            ],
+            "default": "time"
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "completed",
+              "archived"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reminder_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "minimum": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "interrupted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "partial": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "minutes",
+              "completed",
+              "minimum",
+              "interrupted",
+              "partial"
+            ],
+            "additionalProperties": false
+          },
+          "blocked": {
+            "type": "boolean"
+          },
+          "schema_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completion_record_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "practice_origin": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan_id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "feedback_id": {
+                "type": "string",
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "plan_id",
+              "feedback_id"
+            ]
+          },
+          "practice_source": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "lesson",
+                  "record"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "binding_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "version",
+              "binding_id"
+            ],
+            "additionalProperties": false
+          },
+          "practice_feedback": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "applied",
+                    "not_applied",
+                    "unknown"
+                  ]
+                },
+                "result": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "evidence": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "next_step": {
+                  "type": "string",
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "id",
+                "created_at",
+                "outcome",
+                "result",
+                "evidence",
+                "next_step"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "title",
+          "period",
+          "horizon",
+          "start_date",
+          "end_date",
+          "timezone",
+          "parent_id",
+          "target_minutes",
+          "minimum_minutes",
+          "target_count",
+          "at",
+          "reminder",
+          "reason",
+          "if_then",
+          "target",
+          "completion_mode",
+          "estimated_minutes",
+          "id",
+          "revision",
+          "status",
+          "created_at",
+          "updated_at",
+          "reminder_at",
+          "schema_version",
+          "completed_at",
+          "completion_record_id"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "completion_mode": {
+                  "enum": [
+                    "content",
+                    "check"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target_minutes": {
+                  "type": "null"
+                },
+                "minimum_minutes": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "completion_mode": {
+                  "const": "check"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "completion_mode": {
+                  "const": "time"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "estimated_minutes": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "plans"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionCreateResult = {
+  "plans": (
+(
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+)
+)[];
+};
+
+export const LightTickActionMutationResultSchema = {
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "year",
+            "month",
+            "week",
+            "day"
+          ]
+        },
+        "horizon": {
+          "type": "string",
+          "enum": [
+            "short",
+            "long"
+          ]
+        },
+        "start_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "end_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "target_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "minimum_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "target_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "reminder": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "if_then": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "library",
+                    "book",
+                    "renzhi",
+                    "yingyu",
+                    "biaoda",
+                    "plan",
+                    "article"
+                  ]
+                },
+                "course": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "article"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "plan"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "plan_id",
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "plan_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                      },
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "renzhi"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "yingyu"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "biaoda"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completion_mode": {
+          "type": "string",
+          "enum": [
+            "time",
+            "content",
+            "check"
+          ],
+          "default": "time"
+        },
+        "estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "paused",
+            "completed",
+            "archived"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reminder_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "progress": {
+          "type": "object",
+          "properties": {
+            "minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "interrupted": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "partial": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "minutes",
+            "completed",
+            "minimum",
+            "interrupted",
+            "partial"
+          ],
+          "additionalProperties": false
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "completion_record_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "practice_origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "feedback_id": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          "required": [
+            "plan_id",
+            "feedback_id"
+          ]
+        },
+        "practice_source": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "lesson",
+                "record"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "binding_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            }
+          },
+          "required": [
+            "kind",
+            "id",
+            "version",
+            "binding_id"
+          ],
+          "additionalProperties": false
+        },
+        "practice_feedback": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "applied",
+                  "not_applied",
+                  "unknown"
+                ]
+              },
+              "result": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "evidence": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "next_step": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "id",
+              "created_at",
+              "outcome",
+              "result",
+              "evidence",
+              "next_step"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "title",
+        "period",
+        "horizon",
+        "start_date",
+        "end_date",
+        "timezone",
+        "parent_id",
+        "target_minutes",
+        "minimum_minutes",
+        "target_count",
+        "at",
+        "reminder",
+        "reason",
+        "if_then",
+        "target",
+        "completion_mode",
+        "estimated_minutes",
+        "id",
+        "revision",
+        "status",
+        "created_at",
+        "updated_at",
+        "reminder_at",
+        "schema_version",
+        "completed_at",
+        "completion_record_id"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "enum": [
+                  "content",
+                  "check"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target_minutes": {
+                "type": "null"
+              },
+              "minimum_minutes": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "const": "check"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "const": "time"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "estimated_minutes": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "plan_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ended_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "minimum"
+          ]
+        },
+        "planned_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "actual_minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "running",
+            "completed",
+            "minimum",
+            "partial",
+            "interrupted",
+            "recorded",
+            "reopened"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "library",
+                    "book",
+                    "renzhi",
+                    "yingyu",
+                    "biaoda",
+                    "plan",
+                    "article"
+                  ]
+                },
+                "course": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "article"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "plan"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "plan_id",
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "plan_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                      },
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "renzhi"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "yingyu"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "biaoda"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "record_kind": {
+          "type": "string",
+          "enum": [
+            "session",
+            "completion",
+            "reversal"
+          ]
+        },
+        "completion_mode": {
+          "type": "string",
+          "enum": [
+            "time",
+            "content",
+            "check"
+          ]
+        },
+        "completion_effect": {
+          "type": "string",
+          "enum": [
+            "none",
+            "complete",
+            "reopen"
+          ]
+        },
+        "planned_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "date_basis": {
+          "type": "string",
+          "enum": [
+            "legacy_planned",
+            "actual_start",
+            "actual_confirmation"
+          ]
+        },
+        "reverses_record_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "source_event_id": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "plan_id",
+        "title",
+        "started_at",
+        "ended_at",
+        "variant",
+        "planned_minutes",
+        "actual_minutes",
+        "outcome",
+        "note",
+        "business_date",
+        "timezone",
+        "target",
+        "schema_version",
+        "record_kind",
+        "completion_mode",
+        "completion_effect",
+        "planned_date",
+        "date_basis"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "record_kind": {
+                "enum": [
+                  "completion",
+                  "reversal"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "actual_minutes": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "record_kind": {
+                "const": "reversal"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "reverses_record_id"
+            ],
+            "properties": {
+              "outcome": {
+                "const": "reopened"
+              },
+              "completion_effect": {
+                "const": "reopen"
+              },
+              "reverses_record_id": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "record_kind": {
+                "const": "completion"
+              },
+              "completion_mode": {
+                "const": "content"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_event_id": {}
+            },
+            "required": [
+              "source_event_id"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "plan"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionMutationResult = {
+  "plan": (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+);
+  "execution"?: (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+);
+};
+
+export const LightTickActionScheduleResultSchema = {
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "year",
+            "month",
+            "week",
+            "day"
+          ]
+        },
+        "horizon": {
+          "type": "string",
+          "enum": [
+            "short",
+            "long"
+          ]
+        },
+        "start_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "end_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "target_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "minimum_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "target_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "reminder": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "if_then": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "library",
+                    "book",
+                    "renzhi",
+                    "yingyu",
+                    "biaoda",
+                    "plan",
+                    "article"
+                  ]
+                },
+                "course": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "article"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "plan"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "plan_id",
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "plan_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                      },
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "renzhi"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "yingyu"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "biaoda"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completion_mode": {
+          "type": "string",
+          "enum": [
+            "time",
+            "content",
+            "check"
+          ],
+          "default": "time"
+        },
+        "estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "paused",
+            "completed",
+            "archived"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reminder_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "progress": {
+          "type": "object",
+          "properties": {
+            "minutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "interrupted": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "partial": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "minutes",
+            "completed",
+            "minimum",
+            "interrupted",
+            "partial"
+          ],
+          "additionalProperties": false
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "schema_version": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "completion_record_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "practice_origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "feedback_id": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          "required": [
+            "plan_id",
+            "feedback_id"
+          ]
+        },
+        "practice_source": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "lesson",
+                "record"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "binding_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            }
+          },
+          "required": [
+            "kind",
+            "id",
+            "version",
+            "binding_id"
+          ],
+          "additionalProperties": false
+        },
+        "practice_feedback": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "applied",
+                  "not_applied",
+                  "unknown"
+                ]
+              },
+              "result": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "evidence": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "next_step": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "id",
+              "created_at",
+              "outcome",
+              "result",
+              "evidence",
+              "next_step"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "title",
+        "period",
+        "horizon",
+        "start_date",
+        "end_date",
+        "timezone",
+        "parent_id",
+        "target_minutes",
+        "minimum_minutes",
+        "target_count",
+        "at",
+        "reminder",
+        "reason",
+        "if_then",
+        "target",
+        "completion_mode",
+        "estimated_minutes",
+        "id",
+        "revision",
+        "status",
+        "created_at",
+        "updated_at",
+        "reminder_at",
+        "schema_version",
+        "completed_at",
+        "completion_record_id"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "enum": [
+                  "content",
+                  "check"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target_minutes": {
+                "type": "null"
+              },
+              "minimum_minutes": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "const": "check"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "const": "time"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "estimated_minutes": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "existing": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "plan",
+    "existing"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionScheduleResult = {
+  "plan": (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+);
+  "existing": boolean;
 };
 
 export const LightTickActionFieldsSchema = {
@@ -8190,11 +20735,17 @@ export const LightTickActionFieldsSchema = {
       ]
     },
     "start_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "end_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "timezone": {
@@ -8209,12 +20760,18 @@ export const LightTickActionFieldsSchema = {
       "maxLength": 80
     },
     "target_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
     "minimum_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
@@ -8224,7 +20781,10 @@ export const LightTickActionFieldsSchema = {
       "maximum": 1000
     },
     "at": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
     },
     "reminder": {
@@ -8239,71 +20799,784 @@ export const LightTickActionFieldsSchema = {
       "maxLength": 1000
     },
     "target": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": [
-            "library",
-            "book",
-            "renzhi",
-            "yingyu",
-            "biaoda",
-            "plan",
-            "article"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "library",
+                "book",
+                "renzhi",
+                "yingyu",
+                "biaoda",
+                "plan",
+                "article"
+              ]
+            },
+            "course": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "renzhi"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "lesson_no"
+                ],
+                "properties": {
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "yingyu"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "biaoda"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
           ]
         },
-        "course": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "plan_id": {
-          "type": "string",
-          "maxLength": 80
-        },
-        "lesson_no": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100000
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "kind"
+      ]
+    },
+    "completion_mode": {
+      "type": "string",
+      "enum": [
+        "time",
+        "content",
+        "check"
       ],
-      "additionalProperties": false
+      "default": "time"
+    },
+    "estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
     }
   },
   "required": [
     "title",
-    "period",
-    "start_date",
-    "end_date"
+    "period"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes cannot exceed target_minutes (runtime validation).",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "period": {
+            "const": "day"
+          }
+        }
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "start_date": {
+                "type": "null"
+              },
+              "end_date": {
+                "type": "null"
+              },
+              "at": {
+                "type": "null"
+              },
+              "parent_id": {
+                "type": "null"
+              },
+              "reminder": {
+                "const": false
+              }
+            }
+          },
+          {
+            "required": [
+              "start_date",
+              "end_date"
+            ],
+            "properties": {
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        ],
+        "properties": {
+          "target_count": {
+            "const": 1
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completion_mode": {
+            "const": "time"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "completion_mode": {
+            "const": "time"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "target_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "reminder"
+        ],
+        "properties": {
+          "reminder": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "start_date",
+          "end_date",
+          "at"
+        ],
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "at": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "end_date": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "completion_mode"
+        ],
+        "properties": {
+          "completion_mode": {
+            "const": "content"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "library",
+                      "book",
+                      "renzhi",
+                      "yingyu",
+                      "biaoda",
+                      "plan",
+                      "article"
+                    ]
+                  },
+                  "course": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "article"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "plan"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "plan_id",
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "plan_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                        },
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "renzhi"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "yingyu"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "biaoda"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "article",
+                      "plan"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickActionFields = {
+export type LightTickActionFields = (
+{
   "title": string;
   "period": "year" | "month" | "week" | "day";
   "horizon"?: "short" | "long";
-  "start_date": string;
-  "end_date": string;
+  "start_date"?: string | null;
+  "end_date"?: string | null;
   "timezone"?: string;
   "parent_id"?: string | null;
-  "target_minutes"?: number;
-  "minimum_minutes"?: number;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
   "target_count"?: number;
-  "at"?: string;
+  "at"?: string | null;
   "reminder"?: boolean;
   "reason"?: string;
   "if_then"?: string;
-  "target"?: {
+  "target"?: (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
-};
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+);
 
 export const LightTickActionCreateRequestSchema = {
   "type": "object",
@@ -8330,11 +21603,17 @@ export const LightTickActionCreateRequestSchema = {
       ]
     },
     "start_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "end_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "timezone": {
@@ -8349,12 +21628,18 @@ export const LightTickActionCreateRequestSchema = {
       "maxLength": 80
     },
     "target_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
     "minimum_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
@@ -8364,7 +21649,10 @@ export const LightTickActionCreateRequestSchema = {
       "maximum": 1000
     },
     "at": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
     },
     "reminder": {
@@ -8379,38 +21667,163 @@ export const LightTickActionCreateRequestSchema = {
       "maxLength": 1000
     },
     "target": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": [
-            "library",
-            "book",
-            "renzhi",
-            "yingyu",
-            "biaoda",
-            "plan",
-            "article"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "library",
+                "book",
+                "renzhi",
+                "yingyu",
+                "biaoda",
+                "plan",
+                "article"
+              ]
+            },
+            "course": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "renzhi"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "lesson_no"
+                ],
+                "properties": {
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "yingyu"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "biaoda"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
           ]
         },
-        "course": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "plan_id": {
-          "type": "string",
-          "maxLength": 80
-        },
-        "lesson_no": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100000
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "kind"
+      ]
+    },
+    "completion_mode": {
+      "type": "string",
+      "enum": [
+        "time",
+        "content",
+        "check"
       ],
-      "additionalProperties": false
+      "default": "time"
+    },
+    "estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
     },
     "key": {
       "type": "string",
@@ -8430,37 +21843,633 @@ export const LightTickActionCreateRequestSchema = {
   "required": [
     "title",
     "period",
-    "start_date",
-    "end_date",
     "key"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes cannot exceed target_minutes (runtime validation).",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "period": {
+            "const": "day"
+          }
+        }
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "start_date": {
+                "type": "null"
+              },
+              "end_date": {
+                "type": "null"
+              },
+              "at": {
+                "type": "null"
+              },
+              "parent_id": {
+                "type": "null"
+              },
+              "reminder": {
+                "const": false
+              }
+            }
+          },
+          {
+            "required": [
+              "start_date",
+              "end_date"
+            ],
+            "properties": {
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        ],
+        "properties": {
+          "target_count": {
+            "const": 1
+          }
+        }
+      },
+      "else": {
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completion_mode": {
+            "const": "time"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "completion_mode": {
+            "const": "time"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "target_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "reminder"
+        ],
+        "properties": {
+          "reminder": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "start_date",
+          "end_date",
+          "at"
+        ],
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "at": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "end_date": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "completion_mode"
+        ],
+        "properties": {
+          "completion_mode": {
+            "const": "content"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "library",
+                      "book",
+                      "renzhi",
+                      "yingyu",
+                      "biaoda",
+                      "plan",
+                      "article"
+                    ]
+                  },
+                  "course": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "article"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "plan"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "plan_id",
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "plan_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                        },
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "renzhi"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "yingyu"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "biaoda"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "article",
+                      "plan"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickActionCreateRequest = {
+export type LightTickActionCreateRequest = (
+{
   "title": string;
   "period": "year" | "month" | "week" | "day";
   "horizon"?: "short" | "long";
-  "start_date": string;
-  "end_date": string;
+  "start_date"?: string | null;
+  "end_date"?: string | null;
   "timezone"?: string;
   "parent_id"?: string | null;
-  "target_minutes"?: number;
-  "minimum_minutes"?: number;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
   "target_count"?: number;
-  "at"?: string;
+  "at"?: string | null;
   "reminder"?: boolean;
   "reason"?: string;
   "if_then"?: string;
-  "target"?: {
+  "target"?: (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
   "key": string;
   "repeat_dates"?: string[];
-};
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+  "key": string;
+  "repeat_dates"?: string[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+  "key": string;
+  "repeat_dates"?: string[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+  "key": string;
+  "repeat_dates"?: string[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+  "key": string;
+  "repeat_dates"?: string[];
+}
+);
 
 export const LightTickActionProgressSchema = {
   "type": "object",
@@ -8480,13 +22489,18 @@ export const LightTickActionProgressSchema = {
     "interrupted": {
       "type": "integer",
       "minimum": 0
+    },
+    "partial": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "required": [
     "minutes",
     "completed",
     "minimum",
-    "interrupted"
+    "interrupted",
+    "partial"
   ],
   "additionalProperties": false
 } as const;
@@ -8496,6 +22510,7 @@ export type LightTickActionProgress = {
   "completed": number;
   "minimum": number;
   "interrupted": number;
+  "partial": number;
 };
 
 export const LightTickActionPlanSchema = {
@@ -8523,11 +22538,17 @@ export const LightTickActionPlanSchema = {
       ]
     },
     "start_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "end_date": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date"
     },
     "timezone": {
@@ -8542,12 +22563,18 @@ export const LightTickActionPlanSchema = {
       "maxLength": 80
     },
     "target_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
     "minimum_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
@@ -8557,7 +22584,10 @@ export const LightTickActionPlanSchema = {
       "maximum": 1000
     },
     "at": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
     },
     "reminder": {
@@ -8572,38 +22602,163 @@ export const LightTickActionPlanSchema = {
       "maxLength": 1000
     },
     "target": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": [
-            "library",
-            "book",
-            "renzhi",
-            "yingyu",
-            "biaoda",
-            "plan",
-            "article"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "library",
+                "book",
+                "renzhi",
+                "yingyu",
+                "biaoda",
+                "plan",
+                "article"
+              ]
+            },
+            "course": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "plan_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "renzhi"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "lesson_no"
+                ],
+                "properties": {
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "yingyu"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "biaoda"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
           ]
         },
-        "course": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "plan_id": {
-          "type": "string",
-          "maxLength": 80
-        },
-        "lesson_no": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100000
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "kind"
+      ]
+    },
+    "completion_mode": {
+      "type": "string",
+      "enum": [
+        "time",
+        "content",
+        "check"
       ],
-      "additionalProperties": false
+      "default": "time"
+    },
+    "estimated_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
     },
     "id": {
       "type": "string",
@@ -8631,7 +22786,10 @@ export const LightTickActionPlanSchema = {
       "format": "date-time"
     },
     "reminder_at": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
     },
     "progress": {
@@ -8652,30 +22810,152 @@ export const LightTickActionPlanSchema = {
         "interrupted": {
           "type": "integer",
           "minimum": 0
+        },
+        "partial": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "required": [
         "minutes",
         "completed",
         "minimum",
-        "interrupted"
+        "interrupted",
+        "partial"
       ],
       "additionalProperties": false
     },
     "blocked": {
       "type": "boolean"
+    },
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "completion_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "practice_origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "feedback_id": {
+          "type": "string",
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "plan_id",
+        "feedback_id"
+      ]
+    },
+    "practice_source": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "lesson",
+            "record"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "binding_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "version",
+        "binding_id"
+      ],
+      "additionalProperties": false
+    },
+    "practice_feedback": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "not_applied",
+              "unknown"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "evidence": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "next_step": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "outcome",
+          "result",
+          "evidence",
+          "next_step"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
-    "id",
-    "revision",
-    "status",
     "title",
     "period",
     "horizon",
     "start_date",
     "end_date",
     "timezone",
+    "parent_id",
     "target_minutes",
     "minimum_minutes",
     "target_count",
@@ -8684,48 +22964,487 @@ export const LightTickActionPlanSchema = {
     "reason",
     "if_then",
     "target",
+    "completion_mode",
+    "estimated_minutes",
+    "id",
+    "revision",
+    "status",
     "created_at",
     "updated_at",
-    "reminder_at"
+    "reminder_at",
+    "schema_version",
+    "completed_at",
+    "completion_record_id"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "completion_mode": {
+            "enum": [
+              "content",
+              "check"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "target_minutes": {
+            "type": "null"
+          },
+          "minimum_minutes": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "completion_mode": {
+            "const": "check"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "target": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "completion_mode": {
+            "const": "time"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "target_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "estimated_minutes": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickActionPlan = {
+export type LightTickActionPlan = (
+{
   "title": string;
   "period": "year" | "month" | "week" | "day";
   "horizon": "short" | "long";
-  "start_date": string;
-  "end_date": string;
+  "start_date": string | null;
+  "end_date": string | null;
   "timezone": string;
-  "parent_id"?: string | null;
-  "target_minutes": number;
-  "minimum_minutes": number;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
   "target_count": number;
-  "at": string;
+  "at": string | null;
   "reminder": boolean;
   "reason": string;
   "if_then": string;
-  "target": {
+  "target": (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
   "id": string;
   "revision": number;
   "status": "active" | "paused" | "completed" | "archived";
   "created_at": string;
   "updated_at": string;
-  "reminder_at": string;
+  "reminder_at": string | null;
   "progress"?: {
   "minutes": number;
   "completed": number;
   "minimum": number;
   "interrupted": number;
+  "partial": number;
 };
   "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
 };
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+);
 
 export const LightTickActionExecutionSchema = {
   "type": "object",
@@ -8758,8 +23477,12 @@ export const LightTickActionExecutionSchema = {
       ]
     },
     "planned_minutes": {
-      "type": "integer",
-      "minimum": 1
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1440
     },
     "actual_minutes": {
       "type": "integer",
@@ -8772,7 +23495,9 @@ export const LightTickActionExecutionSchema = {
         "completed",
         "minimum",
         "partial",
-        "interrupted"
+        "interrupted",
+        "recorded",
+        "reopened"
       ]
     },
     "note": {
@@ -8787,178 +23512,8 @@ export const LightTickActionExecutionSchema = {
       "type": "string"
     },
     "target": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": [
-            "library",
-            "book",
-            "renzhi",
-            "yingyu",
-            "biaoda",
-            "plan",
-            "article"
-          ]
-        },
-        "course": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "plan_id": {
-          "type": "string",
-          "maxLength": 80
-        },
-        "lesson_no": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100000
-        }
-      },
-      "required": [
-        "kind"
-      ],
-      "additionalProperties": false
-    }
-  },
-  "required": [
-    "id",
-    "plan_id",
-    "title",
-    "started_at",
-    "ended_at",
-    "variant",
-    "planned_minutes",
-    "actual_minutes",
-    "outcome",
-    "note",
-    "business_date",
-    "timezone",
-    "target"
-  ],
-  "additionalProperties": false
-} as const;
-
-export type LightTickActionExecution = {
-  "id": string;
-  "plan_id": string;
-  "title": string;
-  "started_at": string;
-  "ended_at": string | null;
-  "variant": "standard" | "minimum";
-  "planned_minutes": number;
-  "actual_minutes": number;
-  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted";
-  "note": string;
-  "business_date": string;
-  "timezone": string;
-  "target": {
-  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
-  "course"?: string;
-  "plan_id"?: string;
-  "lesson_no"?: number;
-};
-};
-
-export const LightTickActionMutationRequestSchema = {
-  "type": "object",
-  "properties": {
-    "key": {
-      "type": "string",
-      "minLength": 8,
-      "maxLength": 160
-    },
-    "revision": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "action": {
-      "type": "string",
-      "enum": [
-        "edit",
-        "pause",
-        "resume",
-        "archive",
-        "complete",
-        "start",
-        "finish",
-        "snooze"
-      ]
-    },
-    "fields": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 160
-        },
-        "period": {
-          "type": "string",
-          "enum": [
-            "year",
-            "month",
-            "week",
-            "day"
-          ]
-        },
-        "horizon": {
-          "type": "string",
-          "enum": [
-            "short",
-            "long"
-          ]
-        },
-        "start_date": {
-          "type": "string",
-          "format": "date"
-        },
-        "end_date": {
-          "type": "string",
-          "format": "date"
-        },
-        "timezone": {
-          "type": "string",
-          "maxLength": 80
-        },
-        "parent_id": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "maxLength": 80
-        },
-        "target_minutes": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 1440
-        },
-        "minimum_minutes": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 1440
-        },
-        "target_count": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 1000
-        },
-        "at": {
-          "type": "string",
-          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
-        },
-        "reminder": {
-          "type": "boolean"
-        },
-        "reason": {
-          "type": "string",
-          "maxLength": 1000
-        },
-        "if_then": {
-          "type": "string",
-          "maxLength": 1000
-        },
-        "target": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
             "kind": {
@@ -8990,16 +23545,1114 @@ export const LightTickActionMutationRequestSchema = {
           "required": [
             "kind"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "renzhi"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "lesson_no"
+                ],
+                "properties": {
+                  "lesson_no": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "yingyu"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "biaoda"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "course"
+                ],
+                "properties": {
+                  "course": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "record_kind": {
+      "type": "string",
+      "enum": [
+        "session",
+        "completion",
+        "reversal"
+      ]
+    },
+    "completion_mode": {
+      "type": "string",
+      "enum": [
+        "time",
+        "content",
+        "check"
+      ]
+    },
+    "completion_effect": {
+      "type": "string",
+      "enum": [
+        "none",
+        "complete",
+        "reopen"
+      ]
+    },
+    "planned_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "date_basis": {
+      "type": "string",
+      "enum": [
+        "legacy_planned",
+        "actual_start",
+        "actual_confirmation"
+      ]
+    },
+    "reverses_record_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "source_event_id": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "plan_id",
+    "title",
+    "started_at",
+    "ended_at",
+    "variant",
+    "planned_minutes",
+    "actual_minutes",
+    "outcome",
+    "note",
+    "business_date",
+    "timezone",
+    "target",
+    "schema_version",
+    "record_kind",
+    "completion_mode",
+    "completion_effect",
+    "planned_date",
+    "date_basis"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "record_kind": {
+            "enum": [
+              "completion",
+              "reversal"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "actual_minutes": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "record_kind": {
+            "const": "reversal"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reverses_record_id"
+        ],
+        "properties": {
+          "outcome": {
+            "const": "reopened"
+          },
+          "completion_effect": {
+            "const": "reopen"
+          },
+          "reverses_record_id": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "record_kind": {
+            "const": "completion"
+          },
+          "completion_mode": {
+            "const": "content"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source_event_id": {}
+        },
+        "required": [
+          "source_event_id"
+        ]
+      }
+    }
+  ]
+} as const;
+
+export type LightTickActionExecution = (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+);
+
+export const LightTickActionMutationRequestSchema = {
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "edit",
+        "pause",
+        "resume",
+        "archive",
+        "complete",
+        "start",
+        "finish",
+        "snooze",
+        "reschedule",
+        "cancel",
+        "complete-time",
+        "reopen",
+        "reconcile-content",
+        "practice-feedback"
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "year",
+            "month",
+            "week",
+            "day"
+          ]
+        },
+        "horizon": {
+          "type": "string",
+          "enum": [
+            "short",
+            "long"
+          ]
+        },
+        "start_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "end_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "target_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "minimum_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "target_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "reminder": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "if_then": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "library",
+                    "book",
+                    "renzhi",
+                    "yingyu",
+                    "biaoda",
+                    "plan",
+                    "article"
+                  ]
+                },
+                "course": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "plan_id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "article"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "plan"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "plan_id",
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "plan_id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                      },
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "renzhi"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "lesson_no"
+                    ],
+                    "properties": {
+                      "lesson_no": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "yingyu"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "biaoda"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "course"
+                    ],
+                    "properties": {
+                      "course": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completion_mode": {
+          "type": "string",
+          "enum": [
+            "time",
+            "content",
+            "check"
+          ],
+          "default": "time"
+        },
+        "estimated_minutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 1440
         }
       },
       "required": [
         "title",
-        "period",
-        "start_date",
-        "end_date"
+        "period"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes cannot exceed target_minutes (runtime validation).",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "period": {
+                "const": "day"
+              }
+            }
+          },
+          "then": {
+            "oneOf": [
+              {
+                "properties": {
+                  "start_date": {
+                    "type": "null"
+                  },
+                  "end_date": {
+                    "type": "null"
+                  },
+                  "at": {
+                    "type": "null"
+                  },
+                  "parent_id": {
+                    "type": "null"
+                  },
+                  "reminder": {
+                    "const": false
+                  }
+                }
+              },
+              {
+                "required": [
+                  "start_date",
+                  "end_date"
+                ],
+                "properties": {
+                  "start_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            ],
+            "properties": {
+              "target_count": {
+                "const": 1
+              }
+            }
+          },
+          "else": {
+            "required": [
+              "start_date",
+              "end_date"
+            ],
+            "properties": {
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "completion_mode": {
+                "const": "time"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "completion_mode": {
+                "const": "time"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "reminder"
+            ],
+            "properties": {
+              "reminder": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "start_date",
+              "end_date",
+              "at"
+            ],
+            "properties": {
+              "start_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "at": {
+                "type": "string",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+              },
+              "end_date": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "completion_mode"
+            ],
+            "properties": {
+              "completion_mode": {
+                "const": "content"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "target"
+            ],
+            "properties": {
+              "target": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "library",
+                          "book",
+                          "renzhi",
+                          "yingyu",
+                          "biaoda",
+                          "plan",
+                          "article"
+                        ]
+                      },
+                      "course": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "plan_id": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "lesson_no": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "article"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "course"
+                          ],
+                          "properties": {
+                            "course": {
+                              "type": "string",
+                              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "plan"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "plan_id",
+                            "lesson_no"
+                          ],
+                          "properties": {
+                            "plan_id": {
+                              "type": "string",
+                              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                            },
+                            "lesson_no": {}
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "renzhi"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "lesson_no"
+                          ],
+                          "properties": {
+                            "lesson_no": {}
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "yingyu"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "course"
+                          ],
+                          "properties": {
+                            "course": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "biaoda"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "course"
+                          ],
+                          "properties": {
+                            "course": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "article",
+                          "plan"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
     },
     "variant": {
       "type": "string",
@@ -9032,6 +24685,46 @@ export const LightTickActionMutationRequestSchema = {
       "type": "integer",
       "minimum": 5,
       "maximum": 120
+    },
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "source_event_id": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "feedback": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "applied",
+            "not_applied",
+            "unknown"
+          ]
+        },
+        "result": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "evidence": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "next_step": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -9039,42 +24732,1070 @@ export const LightTickActionMutationRequestSchema = {
     "revision",
     "action"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Revision and stable key are required. Only check supports complete/reopen. Time completion sums confirmed session minutes; interrupted threshold requires complete-time. Content requires a durable private source receipt. Running actions reject other mutations. Completed/archived actions are read-only except check reopen. HTTP writes remain closed in this stage. Practice feedback is append-only, allowed after completion, and never completes an action or lesson.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "reschedule"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "date": {}
+        },
+        "required": [
+          "date"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "practice-feedback"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "feedback": {}
+        },
+        "required": [
+          "feedback"
+        ]
+      }
+    }
+  ]
 } as const;
 
-export type LightTickActionMutationRequest = {
+export type LightTickActionMutationRequest = (
+{
   "key": string;
   "revision": number;
-  "action": "edit" | "pause" | "resume" | "archive" | "complete" | "start" | "finish" | "snooze";
-  "fields"?: {
+  "action": "edit" | "pause" | "resume" | "archive" | "complete" | "start" | "finish" | "snooze" | "reschedule" | "cancel" | "complete-time" | "reopen" | "reconcile-content" | "practice-feedback";
+  "fields"?: (
+{
   "title": string;
   "period": "year" | "month" | "week" | "day";
   "horizon"?: "short" | "long";
-  "start_date": string;
-  "end_date": string;
+  "start_date"?: string | null;
+  "end_date"?: string | null;
   "timezone"?: string;
   "parent_id"?: string | null;
-  "target_minutes"?: number;
-  "minimum_minutes"?: number;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
   "target_count"?: number;
-  "at"?: string;
+  "at"?: string | null;
   "reminder"?: boolean;
   "reason"?: string;
   "if_then"?: string;
-  "target"?: {
+  "target"?: (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
-};
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+);
   "variant"?: "standard" | "minimum";
   "execution_id"?: string;
   "outcome"?: "completed" | "interrupted";
   "actual_minutes"?: number;
   "note"?: string;
   "snooze_minutes"?: number;
+  "date"?: string | null;
+  "source_event_id"?: string;
+  "feedback"?: {
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result"?: string;
+  "evidence"?: string;
+  "next_step"?: string;
 };
+}
+) & (
+{
+  "key": string;
+  "revision": number;
+  "action": "edit" | "pause" | "resume" | "archive" | "complete" | "start" | "finish" | "snooze" | "reschedule" | "cancel" | "complete-time" | "reopen" | "reconcile-content" | "practice-feedback";
+  "fields"?: (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+);
+  "variant"?: "standard" | "minimum";
+  "execution_id"?: string;
+  "outcome"?: "completed" | "interrupted";
+  "actual_minutes"?: number;
+  "note"?: string;
+  "snooze_minutes"?: number;
+  "date"?: string | null;
+  "source_event_id"?: string;
+  "feedback"?: {
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result"?: string;
+  "evidence"?: string;
+  "next_step"?: string;
+};
+}
+) & (
+{
+  "key": string;
+  "revision": number;
+  "action": "edit" | "pause" | "resume" | "archive" | "complete" | "start" | "finish" | "snooze" | "reschedule" | "cancel" | "complete-time" | "reopen" | "reconcile-content" | "practice-feedback";
+  "fields"?: (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon"?: "short" | "long";
+  "start_date"?: string | null;
+  "end_date"?: string | null;
+  "timezone"?: string;
+  "parent_id"?: string | null;
+  "target_minutes"?: number | null;
+  "minimum_minutes"?: number | null;
+  "target_count"?: number;
+  "at"?: string | null;
+  "reminder"?: boolean;
+  "reason"?: string;
+  "if_then"?: string;
+  "target"?: (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode"?: "time" | "content" | "check";
+  "estimated_minutes"?: number | null;
+}
+);
+  "variant"?: "standard" | "minimum";
+  "execution_id"?: string;
+  "outcome"?: "completed" | "interrupted";
+  "actual_minutes"?: number;
+  "note"?: string;
+  "snooze_minutes"?: number;
+  "date"?: string | null;
+  "source_event_id"?: string;
+  "feedback"?: {
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result"?: string;
+  "evidence"?: string;
+  "next_step"?: string;
+};
+}
+);
 
 export const LightTickActionWorkspaceSchema = {
   "type": "object",
@@ -9107,11 +25828,17 @@ export const LightTickActionWorkspaceSchema = {
             ]
           },
           "start_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "end_date": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "timezone": {
@@ -9126,12 +25853,18 @@ export const LightTickActionWorkspaceSchema = {
             "maxLength": 80
           },
           "target_minutes": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 1,
             "maximum": 1440
           },
           "minimum_minutes": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 1,
             "maximum": 1440
           },
@@ -9141,7 +25874,10 @@ export const LightTickActionWorkspaceSchema = {
             "maximum": 1000
           },
           "at": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
           },
           "reminder": {
@@ -9156,38 +25892,163 @@ export const LightTickActionWorkspaceSchema = {
             "maxLength": 1000
           },
           "target": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "library",
-                  "book",
-                  "renzhi",
-                  "yingyu",
-                  "biaoda",
-                  "plan",
-                  "article"
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "library",
+                      "book",
+                      "renzhi",
+                      "yingyu",
+                      "biaoda",
+                      "plan",
+                      "article"
+                    ]
+                  },
+                  "course": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "article"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "plan"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "plan_id",
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "plan_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                        },
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "renzhi"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "lesson_no"
+                      ],
+                      "properties": {
+                        "lesson_no": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "yingyu"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "kind": {
+                          "const": "biaoda"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "course"
+                      ],
+                      "properties": {
+                        "course": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
                 ]
               },
-              "course": {
-                "type": "string",
-                "maxLength": 500
-              },
-              "plan_id": {
-                "type": "string",
-                "maxLength": 80
-              },
-              "lesson_no": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 100000
+              {
+                "type": "null"
               }
-            },
-            "required": [
-              "kind"
+            ]
+          },
+          "completion_mode": {
+            "type": "string",
+            "enum": [
+              "time",
+              "content",
+              "check"
             ],
-            "additionalProperties": false
+            "default": "time"
+          },
+          "estimated_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1440
           },
           "id": {
             "type": "string",
@@ -9215,7 +26076,10 @@ export const LightTickActionWorkspaceSchema = {
             "format": "date-time"
           },
           "reminder_at": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "progress": {
@@ -9236,30 +26100,152 @@ export const LightTickActionWorkspaceSchema = {
               "interrupted": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "partial": {
+                "type": "integer",
+                "minimum": 0
               }
             },
             "required": [
               "minutes",
               "completed",
               "minimum",
-              "interrupted"
+              "interrupted",
+              "partial"
             ],
             "additionalProperties": false
           },
           "blocked": {
             "type": "boolean"
+          },
+          "schema_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completion_record_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "practice_origin": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "plan_id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "feedback_id": {
+                "type": "string",
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "plan_id",
+              "feedback_id"
+            ]
+          },
+          "practice_source": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "lesson",
+                  "record"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "binding_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "version",
+              "binding_id"
+            ],
+            "additionalProperties": false
+          },
+          "practice_feedback": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "applied",
+                    "not_applied",
+                    "unknown"
+                  ]
+                },
+                "result": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "evidence": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "next_step": {
+                  "type": "string",
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "id",
+                "created_at",
+                "outcome",
+                "result",
+                "evidence",
+                "next_step"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
-          "id",
-          "revision",
-          "status",
           "title",
           "period",
           "horizon",
           "start_date",
           "end_date",
           "timezone",
+          "parent_id",
           "target_minutes",
           "minimum_minutes",
           "target_count",
@@ -9268,11 +26254,80 @@ export const LightTickActionWorkspaceSchema = {
           "reason",
           "if_then",
           "target",
+          "completion_mode",
+          "estimated_minutes",
+          "id",
+          "revision",
+          "status",
           "created_at",
           "updated_at",
-          "reminder_at"
+          "reminder_at",
+          "schema_version",
+          "completed_at",
+          "completion_record_id"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "completion_mode": {
+                  "enum": [
+                    "content",
+                    "check"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target_minutes": {
+                  "type": "null"
+                },
+                "minimum_minutes": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "completion_mode": {
+                  "const": "check"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "completion_mode": {
+                  "const": "time"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "estimated_minutes": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "execution": {
@@ -9308,8 +26363,12 @@ export const LightTickActionWorkspaceSchema = {
               ]
             },
             "planned_minutes": {
-              "type": "integer",
-              "minimum": 1
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 1440
             },
             "actual_minutes": {
               "type": "integer",
@@ -9322,7 +26381,9 @@ export const LightTickActionWorkspaceSchema = {
                 "completed",
                 "minimum",
                 "partial",
-                "interrupted"
+                "interrupted",
+                "recorded",
+                "reopened"
               ]
             },
             "note": {
@@ -9337,38 +26398,204 @@ export const LightTickActionWorkspaceSchema = {
               "type": "string"
             },
             "target": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "library",
-                    "book",
-                    "renzhi",
-                    "yingyu",
-                    "biaoda",
-                    "plan",
-                    "article"
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "library",
+                        "book",
+                        "renzhi",
+                        "yingyu",
+                        "biaoda",
+                        "plan",
+                        "article"
+                      ]
+                    },
+                    "course": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "plan_id": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "lesson_no": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100000
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ],
+                  "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "const": "article"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "course"
+                        ],
+                        "properties": {
+                          "course": {
+                            "type": "string",
+                            "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "const": "plan"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "plan_id",
+                          "lesson_no"
+                        ],
+                        "properties": {
+                          "plan_id": {
+                            "type": "string",
+                            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                          },
+                          "lesson_no": {}
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "const": "renzhi"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "lesson_no"
+                        ],
+                        "properties": {
+                          "lesson_no": {}
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "const": "yingyu"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "course"
+                        ],
+                        "properties": {
+                          "course": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "const": "biaoda"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "course"
+                        ],
+                        "properties": {
+                          "course": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    }
                   ]
                 },
-                "course": {
-                  "type": "string",
-                  "maxLength": 500
-                },
-                "plan_id": {
-                  "type": "string",
-                  "maxLength": 80
-                },
-                "lesson_no": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 100000
+                {
+                  "type": "null"
                 }
-              },
-              "required": [
-                "kind"
+              ]
+            },
+            "schema_version": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ]
+            },
+            "record_kind": {
+              "type": "string",
+              "enum": [
+                "session",
+                "completion",
+                "reversal"
+              ]
+            },
+            "completion_mode": {
+              "type": "string",
+              "enum": [
+                "time",
+                "content",
+                "check"
+              ]
+            },
+            "completion_effect": {
+              "type": "string",
+              "enum": [
+                "none",
+                "complete",
+                "reopen"
+              ]
+            },
+            "planned_date": {
+              "type": [
+                "string",
+                "null"
               ],
-              "additionalProperties": false
+              "format": "date"
+            },
+            "date_basis": {
+              "type": "string",
+              "enum": [
+                "legacy_planned",
+                "actual_start",
+                "actual_confirmation"
+              ]
+            },
+            "reverses_record_id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "source_event_id": {
+              "type": "string",
+              "maxLength": 160
+            },
+            "recorded_at": {
+              "type": "string",
+              "format": "date-time"
             }
           },
           "required": [
@@ -9384,9 +26611,79 @@ export const LightTickActionWorkspaceSchema = {
             "note",
             "business_date",
             "timezone",
-            "target"
+            "target",
+            "schema_version",
+            "record_kind",
+            "completion_mode",
+            "completion_effect",
+            "planned_date",
+            "date_basis"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "record_kind": {
+                    "enum": [
+                      "completion",
+                      "reversal"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "actual_minutes": {
+                    "const": 0
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "record_kind": {
+                    "const": "reversal"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "reverses_record_id"
+                ],
+                "properties": {
+                  "outcome": {
+                    "const": "reopened"
+                  },
+                  "completion_effect": {
+                    "const": "reopen"
+                  },
+                  "reverses_record_id": {}
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "record_kind": {
+                    "const": "completion"
+                  },
+                  "completion_mode": {
+                    "const": "content"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "source_event_id": {}
+                },
+                "required": [
+                  "source_event_id"
+                ]
+              }
+            }
+          ]
         },
         {
           "type": "null"
@@ -9410,6 +26707,72 @@ export const LightTickActionWorkspaceSchema = {
         "null"
       ],
       "additionalProperties": true
+    },
+    "action_schema_version": {
+      "const": 2
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "nullable_schedule": {
+          "const": true
+        },
+        "completion_modes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "time",
+              "content",
+              "check"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "content_receipts": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "article",
+              "plan"
+            ]
+          },
+          "maxItems": 2
+        },
+        "actual_fact_dates": {
+          "const": true
+        },
+        "connection_write_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "source_delivery_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "v2_import_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "practice_follow_up": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enables explicitly reviewed follow-ups; feedback alone never creates one."
+        },
+        "learning_practice": {
+          "type": "boolean",
+          "description": "Only permits practice writes when the separately configured connection write gate is enabled."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "nullable_schedule",
+        "completion_modes",
+        "content_receipts",
+        "actual_fact_dates",
+        "connection_write_enabled",
+        "source_delivery_enabled",
+        "v2_import_enabled"
+      ]
     }
   },
   "required": [
@@ -9417,50 +26780,423 @@ export const LightTickActionWorkspaceSchema = {
     "execution",
     "server_time",
     "workspace_version",
-    "reminder_delivery"
+    "reminder_delivery",
+    "action_schema_version",
+    "capabilities"
   ],
   "additionalProperties": false
 } as const;
 
 export type LightTickActionWorkspace = {
   "plans": (
+(
 {
   "title": string;
   "period": "year" | "month" | "week" | "day";
   "horizon": "short" | "long";
-  "start_date": string;
-  "end_date": string;
+  "start_date": string | null;
+  "end_date": string | null;
   "timezone": string;
-  "parent_id"?: string | null;
-  "target_minutes": number;
-  "minimum_minutes": number;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
   "target_count": number;
-  "at": string;
+  "at": string | null;
   "reminder": boolean;
   "reason": string;
   "if_then": string;
-  "target": {
+  "target": (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
   "id": string;
   "revision": number;
   "status": "active" | "paused" | "completed" | "archived";
   "created_at": string;
   "updated_at": string;
-  "reminder_at": string;
+  "reminder_at": string | null;
   "progress"?: {
   "minutes": number;
   "completed": number;
   "minimum": number;
   "interrupted": number;
+  "partial": number;
 };
   "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
 }
 )[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+)
+)[];
   "execution": (
+(
 {
   "id": string;
   "plan_id": string;
@@ -9468,25 +27204,1415 @@ export type LightTickActionWorkspace = {
   "started_at": string;
   "ended_at": string | null;
   "variant": "standard" | "minimum";
-  "planned_minutes": number;
+  "planned_minutes": number | null;
   "actual_minutes": number;
-  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted";
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
   "note": string;
   "business_date": string;
   "timezone": string;
-  "target": {
+  "target": (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
 }
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+)
 ) | unknown;
   "server_time": string;
   "workspace_version": number;
   "reminder_delivery": string;
   "linked_source"?: {
 } | null;
+  "action_schema_version": unknown;
+  "capabilities": {
+  "nullable_schedule": unknown;
+  "completion_modes": (
+"time" | "content" | "check"
+)[];
+  "content_receipts": (
+"article" | "plan"
+)[];
+  "actual_fact_dates": unknown;
+  "connection_write_enabled": boolean;
+  "source_delivery_enabled": boolean;
+  "v2_import_enabled": boolean;
+  "practice_follow_up"?: boolean;
+  "learning_practice"?: boolean;
+};
+};
+
+export const LightTickLearningPrivateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "state",
+        "operations"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "content_version",
+                "draft_version",
+                "revision",
+                "notes",
+                "answers",
+                "completed",
+                "completed_at",
+                "position",
+                "updated_at",
+                "questions"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "content_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "draft_version": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 10000
+                },
+                "answers": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "prompt",
+                      "answer"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "answer": {
+                        "type": "string",
+                        "maxLength": 10000
+                      }
+                    }
+                  }
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "completed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "questions": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "prompt",
+                      "answer"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "answer": {
+                        "type": "string",
+                        "maxLength": 10000
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "operations": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "error"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "applied",
+                  "conflict",
+                  "unavailable"
+                ]
+              },
+              "error": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 100
+    }
+  }
+} as const;
+
+export type LightTickLearningPrivateEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "enabled": boolean;
+  "state": (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+) | unknown;
+  "operations": (
+{
+  "id": string;
+  "status": "pending" | "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickLearningPrivateCommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "content_version",
+    "revision",
+    "action",
+    "notes",
+    "answers",
+    "position"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]{8,80}$"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "save",
+        "complete",
+        "position"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "answers": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "prompt",
+          "answer"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    }
+  }
+} as const;
+
+export type LightTickLearningPrivateCommand = {
+  "id": string;
+  "content_version": string;
+  "revision": number;
+  "action": "save" | "complete" | "position";
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "position": number;
+};
+
+export const LightTickLearningLibraryEnvelopeSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consent_enabled",
+        "binding_id",
+        "observed_at",
+        "lessons"
+      ],
+      "properties": {
+        "consent_enabled": {
+          "type": "boolean"
+        },
+        "binding_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lessons": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "collection_id",
+              "collection_title",
+              "number",
+              "title",
+              "content_version",
+              "learning_state",
+              "source_url"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "collection_id": {
+                "type": "string"
+              },
+              "collection_title": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "learning_state": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "completed"
+                ]
+              },
+              "source_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "type": "object"
+} as const;
+
+export type LightTickLearningLibraryEnvelope = {
+  "code": string;
+  "data": {
+  "consent_enabled": boolean;
+  "binding_id": string | null;
+  "observed_at": string | null;
+  "lessons": (
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+}
+)[];
+};
+  "message": string;
+  "requestId": string;
+};
+
+export const LightTickLearningLessonEnvelopeSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson",
+        "binding_id",
+        "observed_at"
+      ],
+      "properties": {
+        "lesson": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "collection_id",
+            "collection_title",
+            "number",
+            "title",
+            "content_version",
+            "learning_state",
+            "source_url",
+            "content",
+            "references"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "collection_id": {
+              "type": "string"
+            },
+            "collection_title": {
+              "type": "string"
+            },
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "content_version": {
+              "type": "string"
+            },
+            "learning_state": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "completed"
+              ]
+            },
+            "source_url": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "references": {
+              "type": "string",
+              "maxLength": 100000
+            }
+          }
+        },
+        "binding_id": {
+          "type": "string"
+        },
+        "observed_at": {
+          "type": "string"
+        }
+      }
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "type": "object"
+} as const;
+
+export type LightTickLearningLessonEnvelope = {
+  "code": string;
+  "data": {
+  "lesson": {
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+};
+  "binding_id": string;
+  "observed_at": string;
+};
+  "message": string;
+  "requestId": string;
+};
+
+export const LightTickLearningProgressEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "progress"
+      ],
+      "properties": {
+        "progress": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_revision",
+                "observed_at",
+                "received_at",
+                "web_url",
+                "plans"
+              ],
+              "properties": {
+                "source_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "received_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "web_url": {
+                  "type": "string",
+                  "format": "uri",
+                  "maxLength": 1000
+                },
+                "plans": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "version",
+                      "status",
+                      "total_lessons",
+                      "published_lessons",
+                      "completed_lessons",
+                      "percent",
+                      "stages"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "paused",
+                          "archived"
+                        ]
+                      },
+                      "total_lessons": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "published_lessons": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "completed_lessons": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100000
+                      },
+                      "percent": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "stages": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "number",
+                            "title",
+                            "total_lessons",
+                            "published_lessons",
+                            "completed_lessons",
+                            "percent"
+                          ],
+                          "properties": {
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "total_lessons": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "published_lessons": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "completed_lessons": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "percent": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickLearningProgressEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "progress": (
+{
+  "source_revision": number;
+  "observed_at": string;
+  "received_at": string;
+  "web_url": string;
+  "plans": (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+}
+) | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickLearningProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_revision",
+    "observed_at",
+    "received_at",
+    "web_url",
+    "plans"
+  ],
+  "properties": {
+    "source_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "web_url": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 1000
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "version",
+          "status",
+          "total_lessons",
+          "published_lessons",
+          "completed_lessons",
+          "percent",
+          "stages"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "total_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "published_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "number",
+                "title",
+                "total_lessons",
+                "published_lessons",
+                "completed_lessons",
+                "percent"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "total_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "published_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "completed_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "percent": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLearningProgress = {
+  "source_revision": number;
+  "observed_at": string;
+  "received_at": string;
+  "web_url": string;
+  "plans": (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickLearningPlanProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version",
+    "status",
+    "total_lessons",
+    "published_lessons",
+    "completed_lessons",
+    "percent",
+    "stages"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "archived"
+      ]
+    },
+    "total_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "published_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "completed_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "stages": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "title",
+          "total_lessons",
+          "published_lessons",
+          "completed_lessons",
+          "percent"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "total_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "published_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickLearningPlanProgress = {
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+};
+
+export const LightTickLearningStageProgressSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "number",
+    "title",
+    "total_lessons",
+    "published_lessons",
+    "completed_lessons",
+    "percent"
+  ],
+  "properties": {
+    "number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "total_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "published_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "completed_lessons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+} as const;
+
+export type LightTickLearningStageProgress = {
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
 };
 
 export const LightTickActionReviewScopeSchema = {
@@ -9699,12 +28825,25 @@ export const LightTickGrowBridgeRequestSchema = {
         "preview",
         "claim",
         "import",
-        "request"
+        "request",
+        "source-context",
+        "source-confirmation",
+        "source-receipt",
+        "source-reconcile",
+        "learning-progress",
+        "learning-library",
+        "learning-private"
       ]
     },
     "code": {
       "type": "string",
       "maxLength": 80
+    },
+    "target_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647,
+      "description": "Internal preflight target version; public import remains disabled."
     },
     "snapshot_hash": {
       "type": "string",
@@ -9734,17 +28873,2015 @@ export const LightTickGrowBridgeRequestSchema = {
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "action_schema_version": {
+      "type": "integer",
+      "const": 2,
+      "description": "Required for POST requests inside the signed bridge. Does not enable writes."
+    },
+    "binding_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "origin_action_id": {
+      "type": "string",
+      "pattern": "^action-[a-zA-Z0-9-]+$"
+    },
+    "normalized_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "article"
+            },
+            "course": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "course"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "plan"
+            },
+            "plan_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^source-[a-f0-9]{32}$"
+    },
+    "event": {
+      "type": "object",
+      "description": "Server-generated after explicit source success. Never accepts body, notes, browser read flags, owner IDs or consumed_by.",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "pattern": "^source-[a-f0-9]{32}$"
+        },
+        "normalized_target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "article"
+                },
+                "course": {
+                  "type": "string",
+                  "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                }
+              },
+              "required": [
+                "kind",
+                "course"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "plan"
+                },
+                "plan_id": {
+                  "type": "string",
+                  "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                },
+                "lesson_no": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "kind",
+                "plan_id",
+                "lesson_no"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40,
+          "pattern": "Z$|\\+00:00$"
+        },
+        "origin_action_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^action-[a-zA-Z0-9-]+$"
+        },
+        "origin_context": {
+          "type": "string",
+          "maxLength": 6000,
+          "description": "Zook HMAC context bound to active binding, source, action, planned date, timezone and issue/expiry time. Confirmation must occur within seven days; delivery may be delayed indefinitely."
+        },
+        "source_proof": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "confirmation": {
+              "enum": [
+                "article_read",
+                "lesson_completed"
+              ]
+            }
+          },
+          "required": [
+            "version",
+            "confirmation"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "event_id",
+        "normalized_target",
+        "confirmed_at",
+        "source_proof"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin_action_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "origin_action_id"
+            ]
+          },
+          "then": {
+            "properties": {
+              "origin_context": {}
+            },
+            "required": [
+              "origin_context"
+            ]
+          },
+          "else": {
+            "not": {
+              "properties": {
+                "origin_context": {}
+              },
+              "required": [
+                "origin_context"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "normalized_target": {
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_proof": {
+                "properties": {
+                  "confirmation": {
+                    "const": "article_read"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "source_proof": {
+                "properties": {
+                  "confirmation": {
+                    "const": "lesson_completed"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "source_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "web_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "version",
+          "status",
+          "total_lessons",
+          "published_lessons",
+          "completed_lessons",
+          "percent",
+          "stages"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "total_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "published_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "completed_lessons": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "stages": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "number",
+                "title",
+                "total_lessons",
+                "published_lessons",
+                "completed_lessons",
+                "percent"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "total_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "published_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "completed_lessons": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "percent": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "consent_enabled": {
+      "type": "boolean"
+    },
+    "lessons": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "collection_id",
+              "collection_title",
+              "number",
+              "title",
+              "content_version",
+              "learning_state",
+              "source_url",
+              "content",
+              "references"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "collection_id": {
+                "type": "string"
+              },
+              "collection_title": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "content_version": {
+                "type": "string"
+              },
+              "learning_state": {
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "completed"
+                ]
+              },
+              "source_url": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 100000
+              },
+              "references": {
+                "type": "string",
+                "maxLength": 100000
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "content_version",
+              "draft_version",
+              "revision",
+              "notes",
+              "answers",
+              "completed",
+              "completed_at",
+              "position",
+              "updated_at",
+              "questions"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "draft_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "answers": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "prompt",
+                    "answer"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "answer": {
+                      "type": "string",
+                      "maxLength": 10000
+                    }
+                  }
+                }
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "questions": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "prompt",
+                    "answer"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "answer": {
+                      "type": "string",
+                      "maxLength": 10000
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "error"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "conflict",
+              "unavailable"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "action",
+          "snapshot"
+        ],
+        "properties": {
+          "action": {
+            "const": "import"
+          },
+          "snapshot": {
+            "type": "object",
+            "required": [
+              "snapshot_version"
+            ],
+            "properties": {
+              "snapshot_version": {
+                "const": 2
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "snapshot_hash",
+          "binding_id",
+          "target_version"
+        ],
+        "properties": {
+          "snapshot_hash": {},
+          "binding_id": {},
+          "target_version": {},
+          "snapshot": {
+            "type": "object",
+            "description": "C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This schema does not open pairing or public import.",
+            "additionalProperties": false,
+            "required": [
+              "snapshot_version",
+              "source_account_id",
+              "plans",
+              "records",
+              "reviews",
+              "reports",
+              "operations",
+              "claims",
+              "content_sources",
+              "content_events"
+            ],
+            "properties": {
+              "snapshot_version": {
+                "type": "integer",
+                "const": 2
+              },
+              "source_account_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "plans": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "oneOf": [
+                    {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 160
+                            },
+                            "period": {
+                              "type": "string",
+                              "enum": [
+                                "year",
+                                "month",
+                                "week",
+                                "day"
+                              ]
+                            },
+                            "horizon": {
+                              "type": "string",
+                              "enum": [
+                                "short",
+                                "long"
+                              ]
+                            },
+                            "start_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            },
+                            "end_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            },
+                            "timezone": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "parent_id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 80
+                            },
+                            "target_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "minimum_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "target_count": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000
+                            },
+                            "at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                            },
+                            "reminder": {
+                              "type": "boolean"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "if_then": {
+                              "type": "string",
+                              "maxLength": 1000
+                            },
+                            "target": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "library",
+                                        "book",
+                                        "renzhi",
+                                        "yingyu",
+                                        "biaoda",
+                                        "plan",
+                                        "article"
+                                      ]
+                                    },
+                                    "course": {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    "plan_id": {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    "lesson_no": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 100000
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false,
+                                  "allOf": [
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "article"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "plan"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "plan_id",
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "plan_id": {
+                                            "type": "string",
+                                            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                          },
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "renzhi"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "yingyu"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "biaoda"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "completion_mode": {
+                              "type": "string",
+                              "enum": [
+                                "time",
+                                "content",
+                                "check"
+                              ],
+                              "default": "time"
+                            },
+                            "estimated_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "id": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "active",
+                                "paused",
+                                "completed",
+                                "archived"
+                              ]
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "reminder_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            },
+                            "progress": {
+                              "type": "object",
+                              "properties": {
+                                "minutes": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "completed": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "minimum": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "interrupted": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "partial": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "minutes",
+                                "completed",
+                                "minimum",
+                                "interrupted",
+                                "partial"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "blocked": {
+                              "type": "boolean"
+                            },
+                            "schema_version": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ]
+                            },
+                            "completed_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            },
+                            "completion_record_id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 80
+                            },
+                            "practice_origin": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "plan_id": {
+                                  "type": "string",
+                                  "maxLength": 80
+                                },
+                                "feedback_id": {
+                                  "type": "string",
+                                  "maxLength": 80
+                                }
+                              },
+                              "required": [
+                                "plan_id",
+                                "feedback_id"
+                              ]
+                            },
+                            "practice_source": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "lesson",
+                                    "record"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "maxLength": 128
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "maxLength": 80
+                                },
+                                "binding_id": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "maxLength": 100
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id",
+                                "version",
+                                "binding_id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "practice_feedback": {
+                              "type": "array",
+                              "maxItems": 100,
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "maxLength": 80
+                                  },
+                                  "created_at": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "outcome": {
+                                    "type": "string",
+                                    "enum": [
+                                      "applied",
+                                      "not_applied",
+                                      "unknown"
+                                    ]
+                                  },
+                                  "result": {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  "evidence": {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  "next_step": {
+                                    "type": "string",
+                                    "maxLength": 1000
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "created_at",
+                                  "outcome",
+                                  "result",
+                                  "evidence",
+                                  "next_step"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "title",
+                            "period",
+                            "horizon",
+                            "start_date",
+                            "end_date",
+                            "timezone",
+                            "parent_id",
+                            "target_minutes",
+                            "minimum_minutes",
+                            "target_count",
+                            "at",
+                            "reminder",
+                            "reason",
+                            "if_then",
+                            "target",
+                            "completion_mode",
+                            "estimated_minutes",
+                            "id",
+                            "revision",
+                            "status",
+                            "created_at",
+                            "updated_at",
+                            "reminder_at",
+                            "schema_version",
+                            "completed_at",
+                            "completion_record_id"
+                          ],
+                          "additionalProperties": false,
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "completion_mode": {
+                                    "enum": [
+                                      "content",
+                                      "check"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "target_minutes": {
+                                    "type": "null"
+                                  },
+                                  "minimum_minutes": {
+                                    "type": "null"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "completion_mode": {
+                                    "const": "check"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "target": {
+                                    "type": "null"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "completion_mode": {
+                                    "const": "time"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "target_minutes": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1440
+                                  },
+                                  "estimated_minutes": {
+                                    "type": "null"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "schema_version"
+                          ],
+                          "properties": {
+                            "schema_version": {
+                              "const": 2
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "schema_version": {
+                          "type": "integer",
+                          "const": 1
+                        }
+                      },
+                      "not": {
+                        "required": [
+                          "schema_version"
+                        ],
+                        "properties": {
+                          "schema_version": {
+                            "const": 2
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              },
+              "records": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "oneOf": [
+                    {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "plan_id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "started_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "ended_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date-time"
+                            },
+                            "variant": {
+                              "type": "string",
+                              "enum": [
+                                "standard",
+                                "minimum"
+                              ]
+                            },
+                            "planned_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "minimum": 1,
+                              "maximum": 1440
+                            },
+                            "actual_minutes": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "outcome": {
+                              "type": "string",
+                              "enum": [
+                                "running",
+                                "completed",
+                                "minimum",
+                                "partial",
+                                "interrupted",
+                                "recorded",
+                                "reopened"
+                              ]
+                            },
+                            "note": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "business_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "timezone": {
+                              "type": "string"
+                            },
+                            "target": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "library",
+                                        "book",
+                                        "renzhi",
+                                        "yingyu",
+                                        "biaoda",
+                                        "plan",
+                                        "article"
+                                      ]
+                                    },
+                                    "course": {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    "plan_id": {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    "lesson_no": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 100000
+                                    }
+                                  },
+                                  "required": [
+                                    "kind"
+                                  ],
+                                  "additionalProperties": false,
+                                  "allOf": [
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "article"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "plan"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "plan_id",
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "plan_id": {
+                                            "type": "string",
+                                            "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                          },
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "renzhi"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "lesson_no"
+                                        ],
+                                        "properties": {
+                                          "lesson_no": {}
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "yingyu"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "kind": {
+                                            "const": "biaoda"
+                                          }
+                                        }
+                                      },
+                                      "then": {
+                                        "required": [
+                                          "course"
+                                        ],
+                                        "properties": {
+                                          "course": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "schema_version": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2
+                              ]
+                            },
+                            "record_kind": {
+                              "type": "string",
+                              "enum": [
+                                "session",
+                                "completion",
+                                "reversal"
+                              ]
+                            },
+                            "completion_mode": {
+                              "type": "string",
+                              "enum": [
+                                "time",
+                                "content",
+                                "check"
+                              ]
+                            },
+                            "completion_effect": {
+                              "type": "string",
+                              "enum": [
+                                "none",
+                                "complete",
+                                "reopen"
+                              ]
+                            },
+                            "planned_date": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "format": "date"
+                            },
+                            "date_basis": {
+                              "type": "string",
+                              "enum": [
+                                "legacy_planned",
+                                "actual_start",
+                                "actual_confirmation"
+                              ]
+                            },
+                            "reverses_record_id": {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            "source_event_id": {
+                              "type": "string",
+                              "maxLength": 160
+                            },
+                            "recorded_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "plan_id",
+                            "title",
+                            "started_at",
+                            "ended_at",
+                            "variant",
+                            "planned_minutes",
+                            "actual_minutes",
+                            "outcome",
+                            "note",
+                            "business_date",
+                            "timezone",
+                            "target",
+                            "schema_version",
+                            "record_kind",
+                            "completion_mode",
+                            "completion_effect",
+                            "planned_date",
+                            "date_basis"
+                          ],
+                          "additionalProperties": false,
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "record_kind": {
+                                    "enum": [
+                                      "completion",
+                                      "reversal"
+                                    ]
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "actual_minutes": {
+                                    "const": 0
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "record_kind": {
+                                    "const": "reversal"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "required": [
+                                  "reverses_record_id"
+                                ],
+                                "properties": {
+                                  "outcome": {
+                                    "const": "reopened"
+                                  },
+                                  "completion_effect": {
+                                    "const": "reopen"
+                                  },
+                                  "reverses_record_id": {}
+                                }
+                              }
+                            },
+                            {
+                              "if": {
+                                "properties": {
+                                  "record_kind": {
+                                    "const": "completion"
+                                  },
+                                  "completion_mode": {
+                                    "const": "content"
+                                  }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "source_event_id": {}
+                                },
+                                "required": [
+                                  "source_event_id"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "schema_version"
+                          ],
+                          "properties": {
+                            "schema_version": {
+                              "const": 2
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "plan_id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "schema_version": {
+                          "type": "integer",
+                          "const": 1
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              },
+              "reviews": {
+                "type": "array",
+                "maxItems": 2000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "reports": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "operations": {
+                "type": "array",
+                "maxItems": 20000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "hash",
+                    "result"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              },
+              "claims": {
+                "type": "array",
+                "maxItems": 20000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "claimed_at"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "claimed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "content_sources": {
+                "type": "array",
+                "maxItems": 2000,
+                "uniqueItems": true,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "article"
+                        },
+                        "course": {
+                          "type": "string",
+                          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "course"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "plan"
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                        },
+                        "lesson_no": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "plan_id",
+                        "lesson_no"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "content_events": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "type": "object",
+                  "description": "Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.",
+                  "additionalProperties": false,
+                  "required": [
+                    "event_id",
+                    "owner",
+                    "normalized_target",
+                    "confirmed_at",
+                    "request_key",
+                    "request_hash"
+                  ],
+                  "properties": {
+                    "event_id": {
+                      "type": "string",
+                      "pattern": "^source-[a-f0-9]{32}$"
+                    },
+                    "owner": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "normalized_target": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "const": "article"
+                            },
+                            "course": {
+                              "type": "string",
+                              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "course"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "const": "plan"
+                            },
+                            "plan_id": {
+                              "type": "string",
+                              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                            },
+                            "lesson_no": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100000
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "plan_id",
+                            "lesson_no"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "confirmed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "origin_action_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 80
+                    },
+                    "planned_date_at_confirmation": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "timezone_at_confirmation": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "consumed_by": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "request_key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    },
+                    "request_hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "enum": [
+              "source-context",
+              "source-confirmation",
+              "source-receipt",
+              "source-reconcile"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "action_schema_version",
+          "binding_id"
+        ],
+        "properties": {
+          "code": false,
+          "snapshot": false,
+          "snapshot_hash": false,
+          "target_version": false,
+          "method": false,
+          "path": false,
+          "body": false,
+          "query": false,
+          "action_schema_version": {},
+          "binding_id": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "source-context"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "origin_action_id",
+          "normalized_target"
+        ],
+        "properties": {
+          "event": false,
+          "event_id": false,
+          "origin_action_id": {},
+          "normalized_target": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "source-confirmation"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event_id": false,
+          "normalized_target": false,
+          "origin_action_id": false,
+          "event": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "enum": [
+              "source-receipt",
+              "source-reconcile"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "event_id"
+        ],
+        "properties": {
+          "event": false,
+          "normalized_target": false,
+          "origin_action_id": false,
+          "event_id": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "learning-progress"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "action_schema_version",
+          "binding_id",
+          "source_revision",
+          "observed_at",
+          "web_url",
+          "plans"
+        ],
+        "properties": {
+          "action_schema_version": {},
+          "binding_id": {},
+          "source_revision": {},
+          "observed_at": {},
+          "web_url": {},
+          "plans": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "learning-library"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "binding_id": {},
+          "source_revision": {},
+          "observed_at": {},
+          "consent_enabled": {},
+          "lessons": {}
+        },
+        "required": [
+          "binding_id",
+          "source_revision",
+          "observed_at",
+          "consent_enabled",
+          "lessons"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "learning-private"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "binding_id",
+          "source_revision",
+          "enabled",
+          "lessons",
+          "results"
+        ],
+        "properties": {
+          "binding_id": {},
+          "source_revision": {},
+          "enabled": {},
+          "lessons": {},
+          "results": {}
+        }
+      }
+    }
+  ],
   "required": [
     "action"
   ],
   "additionalProperties": false
 } as const;
 
-export type LightTickGrowBridgeRequest = {
-  "action": "preview" | "claim" | "import" | "request";
+export type LightTickGrowBridgeRequest = (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
   "code"?: string;
+  "target_version"?: number;
   "snapshot_hash"?: string;
   "snapshot"?: {
   [key: string]: unknown;
@@ -9757,6 +30894,4227 @@ export type LightTickGrowBridgeRequest = {
   "query"?: {
   [key: string]: string;
 };
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+) & (
+{
+  "action": "preview" | "claim" | "import" | "request" | "source-context" | "source-confirmation" | "source-receipt" | "source-reconcile" | "learning-progress" | "learning-library" | "learning-private";
+  "code"?: string;
+  "target_version"?: number;
+  "snapshot_hash"?: string;
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "method"?: "GET" | "POST";
+  "path"?: string;
+  "body"?: {
+  [key: string]: unknown;
+};
+  "query"?: {
+  [key: string]: string;
+};
+  "action_schema_version"?: number;
+  "binding_id"?: string;
+  "origin_action_id"?: string;
+  "normalized_target"?: {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "event_id"?: string;
+  "event"?: (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+  "source_revision"?: number;
+  "observed_at"?: string;
+  "web_url"?: string;
+  "plans"?: (
+{
+  "id": string;
+  "name": string;
+  "version": number;
+  "status": "active" | "paused" | "archived";
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+  "stages": (
+{
+  "number": number;
+  "title": string;
+  "total_lessons": number;
+  "published_lessons": number;
+  "completed_lessons": number;
+  "percent": number;
+}
+)[];
+}
+)[];
+  "consent_enabled"?: boolean;
+  "lessons"?: (
+(
+{
+  "id": string;
+  "collection_id": string;
+  "collection_title": string;
+  "number": number;
+  "title": string;
+  "content_version": string;
+  "learning_state": "unknown" | "completed";
+  "source_url": string;
+  "content": string;
+  "references": string;
+}
+) | (
+{
+  "id": string;
+  "content_version": string;
+  "draft_version": string;
+  "revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "completed": boolean;
+  "completed_at": string | null;
+  "position": number;
+  "updated_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+}
+)
+)[];
+  "enabled"?: boolean;
+  "results"?: (
+{
+  "id": string;
+  "status": "applied" | "conflict" | "unavailable";
+  "error": string;
+}
+)[];
+}
+);
+
+export const LightTickActionHandoffEventSchema = {
+  "type": "object",
+  "description": "Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "owner",
+    "normalized_target",
+    "confirmed_at",
+    "request_key",
+    "request_hash"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^source-[a-f0-9]{32}$"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "normalized_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "article"
+            },
+            "course": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "course"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "plan"
+            },
+            "plan_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origin_action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "planned_date_at_confirmation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "timezone_at_confirmation": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "consumed_by": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "request_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "request_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickActionHandoffEvent = {
+  "event_id": string;
+  "owner": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "planned_date_at_confirmation"?: string | null;
+  "timezone_at_confirmation"?: string;
+  "consumed_by"?: string;
+  "request_key": string;
+  "request_hash": string;
+};
+
+export const LightTickActionHandoffSnapshotSchema = {
+  "type": "object",
+  "description": "C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This schema does not open pairing or public import.",
+  "additionalProperties": false,
+  "required": [
+    "snapshot_version",
+    "source_account_id",
+    "plans",
+    "records",
+    "reviews",
+    "reports",
+    "operations",
+    "claims",
+    "content_sources",
+    "content_events"
+  ],
+  "properties": {
+    "snapshot_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "source_account_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "plans": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "period": {
+                    "type": "string",
+                    "enum": [
+                      "year",
+                      "month",
+                      "week",
+                      "day"
+                    ]
+                  },
+                  "horizon": {
+                    "type": "string",
+                    "enum": [
+                      "short",
+                      "long"
+                    ]
+                  },
+                  "start_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "end_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "parent_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  },
+                  "target_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "minimum_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "target_count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "reminder": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "if_then": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "target": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "library",
+                              "book",
+                              "renzhi",
+                              "yingyu",
+                              "biaoda",
+                              "plan",
+                              "article"
+                            ]
+                          },
+                          "course": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "plan_id": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "lesson_no": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "article"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "plan"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "plan_id",
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "plan_id": {
+                                  "type": "string",
+                                  "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                },
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "renzhi"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "yingyu"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "biaoda"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "completion_mode": {
+                    "type": "string",
+                    "enum": [
+                      "time",
+                      "content",
+                      "check"
+                    ],
+                    "default": "time"
+                  },
+                  "estimated_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "paused",
+                      "completed",
+                      "archived"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reminder_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "progress": {
+                    "type": "object",
+                    "properties": {
+                      "minutes": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "completed": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "minimum": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "interrupted": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "partial": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "minutes",
+                      "completed",
+                      "minimum",
+                      "interrupted",
+                      "partial"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "blocked": {
+                    "type": "boolean"
+                  },
+                  "schema_version": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "completed_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "completion_record_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 80
+                  },
+                  "practice_origin": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "plan_id": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "feedback_id": {
+                        "type": "string",
+                        "maxLength": 80
+                      }
+                    },
+                    "required": [
+                      "plan_id",
+                      "feedback_id"
+                    ]
+                  },
+                  "practice_source": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "lesson",
+                          "record"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128
+                      },
+                      "version": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "binding_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 100
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id",
+                      "version",
+                      "binding_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "practice_feedback": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "applied",
+                            "not_applied",
+                            "unknown"
+                          ]
+                        },
+                        "result": {
+                          "type": "string",
+                          "maxLength": 2000
+                        },
+                        "evidence": {
+                          "type": "string",
+                          "maxLength": 2000
+                        },
+                        "next_step": {
+                          "type": "string",
+                          "maxLength": 1000
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "created_at",
+                        "outcome",
+                        "result",
+                        "evidence",
+                        "next_step"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "title",
+                  "period",
+                  "horizon",
+                  "start_date",
+                  "end_date",
+                  "timezone",
+                  "parent_id",
+                  "target_minutes",
+                  "minimum_minutes",
+                  "target_count",
+                  "at",
+                  "reminder",
+                  "reason",
+                  "if_then",
+                  "target",
+                  "completion_mode",
+                  "estimated_minutes",
+                  "id",
+                  "revision",
+                  "status",
+                  "created_at",
+                  "updated_at",
+                  "reminder_at",
+                  "schema_version",
+                  "completed_at",
+                  "completion_record_id"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "completion_mode": {
+                          "enum": [
+                            "content",
+                            "check"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "target_minutes": {
+                          "type": "null"
+                        },
+                        "minimum_minutes": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "completion_mode": {
+                          "const": "check"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "target": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "completion_mode": {
+                          "const": "time"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "target_minutes": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1440
+                        },
+                        "estimated_minutes": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "schema_version"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": 2
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "schema_version": {
+                "type": "integer",
+                "const": 1
+              }
+            },
+            "not": {
+              "required": [
+                "schema_version"
+              ],
+              "properties": {
+                "schema_version": {
+                  "const": 2
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "plan_id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "started_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ended_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "variant": {
+                    "type": "string",
+                    "enum": [
+                      "standard",
+                      "minimum"
+                    ]
+                  },
+                  "planned_minutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "actual_minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "outcome": {
+                    "type": "string",
+                    "enum": [
+                      "running",
+                      "completed",
+                      "minimum",
+                      "partial",
+                      "interrupted",
+                      "recorded",
+                      "reopened"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "business_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "library",
+                              "book",
+                              "renzhi",
+                              "yingyu",
+                              "biaoda",
+                              "plan",
+                              "article"
+                            ]
+                          },
+                          "course": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "plan_id": {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          "lesson_no": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "article"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "plan"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "plan_id",
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "plan_id": {
+                                  "type": "string",
+                                  "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                                },
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "renzhi"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "lesson_no"
+                              ],
+                              "properties": {
+                                "lesson_no": {}
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "yingyu"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "if": {
+                              "properties": {
+                                "kind": {
+                                  "const": "biaoda"
+                                }
+                              }
+                            },
+                            "then": {
+                              "required": [
+                                "course"
+                              ],
+                              "properties": {
+                                "course": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "schema_version": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2
+                    ]
+                  },
+                  "record_kind": {
+                    "type": "string",
+                    "enum": [
+                      "session",
+                      "completion",
+                      "reversal"
+                    ]
+                  },
+                  "completion_mode": {
+                    "type": "string",
+                    "enum": [
+                      "time",
+                      "content",
+                      "check"
+                    ]
+                  },
+                  "completion_effect": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "complete",
+                      "reopen"
+                    ]
+                  },
+                  "planned_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date"
+                  },
+                  "date_basis": {
+                    "type": "string",
+                    "enum": [
+                      "legacy_planned",
+                      "actual_start",
+                      "actual_confirmation"
+                    ]
+                  },
+                  "reverses_record_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "source_event_id": {
+                    "type": "string",
+                    "maxLength": 160
+                  },
+                  "recorded_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "id",
+                  "plan_id",
+                  "title",
+                  "started_at",
+                  "ended_at",
+                  "variant",
+                  "planned_minutes",
+                  "actual_minutes",
+                  "outcome",
+                  "note",
+                  "business_date",
+                  "timezone",
+                  "target",
+                  "schema_version",
+                  "record_kind",
+                  "completion_mode",
+                  "completion_effect",
+                  "planned_date",
+                  "date_basis"
+                ],
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "record_kind": {
+                          "enum": [
+                            "completion",
+                            "reversal"
+                          ]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "actual_minutes": {
+                          "const": 0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "record_kind": {
+                          "const": "reversal"
+                        }
+                      }
+                    },
+                    "then": {
+                      "required": [
+                        "reverses_record_id"
+                      ],
+                      "properties": {
+                        "outcome": {
+                          "const": "reopened"
+                        },
+                        "completion_effect": {
+                          "const": "reopen"
+                        },
+                        "reverses_record_id": {}
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "record_kind": {
+                          "const": "completion"
+                        },
+                        "completion_mode": {
+                          "const": "content"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "source_event_id": {}
+                      },
+                      "required": [
+                        "source_event_id"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "schema_version"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": 2
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "plan_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "plan_id": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "schema_version": {
+                "type": "integer",
+                "const": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "reports": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "operations": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "hash",
+          "result"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "claimed_at"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "claimed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "content_sources": {
+      "type": "array",
+      "maxItems": 2000,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "article"
+              },
+              "course": {
+                "type": "string",
+                "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+              }
+            },
+            "required": [
+              "kind",
+              "course"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "plan"
+              },
+              "plan_id": {
+                "type": "string",
+                "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+              },
+              "lesson_no": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "kind",
+              "plan_id",
+              "lesson_no"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "content_events": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "description": "Private Grow-attested migration inventory; never accepted as a public source-confirmation event. Source result/private notes remain in Grow.",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "owner",
+          "normalized_target",
+          "confirmed_at",
+          "request_key",
+          "request_hash"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "pattern": "^source-[a-f0-9]{32}$"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "normalized_target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "article"
+                  },
+                  "course": {
+                    "type": "string",
+                    "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "course"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "plan"
+                  },
+                  "plan_id": {
+                    "type": "string",
+                    "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                  },
+                  "lesson_no": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "plan_id",
+                  "lesson_no"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "origin_action_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "planned_date_at_confirmation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "timezone_at_confirmation": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "consumed_by": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "request_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "request_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickActionHandoffSnapshot = {
+  "snapshot_version": number;
+  "source_account_id": string;
+  "plans": (
+(
+(
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+)
+) & (
+{
+  "schema_version": unknown;
+}
+) | {
+  "id": string;
+  "schema_version"?: number;
+  [key: string]: unknown;
+}
+)[];
+  "records": (
+(
+(
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+)
+) & (
+{
+  "schema_version": unknown;
+}
+) | {
+  "id": string;
+  "plan_id": string;
+  "schema_version"?: number;
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reports": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "operations": (
+{
+  "key": string;
+  "hash": string;
+  "result": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "claims": (
+{
+  "key": string;
+  "claimed_at": string;
+}
+)[];
+  "content_sources": (
+{
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+}
+)[];
+  "content_events": (
+{
+  "event_id": string;
+  "owner": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "planned_date_at_confirmation"?: string | null;
+  "timezone_at_confirmation"?: string;
+  "consumed_by"?: string;
+  "request_key": string;
+  "request_hash": string;
+}
+)[];
+};
+
+export const LightTickActionHandoffReceiptSchema = {
+  "type": "object",
+  "description": "Internal C3 preflight/import acknowledgment. Public pairing and import remain disabled; defining this shape does not enable a route.",
+  "additionalProperties": false,
+  "required": [
+    "binding_id",
+    "target_user_id",
+    "snapshot_hash",
+    "source_counts",
+    "target_version"
+  ],
+  "properties": {
+    "binding_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "target_user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "target_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "validated": {
+      "type": "boolean",
+      "const": true
+    },
+    "imported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plans",
+        "records",
+        "reviews",
+        "reports",
+        "operations",
+        "claims",
+        "content_sources",
+        "content_events"
+      ],
+      "properties": {
+        "plans": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "reviews": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "reports": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "operations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "claims": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "content_sources": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "content_events": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "validated"
+      ],
+      "properties": {
+        "validated": {},
+        "imported_at": false
+      }
+    },
+    {
+      "required": [
+        "imported_at"
+      ],
+      "properties": {
+        "validated": false,
+        "imported_at": {}
+      }
+    }
+  ]
+} as const;
+
+export type LightTickActionHandoffReceipt = {
+  "validated": unknown;
+  "imported_at"?: unknown;
+} | {
+  "validated"?: unknown;
+  "imported_at": unknown;
+};
+
+export const LightTickActionSourceTargetSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "article"
+        },
+        "course": {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+        }
+      },
+      "required": [
+        "kind",
+        "course"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "plan"
+        },
+        "plan_id": {
+          "type": "string",
+          "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+        },
+        "lesson_no": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "kind",
+        "plan_id",
+        "lesson_no"
+      ],
+      "additionalProperties": false
+    }
+  ]
+} as const;
+
+export type LightTickActionSourceTarget = {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+
+export const LightTickActionSourceEventSchema = {
+  "type": "object",
+  "description": "Server-generated after explicit source success. Never accepts body, notes, browser read flags, owner IDs or consumed_by.",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^source-[a-f0-9]{32}$"
+    },
+    "normalized_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "article"
+            },
+            "course": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "course"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "plan"
+            },
+            "plan_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40,
+      "pattern": "Z$|\\+00:00$"
+    },
+    "origin_action_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^action-[a-zA-Z0-9-]+$"
+    },
+    "origin_context": {
+      "type": "string",
+      "maxLength": 6000,
+      "description": "Zook HMAC context bound to active binding, source, action, planned date, timezone and issue/expiry time. Confirmation must occur within seven days; delivery may be delayed indefinitely."
+    },
+    "source_proof": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "confirmation": {
+          "enum": [
+            "article_read",
+            "lesson_completed"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "confirmation"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "event_id",
+    "normalized_target",
+    "confirmed_at",
+    "source_proof"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "origin_action_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "origin_action_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "origin_context": {}
+        },
+        "required": [
+          "origin_context"
+        ]
+      },
+      "else": {
+        "not": {
+          "properties": {
+            "origin_context": {}
+          },
+          "required": [
+            "origin_context"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "normalized_target": {
+            "properties": {
+              "kind": {
+                "const": "article"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source_proof": {
+            "properties": {
+              "confirmation": {
+                "const": "article_read"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "source_proof": {
+            "properties": {
+              "confirmation": {
+                "const": "lesson_completed"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickActionSourceEvent = (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+) & (
+{
+  "event_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "confirmed_at": string;
+  "origin_action_id"?: string | null;
+  "origin_context"?: string;
+  "source_proof": {
+  "version": unknown;
+  "confirmation": "article_read" | "lesson_completed";
+};
+}
+);
+
+export const LightTickActionSourceReceiptSchema = {
+  "type": "object",
+  "properties": {
+    "accepted": {
+      "const": true
+    },
+    "binding_id": {
+      "type": "string"
+    },
+    "target_user_id": {
+      "type": "string"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^source-[a-f0-9]{32}$"
+    },
+    "payload_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "completed"
+      ]
+    },
+    "completed_arrangements": {
+      "type": "array",
+      "maxItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^action-[a-zA-Z0-9-]+$"
+      }
+    },
+    "record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^execution-[a-zA-Z0-9-]+$"
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "completed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "completed_arrangements": {
+            "minItems": 1
+          },
+          "record_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "completed_arrangements": {
+            "maxItems": 0
+          },
+          "record_id": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "required": [
+    "accepted",
+    "binding_id",
+    "target_user_id",
+    "event_id",
+    "payload_hash",
+    "status",
+    "completed_arrangements",
+    "record_id",
+    "reason"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionSourceReceipt = (
+{
+  "accepted": unknown;
+  "binding_id": string;
+  "target_user_id": string;
+  "event_id": string;
+  "payload_hash": string;
+  "status": "pending" | "completed";
+  "completed_arrangements": string[];
+  "record_id": string | null;
+  "reason": string | null;
+}
+) & (
+{
+  "accepted": unknown;
+  "binding_id": string;
+  "target_user_id": string;
+  "event_id": string;
+  "payload_hash": string;
+  "status": "pending" | "completed";
+  "completed_arrangements": string[];
+  "record_id": string | null;
+  "reason": string | null;
+}
+);
+
+export const LightTickActionSourceContextSchema = {
+  "type": "object",
+  "properties": {
+    "origin_context": {
+      "type": "string"
+    },
+    "binding_id": {
+      "type": "string"
+    },
+    "source_account_id": {
+      "type": "string"
+    },
+    "origin_action_id": {
+      "type": "string"
+    },
+    "normalized_target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "article"
+            },
+            "course": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+            }
+          },
+          "required": [
+            "kind",
+            "course"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "plan"
+            },
+            "plan_id": {
+              "type": "string",
+              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+            },
+            "lesson_no": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          "required": [
+            "kind",
+            "plan_id",
+            "lesson_no"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "planned_date_at_confirmation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "timezone_at_confirmation": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "origin_context",
+    "binding_id",
+    "source_account_id",
+    "origin_action_id",
+    "normalized_target",
+    "planned_date_at_confirmation",
+    "timezone_at_confirmation",
+    "revision",
+    "issued_at",
+    "expires_at"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickActionSourceContext = {
+  "origin_context": string;
+  "binding_id": string;
+  "source_account_id": string;
+  "origin_action_id": string;
+  "normalized_target": {
+  "kind": unknown;
+  "course": string;
+} | {
+  "kind": unknown;
+  "plan_id": string;
+  "lesson_no": number;
+};
+  "planned_date_at_confirmation": string | null;
+  "timezone_at_confirmation": string;
+  "revision": number;
+  "issued_at": string;
+  "expires_at": string;
 };
 
 export const LightTickActionWorkspaceEnvelopeSchema = {
@@ -9799,11 +35157,17 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                 ]
               },
               "start_date": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date"
               },
               "end_date": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date"
               },
               "timezone": {
@@ -9818,12 +35182,18 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                 "maxLength": 80
               },
               "target_minutes": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "minimum": 1,
                 "maximum": 1440
               },
               "minimum_minutes": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "minimum": 1,
                 "maximum": 1440
               },
@@ -9833,7 +35203,10 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                 "maximum": 1000
               },
               "at": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
               },
               "reminder": {
@@ -9848,38 +35221,163 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                 "maxLength": 1000
               },
               "target": {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "type": "string",
-                    "enum": [
-                      "library",
-                      "book",
-                      "renzhi",
-                      "yingyu",
-                      "biaoda",
-                      "plan",
-                      "article"
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "library",
+                          "book",
+                          "renzhi",
+                          "yingyu",
+                          "biaoda",
+                          "plan",
+                          "article"
+                        ]
+                      },
+                      "course": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "plan_id": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "lesson_no": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "article"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "course"
+                          ],
+                          "properties": {
+                            "course": {
+                              "type": "string",
+                              "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "plan"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "plan_id",
+                            "lesson_no"
+                          ],
+                          "properties": {
+                            "plan_id": {
+                              "type": "string",
+                              "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                            },
+                            "lesson_no": {}
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "renzhi"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "lesson_no"
+                          ],
+                          "properties": {
+                            "lesson_no": {}
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "yingyu"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "course"
+                          ],
+                          "properties": {
+                            "course": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "kind": {
+                              "const": "biaoda"
+                            }
+                          }
+                        },
+                        "then": {
+                          "required": [
+                            "course"
+                          ],
+                          "properties": {
+                            "course": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          }
+                        }
+                      }
                     ]
                   },
-                  "course": {
-                    "type": "string",
-                    "maxLength": 500
-                  },
-                  "plan_id": {
-                    "type": "string",
-                    "maxLength": 80
-                  },
-                  "lesson_no": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 100000
+                  {
+                    "type": "null"
                   }
-                },
-                "required": [
-                  "kind"
+                ]
+              },
+              "completion_mode": {
+                "type": "string",
+                "enum": [
+                  "time",
+                  "content",
+                  "check"
                 ],
-                "additionalProperties": false
+                "default": "time"
+              },
+              "estimated_minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 1440
               },
               "id": {
                 "type": "string",
@@ -9907,7 +35405,10 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                 "format": "date-time"
               },
               "reminder_at": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date-time"
               },
               "progress": {
@@ -9928,30 +35429,152 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                   "interrupted": {
                     "type": "integer",
                     "minimum": 0
+                  },
+                  "partial": {
+                    "type": "integer",
+                    "minimum": 0
                   }
                 },
                 "required": [
                   "minutes",
                   "completed",
                   "minimum",
-                  "interrupted"
+                  "interrupted",
+                  "partial"
                 ],
                 "additionalProperties": false
               },
               "blocked": {
                 "type": "boolean"
+              },
+              "schema_version": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "completion_record_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 80
+              },
+              "practice_origin": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "plan_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "feedback_id": {
+                    "type": "string",
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "plan_id",
+                  "feedback_id"
+                ]
+              },
+              "practice_source": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "lesson",
+                      "record"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "version": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "binding_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "version",
+                  "binding_id"
+                ],
+                "additionalProperties": false
+              },
+              "practice_feedback": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "applied",
+                        "not_applied",
+                        "unknown"
+                      ]
+                    },
+                    "result": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "next_step": {
+                      "type": "string",
+                      "maxLength": 1000
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "created_at",
+                    "outcome",
+                    "result",
+                    "evidence",
+                    "next_step"
+                  ],
+                  "additionalProperties": false
+                }
               }
             },
             "required": [
-              "id",
-              "revision",
-              "status",
               "title",
               "period",
               "horizon",
               "start_date",
               "end_date",
               "timezone",
+              "parent_id",
               "target_minutes",
               "minimum_minutes",
               "target_count",
@@ -9960,11 +35583,80 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
               "reason",
               "if_then",
               "target",
+              "completion_mode",
+              "estimated_minutes",
+              "id",
+              "revision",
+              "status",
               "created_at",
               "updated_at",
-              "reminder_at"
+              "reminder_at",
+              "schema_version",
+              "completed_at",
+              "completion_record_id"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "completion_mode": {
+                      "enum": [
+                        "content",
+                        "check"
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "target_minutes": {
+                      "type": "null"
+                    },
+                    "minimum_minutes": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "completion_mode": {
+                      "const": "check"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "target": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "completion_mode": {
+                      "const": "time"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "target_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1440
+                    },
+                    "estimated_minutes": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
           }
         },
         "execution": {
@@ -10000,8 +35692,12 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                   ]
                 },
                 "planned_minutes": {
-                  "type": "integer",
-                  "minimum": 1
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 1440
                 },
                 "actual_minutes": {
                   "type": "integer",
@@ -10014,7 +35710,9 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                     "completed",
                     "minimum",
                     "partial",
-                    "interrupted"
+                    "interrupted",
+                    "recorded",
+                    "reopened"
                   ]
                 },
                 "note": {
@@ -10029,38 +35727,204 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                   "type": "string"
                 },
                 "target": {
-                  "type": "object",
-                  "properties": {
-                    "kind": {
-                      "type": "string",
-                      "enum": [
-                        "library",
-                        "book",
-                        "renzhi",
-                        "yingyu",
-                        "biaoda",
-                        "plan",
-                        "article"
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "library",
+                            "book",
+                            "renzhi",
+                            "yingyu",
+                            "biaoda",
+                            "plan",
+                            "article"
+                          ]
+                        },
+                        "course": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "plan_id": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "lesson_no": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100000
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "kind": {
+                                "const": "article"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "course"
+                            ],
+                            "properties": {
+                              "course": {
+                                "type": "string",
+                                "pattern": "^article-[a-zA-Z0-9-]{1,100}$"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "kind": {
+                                "const": "plan"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "plan_id",
+                              "lesson_no"
+                            ],
+                            "properties": {
+                              "plan_id": {
+                                "type": "string",
+                                "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
+                              },
+                              "lesson_no": {}
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "kind": {
+                                "const": "renzhi"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "lesson_no"
+                            ],
+                            "properties": {
+                              "lesson_no": {}
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "kind": {
+                                "const": "yingyu"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "course"
+                            ],
+                            "properties": {
+                              "course": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "kind": {
+                                "const": "biaoda"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "course"
+                            ],
+                            "properties": {
+                              "course": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        }
                       ]
                     },
-                    "course": {
-                      "type": "string",
-                      "maxLength": 500
-                    },
-                    "plan_id": {
-                      "type": "string",
-                      "maxLength": 80
-                    },
-                    "lesson_no": {
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 100000
+                    {
+                      "type": "null"
                     }
-                  },
-                  "required": [
-                    "kind"
+                  ]
+                },
+                "schema_version": {
+                  "type": "integer",
+                  "enum": [
+                    1,
+                    2
+                  ]
+                },
+                "record_kind": {
+                  "type": "string",
+                  "enum": [
+                    "session",
+                    "completion",
+                    "reversal"
+                  ]
+                },
+                "completion_mode": {
+                  "type": "string",
+                  "enum": [
+                    "time",
+                    "content",
+                    "check"
+                  ]
+                },
+                "completion_effect": {
+                  "type": "string",
+                  "enum": [
+                    "none",
+                    "complete",
+                    "reopen"
+                  ]
+                },
+                "planned_date": {
+                  "type": [
+                    "string",
+                    "null"
                   ],
-                  "additionalProperties": false
+                  "format": "date"
+                },
+                "date_basis": {
+                  "type": "string",
+                  "enum": [
+                    "legacy_planned",
+                    "actual_start",
+                    "actual_confirmation"
+                  ]
+                },
+                "reverses_record_id": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "source_event_id": {
+                  "type": "string",
+                  "maxLength": 160
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time"
                 }
               },
               "required": [
@@ -10076,9 +35940,79 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                 "note",
                 "business_date",
                 "timezone",
-                "target"
+                "target",
+                "schema_version",
+                "record_kind",
+                "completion_mode",
+                "completion_effect",
+                "planned_date",
+                "date_basis"
               ],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "record_kind": {
+                        "enum": [
+                          "completion",
+                          "reversal"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "actual_minutes": {
+                        "const": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "record_kind": {
+                        "const": "reversal"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "reverses_record_id"
+                    ],
+                    "properties": {
+                      "outcome": {
+                        "const": "reopened"
+                      },
+                      "completion_effect": {
+                        "const": "reopen"
+                      },
+                      "reverses_record_id": {}
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "record_kind": {
+                        "const": "completion"
+                      },
+                      "completion_mode": {
+                        "const": "content"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "source_event_id": {}
+                    },
+                    "required": [
+                      "source_event_id"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "type": "null"
@@ -10102,6 +36036,72 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
             "null"
           ],
           "additionalProperties": true
+        },
+        "action_schema_version": {
+          "const": 2
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "nullable_schedule": {
+              "const": true
+            },
+            "completion_modes": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "time",
+                  "content",
+                  "check"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "content_receipts": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "article",
+                  "plan"
+                ]
+              },
+              "maxItems": 2
+            },
+            "actual_fact_dates": {
+              "const": true
+            },
+            "connection_write_enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "source_delivery_enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "v2_import_enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "practice_follow_up": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enables explicitly reviewed follow-ups; feedback alone never creates one."
+            },
+            "learning_practice": {
+              "type": "boolean",
+              "description": "Only permits practice writes when the separately configured connection write gate is enabled."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "nullable_schedule",
+            "completion_modes",
+            "content_receipts",
+            "actual_fact_dates",
+            "connection_write_enabled",
+            "source_delivery_enabled",
+            "v2_import_enabled"
+          ]
         }
       },
       "required": [
@@ -10109,7 +36109,9 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
         "execution",
         "server_time",
         "workspace_version",
-        "reminder_delivery"
+        "reminder_delivery",
+        "action_schema_version",
+        "capabilities"
       ],
       "additionalProperties": false
     },
@@ -10131,43 +36133,414 @@ export type LightTickActionWorkspaceEnvelope = {
   "message": string;
   "data": {
   "plans": (
+(
 {
   "title": string;
   "period": "year" | "month" | "week" | "day";
   "horizon": "short" | "long";
-  "start_date": string;
-  "end_date": string;
+  "start_date": string | null;
+  "end_date": string | null;
   "timezone": string;
-  "parent_id"?: string | null;
-  "target_minutes": number;
-  "minimum_minutes": number;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
   "target_count": number;
-  "at": string;
+  "at": string | null;
   "reminder": boolean;
   "reason": string;
   "if_then": string;
-  "target": {
+  "target": (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
   "id": string;
   "revision": number;
   "status": "active" | "paused" | "completed" | "archived";
   "created_at": string;
   "updated_at": string;
-  "reminder_at": string;
+  "reminder_at": string | null;
   "progress"?: {
   "minutes": number;
   "completed": number;
   "minimum": number;
   "interrupted": number;
+  "partial": number;
 };
   "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
 }
 )[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+) & (
+{
+  "title": string;
+  "period": "year" | "month" | "week" | "day";
+  "horizon": "short" | "long";
+  "start_date": string | null;
+  "end_date": string | null;
+  "timezone": string;
+  "parent_id": string | null;
+  "target_minutes": number | null;
+  "minimum_minutes": number | null;
+  "target_count": number;
+  "at": string | null;
+  "reminder": boolean;
+  "reason": string;
+  "if_then": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "completion_mode": "time" | "content" | "check";
+  "estimated_minutes": number | null;
+  "id": string;
+  "revision": number;
+  "status": "active" | "paused" | "completed" | "archived";
+  "created_at": string;
+  "updated_at": string;
+  "reminder_at": string | null;
+  "progress"?: {
+  "minutes": number;
+  "completed": number;
+  "minimum": number;
+  "interrupted": number;
+  "partial": number;
+};
+  "blocked"?: boolean;
+  "schema_version": 1 | 2;
+  "completed_at": string | null;
+  "completion_record_id": string | null;
+  "practice_origin"?: {
+  "plan_id": string;
+  "feedback_id": string;
+};
+  "practice_source"?: {
+  "kind": "lesson" | "record";
+  "id": string;
+  "version": string;
+  "binding_id": string | null;
+};
+  "practice_feedback"?: (
+{
+  "id": string;
+  "created_at": string;
+  "outcome": "applied" | "not_applied" | "unknown";
+  "result": string;
+  "evidence": string;
+  "next_step": string;
+}
+)[];
+}
+)
+)[];
   "execution": (
+(
 {
   "id": string;
   "plan_id": string;
@@ -10175,25 +36548,297 @@ export type LightTickActionWorkspaceEnvelope = {
   "started_at": string;
   "ended_at": string | null;
   "variant": "standard" | "minimum";
-  "planned_minutes": number;
+  "planned_minutes": number | null;
   "actual_minutes": number;
-  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted";
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
   "note": string;
   "business_date": string;
   "timezone": string;
-  "target": {
+  "target": (
+(
+{
   "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
   "course"?: string;
   "plan_id"?: string;
   "lesson_no"?: number;
-};
 }
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+) & (
+{
+  "id": string;
+  "plan_id": string;
+  "title": string;
+  "started_at": string;
+  "ended_at": string | null;
+  "variant": "standard" | "minimum";
+  "planned_minutes": number | null;
+  "actual_minutes": number;
+  "outcome": "running" | "completed" | "minimum" | "partial" | "interrupted" | "recorded" | "reopened";
+  "note": string;
+  "business_date": string;
+  "timezone": string;
+  "target": (
+(
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+) & (
+{
+  "kind": "library" | "book" | "renzhi" | "yingyu" | "biaoda" | "plan" | "article";
+  "course"?: string;
+  "plan_id"?: string;
+  "lesson_no"?: number;
+}
+)
+) | unknown;
+  "schema_version": 1 | 2;
+  "record_kind": "session" | "completion" | "reversal";
+  "completion_mode": "time" | "content" | "check";
+  "completion_effect": "none" | "complete" | "reopen";
+  "planned_date": string | null;
+  "date_basis": "legacy_planned" | "actual_start" | "actual_confirmation";
+  "reverses_record_id"?: string;
+  "source_event_id"?: string;
+  "recorded_at"?: string;
+}
+)
 ) | unknown;
   "server_time": string;
   "workspace_version": number;
   "reminder_delivery": string;
   "linked_source"?: {
 } | null;
+  "action_schema_version": unknown;
+  "capabilities": {
+  "nullable_schedule": unknown;
+  "completion_modes": (
+"time" | "content" | "check"
+)[];
+  "content_receipts": (
+"article" | "plan"
+)[];
+  "actual_fact_dates": unknown;
+  "connection_write_enabled": boolean;
+  "source_delivery_enabled": boolean;
+  "v2_import_enabled": boolean;
+  "practice_follow_up"?: boolean;
+  "learning_practice"?: boolean;
+};
 };
   "requestId": string;
 };
@@ -11300,6 +37945,217 @@ export type LightTickPlanningConfirmRequest = {
   "context_revision": number;
   "draft_plan_id": string;
   "plan_version": number;
+};
+
+export const LightTickPlanningTaskEditSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "estimated_minutes"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "scheduled_for": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T.*)?$",
+      "description": "ISO timestamp or YYYY-MM-DD business date within the selected window."
+    },
+    "completion_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "steps": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "materials": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "expected_output": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickPlanningTaskEdit = {
+  "title": string;
+  "estimated_minutes": number;
+  "scheduled_for"?: string;
+  "completion_criteria"?: string;
+  "steps"?: string[];
+  "guidance"?: {
+  "purpose"?: string;
+  "materials"?: string[];
+  "expected_output"?: string;
+};
+  "priority"?: number;
+};
+
+export const LightTickPlanningDraftEditRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_version",
+    "context_revision",
+    "draft_plan_id",
+    "plan_version",
+    "tasks"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "context_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "draft_plan_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "estimated_minutes"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "estimated_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "scheduled_for": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T.*)?$",
+            "description": "ISO timestamp or YYYY-MM-DD business date within the selected window."
+          },
+          "completion_criteria": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "expected_output": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 2147483647
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPlanningDraftEditRequest = {
+  "base_version": number;
+  "context_revision": number;
+  "draft_plan_id": string;
+  "plan_version": number;
+  "tasks": (
+{
+  "title": string;
+  "estimated_minutes": number;
+  "scheduled_for"?: string;
+  "completion_criteria"?: string;
+  "steps"?: string[];
+  "guidance"?: {
+  "purpose"?: string;
+  "materials"?: string[];
+  "expected_output"?: string;
+};
+  "priority"?: number;
+}
+)[];
 };
 
 export const LightTickPlanningMutationDataSchema = {
@@ -12779,7 +39635,14 @@ export const LightTickCoachRunRequestSchema = {
   "then": {
     "required": [
       "message"
-    ]
+    ],
+    "properties": {
+      "message": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000
+      }
+    }
   },
   "properties": {
     "scene": {
@@ -13320,7 +40183,10 @@ export const LightTickFirstActionDataSchema = {
             "format": "date"
           },
           "estimated_duration_minutes": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 1,
             "maximum": 1440
           },
@@ -13464,7 +40330,7 @@ export type LightTickFirstActionData = {
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
   "scheduled_date": string;
-  "estimated_duration_minutes": number;
+  "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
   "steps"?: (
@@ -13790,7 +40656,10 @@ export const LightTickFirstActionEnvelopeSchema = {
                 "format": "date"
               },
               "estimated_duration_minutes": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "minimum": 1,
                 "maximum": 1440
               },
@@ -13941,7 +40810,7 @@ export type LightTickFirstActionEnvelope = {
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
   "scheduled_date": string;
-  "estimated_duration_minutes": number;
+  "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
   "steps"?: (
@@ -16292,7 +43161,19 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_SYNC_OPERATION_REJECTED",
             "LIGHTTICK_TIMEZONE_INVALID",
             "RATE_LIMITED",
-            "INTERNAL_ERROR"
+            "INTERNAL_ERROR",
+            "VALIDATION_ERROR",
+            "REVISION_CONFLICT",
+            "STATE_CONFLICT",
+            "RUNNING_CONFLICT",
+            "DUPLICATE_SCHEDULE",
+            "FUTURE_ACTION",
+            "UNSCHEDULED_ACTION",
+            "COMPLETION_EVIDENCE_MISSING",
+            "CONTRACT_UPGRADE_REQUIRED",
+            "SOURCE_EVENT_CONFLICT",
+            "SOURCE_PROOF_INVALID",
+            "SOURCE_DELIVERY_UNAVAILABLE"
           ]
         },
         "result": {
@@ -16329,7 +43210,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -16393,76 +43274,110 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_SYNC_OPERATION_REJECTED",
         "LIGHTTICK_TIMEZONE_INVALID",
         "RATE_LIMITED",
-        "INTERNAL_ERROR"
+        "INTERNAL_ERROR",
+        "VALIDATION_ERROR",
+        "REVISION_CONFLICT",
+        "STATE_CONFLICT",
+        "RUNNING_CONFLICT",
+        "DUPLICATE_SCHEDULE",
+        "FUTURE_ACTION",
+        "UNSCHEDULED_ACTION",
+        "COMPLETION_EVIDENCE_MISSING",
+        "CONTRACT_UPGRADE_REQUIRED",
+        "SOURCE_EVENT_CONFLICT",
+        "SOURCE_PROOF_INVALID",
+        "SOURCE_DELIVERY_UNAVAILABLE"
       ]
     },
     "message": {
       "type": "string"
     },
     "data": {
-      "type": "object",
-      "required": [
-        "retryable"
-      ],
-      "properties": {
-        "retryable": {
-          "type": "boolean"
-        },
-        "field": {
-          "type": "string"
-        },
-        "resource_id": {
-          "type": "string",
-          "minLength": 8,
-          "maxLength": 128,
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
-        },
-        "current_version": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "server_snapshot": {
+      "anyOf": [
+        {
           "type": "object",
-          "additionalProperties": true
-        },
-        "conflict_fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "resolution_actions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "retry_after_seconds": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "violations": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "code",
-              "message"
-            ],
-            "properties": {
-              "code": {
-                "type": "string"
-              },
-              "message": {
-                "type": "string"
-              },
-              "field": {
+          "required": [
+            "retryable"
+          ],
+          "properties": {
+            "retryable": {
+              "type": "boolean"
+            },
+            "field": {
+              "type": "string"
+            },
+            "resource_id": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+            },
+            "current_version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "server_snapshot": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "conflict_fields": {
+              "type": "array",
+              "items": {
                 "type": "string"
               }
+            },
+            "resolution_actions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "retry_after_seconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "violations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "CONTRACT_SCHEMA_VERSION",
+                "CONNECTION_WRITES_DISABLED"
+              ]
+            },
+            "current_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "existing_plan_id": {
+              "type": "string",
+              "maxLength": 80
             }
           }
+        },
+        {
+          "type": "null"
         }
-      }
+      ]
     },
     "requestId": {
       "type": "string"
@@ -16471,9 +43386,10 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "message": string;
-  "data": {
+  "data": (
+{
   "retryable": boolean;
   "field"?: string;
   "resource_id"?: string;
@@ -16491,7 +43407,11 @@ export type LightTickErrorEnvelope = {
   "field"?: string;
 }
 )[];
-};
+  "reason"?: "CONTRACT_SCHEMA_VERSION" | "CONNECTION_WRITES_DISABLED";
+  "current_revision"?: number;
+  "existing_plan_id"?: string;
+}
+) | unknown;
   "requestId": string;
 };
 
@@ -16540,11 +43460,23 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_SYNC_OPERATION_REJECTED",
     "LIGHTTICK_TIMEZONE_INVALID",
     "RATE_LIMITED",
-    "INTERNAL_ERROR"
+    "INTERNAL_ERROR",
+    "VALIDATION_ERROR",
+    "REVISION_CONFLICT",
+    "STATE_CONFLICT",
+    "RUNNING_CONFLICT",
+    "DUPLICATE_SCHEDULE",
+    "FUTURE_ACTION",
+    "UNSCHEDULED_ACTION",
+    "COMPLETION_EVIDENCE_MISSING",
+    "CONTRACT_UPGRADE_REQUIRED",
+    "SOURCE_EVENT_CONFLICT",
+    "SOURCE_PROOF_INVALID",
+    "SOURCE_DELIVERY_UNAVAILABLE"
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -16608,6 +43540,21 @@ export const LightTickErrorDataSchema = {
           }
         }
       }
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "CONTRACT_SCHEMA_VERSION",
+        "CONNECTION_WRITES_DISABLED"
+      ]
+    },
+    "current_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "existing_plan_id": {
+      "type": "string",
+      "maxLength": 80
     }
   }
 } as const;
@@ -16630,6 +43577,9 @@ export type LightTickErrorData = {
   "field"?: string;
 }
 )[];
+  "reason"?: "CONTRACT_SCHEMA_VERSION" | "CONNECTION_WRITES_DISABLED";
+  "current_revision"?: number;
+  "existing_plan_id"?: string;
 };
 
 export const LightTickConstraintViolationSchema = {
@@ -17437,6 +44387,122 @@ export const LightTickGoalDataSchema = {
             },
             "additionalProperties": false
           }
+        },
+        "confirmed_planning_conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema_version",
+            "revisions"
+          ],
+          "properties": {
+            "schema_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "revisions": {
+              "type": "array",
+              "maxItems": 512,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "sequence",
+                  "scope",
+                  "starts_on",
+                  "ends_on",
+                  "daily_minutes",
+                  "active",
+                  "reason",
+                  "confirmed_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "ongoing",
+                      "temporary"
+                    ]
+                  },
+                  "starts_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ends_on": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "daily_minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "confirmed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "local_status": {
+          "type": "string",
+          "maxLength": 32,
+          "readOnly": true
+        },
+        "local_archived": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "closure_outcome": {
+          "type": "string",
+          "enum": [
+            "achieved",
+            "ended_without_achievement"
+          ],
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -17522,6 +44588,27 @@ export type LightTickGoalData = {
   "end_time": string;
 }
 )[];
+  "confirmed_planning_conditions"?: {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+  "completion_criteria"?: string;
+  "local_status"?: string;
+  "local_archived"?: boolean;
+  "closure_outcome"?: "achieved" | "ended_without_achievement";
 };
   "pause_metadata"?: {
   "reason"?: string;
@@ -17589,6 +44676,122 @@ export const LightTickGoalConstraintsSchema = {
         },
         "additionalProperties": false
       }
+    },
+    "confirmed_planning_conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "revisions"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "revisions": {
+          "type": "array",
+          "maxItems": 512,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "sequence",
+              "scope",
+              "starts_on",
+              "ends_on",
+              "daily_minutes",
+              "active",
+              "reason",
+              "confirmed_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "scope": {
+                "type": "string",
+                "enum": [
+                  "ongoing",
+                  "temporary"
+                ]
+              },
+              "starts_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "ends_on": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "daily_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "completion_criteria": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "local_status": {
+      "type": "string",
+      "maxLength": 32,
+      "readOnly": true
+    },
+    "local_archived": {
+      "type": "boolean",
+      "readOnly": true
+    },
+    "closure_outcome": {
+      "type": "string",
+      "enum": [
+        "achieved",
+        "ended_without_achievement"
+      ],
+      "readOnly": true
     }
   },
   "additionalProperties": false
@@ -17605,6 +44808,27 @@ export type LightTickGoalConstraints = {
   "end_time": string;
 }
 )[];
+  "confirmed_planning_conditions"?: {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+  "completion_criteria"?: string;
+  "local_status"?: string;
+  "local_archived"?: boolean;
+  "closure_outcome"?: "achieved" | "ended_without_achievement";
 };
 
 export const LightTickGoalCreateRequestSchema = {
@@ -17679,6 +44903,122 @@ export const LightTickGoalCreateRequestSchema = {
             },
             "additionalProperties": false
           }
+        },
+        "confirmed_planning_conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema_version",
+            "revisions"
+          ],
+          "properties": {
+            "schema_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "revisions": {
+              "type": "array",
+              "maxItems": 512,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "sequence",
+                  "scope",
+                  "starts_on",
+                  "ends_on",
+                  "daily_minutes",
+                  "active",
+                  "reason",
+                  "confirmed_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "ongoing",
+                      "temporary"
+                    ]
+                  },
+                  "starts_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ends_on": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "daily_minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "confirmed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "local_status": {
+          "type": "string",
+          "maxLength": 32,
+          "readOnly": true
+        },
+        "local_archived": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "closure_outcome": {
+          "type": "string",
+          "enum": [
+            "achieved",
+            "ended_without_achievement"
+          ],
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -17722,6 +45062,27 @@ export type LightTickGoalCreateRequest = {
   "end_time": string;
 }
 )[];
+  "confirmed_planning_conditions"?: {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+  "completion_criteria"?: string;
+  "local_status"?: string;
+  "local_archived"?: boolean;
+  "closure_outcome"?: "achieved" | "ended_without_achievement";
 };
   "review_cadence"?: {
   "layers": (
@@ -17805,6 +45166,122 @@ export const LightTickGoalUpdateRequestSchema = {
             },
             "additionalProperties": false
           }
+        },
+        "confirmed_planning_conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema_version",
+            "revisions"
+          ],
+          "properties": {
+            "schema_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "revisions": {
+              "type": "array",
+              "maxItems": 512,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "sequence",
+                  "scope",
+                  "starts_on",
+                  "ends_on",
+                  "daily_minutes",
+                  "active",
+                  "reason",
+                  "confirmed_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "ongoing",
+                      "temporary"
+                    ]
+                  },
+                  "starts_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ends_on": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "daily_minutes": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "confirmed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "completion_criteria": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "local_status": {
+          "type": "string",
+          "maxLength": 32,
+          "readOnly": true
+        },
+        "local_archived": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "closure_outcome": {
+          "type": "string",
+          "enum": [
+            "achieved",
+            "ended_without_achievement"
+          ],
+          "readOnly": true
         }
       },
       "additionalProperties": false
@@ -17849,6 +45326,27 @@ export type LightTickGoalUpdateRequest = {
   "end_time": string;
 }
 )[];
+  "confirmed_planning_conditions"?: {
+  "schema_version": number;
+  "revisions": (
+{
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "scope": "ongoing" | "temporary";
+  "starts_on": string;
+  "ends_on": string | unknown;
+  "daily_minutes": number | unknown;
+  "active": boolean;
+  "reason": string;
+  "confirmed_at": string;
+}
+)[];
+};
+  "completion_criteria"?: string;
+  "local_status"?: string;
+  "local_archived"?: boolean;
+  "closure_outcome"?: "achieved" | "ended_without_achievement";
 };
   "review_cadence"?: {
   "layers": (
@@ -18095,7 +45593,10 @@ export const LightTickPlanDataSchema = {
                 "maxLength": 200
               },
               "estimatedMinutes": {
-                "type": "integer",
+                "type": [
+                  "integer",
+                  "null"
+                ],
                 "minimum": 1,
                 "maximum": 1440
               },
@@ -18383,7 +45884,10 @@ export const LightTickPlanDataSchema = {
             "format": "date"
           },
           "estimated_duration_minutes": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 1,
             "maximum": 1440
           },
@@ -18478,7 +45982,7 @@ export type LightTickPlanData = {
   "tasks"?: (
 {
   "title": string;
-  "estimatedMinutes": number;
+  "estimatedMinutes": number | null;
   "priority"?: number;
   "scheduledFor"?: string;
   "completionCriteria"?: string;
@@ -18537,7 +46041,7 @@ export type LightTickPlanData = {
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
   "scheduled_date": string;
-  "estimated_duration_minutes": number;
+  "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
   "steps"?: (
@@ -18814,7 +46318,10 @@ export const LightTickTaskDataSchema = {
       "format": "date"
     },
     "estimated_duration_minutes": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 1,
       "maximum": 1440
     },
@@ -18921,7 +46428,7 @@ export type LightTickTaskData = {
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
   "scheduled_date": string;
-  "estimated_duration_minutes": number;
+  "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
   "steps"?: (
@@ -19422,7 +46929,10 @@ export const LightTickTodayDataSchema = {
           "format": "date"
         },
         "estimated_duration_minutes": {
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 1,
           "maximum": 1440
         },
@@ -19716,7 +47226,10 @@ export const LightTickTodayDataSchema = {
             "format": "date"
           },
           "estimated_duration_minutes": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 1,
             "maximum": 1440
           },
@@ -19849,7 +47362,7 @@ export type LightTickTodayData = {
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
   "scheduled_date": string;
-  "estimated_duration_minutes": number;
+  "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
   "steps"?: (
@@ -19910,7 +47423,7 @@ export type LightTickTodayData = {
   "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
   "difficulty"?: "low" | "medium" | "high";
   "scheduled_date": string;
-  "estimated_duration_minutes": number;
+  "estimated_duration_minutes": number | null;
   "actual_duration_minutes"?: number;
   "priority": number;
   "steps"?: (
@@ -20697,7 +48210,19 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_SYNC_OPERATION_REJECTED",
         "LIGHTTICK_TIMEZONE_INVALID",
         "RATE_LIMITED",
-        "INTERNAL_ERROR"
+        "INTERNAL_ERROR",
+        "VALIDATION_ERROR",
+        "REVISION_CONFLICT",
+        "STATE_CONFLICT",
+        "RUNNING_CONFLICT",
+        "DUPLICATE_SCHEDULE",
+        "FUTURE_ACTION",
+        "UNSCHEDULED_ACTION",
+        "COMPLETION_EVIDENCE_MISSING",
+        "CONTRACT_UPGRADE_REQUIRED",
+        "SOURCE_EVENT_CONFLICT",
+        "SOURCE_PROOF_INVALID",
+        "SOURCE_DELIVERY_UNAVAILABLE"
       ]
     },
     "result": {
@@ -20726,7 +48251,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -20743,11 +48268,12 @@ export const LightTickSyncEntityTypeSchema = {
     "task",
     "task_step",
     "review",
-    "change_proposal"
+    "change_proposal",
+    "record"
   ]
 } as const;
 
-export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
 
 export const LightTickSyncActionSchema = {
   "type": "string",
@@ -20801,7 +48327,8 @@ export const LightTickSyncOperationSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -20845,7 +48372,7 @@ export const LightTickSyncOperationSchema = {
 export type LightTickSyncOperation = {
   "operation_id": string;
   "device_id": string;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
   "base_version": number;
@@ -20899,7 +48426,8 @@ export const LightTickSyncPushRequestSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -20949,7 +48477,7 @@ export type LightTickSyncPushRequest = {
 {
   "operation_id": string;
   "device_id": string;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
   "base_version": number;
@@ -21006,7 +48534,8 @@ export const LightTickSyncOperationResultSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -21080,7 +48609,19 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_SYNC_OPERATION_REJECTED",
         "LIGHTTICK_TIMEZONE_INVALID",
         "RATE_LIMITED",
-        "INTERNAL_ERROR"
+        "INTERNAL_ERROR",
+        "VALIDATION_ERROR",
+        "REVISION_CONFLICT",
+        "STATE_CONFLICT",
+        "RUNNING_CONFLICT",
+        "DUPLICATE_SCHEDULE",
+        "FUTURE_ACTION",
+        "UNSCHEDULED_ACTION",
+        "COMPLETION_EVIDENCE_MISSING",
+        "CONTRACT_UPGRADE_REQUIRED",
+        "SOURCE_EVENT_CONFLICT",
+        "SOURCE_PROOF_INVALID",
+        "SOURCE_DELIVERY_UNAVAILABLE"
       ]
     }
   }
@@ -21089,7 +48630,7 @@ export const LightTickSyncOperationResultSchema = {
 export type LightTickSyncOperationResult = {
   "operation_id": string;
   "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
-  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id"?: string;
   "version"?: number;
   "server_snapshot"?: {
@@ -21097,7 +48638,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -21141,7 +48682,8 @@ export const LightTickSyncPushDataSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -21215,7 +48757,19 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_SYNC_OPERATION_REJECTED",
               "LIGHTTICK_TIMEZONE_INVALID",
               "RATE_LIMITED",
-              "INTERNAL_ERROR"
+              "INTERNAL_ERROR",
+              "VALIDATION_ERROR",
+              "REVISION_CONFLICT",
+              "STATE_CONFLICT",
+              "RUNNING_CONFLICT",
+              "DUPLICATE_SCHEDULE",
+              "FUTURE_ACTION",
+              "UNSCHEDULED_ACTION",
+              "COMPLETION_EVIDENCE_MISSING",
+              "CONTRACT_UPGRADE_REQUIRED",
+              "SOURCE_EVENT_CONFLICT",
+              "SOURCE_PROOF_INVALID",
+              "SOURCE_DELIVERY_UNAVAILABLE"
             ]
           }
         }
@@ -21233,7 +48787,7 @@ export type LightTickSyncPushData = {
 {
   "operation_id": string;
   "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
-  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id"?: string;
   "version"?: number;
   "server_snapshot"?: {
@@ -21241,7 +48795,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 }
 )[];
   "server_time": string;
@@ -21271,7 +48825,8 @@ export const LightTickSyncChangeSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -21303,7 +48858,7 @@ export const LightTickSyncChangeSchema = {
 
 export type LightTickSyncChange = {
   "sequence": number;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "version": number;
   "operation": "upsert" | "delete";
@@ -21348,7 +48903,8 @@ export const LightTickSyncPullDataSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -21395,7 +48951,7 @@ export type LightTickSyncPullData = {
   "changes": (
 {
   "sequence": number;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "version": number;
   "operation": "upsert" | "delete";
@@ -21619,6 +49175,10 @@ export const LightTickPublicFeatureFlagsSchema = {
     },
     "ai_coach": {
       "type": "boolean"
+    },
+    "conversational_planning": {
+      "type": "boolean",
+      "description": "Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable."
     }
   },
   "additionalProperties": false
@@ -21630,6 +49190,7 @@ export type LightTickPublicFeatureFlags = {
   "sync": boolean;
   "notifications": boolean;
   "ai_coach": boolean;
+  "conversational_planning"?: boolean;
 };
 
 export const LightTickMinimumClientVersionsSchema = {
@@ -21743,6 +49304,10 @@ export const LightTickPublicConfigDataSchema = {
         },
         "ai_coach": {
           "type": "boolean"
+        },
+        "conversational_planning": {
+          "type": "boolean",
+          "description": "Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable."
         }
       },
       "additionalProperties": false
@@ -21783,6 +49348,7 @@ export type LightTickPublicConfigData = {
   "sync": boolean;
   "notifications": boolean;
   "ai_coach": boolean;
+  "conversational_planning"?: boolean;
 };
   "privacy_policy_url": string;
   "terms_of_service_url": string;
@@ -21892,6 +49458,10 @@ export const LightTickPublicConfigEnvelopeSchema = {
             },
             "ai_coach": {
               "type": "boolean"
+            },
+            "conversational_planning": {
+              "type": "boolean",
+              "description": "Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable."
             }
           },
           "additionalProperties": false
@@ -21940,6 +49510,7 @@ export type LightTickPublicConfigEnvelope = {
   "sync": boolean;
   "notifications": boolean;
   "ai_coach": boolean;
+  "conversational_planning"?: boolean;
 };
   "privacy_policy_url": string;
   "terms_of_service_url": string;
@@ -22746,6 +50317,1672 @@ export type LogNoDataAckResult = LogNoDataAckData;
 export type LogFailResult = LogFailData;
 
 // BEGIN FROGSLEEP GENERATED CONTRACTS
+export const BuddySupportContextSchema = {
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "buddy_share",
+        "buddy_joint_activity"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "type",
+    "id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportContext = {
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+};
+
+export const BuddySupportSendRequestSchema = {
+  "type": "object",
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "template_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "focus_start_small",
+        "focus_keep_pace",
+        "focus_effort_seen",
+        "focus_restart",
+        "sleep_goodnight",
+        "sleep_no_rush",
+        "sleep_morning",
+        "sleep_support",
+        null
+      ]
+    },
+    "flower": {
+      "type": "boolean"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "buddy_share",
+                "buddy_joint_activity"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "relationship_id",
+    "operation_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportSendRequest = {
+  "relationship_id": string;
+  "operation_id": string;
+  "template_key"?: "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "flower"?: boolean;
+  "context"?: (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+};
+
+export const BuddySupportPermissionRequestSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "enabled",
+    "expected_revision",
+    "operation_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPermissionRequest = {
+  "enabled": boolean;
+  "expected_revision": number;
+  "operation_id": string;
+};
+
+export const BuddySupportResolveRequestSchema = {
+  "type": "object",
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "submission": {
+      "type": "object",
+      "properties": {
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "template_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "focus_start_small",
+            "focus_keep_pace",
+            "focus_effort_seen",
+            "focus_restart",
+            "sleep_goodnight",
+            "sleep_no_rush",
+            "sleep_morning",
+            "sleep_support",
+            null
+          ]
+        },
+        "flower": {
+          "type": "boolean"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "buddy_share",
+                    "buddy_joint_activity"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "required": [
+                "type",
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "relationship_id",
+        "operation_id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "relationship_id",
+    "submission"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportResolveRequest = {
+  "relationship_id": string;
+  "submission": {
+  "relationship_id": string;
+  "operation_id": string;
+  "template_key"?: "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "flower"?: boolean;
+  "context"?: (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+};
+};
+
+export const BuddySupportAckRequestSchema = {
+  "type": "object",
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "operation_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportAckRequest = {
+  "operation_id": string;
+};
+
+export const BuddySupportNoteSchema = {
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "sender_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "recipient_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "template_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "focus_start_small",
+        "focus_keep_pace",
+        "focus_effort_seen",
+        "focus_restart",
+        "sleep_goodnight",
+        "sleep_no_rush",
+        "sleep_morning",
+        "sleep_support",
+        null
+      ]
+    },
+    "template_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "flower": {
+      "type": "boolean"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "buddy_share",
+                "buddy_joint_activity"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "acknowledged": {
+      "type": "boolean"
+    },
+    "can_acknowledge": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "relationship_id",
+    "domain",
+    "sender_id",
+    "recipient_id",
+    "template_key",
+    "template_version",
+    "flower",
+    "context",
+    "created_at",
+    "expires_at",
+    "acknowledged",
+    "can_acknowledge"
+  ],
+  "additionalProperties": true
+} as const;
+
+export type BuddySupportNote = {
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+};
+
+export const BuddySupportCapabilitySchema = {
+  "type": "object",
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "can_send": {
+      "type": "boolean"
+    },
+    "can_read_history": {
+      "type": "boolean"
+    },
+    "own_receive_enabled": {
+      "type": "boolean"
+    },
+    "permission_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "next_send_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "is_muted": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "relationship_id",
+    "domain",
+    "enabled",
+    "can_send",
+    "can_read_history",
+    "own_receive_enabled",
+    "permission_revision",
+    "next_send_at",
+    "is_muted"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportCapability = {
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+};
+
+export const BuddySupportPartnerSchema = {
+  "type": "object",
+  "properties": {
+    "partner_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "relationship_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "focus"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "can_send": {
+            "type": "boolean"
+          },
+          "can_read_history": {
+            "type": "boolean"
+          },
+          "own_receive_enabled": {
+            "type": "boolean"
+          },
+          "permission_revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "next_send_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "is_muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "relationship_id",
+          "domain",
+          "enabled",
+          "can_send",
+          "can_read_history",
+          "own_receive_enabled",
+          "permission_revision",
+          "next_send_at",
+          "is_muted"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "has_note": {
+      "type": "boolean"
+    },
+    "latest_received_note": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "relationship_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "domain": {
+              "type": "string",
+              "enum": [
+                "sleep",
+                "focus"
+              ]
+            },
+            "sender_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "recipient_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "template_key": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "focus_start_small",
+                "focus_keep_pace",
+                "focus_effort_seen",
+                "focus_restart",
+                "sleep_goodnight",
+                "sleep_no_rush",
+                "sleep_morning",
+                "sleep_support",
+                null
+              ]
+            },
+            "template_version": {
+              "type": "integer",
+              "const": 1
+            },
+            "flower": {
+              "type": "boolean"
+            },
+            "context": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "buddy_share",
+                        "buddy_joint_activity"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "acknowledged": {
+              "type": "boolean"
+            },
+            "can_acknowledge": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "relationship_id",
+            "domain",
+            "sender_id",
+            "recipient_id",
+            "template_key",
+            "template_version",
+            "flower",
+            "context",
+            "created_at",
+            "expires_at",
+            "acknowledged",
+            "can_acknowledge"
+          ],
+          "additionalProperties": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "partner_id",
+    "display_name",
+    "relationships",
+    "has_note",
+    "latest_received_note"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPartner = {
+  "partner_id": string;
+  "display_name": string;
+  "relationships": (
+{
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+}
+)[];
+  "has_note": boolean;
+  "latest_received_note": (
+{
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+}
+) | unknown;
+};
+
+export const BuddySupportCenterDataSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "partners": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "partner_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "relationship_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "domain": {
+                  "type": "string",
+                  "enum": [
+                    "sleep",
+                    "focus"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "can_send": {
+                  "type": "boolean"
+                },
+                "can_read_history": {
+                  "type": "boolean"
+                },
+                "own_receive_enabled": {
+                  "type": "boolean"
+                },
+                "permission_revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "next_send_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "is_muted": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "relationship_id",
+                "domain",
+                "enabled",
+                "can_send",
+                "can_read_history",
+                "own_receive_enabled",
+                "permission_revision",
+                "next_send_at",
+                "is_muted"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "has_note": {
+            "type": "boolean"
+          },
+          "latest_received_note": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "relationship_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "domain": {
+                    "type": "string",
+                    "enum": [
+                      "sleep",
+                      "focus"
+                    ]
+                  },
+                  "sender_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "recipient_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "template_key": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "focus_start_small",
+                      "focus_keep_pace",
+                      "focus_effort_seen",
+                      "focus_restart",
+                      "sleep_goodnight",
+                      "sleep_no_rush",
+                      "sleep_morning",
+                      "sleep_support",
+                      null
+                    ]
+                  },
+                  "template_version": {
+                    "type": "integer",
+                    "const": 1
+                  },
+                  "flower": {
+                    "type": "boolean"
+                  },
+                  "context": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "buddy_share",
+                              "buddy_joint_activity"
+                            ]
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "acknowledged": {
+                    "type": "boolean"
+                  },
+                  "can_acknowledge": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "relationship_id",
+                  "domain",
+                  "sender_id",
+                  "recipient_id",
+                  "template_key",
+                  "template_version",
+                  "flower",
+                  "context",
+                  "created_at",
+                  "expires_at",
+                  "acknowledged",
+                  "can_acknowledge"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "partner_id",
+          "display_name",
+          "relationships",
+          "has_note",
+          "latest_received_note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "enabled",
+    "partners",
+    "next_cursor",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportCenterData = {
+  "enabled": boolean;
+  "partners": (
+{
+  "partner_id": string;
+  "display_name": string;
+  "relationships": (
+{
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+}
+)[];
+  "has_note": boolean;
+  "latest_received_note": (
+{
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+}
+) | unknown;
+}
+)[];
+  "next_cursor": string | null;
+  "server_time": string;
+};
+
+export const BuddySupportPageDataSchema = {
+  "type": "object",
+  "properties": {
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "relationship_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "focus"
+            ]
+          },
+          "sender_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "recipient_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "template_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "focus_start_small",
+              "focus_keep_pace",
+              "focus_effort_seen",
+              "focus_restart",
+              "sleep_goodnight",
+              "sleep_no_rush",
+              "sleep_morning",
+              "sleep_support",
+              null
+            ]
+          },
+          "template_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "flower": {
+            "type": "boolean"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "buddy_share",
+                      "buddy_joint_activity"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "acknowledged": {
+            "type": "boolean"
+          },
+          "can_acknowledge": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "relationship_id",
+          "domain",
+          "sender_id",
+          "recipient_id",
+          "template_key",
+          "template_version",
+          "flower",
+          "context",
+          "created_at",
+          "expires_at",
+          "acknowledged",
+          "can_acknowledge"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "notes",
+    "next_cursor",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPageData = {
+  "notes": (
+{
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+}
+)[];
+  "next_cursor": string | null;
+  "server_time": string;
+};
+
+export const BuddySupportOperationSchema = {
+  "type": "object",
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "command_type": {
+      "type": "string",
+      "enum": [
+        "send",
+        "permission",
+        "ack"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "not_sent",
+        "not_found"
+      ]
+    },
+    "resource_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "operation_id",
+    "state",
+    "resource_id"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportOperation = {
+  "operation_id": string;
+  "command_type"?: "send" | "permission" | "ack";
+  "state": "accepted" | "not_sent" | "not_found";
+  "resource_id": string | null;
+};
+
+export const BuddySupportOperationDataSchema = {
+  "type": "object",
+  "properties": {
+    "operation": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "command_type": {
+          "type": "string",
+          "enum": [
+            "send",
+            "permission",
+            "ack"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "accepted",
+            "not_sent",
+            "not_found"
+          ]
+        },
+        "resource_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "operation_id",
+        "state",
+        "resource_id"
+      ],
+      "additionalProperties": false
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "operation",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportOperationData = {
+  "operation": {
+  "operation_id": string;
+  "command_type"?: "send" | "permission" | "ack";
+  "state": "accepted" | "not_sent" | "not_found";
+  "resource_id": string | null;
+};
+  "server_time": string;
+};
+
+export const BuddySupportCapabilityDataSchema = {
+  "type": "object",
+  "properties": {
+    "capability": {
+      "type": "object",
+      "properties": {
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "domain": {
+          "type": "string",
+          "enum": [
+            "sleep",
+            "focus"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "can_send": {
+          "type": "boolean"
+        },
+        "can_read_history": {
+          "type": "boolean"
+        },
+        "own_receive_enabled": {
+          "type": "boolean"
+        },
+        "permission_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_send_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "is_muted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "relationship_id",
+        "domain",
+        "enabled",
+        "can_send",
+        "can_read_history",
+        "own_receive_enabled",
+        "permission_revision",
+        "next_send_at",
+        "is_muted"
+      ],
+      "additionalProperties": false
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "capability",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportCapabilityData = {
+  "capability": {
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "enabled": boolean;
+  "can_send": boolean;
+  "can_read_history": boolean;
+  "own_receive_enabled": boolean;
+  "permission_revision": number;
+  "next_send_at": string | null;
+  "is_muted": boolean;
+};
+  "server_time": string;
+};
+
+export const BuddySupportNoteDataSchema = {
+  "type": "object",
+  "properties": {
+    "note": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "domain": {
+          "type": "string",
+          "enum": [
+            "sleep",
+            "focus"
+          ]
+        },
+        "sender_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recipient_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "template_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "focus_start_small",
+            "focus_keep_pace",
+            "focus_effort_seen",
+            "focus_restart",
+            "sleep_goodnight",
+            "sleep_no_rush",
+            "sleep_morning",
+            "sleep_support",
+            null
+          ]
+        },
+        "template_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "flower": {
+          "type": "boolean"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "buddy_share",
+                    "buddy_joint_activity"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "required": [
+                "type",
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "acknowledged": {
+          "type": "boolean"
+        },
+        "can_acknowledge": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "relationship_id",
+        "domain",
+        "sender_id",
+        "recipient_id",
+        "template_key",
+        "template_version",
+        "flower",
+        "context",
+        "created_at",
+        "expires_at",
+        "acknowledged",
+        "can_acknowledge"
+      ],
+      "additionalProperties": true
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportNoteData = {
+  "note": {
+  "id": string;
+  "relationship_id": string;
+  "domain": "sleep" | "focus";
+  "sender_id": string;
+  "recipient_id": string;
+  "template_key": "focus_start_small" | "focus_keep_pace" | "focus_effort_seen" | "focus_restart" | "sleep_goodnight" | "sleep_no_rush" | "sleep_morning" | "sleep_support" | null;
+  "template_version": number;
+  "flower": boolean;
+  "context": (
+{
+  "type": "buddy_share" | "buddy_joint_activity";
+  "id": string;
+}
+) | unknown;
+  "created_at": string;
+  "expires_at": string;
+  "acknowledged": boolean;
+  "can_acknowledge": boolean;
+  [key: string]: unknown;
+};
+  "operation_id"?: string;
+  "server_time": string;
+};
+
+export const BuddySupportPermissionSchema = {
+  "type": "object",
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "recipient_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "app_id",
+    "relationship_id",
+    "recipient_id",
+    "enabled",
+    "revision",
+    "updated_at"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPermission = {
+  "app_id": string;
+  "relationship_id": string;
+  "recipient_id": string;
+  "enabled": boolean;
+  "revision": number;
+  "updated_at": string;
+};
+
+export const BuddySupportPermissionDataSchema = {
+  "type": "object",
+  "properties": {
+    "permission": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "relationship_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recipient_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "app_id",
+        "relationship_id",
+        "recipient_id",
+        "enabled",
+        "revision",
+        "updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "permission",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportPermissionData = {
+  "permission": {
+  "app_id": string;
+  "relationship_id": string;
+  "recipient_id": string;
+  "enabled": boolean;
+  "revision": number;
+  "updated_at": string;
+};
+  "server_time": string;
+};
+
+export const BuddySupportAckDataSchema = {
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "acknowledged": {
+      "type": "boolean"
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "note_id",
+    "acknowledged",
+    "server_time"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type BuddySupportAckData = {
+  "note_id": string;
+  "acknowledged": boolean;
+  "server_time": string;
+};
+
 export const FrogSleepPasswordLoginRequestSchema = {
   "type": "object",
   "additionalProperties": true,
@@ -23507,6 +52744,7 @@ export type BuddyInvitationTarget = {
 export const BuddyInvitationDeliveryStatusSchema = {
   "type": "string",
   "enum": [
+    "not_queued",
     "queued",
     "processing",
     "provider_accepted",
@@ -23518,7 +52756,7 @@ export const BuddyInvitationDeliveryStatusSchema = {
   ]
 } as const;
 
-export type BuddyInvitationDeliveryStatus = "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
+export type BuddyInvitationDeliveryStatus = "not_queued" | "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
 
 export const BuddyInvitationDomainResultSchema = {
   "type": "object",
@@ -23671,8 +52909,7 @@ export const BuddyInvitationDeliverySchema = {
   "type": "object",
   "required": [
     "channel",
-    "status",
-    "attempt_count"
+    "status"
   ],
   "properties": {
     "channel": {
@@ -23684,6 +52921,7 @@ export const BuddyInvitationDeliverySchema = {
     "status": {
       "type": "string",
       "enum": [
+        "not_queued",
         "queued",
         "processing",
         "provider_accepted",
@@ -23714,8 +52952,8 @@ export const BuddyInvitationDeliverySchema = {
 
 export type BuddyInvitationDelivery = {
   "channel": "email";
-  "status": "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
-  "attempt_count": number;
+  "status": "not_queued" | "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
+  "attempt_count"?: number;
   "provider_accepted_at"?: string;
   "delivered_at"?: string;
   "last_error_code"?: string;
@@ -24508,6 +53746,16 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
     "dateAnchor": {
       "type": "string",
       "format": "date"
+    },
+    "joint_activity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Accepted and started tonight_together activity. Retries and participants on different dates return its original session, including after completion."
+    },
+    "jointActivityId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Compatibility alias for joint_activity_id"
     }
   },
   "anyOf": [
@@ -24530,6 +53778,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId"?: string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 ) | (
@@ -24538,6 +53788,8 @@ export type FrogSleepSharedSleepSessionRequest = (
   "relationshipId": string;
   "date_anchor"?: string;
   "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
   [key: string]: unknown;
 }
 );
@@ -24692,7 +53944,32 @@ export const FrogSleepBuddyNotificationSchema = {
       "description": "Stable opaque notification identity shared by feed and Push"
     },
     "type": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "invitation_received",
+            "invitation_accepted",
+            "invitation_ended",
+            "interaction_received",
+            "joint_activity_invited",
+            "goal_updated",
+            "milestone_reached",
+            "weekly_report_ready",
+            "group_invitation_received",
+            "group_invitation_accepted",
+            "group_member_joined",
+            "group_member_left",
+            "group_goal_updated",
+            "group_weekly_report_ready",
+            "group_dissolved"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Known growth events plus compatibility and future notification types."
     },
     "target_type": {
       "type": "string"
@@ -24727,7 +54004,9 @@ export const FrogSleepBuddyNotificationSchema = {
 
 export type FrogSleepBuddyNotification = {
   "id": string;
-  "type": string;
+  "type": (
+"invitation_received" | "invitation_accepted" | "invitation_ended" | "interaction_received" | "joint_activity_invited" | "goal_updated" | "milestone_reached" | "weekly_report_ready" | "group_invitation_received" | "group_invitation_accepted" | "group_member_joined" | "group_member_left" | "group_goal_updated" | "group_weekly_report_ready" | "group_dissolved"
+) | string;
   "target_type"?: string;
   "target_id"?: string;
   "route"?: {
@@ -26807,14 +56086,19 @@ export const GeneratedPublicContractNames = [
   "BillingProviderConflictData",
   "BillingPublicConfig",
   "BillingTier",
+  "BodyLogAccountEntitlementsData",
   "BodyLogAvatarKey",
   "BodyLogBlockListItem",
+  "BodyLogCampaign",
+  "BodyLogCampaignClaimData",
+  "BodyLogCampaignParticipation",
   "BodyLogChallengeCreateRequest",
   "BodyLogChallengeData",
   "BodyLogChallengeMemberData",
   "BodyLogChallengeProgressRequest",
   "BodyLogChallengeResponseRequest",
   "BodyLogChallengeTheme",
+  "BodyLogEffectiveEntitlement",
   "BodyLogFriendData",
   "BodyLogFriendRequestListItem",
   "BodyLogFriendRequestRecordData",
@@ -26824,6 +56108,7 @@ export const GeneratedPublicContractNames = [
   "BodyLogInvitationCreateData",
   "BodyLogInvitationCreateRequest",
   "BodyLogInvitationListItem",
+  "BodyLogInvitationPreviewData",
   "BodyLogInvitationProgressData",
   "BodyLogInvitationProgressRequest",
   "BodyLogInvitationStatusData",
@@ -26836,9 +56121,14 @@ export const GeneratedPublicContractNames = [
   "BodyLogLeaderboardMembership",
   "BodyLogProfileData",
   "BodyLogProfileUpdateRequest",
+  "BodyLogPromotionalEntitlement",
   "BodyLogReportReason",
   "BodyLogReportRequest",
+  "BodyLogRetentionAssignment",
+  "BodyLogRetentionEventRequest",
   "BodyLogTargetUserRequest",
+  "BodyLogUnifiedMission",
+  "BodyLogUnifiedReward",
   "BuddyGroupCreateRequest",
   "BuddyGroupInviteRequest",
   "BuddyGroupRoleUpdateRequest",
@@ -26860,6 +56150,23 @@ export const GeneratedPublicContractNames = [
   "BuddySharingSelectionRequest",
   "BuddyStructuredShareRequest",
   "CatalogData",
+  "BuddySupportAckData",
+  "BuddySupportAckRequest",
+  "BuddySupportCapability",
+  "BuddySupportCapabilityData",
+  "BuddySupportCenterData",
+  "BuddySupportContext",
+  "BuddySupportNote",
+  "BuddySupportNoteData",
+  "BuddySupportOperation",
+  "BuddySupportOperationData",
+  "BuddySupportPageData",
+  "BuddySupportPartner",
+  "BuddySupportPermission",
+  "BuddySupportPermissionData",
+  "BuddySupportPermissionRequest",
+  "BuddySupportResolveRequest",
+  "BuddySupportSendRequest",
   "ChangePasswordRequest",
   "CreditMicros",
   "CreditsBalanceData",
@@ -26919,15 +56226,27 @@ export const GeneratedPublicContractNames = [
   "LightTickAccountUpgradeData",
   "LightTickAccountUpgradeEnvelope",
   "LightTickAccountUpgradeRequest",
+  "LightTickActionCapabilities",
   "LightTickActionCreateRequest",
+  "LightTickActionCreateResult",
   "LightTickActionExecution",
   "LightTickActionFields",
+  "LightTickActionHandoffEvent",
+  "LightTickActionHandoffReceipt",
+  "LightTickActionHandoffSnapshot",
   "LightTickActionMutationRequest",
+  "LightTickActionMutationResult",
   "LightTickActionPlan",
   "LightTickActionProgress",
   "LightTickActionReminderClaim",
   "LightTickActionReviewRequest",
   "LightTickActionReviewScope",
+  "LightTickActionScheduleRequest",
+  "LightTickActionScheduleResult",
+  "LightTickActionSourceContext",
+  "LightTickActionSourceEvent",
+  "LightTickActionSourceReceipt",
+  "LightTickActionSourceTarget",
   "LightTickActionSummaryRequest",
   "LightTickActionTarget",
   "LightTickActionWorkspace",
@@ -26943,7 +56262,17 @@ export const GeneratedPublicContractNames = [
   "LightTickCommitmentRequest",
   "LightTickCommitmentState",
   "LightTickCommitmentStateEnvelope",
+  "LightTickConditionCommand",
+  "LightTickConditionResult",
+  "LightTickConditionResultEnvelope",
+  "LightTickConditionsLog",
+  "LightTickConfirmedCondition",
   "LightTickConstraintViolation",
+  "LightTickContinuationContext",
+  "LightTickContinuationContextEnvelope",
+  "LightTickContinuationGoal",
+  "LightTickContinuationPlan",
+  "LightTickDailyLimit",
   "LightTickDeviceData",
   "LightTickDevicePlatform",
   "LightTickDeviceUpsertRequest",
@@ -26974,6 +56303,31 @@ export const GeneratedPublicContractNames = [
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",
   "LightTickId",
+  "LightTickLearningLessonEnvelope",
+  "LightTickLearningLibraryEnvelope",
+  "LightTickLearningPlanProgress",
+  "LightTickLearningPrivateCommand",
+  "LightTickLearningPrivateEnvelope",
+  "LightTickLearningProgress",
+  "LightTickLearningProgressEnvelope",
+  "LightTickLearningStageProgress",
+  "LightTickLocalAction",
+  "LightTickLocalAdoption",
+  "LightTickLocalEvent",
+  "LightTickLocalGoal",
+  "LightTickLocalMapping",
+  "LightTickLocalReceipt",
+  "LightTickLocalReceiptEnvelope",
+  "LightTickLocalReflection",
+  "LightTickManualAction",
+  "LightTickManualConfirm",
+  "LightTickManualDraft",
+  "LightTickManualEdit",
+  "LightTickManualListEnvelope",
+  "LightTickManualPlan",
+  "LightTickManualPlanEnvelope",
+  "LightTickManualTask",
+  "LightTickManualTaskReference",
   "LightTickMinimumClientVersions",
   "LightTickNotificationPreferences",
   "LightTickOnboardingRequest",
@@ -26987,13 +56341,17 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningContext",
   "LightTickPlanningContextRequest",
   "LightTickPlanningCreateRequest",
+  "LightTickPlanningDraftEditRequest",
   "LightTickPlanningDraftRequest",
   "LightTickPlanningEnvelope",
   "LightTickPlanningMessageRequest",
   "LightTickPlanningMutationData",
   "LightTickPlanningMutationEnvelope",
   "LightTickPlanningSession",
+  "LightTickPlanningTaskEdit",
   "LightTickPlanningValue",
+  "LightTickPracticeFollowUpContextEnvelope",
+  "LightTickPracticeFollowUpRequest",
   "LightTickProfileData",
   "LightTickProfileUpdateRequest",
   "LightTickProposalImpact",
@@ -27003,6 +56361,20 @@ export const GeneratedPublicContractNames = [
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",
   "LightTickPushProvider",
+  "LightTickRecord",
+  "LightTickRecordEnvelope",
+  "LightTickRecordExportEnvelope",
+  "LightTickRecordHistoryEnvelope",
+  "LightTickRecordLinkStatusEnvelope",
+  "LightTickRecordLinkTicketEnvelope",
+  "LightTickRecordPageEnvelope",
+  "LightTickRecordRecoveryEnvelope",
+  "LightTickRecordSource",
+  "LightTickRecordVersionRequest",
+  "LightTickRecordVersionsEnvelope",
+  "LightTickRecordWriteRequest",
+  "LightTickReflectionData",
+  "LightTickReflectionSource",
   "LightTickReviewActionRequest",
   "LightTickReviewActionResult",
   "LightTickReviewActionState",

@@ -1,3 +1,4 @@
+import { tryHandleBuddySupportRoutes } from "./frogsleep-v1-buddy-support-routes.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { BuddyInvitationBundleService } from "../modules/frogsleep/buddy-growth/buddy-invitation-bundle.service.ts";
@@ -53,6 +54,8 @@ async function handleBuddyInvitationReceiptCreate(context: BackendRouteContext, 
 
 /** Handles canonical unified buddy invitation and consent routes. */
 export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, request: HttpRequest) {
+  const support = await tryHandleBuddySupportRoutes(context, request);
+  if (support) return support;
   const capabilities = resolveBuddyGrowthCapabilities();
   const notificationResponse = capabilities.invitationInbox
     ? await tryHandleBuddyNotificationRoutes(context, request) : undefined;

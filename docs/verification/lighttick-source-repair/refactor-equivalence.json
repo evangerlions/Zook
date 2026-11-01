@@ -1,0 +1,417 @@
+{
+  "base": "10496b9",
+  "checked": 61,
+  "all_equal": true,
+  "normalization": "Indentation only; group helpers replace this dependency references with explicit arguments. SQL/text literals and statements retained.",
+  "methods": [
+    {
+      "name": "listBodyLogHabitTemplates",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-habit-templates.ts",
+      "body_equal": true,
+      "sha256": "84e7fbbeeb4daa0892da4b90156ffc8689da81d9685c5b2f2d09b08d42a10c2a"
+    },
+    {
+      "name": "findBodyLogHabitTemplate",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-habit-templates.ts",
+      "body_equal": true,
+      "sha256": "2138f763e8a2fb6025e624933a08f53910c17113909b10976b619c0449a7c427"
+    },
+    {
+      "name": "findBodyLogHabitTemplateByKey",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-habit-templates.ts",
+      "body_equal": true,
+      "sha256": "ff0fc0c2be7f34fb81276bda66d10ce745707bdd37e43c0f7b9fd01593499468"
+    },
+    {
+      "name": "insertBodyLogHabitTemplate",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-habit-templates.ts",
+      "body_equal": true,
+      "sha256": "ef5a9e713783fc43d29d9476a8c546d5b0eb2379324bc82626b4ec295c482836"
+    },
+    {
+      "name": "updateBodyLogHabitTemplate",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-habit-templates.ts",
+      "body_equal": true,
+      "sha256": "edec4e680f04427803266de82e91e1c6c3099a46bfb12e9a72305dbb982cac3f"
+    },
+    {
+      "name": "deleteBodyLogHabitTemplate",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-habit-templates.ts",
+      "body_equal": true,
+      "sha256": "8339fba660363835b469ef917c29417cfd92fe541cfb0814ba7a86b1aea2f6bc"
+    },
+    {
+      "name": "listGrowthPlansPaginated",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "d961e9d2e5a55e989ac534c6d57ef91eead437152f0ae365ba019b2a5da380a0"
+    },
+    {
+      "name": "getGrowthStatistics",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "e63e95b496eb68185f13c56310d5d62b9cb0ca0fc823db93b2b01ee323b42e5a"
+    },
+    {
+      "name": "listRewardsPaginated",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "5452258e4ba744efa99de45f824a978a3fa3a93ef9efb7f076ef2f3aa9036f2d"
+    },
+    {
+      "name": "getRewardStatistics",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "ff65d701e768784a575b5efc32949fc847c3c0c42d15f0c7b1308cfe639de645"
+    },
+    {
+      "name": "getFeatureFlagAnalytics",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "0a7bb9e10d6b7564f495bf545f84f8168ac146a783a9ec1896a5e98bb98ed2fe"
+    },
+    {
+      "name": "getGrowthPlanDetails",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "a168d3f8c6b97238a14ae0b0231a24253e48886e512a0d8d12cf84c0b651857f"
+    },
+    {
+      "name": "manualIssueReward",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "501db547fa6f6f3eec6f89cc8216001e1ed89a33f74bd70bf52ca0b294dbfb82"
+    },
+    {
+      "name": "getNotificationConfig",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "8037669d3ab503d21d4457e53f52517678f120d4225a86f6d136f7c5e08f98a3"
+    },
+    {
+      "name": "updateNotificationConfig",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "06b92b88b5bebb3990f6aa8c566ff0f5c428cb509a4cf6ed7cb17148143b8ea1"
+    },
+    {
+      "name": "getScoringConfig",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "47768cc17f0ff7d93224700cefcfeaca2736800f596c90303f67c0cf8c09f6fb"
+    },
+    {
+      "name": "updateScoringConfig",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "93af72ae540b704a3b0c57ec847a81f527776bd1e7b8f1ce8a4b28925dc0d36c"
+    },
+    {
+      "name": "getSeasonConfig",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "67cb28e6681b081a51cf73995b22328de2b722f367fd20afab601c224d254b10"
+    },
+    {
+      "name": "updateSeasonConfig",
+      "from": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "to": "src/infrastructure/database/postgres/postgres-bodylog-admin-growth.ts",
+      "body_equal": true,
+      "sha256": "cd4d08ad5129174d726acd9589a17e42109caf05352a132a59d5101f4d06fd65"
+    },
+    {
+      "name": "listRoles",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "ae16bcdf1e708d37a5263df459381727f6ee0a3fd9371788821aea7bd3930de3"
+    },
+    {
+      "name": "findRole",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "94c15a3fb7c075450da49890019cd65253cefcf8fe479afcb51b3c4811ff46a3"
+    },
+    {
+      "name": "insertRoles",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "26c64ed0860a9053a75409c1f2b387e51b0646940fb1ef57c35f4caa12dad5d8"
+    },
+    {
+      "name": "listPermissions",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "ab445e34a1c37efa1bf038062075642f39a666f561e8de476216a04b1d962bd6"
+    },
+    {
+      "name": "insertRolePermissions",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "356a4eed89886c51e031cd1b5ca93753664cbf1217f1b41017249a2a3e42cb67"
+    },
+    {
+      "name": "findUserRole",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "a70c5c03b82656563ddb34478755e1c6fd980b1ad8d241eb4531154192f6a452"
+    },
+    {
+      "name": "insertUserRole",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "32cf4c27bc1ce81de1dd1bb0d38eb1e6936ad515d471d18b68582bc4d7dbd1a9"
+    },
+    {
+      "name": "getPermissionCodes",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "69d9c9b04c5b39a368c96fb9f66bf57d5c103e935751ca50e38035cdc2fd982c"
+    },
+    {
+      "name": "listRolePermissions",
+      "from": "src/infrastructure/database/postgres/postgres-database.ts",
+      "to": "src/infrastructure/database/postgres/postgres-rbac.ts",
+      "body_equal": true,
+      "sha256": "05e764bce32c1bad86ed968c37037ef80c8aba83401d34fbb48a8b5fa820439a"
+    },
+    {
+      "name": "getMyGroups",
+      "from": "src/modules/bodylog/bodylog-group.service.ts",
+      "to": "src/modules/bodylog/bodylog-group-queries.ts",
+      "body_equal": true,
+      "sha256": "d149861e50c84f48685103fe4e0eb77aafe7d4d18284800976fa6b4b365ed4f5"
+    },
+    {
+      "name": "getGroupLeaderboard",
+      "from": "src/modules/bodylog/bodylog-group.service.ts",
+      "to": "src/modules/bodylog/bodylog-group-queries.ts",
+      "body_equal": true,
+      "sha256": "422b4394a798ff3906f703d44381a7396e65e12123684c7850d005d01d4798cf"
+    },
+    {
+      "name": "checkIsPremium",
+      "from": "src/modules/bodylog/bodylog-group.service.ts",
+      "to": "src/modules/bodylog/bodylog-group-queries.ts",
+      "body_equal": true,
+      "sha256": "0f3f81d847f459e6f8b61fa2306604d45809223ab9d7d4c7ae9cbb6b5d62f497"
+    },
+    {
+      "name": "updateDailyRecord",
+      "from": "src/modules/bodylog/bodylog-group.service.ts",
+      "to": "src/modules/bodylog/bodylog-group-daily-records.ts",
+      "body_equal": true,
+      "sha256": "8d4dd887e532e4350f54632949da9d6f7492b89356b6e8a5398d09972f4b1165"
+    },
+    {
+      "name": "reconcileTodayDailyRecord",
+      "from": "src/modules/bodylog/bodylog-group.service.ts",
+      "to": "src/modules/bodylog/bodylog-group-daily-records.ts",
+      "body_equal": true,
+      "sha256": "24331dfc9c606f3135f7f4c04d158dad4be2158ce46aa193005546b8529ac472"
+    },
+    {
+      "name": "sendGroupNotification",
+      "from": "src/modules/bodylog/bodylog-group.service.ts",
+      "to": "src/modules/bodylog/bodylog-group-notification.ts",
+      "body_equal": true,
+      "sha256": "479e22e881188610a276ad30eacf15e00d9cfc84fc2b384e1db877e7b6e701d7"
+    },
+    {
+      "name": "profileData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "4c180252368a3d883514fa2bd95bb5d2ee9f7b51773be06796e22f68af16245f"
+    },
+    {
+      "name": "goalData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "92565c01c61d8f10843351c5ea62821aa18bb2e3e768699706bab208e4bc1aa8"
+    },
+    {
+      "name": "variantData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "83a4e225f31e00fea3524f3168526c3830eb14575169d7374ae4deaf4f185c36"
+    },
+    {
+      "name": "variantsData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "1bada797be6dff5c1121adae62ca57bb733c6c8ac3323a10f15b1a1803c51deb"
+    },
+    {
+      "name": "taskData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "e0bb7fbbd8b9c4317928d900e6028c316ea9d9fd6180335c2a23d6c6d0fb24ca"
+    },
+    {
+      "name": "planData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "4781299d6e5db319ade5b09aa7a5601034f5d5885492811b8583d305b46cabda"
+    },
+    {
+      "name": "reviewData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "f8ab92e7694cf52301d22647a7c57e9afcc24cd2e9850430e04ca6f1b65c0b47"
+    },
+    {
+      "name": "proposalData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "6afffb5a8fe94009ffd2099c809f9cec6dfc130902145e1cedfdec14c3ad9cef"
+    },
+    {
+      "name": "runData",
+      "from": "src/app/lighttick-v1-routes.ts",
+      "to": "src/app/lighttick-v1-projections.ts",
+      "body_equal": true,
+      "sha256": "d5595d728898ef9f760f2bde556d1158330f6f8863222914b87f4b122ebf42f7"
+    },
+    {
+      "name": "getBodyLogCheckinDashboard",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getBodyLogCheckinRecords",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "exportBodyLogCheckinRecordsCsv",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "listBodyLogGroups",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getBodyLogGroupMemberContributions",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "listBodyLogHabitTemplates",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "createBodyLogHabitTemplate",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "updateBodyLogHabitTemplate",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "deleteBodyLogHabitTemplate",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getBodyLogHabitTemplateUsage",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-bodylog-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getLlmService",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getLlmServiceRevision",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "updateLlmService",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "restoreLlmService",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getLlmMetrics",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "resetLlmRouteCircuit",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "getLlmModelMetrics",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    },
+    {
+      "name": "runLlmSmokeTest",
+      "from": "apps/admin-web/app/lib/admin-api.ts",
+      "to": "apps/admin-web/app/lib/admin-llm-api.ts",
+      "body_equal": true
+    }
+  ]
+}

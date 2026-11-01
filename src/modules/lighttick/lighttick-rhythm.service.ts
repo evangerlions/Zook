@@ -44,7 +44,7 @@ export class LightTickRhythmSuggestionService {
       const title = titleOfSignature(insight.signature);
       const task = executable.find(candidate => candidate.title === title)
         ?? executable.find(candidate => candidate.title.includes(title) || title.includes(candidate.title));
-      if (!task) continue;
+      if (!task || task.estimatedMinutes === null) continue;
       if (insight.ruleId === "rule.time_estimation_bias") {
         const action = this.estimationAction(insight, task);
         if (!action) continue;

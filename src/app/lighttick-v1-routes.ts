@@ -1,3 +1,7 @@
+import {handleManualRequest} from './lighttick-manual-routes.ts';
+import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
+import { handleRecordRequest } from "./lighttick-record-routes.ts";
+import { handleContinuationRequest } from './lighttick-continuation-routes.ts';
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -84,49 +88,12 @@ async function recordFact(runtime: LightTickRuntime, request: HttpRequest, userI
   try { await runtime.analytics?.record({ userId, event, dedupeKey, pageKey, platform: analyticsPlatform(request), metadata }); }
   catch { /* Product writes must not fail when ordinary analytics is unavailable. */ }
 }
-function profileData(row: any) { return row ? { user_id: row.userId, timezone: row.timezone, locale: row.locale,
-  pace: row.pace, onboarding_state: row.onboardingState, notification_preferences: row.notificationPreferences,
-  version: row.version, created_at: row.createdAt, updated_at: row.updatedAt } : undefined; }
-function goalData(row: any) { return { id: row.id, title: row.title, description: row.description, status: row.status,
-  target_date: row.targetDate, constraints: row.constraints, pause_metadata: row.pauseMetadata ? {
-    reason: row.pauseMetadata.reason, paused_at: row.pauseMetadata.pausedAt,
-    expected_resume_at: row.pauseMetadata.expectedResumeAt, keep_light_tasks: row.pauseMetadata.keepLightTasks,
-    notification_policy: row.pauseMetadata.notificationPolicy } : undefined,
-  recovery_started_at: row.recoveryStartedAt, review_cadence: row.reviewCadence ?? { layers: ["week"] },
-  version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-function variantData(definition: any) { return { title: definition.title,
-  estimated_duration_minutes: definition.estimatedMinutes, completion_criteria: definition.completionCriteria }; }
-function variantsData(definitions: any) { return definitions ? Object.fromEntries(Object.entries(definitions)
-  .map(([key, value]) => [key, variantData(value)])) : undefined; }
-function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
-  status: row.status, scheduled_date: row.scheduledFor?.slice(0, 10), estimated_duration_minutes: row.estimatedMinutes,
-  lineage_id: row.lineageId ?? row.id, selected_variant: row.selectedVariant ?? "standard",
-  variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria, guidance: row.guidance,
-  actual_duration_minutes: row.actualMinutes, commitment_satisfied: row.commitmentSatisfied,
-  priority: row.priority, steps: steps.map(step => ({ id: step.id, title: step.title,
-    completed: step.completed, position: step.position })), completed_at: row.completedAt, note: row.notes, version: row.version,
-  created_at: row.createdAt, updated_at: row.updatedAt }; }
-function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.goalId, granularity: row.granularity,
-  status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
-  proposal: row.proposal,
-  ...(tasks ? { tasks: tasks.map(task => taskData(task, task.steps)) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "day" ? "daily" : row.period === "week" ? "weekly" : "monthly",
-  status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
-  insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], data_sufficiency: row.dataSufficiency,
-  version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-function proposalData(row: any) { return { id: row.id, plan_id: row.planId, base_plan_version: row.basePlanVersion,
-  status: row.status, reason: row.reason, diff: row.diff, impact: row.impact, expires_at: row.expiresAt,
-  version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-function runData(row: LightTickAiRunRow) { return { id: row.id, kind: row.kind, scene: row.sceneKey, status: row.status,
-  retryable: row.status === "failed", result_resource_id: row.resourceId, error_code: row.errorCode,
-  result: row.status === "succeeded" ? row.output : undefined,
-  created_at: row.createdAt, updated_at: row.updatedAt }; }
-
 async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
   entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
   const key = idempotencyKeyOf(request);
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
+    await runtime.repository.lockPlanningOwner(owner);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
       if (existing.payloadHash !== payloadHash || existing.action !== action)
@@ -155,7 +122,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (!request.path.startsWith(PREFIX)) return undefined;
   const methodOverride = request.headers["x-http-method-override"] ?? request.headers["X-HTTP-Method-Override"];
   if (methodOverride !== undefined) {
-    if (request.path !== `${PREFIX}profile` || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
+    if ((request.path !== `${PREFIX}profile` && !/^\/api\/v1\/lighttick\/manual-plans\/[a-zA-Z0-9_-]{1,128}$/.test(request.path)) || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
       throw new ApplicationError(400, "REQ_METHOD_OVERRIDE_INVALID", "HTTP method override is not allowed for this route.");
     request = { ...request, method: "PATCH" };
   }
@@ -166,7 +133,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
     const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
-    return response(context, request, buildLightTickPublicConfiguration(enabled, config));
+    return response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
   }
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
   if (request.method === "POST" && request.path === `${PREFIX}account/guest-sessions`) {
@@ -194,6 +161,23 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) assertGuestRouteAllowed(request);
+  const assertActive=async()=>{
+    const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
+    if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
+  };
+  const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
+  if(continuationResult!==undefined)return response(context,request,continuationResult);
+  const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);
+  if(manualResult!==undefined)return response(context,request,manualResult);
+  const taskSchema=request.headers["x-lighttick-task-schema"]??request.headers["X-LightTick-Task-Schema"];
+  if(taskSchema!=="2"&&/^\/api\/v1\/lighttick\/(today|plans|tasks|sync)(\/|$)/.test(request.path)&&
+    (await runtime.repository.listPlans(owner)).some(p=>["manual_native","local_adoption"].includes(p.source)))
+    throw new ApplicationError(426,"CONTRACT_UPGRADE_REQUIRED","Update the client to read manual task dates and unknown effort.");
+  const recordResult = await handleRecordRequest(runtime.repository, owner, request, async current => {
+    const membership=await context.database.findAppUser(current.appId,current.userId),user=await context.database.findUserById(current.userId);
+    if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
+  });
+  if (recordResult !== undefined) return response(context, request, recordResult);
 
   if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
     await recordFact(runtime, request, auth.userId, "lighttick_session_recovered", `session:${auth.expiresAt}`, "account",
@@ -462,7 +446,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, data);
   }
 
-  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request);
+  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request, assertActive);
   if (reflectionResult) return response(context, request, reflectionResult);
 
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {

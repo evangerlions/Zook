@@ -1,3 +1,4 @@
+import { InMemoryBodyLogRetentionStore } from "./infrastructure/bodylog-retention-store.ts";
 import type { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import type { BodyLogStores } from "./infrastructure/bodylog-store-ports.ts";
@@ -21,6 +22,7 @@ const fallbackStores = new WeakMap<ApplicationDatabase, BodyLogStores>();
 export function resolveBodyLogStores(database: ApplicationDatabase): BodyLogStores {
   if (database instanceof PostgresDatabase) {
     return {
+      retention: database.getBodyLogRetentionStore(),
       jobs: database.getBodyLogJobStore(),
       buddy: database.getBodyLogBuddyStore(),
       group: database.getCheckInGroupStore(),
@@ -35,6 +37,7 @@ export function resolveBodyLogStores(database: ApplicationDatabase): BodyLogStor
   if (existing) return existing;
   const completedJobs = new Set<string>();
   const stores: BodyLogStores = {
+    retention: new InMemoryBodyLogRetentionStore(),
     jobs: {
       runOnce: (key, job) => database.withExclusiveSession(async () => {
         if (completedJobs.has(key)) return false;

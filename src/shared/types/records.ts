@@ -33,6 +33,7 @@ export interface AppNameI18n {
 }
 
 export interface UserRecord {
+  credentialVersion?: number;
   id: string;
   email?: string;
   phone?: string;
@@ -81,6 +82,7 @@ export interface UserRoleRecord {
 }
 
 export interface RefreshTokenRecord {
+  credentialVersion?: number;
   id: string;
   appId: string;
   userId: string;
@@ -205,6 +207,8 @@ export interface FrogSleepBuddyInvitationBundleRecord {
   inviteeUserId?: string;
   recipientEmail?: string;
   recipientEmailHash?: string;
+  inviterReadAt?: string;
+  inviteeReadAt?: string;
   shareCode: string;
   handoffToken: string;
   shareLink: string;

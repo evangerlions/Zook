@@ -1,3 +1,4 @@
+import type { BodyLogRetentionService } from "./bodylog-retention.service.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import type { BodyLogGrowthStore } from "../../infrastructure/bodylog-store-ports.ts";
 import type {
@@ -95,7 +96,7 @@ function toRewardDocument(record: BodyLogGrowthReward): BodyLogGrowthRewardDocum
 }
 
 export class BodyLogGrowthService {
-  constructor(private readonly database: BodyLogGrowthStore) {}
+  constructor(private readonly database: BodyLogGrowthStore, readonly retention?: BodyLogRetentionService) {}
 
   async enroll(userId: string, timeZone = "UTC"): Promise<BodyLogGrowthPlanDocument> {
     assertTimeZone(timeZone);
@@ -221,6 +222,7 @@ export class BodyLogGrowthService {
     const result = await this.database.applyGrowthDailyAggregate(plan.id, day, aggregateInput, shouldComplete, new Date().toISOString());
     if (result.locked) throw new ApplicationError(409, "BODYLOG_GROWTH_AGGREGATE_LOCKED", "Daily progress is locked after a plan reward is claimed.");
     if (!result.aggregate) throw new ApplicationError(409, "BODYLOG_GROWTH_MISSION_DEFINITION_MISSING", "The active plan does not accept this local-goal aggregate.");
+    if (this.retention) await this.retention.reconcile(userId);
     return result.aggregate;
   }
 
@@ -276,6 +278,7 @@ export class BodyLogGrowthService {
       throw new ApplicationError(409, "BODYLOG_GROWTH_REWARD_CLAIMED", "Reward claim could not be confirmed.");
     }
 
+    if (this.retention) await this.retention.rewards(userId);
     return toRewardDocument(updatedReward);
   }
 }

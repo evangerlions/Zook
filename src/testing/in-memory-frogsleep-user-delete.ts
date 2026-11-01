@@ -1,3 +1,4 @@
+import { InMemoryBuddySupportRepository } from "./in-memory-buddy-support.ts";
 import type { InMemoryDatabase } from "./in-memory-database.ts";
 
 export function deleteInMemoryFrogSleepBuddyUserData(db: InMemoryDatabase, appId: string, userId: string): void {
@@ -8,6 +9,7 @@ export function deleteInMemoryFrogSleepBuddyUserData(db: InMemoryDatabase, appId
     && ([item.inviterUserId, item.inviteeUserId].includes(userId) || Boolean(email && item.recipientEmail === email)));
   const ids = new Set([...relationships, ...invitations, ...db.frogSleepEntities.filter(item => item.appId === appId
     && [item.ownerUserId, item.partnerUserId].includes(userId))].map(item => item.id));
+  new InMemoryBuddySupportRepository(db).deleteUserSync(appId, userId, [...ids]);
   freePartnerSlots(db, appId, userId, ids);
   deleteNotifications(db, appId, userId, ids);
   deleteInvitations(db, appId, userId, ids);

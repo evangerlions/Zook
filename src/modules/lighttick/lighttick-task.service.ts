@@ -1,3 +1,4 @@
+import { assertScheduledCapacity } from "./goal-context/confirmed-conditions.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
@@ -16,7 +17,15 @@ export class LightTickTaskService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
   async command(owner: LightTickOwner, taskId: string, baseVersion: number, command: LightTickTaskCommand): Promise<LightTickTaskRow> {
+    return this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      return this.executeCommand(owner, taskId, baseVersion, command);
+    });
+  }
+
+  private async executeCommand(owner: LightTickOwner, taskId: string, baseVersion: number, command: LightTickTaskCommand): Promise<LightTickTaskRow> {
     const current = await this.repository.getTask(owner, taskId);
+    if (current) await this.assertGoalAllowsExecution(owner, current);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
     const target: Record<LightTickTaskCommand["action"], LightTickTaskStatus> = {
       start: "in_progress", complete: "completed", skip: "skipped", defer: "deferred", cancel: "cancelled",
@@ -79,9 +88,16 @@ export class LightTickTaskService {
 
   async switchVariant(owner: LightTickOwner, taskId: string, baseVersion: number,
     variant: LightTickTaskVariant): Promise<LightTickTaskRow> {
+    return this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      return this.executeVariant(owner, taskId, baseVersion, variant);
+    });
+  }
+  private async executeVariant(owner: LightTickOwner, taskId: string, baseVersion: number, variant: LightTickTaskVariant): Promise<LightTickTaskRow> {
     if (!["standard", "light", "minimum"].includes(variant))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Task variant is invalid.");
     const current = await this.repository.getTask(owner, taskId);
+    const goal = current ? await this.assertGoalAllowsExecution(owner, {...current,selectedVariant:variant}) : undefined;
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
     if (!["pending", "in_progress"].includes(current.status))
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Completed or terminal tasks cannot change variant.");
@@ -93,6 +109,7 @@ export class LightTickTaskService {
     const next: LightTickTaskRow = { ...current, lineageId: current.lineageId ?? current.id,
       selectedVariant: variant, title: definition.title, estimatedMinutes: definition.estimatedMinutes,
       completionCriteria: definition.completionCriteria, updatedAt: timestamp };
+    if (goal?.constraints.confirmed_planning_conditions !== undefined) assertScheduledCapacity(goal,[next],await this.repository.listTasks(owner),new Set([taskId]),(await this.repository.getProfile(owner))?.timezone??"UTC");
     return await this.repository.saveTask(next, {
       event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
         eventType: "task_variant_changed", aggregateVersion: baseVersion + 1,
@@ -107,7 +124,9 @@ export class LightTickTaskService {
   async setStepCompletion(owner: LightTickOwner, taskId: string, stepId: string, baseVersion: number,
     completed: boolean): Promise<{ task: LightTickTaskRow; steps: LightTickTaskStepRow[] }> {
     return await this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
       const current = await this.repository.getTask(owner, taskId);
+    if (current) await this.assertGoalAllowsExecution(owner, current);
       if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
       const step = await this.repository.getTaskStep(owner, taskId, stepId);
       if (!step) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task step was not found.");
@@ -127,4 +146,16 @@ export class LightTickTaskService {
       return { task: savedTask, steps: await this.repository.listTaskSteps(owner, taskId) };
     });
   }
+  private async assertGoalAllowsExecution(owner: LightTickOwner, task: LightTickTaskRow) {
+    const goal = await this.repository.getGoal(owner, task.goalId);
+    // Historical orphan rows retain task-state rules; known goal states are authoritative.
+    if (!goal) return;
+    const variant = task.selectedVariant ?? "standard";
+    const pausedAllowed = goal.status === "paused" && goal.pauseMetadata?.keepLightTasks === true && variant !== "standard";
+    const needsReviewedRecovery = goal.status === "recovering" && variant === "standard" && ["manual_native", "local_adoption"].includes((await this.repository.getPlan(owner, task.planId))?.source ?? "");
+    if (["completed", "archived"].includes(goal.status) || goal.status === "paused" && !pausedAllowed || needsReviewedRecovery)
+      throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "The goal is stopped or requires reviewed resumption; cached task commands cannot resume it.");
+    return goal;
+  }
+
 }
