@@ -2697,7 +2697,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     RequiredPersonalEpoch:
       name: X-Sync-Epoch

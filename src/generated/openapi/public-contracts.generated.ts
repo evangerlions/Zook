@@ -1,6 +1,2711 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const YaoheziMeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "userId",
+    "healthAccessEstablished",
+    "capabilities"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string",
+      "const": "yaohezi"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "healthAccessEstablished": {
+      "type": "boolean",
+      "const": false
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloudSync",
+        "familySharing",
+        "reportAI",
+        "subscriptionSales"
+      ],
+      "properties": {
+        "cloudSync": {
+          "type": "boolean",
+          "const": false
+        },
+        "familySharing": {
+          "type": "boolean",
+          "const": false
+        },
+        "reportAI": {
+          "type": "boolean",
+          "const": false
+        },
+        "subscriptionSales": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  }
+} as const;
+
+export type YaoheziMeData = {
+  "appId": string;
+  "userId": string;
+  "healthAccessEstablished": boolean;
+  "capabilities": {
+  "cloudSync": boolean;
+  "familySharing": boolean;
+  "reportAI": boolean;
+  "subscriptionSales": boolean;
+};
+};
+
+export const YaoheziHealthChallengeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subjectId",
+    "purpose",
+    "device"
+  ],
+  "properties": {
+    "subjectId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f-]{36}$"
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "bootstrap",
+        "enroll",
+        "sessions",
+        "recover"
+      ]
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deviceId",
+        "signingKey",
+        "wrappingKey"
+      ],
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "signingKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "wrappingKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      }
+    }
+  }
+} as const;
+
+export type YaoheziHealthChallengeRequest = {
+  "subjectId": string;
+  "purpose": "bootstrap" | "enroll" | "sessions" | "recover";
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+};
+
+export const YaoheziHealthRecoveryRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subjectId"
+  ],
+  "properties": {
+    "subjectId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f-]{36}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthRecoveryRequest = {
+  "subjectId": string;
+};
+
+export const YaoheziHealthBootstrapRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "challengeId",
+        "challengeNonce",
+        "device",
+        "confirmed",
+        "recovery"
+      ],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "challengeId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "challengeNonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deviceId",
+            "signingKey",
+            "wrappingKey"
+          ],
+          "properties": {
+            "deviceId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f-]{36}$"
+            },
+            "signingKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "wrappingKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        },
+        "confirmed": {
+          "type": "boolean",
+          "const": true
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "publicKey",
+            "vault"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "publicKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "vault": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "nonce",
+                "ciphertext"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "nonce": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{16}$"
+                },
+                "ciphertext": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "minLength": 22,
+                  "maxLength": 65536
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthBootstrapRequest = {
+  "command": {
+  "accountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "challengeId": string;
+  "challengeNonce": string;
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+  "confirmed": boolean;
+  "recovery": {
+  "version": number;
+  "publicKey": string;
+  "vault": {
+  "version": number;
+  "nonce": string;
+  "ciphertext": string;
+};
+};
+};
+  "signature": string;
+};
+
+export const YaoheziHealthSessionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "challengeId",
+        "challengeNonce",
+        "device"
+      ],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "challengeId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "challengeNonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deviceId",
+            "signingKey",
+            "wrappingKey"
+          ],
+          "properties": {
+            "deviceId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f-]{36}$"
+            },
+            "signingKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "wrappingKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthSessionRequest = {
+  "command": {
+  "accountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "challengeId": string;
+  "challengeNonce": string;
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+};
+  "signature": string;
+};
+
+export const YaoheziHealthRecoverRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature",
+    "recoverySignature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "challengeId",
+        "challengeNonce",
+        "device",
+        "recoveryVersion",
+        "recovery"
+      ],
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "challengeId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "challengeNonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "device": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deviceId",
+            "signingKey",
+            "wrappingKey"
+          ],
+          "properties": {
+            "deviceId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f-]{36}$"
+            },
+            "signingKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "wrappingKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          }
+        },
+        "recoveryVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "publicKey",
+            "vault"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "publicKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "vault": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "nonce",
+                "ciphertext"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "nonce": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{16}$"
+                },
+                "ciphertext": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "minLength": 22,
+                  "maxLength": 65536
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    },
+    "recoverySignature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthRecoverRequest = {
+  "command": {
+  "accountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "challengeId": string;
+  "challengeNonce": string;
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+  "recoveryVersion": number;
+  "recovery": {
+  "version": number;
+  "publicKey": string;
+  "vault": {
+  "version": number;
+  "nonce": string;
+  "ciphertext": string;
+};
+};
+};
+  "signature": string;
+  "recoverySignature": string;
+};
+
+export const YaoheziHealthEnrollRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt",
+        "candidate",
+        "role",
+        "resources"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "candidate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "command",
+            "signature"
+          ],
+          "properties": {
+            "command": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "accountId",
+                "version",
+                "subjectId",
+                "operationId",
+                "challengeId",
+                "challengeNonce",
+                "device"
+              ],
+              "properties": {
+                "accountId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "version": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "subjectId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "operationId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "challengeId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "challengeNonce": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{43}$"
+                },
+                "device": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "deviceId",
+                    "signingKey",
+                    "wrappingKey"
+                  ],
+                  "properties": {
+                    "deviceId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^[0-9a-f-]{36}$"
+                    },
+                    "signingKey": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "wrappingKey": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{43}$"
+                    }
+                  }
+                }
+              }
+            },
+            "signature": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{86}$"
+            }
+          }
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "owner",
+            "reader"
+          ]
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f-]{36}$"
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthEnrollRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+  "candidate": {
+  "command": {
+  "accountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "challengeId": string;
+  "challengeNonce": string;
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+};
+  "signature": string;
+};
+  "role": "owner" | "reader";
+  "resources": string[];
+};
+  "signature": string;
+};
+
+export const YaoheziHealthInspectRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthInspectRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+};
+  "signature": string;
+};
+
+export const YaoheziHealthRevokeDeviceRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt",
+        "targetDeviceId",
+        "recovery"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "targetDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "publicKey",
+            "vault"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "publicKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "vault": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "nonce",
+                "ciphertext"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "nonce": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{16}$"
+                },
+                "ciphertext": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "minLength": 22,
+                  "maxLength": 65536
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthRevokeDeviceRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+  "targetDeviceId": string;
+  "recovery": {
+  "version": number;
+  "publicKey": string;
+  "vault": {
+  "version": number;
+  "nonce": string;
+  "ciphertext": string;
+};
+};
+};
+  "signature": string;
+};
+
+export const YaoheziHealthRotateKeysRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt",
+        "recovery"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "publicKey",
+            "vault"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "publicKey": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "vault": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "nonce",
+                "ciphertext"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "nonce": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{16}$"
+                },
+                "ciphertext": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "minLength": 22,
+                  "maxLength": 65536
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthRotateKeysRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+  "recovery": {
+  "version": number;
+  "publicKey": string;
+  "vault": {
+  "version": number;
+  "nonce": string;
+  "ciphertext": string;
+};
+};
+};
+  "signature": string;
+};
+
+export const YaoheziHealthLogoutRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthLogoutRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+};
+  "signature": string;
+};
+
+export const YaoheziHealthKeyCapsulesRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt",
+        "capsules"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "capsules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "context",
+              "enc",
+              "ciphertext",
+              "signature"
+            ],
+            "properties": {
+              "context": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version",
+                  "subjectId",
+                  "resourceId",
+                  "resourceVersion",
+                  "keyEpoch",
+                  "grantVersion",
+                  "recipientAccountId",
+                  "recipientDeviceId",
+                  "recipientWrappingKey",
+                  "senderAccountId",
+                  "senderDeviceId"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "const": 1
+                  },
+                  "subjectId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "resourceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "resourceVersion": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "keyEpoch": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "grantVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "recipientAccountId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "recipientDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "recipientWrappingKey": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{43}$"
+                  },
+                  "senderAccountId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "senderDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  }
+                }
+              },
+              "enc": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              },
+              "ciphertext": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{64}$"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{86}$"
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthKeyCapsulesRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+  "capsules": (
+{
+  "context": {
+  "version": number;
+  "subjectId": string;
+  "resourceId": string;
+  "resourceVersion": string;
+  "keyEpoch": number;
+  "grantVersion": number;
+  "recipientAccountId": string;
+  "recipientDeviceId": string;
+  "recipientWrappingKey": string;
+  "senderAccountId": string;
+  "senderDeviceId": string;
+};
+  "enc": string;
+  "ciphertext": string;
+  "signature": string;
+}
+)[];
+};
+  "signature": string;
+};
+
+export const YaoheziHealthVerifyOperationRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actorAccountId",
+        "version",
+        "subjectId",
+        "operationId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "expiresAt",
+        "revision"
+      ],
+      "properties": {
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "revision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "command",
+            "signature"
+          ],
+          "properties": {
+            "command": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "subjectId",
+                "resourceId",
+                "resourceVersion",
+                "operationId",
+                "parentRevision",
+                "actorAccountId",
+                "actorDeviceId",
+                "grantVersion",
+                "keyEpoch",
+                "action",
+                "ciphertextDigest",
+                "expiresAt"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "const": 1
+                },
+                "subjectId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "resourceId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "resourceVersion": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "operationId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "parentRevision": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^[0-9a-f-]{36}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "actorAccountId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "actorDeviceId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^[0-9a-f-]{36}$"
+                },
+                "grantVersion": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "keyEpoch": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "read",
+                    "write"
+                  ]
+                },
+                "ciphertextDigest": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "expiresAt": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "signature": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{86}$"
+            }
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthVerifyOperationRequest = {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+  "revision": {
+  "command": {
+  "version": number;
+  "subjectId": string;
+  "resourceId": string;
+  "resourceVersion": string;
+  "operationId": string;
+  "parentRevision": string | unknown;
+  "actorAccountId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "action": "read" | "write";
+  "ciphertextDigest": string;
+  "expiresAt": number;
+};
+  "signature": string;
+};
+};
+  "signature": string;
+};
+
+export const YaoheziHealthRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "signature"
+  ],
+  "properties": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "subjectId",
+        "resourceId",
+        "resourceVersion",
+        "operationId",
+        "parentRevision",
+        "actorAccountId",
+        "actorDeviceId",
+        "grantVersion",
+        "keyEpoch",
+        "action",
+        "ciphertextDigest",
+        "expiresAt"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "resourceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "parentRevision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f-]{36}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actorAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "actorDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "read",
+            "write"
+          ]
+        },
+        "ciphertextDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "expiresAt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthRevision = {
+  "command": {
+  "version": number;
+  "subjectId": string;
+  "resourceId": string;
+  "resourceVersion": string;
+  "operationId": string;
+  "parentRevision": string | unknown;
+  "actorAccountId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "action": "read" | "write";
+  "ciphertextDigest": string;
+  "expiresAt": number;
+};
+  "signature": string;
+};
+
+export const YaoheziHealthKeyCapsuleSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "context",
+    "enc",
+    "ciphertext",
+    "signature"
+  ],
+  "properties": {
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "subjectId",
+        "resourceId",
+        "resourceVersion",
+        "keyEpoch",
+        "grantVersion",
+        "recipientAccountId",
+        "recipientDeviceId",
+        "recipientWrappingKey",
+        "senderAccountId",
+        "senderDeviceId"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "subjectId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "resourceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "keyEpoch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "grantVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "recipientAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recipientDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "recipientWrappingKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "senderAccountId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "senderDeviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        }
+      }
+    },
+    "enc": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "ciphertext": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{64}$"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  }
+} as const;
+
+export type YaoheziHealthKeyCapsule = {
+  "context": {
+  "version": number;
+  "subjectId": string;
+  "resourceId": string;
+  "resourceVersion": string;
+  "keyEpoch": number;
+  "grantVersion": number;
+  "recipientAccountId": string;
+  "recipientDeviceId": string;
+  "recipientWrappingKey": string;
+  "senderAccountId": string;
+  "senderDeviceId": string;
+};
+  "enc": string;
+  "ciphertext": string;
+  "signature": string;
+};
+
+export const YaoheziHealthInspectDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subjectId",
+    "accountId",
+    "snapshotNonce",
+    "issuedAt",
+    "validUntil",
+    "keyEpoch",
+    "grantVersion",
+    "recoveryVersion",
+    "devices",
+    "capsules"
+  ],
+  "properties": {
+    "subjectId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "accountId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "snapshotNonce": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "issuedAt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "validUntil": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "keyEpoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "grantVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "recoveryVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "devices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "device",
+          "accountId",
+          "role",
+          "resources",
+          "grantVersion",
+          "revoked",
+          "authorization"
+        ],
+        "properties": {
+          "device": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "deviceId",
+              "signingKey",
+              "wrappingKey"
+            ],
+            "properties": {
+              "deviceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "signingKey": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              },
+              "wrappingKey": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              }
+            }
+          },
+          "accountId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "reader"
+            ]
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 100,
+            "uniqueItems": true
+          },
+          "grantVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "revoked": {
+            "type": "boolean"
+          },
+          "authorization": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "rootKind",
+                  "subjectId",
+                  "accountId",
+                  "device",
+                  "keyEpoch",
+                  "recoveryVersion",
+                  "operationId",
+                  "authorizationDigest"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "root"
+                  },
+                  "rootKind": {
+                    "type": "string",
+                    "enum": [
+                      "bootstrap",
+                      "recover"
+                    ]
+                  },
+                  "subjectId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "accountId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "device": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "deviceId",
+                      "signingKey",
+                      "wrappingKey"
+                    ],
+                    "properties": {
+                      "deviceId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^[0-9a-f-]{36}$"
+                      },
+                      "signingKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{43}$"
+                      },
+                      "wrappingKey": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{43}$"
+                      }
+                    }
+                  },
+                  "keyEpoch": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "recoveryVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "authorizationDigest": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "command",
+                  "signature"
+                ],
+                "properties": {
+                  "command": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "actorAccountId",
+                      "version",
+                      "subjectId",
+                      "operationId",
+                      "actorDeviceId",
+                      "grantVersion",
+                      "keyEpoch",
+                      "expiresAt",
+                      "candidate",
+                      "role",
+                      "resources"
+                    ],
+                    "properties": {
+                      "actorAccountId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "version": {
+                        "type": "integer",
+                        "const": 1
+                      },
+                      "subjectId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^[0-9a-f-]{36}$"
+                      },
+                      "operationId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^[0-9a-f-]{36}$"
+                      },
+                      "actorDeviceId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^[0-9a-f-]{36}$"
+                      },
+                      "grantVersion": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "keyEpoch": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "expiresAt": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "candidate": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "command",
+                          "signature"
+                        ],
+                        "properties": {
+                          "command": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "accountId",
+                              "version",
+                              "subjectId",
+                              "operationId",
+                              "challengeId",
+                              "challengeNonce",
+                              "device"
+                            ],
+                            "properties": {
+                              "accountId": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "version": {
+                                "type": "integer",
+                                "const": 1
+                              },
+                              "subjectId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^[0-9a-f-]{36}$"
+                              },
+                              "operationId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^[0-9a-f-]{36}$"
+                              },
+                              "challengeId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^[0-9a-f-]{36}$"
+                              },
+                              "challengeNonce": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{43}$"
+                              },
+                              "device": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "deviceId",
+                                  "signingKey",
+                                  "wrappingKey"
+                                ],
+                                "properties": {
+                                  "deviceId": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^[0-9a-f-]{36}$"
+                                  },
+                                  "signingKey": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{43}$"
+                                  },
+                                  "wrappingKey": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{43}$"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "signature": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{86}$"
+                          }
+                        }
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "owner",
+                          "reader"
+                        ]
+                      },
+                      "resources": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^[0-9a-f-]{36}$"
+                        },
+                        "maxItems": 100,
+                        "uniqueItems": true
+                      }
+                    }
+                  },
+                  "signature": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{86}$"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "maxItems": 100
+    },
+    "capsules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "context",
+          "enc",
+          "ciphertext",
+          "signature"
+        ],
+        "properties": {
+          "context": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "version",
+              "subjectId",
+              "resourceId",
+              "resourceVersion",
+              "keyEpoch",
+              "grantVersion",
+              "recipientAccountId",
+              "recipientDeviceId",
+              "recipientWrappingKey",
+              "senderAccountId",
+              "senderDeviceId"
+            ],
+            "properties": {
+              "version": {
+                "type": "integer",
+                "const": 1
+              },
+              "subjectId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "resourceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "resourceVersion": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "keyEpoch": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "grantVersion": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "recipientAccountId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "recipientDeviceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              },
+              "recipientWrappingKey": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              },
+              "senderAccountId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "senderDeviceId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f-]{36}$"
+              }
+            }
+          },
+          "enc": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          },
+          "ciphertext": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{64}$"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{86}$"
+          }
+        }
+      },
+      "maxItems": 1000
+    }
+  }
+} as const;
+
+export type YaoheziHealthInspectData = {
+  "subjectId": string;
+  "accountId": string;
+  "snapshotNonce": string;
+  "issuedAt": number;
+  "validUntil": number;
+  "keyEpoch": number;
+  "grantVersion": number;
+  "recoveryVersion": number;
+  "devices": (
+{
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+  "accountId": string;
+  "role": "owner" | "reader";
+  "resources": string[];
+  "grantVersion": number;
+  "revoked": boolean;
+  "authorization": {
+  "kind": string;
+  "rootKind": "bootstrap" | "recover";
+  "subjectId": string;
+  "accountId": string;
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+  "keyEpoch": number;
+  "recoveryVersion": number;
+  "operationId": string;
+  "authorizationDigest": string;
+} | {
+  "command": {
+  "actorAccountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "actorDeviceId": string;
+  "grantVersion": number;
+  "keyEpoch": number;
+  "expiresAt": number;
+  "candidate": {
+  "command": {
+  "accountId": string;
+  "version": number;
+  "subjectId": string;
+  "operationId": string;
+  "challengeId": string;
+  "challengeNonce": string;
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+};
+  "signature": string;
+};
+  "role": "owner" | "reader";
+  "resources": string[];
+};
+  "signature": string;
+};
+}
+)[];
+  "capsules": (
+{
+  "context": {
+  "version": number;
+  "subjectId": string;
+  "resourceId": string;
+  "resourceVersion": string;
+  "keyEpoch": number;
+  "grantVersion": number;
+  "recipientAccountId": string;
+  "recipientDeviceId": string;
+  "recipientWrappingKey": string;
+  "senderAccountId": string;
+  "senderDeviceId": string;
+};
+  "enc": string;
+  "ciphertext": string;
+  "signature": string;
+}
+)[];
+};
+
+export const YaoheziHealthChallengeDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "challengeId",
+    "nonce",
+    "expiresAt",
+    "subjectId",
+    "userId",
+    "purpose",
+    "device",
+    "keyEpoch",
+    "recoveryVersion"
+  ],
+  "properties": {
+    "challengeId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "subjectId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "bootstrap",
+        "enroll",
+        "sessions",
+        "recover"
+      ]
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deviceId",
+        "signingKey",
+        "wrappingKey"
+      ],
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f-]{36}$"
+        },
+        "signingKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "wrappingKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      }
+    },
+    "keyEpoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "recoveryVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type YaoheziHealthChallengeData = {
+  "challengeId": string;
+  "nonce": string;
+  "expiresAt": string;
+  "subjectId": string;
+  "userId": string;
+  "purpose": "bootstrap" | "enroll" | "sessions" | "recover";
+  "device": {
+  "deviceId": string;
+  "signingKey": string;
+  "wrappingKey": string;
+};
+  "keyEpoch": number;
+  "recoveryVersion": number;
+};
+
+export const YaoheziHealthSessionDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sessionToken",
+    "expiresAt",
+    "subjectId",
+    "deviceId",
+    "keyEpoch",
+    "grantVersion",
+    "role",
+    "resources"
+  ],
+  "properties": {
+    "sessionToken": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "subjectId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deviceId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "keyEpoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "grantVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "reader"
+      ]
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "maxItems": 100
+    }
+  }
+} as const;
+
+export type YaoheziHealthSessionData = {
+  "sessionToken": string;
+  "expiresAt": string;
+  "subjectId": string;
+  "deviceId": string;
+  "keyEpoch": number;
+  "grantVersion": number;
+  "role": "owner" | "reader";
+  "resources": string[];
+};
+
+export const YaoheziHealthRecoveryDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subjectId",
+    "keyEpoch",
+    "recovery"
+  ],
+  "properties": {
+    "subjectId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "keyEpoch": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "publicKey",
+        "vault"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "publicKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "vault": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "nonce",
+            "ciphertext"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "const": 1
+            },
+            "nonce": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16}$"
+            },
+            "ciphertext": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "minLength": 22,
+              "maxLength": 65536
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type YaoheziHealthRecoveryData = {
+  "subjectId": string;
+  "keyEpoch": number;
+  "recovery": {
+  "version": number;
+  "publicKey": string;
+  "vault": {
+  "version": number;
+  "nonce": string;
+  "ciphertext": string;
+};
+};
+};
+
 export const PasswordLoginRequestSchema = {
   "type": "object",
   "required": [
@@ -544,6 +3249,7 @@ export type RefreshRequest = {
 
 export const LogoutRequestSchema = {
   "type": "object",
+  "description": "App current-session logout supplies refreshToken; web clients may use their HttpOnly refresh cookie. All-session logout does not require a refresh token.",
   "properties": {
     "appId": {
       "type": "string"
@@ -555,6 +3261,11 @@ export const LogoutRequestSchema = {
         "all"
       ],
       "default": "current"
+    },
+    "refreshToken": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque current-session refresh credential for app clients."
     }
   }
 } as const;
@@ -562,6 +3273,7 @@ export const LogoutRequestSchema = {
 export type LogoutRequest = {
   "appId"?: string;
   "scope"?: "current" | "all";
+  "refreshToken"?: string;
 };
 
 export const AuthAcceptedDataSchema = {
@@ -56871,5 +59583,24 @@ export const GeneratedPublicContractNames = [
   "SyncData",
   "SyncRequest",
   "SyncStatus",
-  "UserSummary"
+  "UserSummary",
+  "YaoheziHealthBootstrapRequest",
+  "YaoheziHealthChallengeData",
+  "YaoheziHealthChallengeRequest",
+  "YaoheziHealthEnrollRequest",
+  "YaoheziHealthInspectData",
+  "YaoheziHealthInspectRequest",
+  "YaoheziHealthKeyCapsule",
+  "YaoheziHealthKeyCapsulesRequest",
+  "YaoheziHealthLogoutRequest",
+  "YaoheziHealthRecoverRequest",
+  "YaoheziHealthRecoveryData",
+  "YaoheziHealthRecoveryRequest",
+  "YaoheziHealthRevision",
+  "YaoheziHealthRevokeDeviceRequest",
+  "YaoheziHealthRotateKeysRequest",
+  "YaoheziHealthSessionData",
+  "YaoheziHealthSessionRequest",
+  "YaoheziHealthVerifyOperationRequest",
+  "YaoheziMeData"
 ] as const;

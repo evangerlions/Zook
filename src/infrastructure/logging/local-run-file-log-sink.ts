@@ -199,6 +199,7 @@ function isSensitiveKey(key: string): boolean {
   const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, "");
   return [
     "authorization",
+    "yaohezihealthsession",
     "accesstoken",
     "refreshtoken",
     "claimtoken",

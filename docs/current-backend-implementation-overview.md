@@ -834,6 +834,17 @@ The `feature/bodylog-retention-completion` worktree adds persistent encouragemen
 ### Authentication recovery hardening
 
 Migration `080_auth_credential_version.sql` adds the durable account-wide credential version. Shared password changes use this version to invalidate old cross-app sessions. App logout and deletion remain app-scoped. Redis atomically commits refresh-token replacement and session indexes. Failed new-user registration rolls back its identity and retains the unconsumed code. Email/SMS provider waits run outside the short verification-preparation transaction. Fixed email test codes require an explicit local environment.
+
+## Yaohezi 账号基础接入（默认关闭）
+
+`npm run verify:yaohezi-local` 提供独立本地验收入口：真实 PostgreSQL、独占临时 Redis、loopback HTTP；覆盖验证码登录、产品隔离、刷新竞态、退出与应用实例重开。数据库与日志保留在本机，临时 Redis 自动关闭。短信 transport 和队列使用本地 fixture；该入口不宣称云健康能力或外部供应商验收完成，运行要求见 README_API。
+
+药盒子独立 `YaoheziProfileStore` 内部端口已增加 PostgreSQL 主体、本人声明关联及幂等回执（迁移 081）。只有显式确认的命令可写入；数据库事务/账号与主体锁及唯一约束防止重复、操作 ID 换主体和跨账号领取。subjectId 保留本地稳定 UUID，不存 profileId、姓名、病史或付款关系；`self_asserted` 仅是账号路由声明，始终不建立健康访问权限。登录/me 不调用该端口，不自动上传。当前无公开主体路由、无按姓名/手机号关联、无代建远程授权；可信设备和恢复协议完成前不能开放健康域。关系表的 RESTRICT 约束要求未来删除编排显式处理，不能直接上线产品删除。
+
+新增独立 `yaohezi` 产品注册、member 角色和全关闭的健康功能配置；通过 `YAOHEZI_ENABLED=true` 显式启用 `/api/v1/yaohezi/me`，复用公共身份和活动 membership 校验。默认 seed/其他产品路由行为不变。账号入口不建立健康主体关系、不上传资料，也不授予家人权限。
+
+公共登出合同补齐 App 当前设备 logout 的 refreshToken；所有平台 bearer 文档改为 opaque 凭证，与当前 token 实现一致。合同源、生成类型、外部 README_API 与负向测试同步维护。健康设备会话、密文同步、授权共享、真实对象存储和付费 AI 仍须按后续门禁实现，不能用该 me 接口宣称这些能力已经上线。
+
 2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；全仓行数门禁仍失败，未发布。
 
 2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.
@@ -843,6 +854,14 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
 
 2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
+
+### Yaohezi M2 trusted-device backend（2026-10-31，本地）
+
+本节更新上文“健康设备会话待实现”的历史状态。新增迁移 082、独立 YaoheziHealthStore、默认关闭的设备 API 开关及同账号 self-subject 信任协议。PG 事务保护挑战、不可变设备公钥、资源版本只读授权、健康会话 hash、opaque key capsules、epoch 和最小审计/回执。撤销不依赖普通 access token 到期；恢复整体撤旧设备、清能力包并推进 epoch/verifier，不复活旧授权。M2 受保护操作自行持有账号/主体事务，不使用旧应用全局锁。
+
+Node 参考实现 HPKE 资源版本钥、离线恢复 vault、HTTPS/nonce/30 秒当前信任快照和有根证书链验权。读者不能签发 owner 授权，恢复后只需新恢复根，历史批准设备撤销不误撤合法存活设备。恢复包不是 iOS 可移植备份码，不含 token、SQLCipher key 或 current grants。
+
+本地验证和实现状态见 docs/security/yaohezi-m2-review.md。原生 UI/Keychain、真机互操作、外部密码审计、依赖告警处理仍是发布门槛。密文同步、家庭授权和付费 AI 未完成。接口及配置以 README_API 和 canonical OpenAPI 为准。未推送或部署。
 
 #### LightTick N2 原生手动计划候选（2026-10-31）
 

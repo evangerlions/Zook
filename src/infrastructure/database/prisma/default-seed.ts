@@ -1,4 +1,5 @@
 import type { DatabaseSeed } from "../../../shared/types.ts";
+import { seedYaohezi } from "../../../modules/yaohezi/yaohezi-seed.ts";
 import { DevelopmentPasswordHasher } from "../../../modules/auth/password-hasher.ts";
 import { DEFAULT_APP_I18N_SETTINGS } from "../../../shared/i18n.ts";
 import {
@@ -11,7 +12,7 @@ import {
  */
 export function buildDefaultSeed(
   passwordHasher = new DevelopmentPasswordHasher(),
-  options: { includeFrogSleep?: boolean; includeLightTick?: boolean } = {},
+  options: { includeFrogSleep?: boolean; includeLightTick?: boolean; includeYaohezi?: boolean } = {},
 ): DatabaseSeed {
   const defaultI18nSettings = JSON.stringify(
     DEFAULT_APP_I18N_SETTINGS,
@@ -382,5 +383,6 @@ export function buildDefaultSeed(
     );
   }
 
+  if (options.includeYaohezi) seedYaohezi(seed);
   return seed;
 }

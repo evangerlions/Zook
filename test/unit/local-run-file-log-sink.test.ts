@@ -56,6 +56,7 @@ test("local run file sink writes one file per run with redacted records", () => 
     requestId: "req_1",
     httpStatus: 503,
     authorization: "Bearer secret",
+    headers: { "X-Yaohezi-Health-Session": "synthetic-health-bearer" },
     nested: { accessToken: "secret-token", safe: "ok" },
   });
 
@@ -67,6 +68,7 @@ test("local run file sink writes one file per run with redacted records", () => 
   assert.equal(record.pid, 111);
   assert.equal(record.httpStatus, 503);
   assert.equal(record.authorization, "<redacted>");
+  assert.equal(record.headers["X-Yaohezi-Health-Session"], "<redacted>");
   assert.deepEqual(record.nested, { accessToken: "<redacted>", safe: "ok" });
 
   const latest = JSON.parse(
