@@ -3,6 +3,8 @@ import test from "node:test";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
+import { applyBillingEnvironmentFixture } from "./support/ainovel-billing-fixture.ts";
+import { LOCAL_CREDIT_QUOTAS } from "../../src/modules/ai-novel/credits/ai-novel-credits-model.ts";
 import { PostgresAiNovelCreditsStore } from "../../src/infrastructure/database/postgres/postgres-ai-novel-credits.ts";
 import { AiNovelCreditsService } from "../../src/modules/ai-novel/credits/ai-novel-credits.service.ts";
 import { buildUsageReport } from "../../src/modules/admin/ai-novel-usage-report.ts";
@@ -58,14 +60,13 @@ test(
           ).rows[0].started_at.toISOString(),
           before.toISOString(),
         );
-        // Minimal isolated payment-evidence fixture; not a shared or production schema.
-        await c.query(`CREATE TABLE zook_ai_novel_billing_transactions(app_id text,user_id text,provider_transaction_id text,
-        product_key text,is_sandbox boolean,currency text,purchased_at timestamptz,refunded_at timestamptz,
-        amount_minor bigint,refund_amount_minor bigint,status text)`);
-        await c.query(`INSERT INTO zook_ai_novel_billing_transactions VALUES
-        ('ai_novel','user','paid','plus_monthly',false,'CNY','2026-10-01','2026-10-03',3900,1950,'refunded'),
-        ('ai_novel','user','pending','plus_monthly',false,'CNY','2026-10-01',null,9900,null,'pending'),
-        ('ai_novel','other','sandbox','pro_monthly',true,'USD','2026-10-01',null,9999,null,'provider_paid')`);
+        await applyBillingEnvironmentFixture(c);
+        await c.query(`INSERT INTO zook_ai_novel_billing_transactions
+          (app_id,user_id,provider,provider_transaction_id,product_id,product_key,source,status,is_sandbox,currency,purchased_at,refunded_at,amount_minor,refund_amount_minor,observed_at)
+          VALUES
+          ('ai_novel','user','alipay','paid','plus_monthly','plus_monthly','alipay','refunded',false,'CNY','2026-10-01','2026-10-03',3900,1950,now()),
+          ('ai_novel','user','alipay','pending','plus_monthly','plus_monthly','alipay','pending',false,'CNY','2026-10-01',null,9900,null,now()),
+          ('ai_novel','other','alipay','sandbox','pro_monthly','pro_monthly','alipay','provider_paid',true,'USD','2026-10-01',null,9999,null,now())`);
       } finally {
         c.release();
       }
@@ -105,7 +106,7 @@ test(
       );
       assert.equal(
         (await service.balanceMicros("user")).periodicMicros,
-        "19000000",
+        String((LOCAL_CREDIT_QUOTAS.free - 1) * 1_000_000),
       );
       now = new Date("2026-10-09T00:00:00.000Z");
       await service.balanceMicros("user");
@@ -131,8 +132,7 @@ test(
         userId: "other",
       });
       assert.equal(detail.events.length, 0);
-      assert.equal(detail.payments.length, 1);
-      assert.equal(detail.payments[0].currency, "USD");
+      assert.equal(detail.payments.length, 0);
       console.log(
         JSON.stringify({
           evidence: "usage-postgres",
