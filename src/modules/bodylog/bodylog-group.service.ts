@@ -293,16 +293,9 @@ export class BodyLogGroupService {
       throw new ApplicationError(410, "GROUP_INVITE_EXPIRED", "Invitation has expired.");
     }
 
-    // 检查是否已满员
-    const members = await this.store.listGroupMembers(groupId);
-    const activeMembers = members.filter((m) => m.status === "active");
-    if (activeMembers.length >= group.maxMembers) {
-      throw new ApplicationError(403, "GROUP_FULL", "Group is full.");
-    }
+    // Admission owns fresh capacity/quota checks; stale reads must not reject a
+    // same-account request whose peer has already completed the membership.
     const limit = await this.checkIsPremium(userId) ? GROUP_LIMITS.PREMIUM : GROUP_LIMITS.FREE;
-    if ((await this.getMyGroups(userId)).length >= limit) {
-      throw new ApplicationError(403, 'GROUP_LIMIT_REACHED', 'Group limit reached.');
-    }
 
     // 更新成员状态为active
     const updatedMember: GroupMemberRecord = {

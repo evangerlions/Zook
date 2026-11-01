@@ -8,7 +8,8 @@ const steps=[
  ['contracts','npm',['run','check:api-contracts']],['line-count','npm',['run','check:line-count']],
  ['admin-typecheck','npm',['run','admin:typecheck']],['admin-build','npm',['run','admin:build']],
  ['unit','npm',['test']],
- ['postgres-http',process.execPath,['--experimental-transform-types','--test','--test-concurrency=1','test/integration/bodylog-retention-postgres.test.ts','test/integration/bodylog-retention-http.test.ts','test/integration/bodylog-group-admission-postgres.test.ts']],
+ ['postgres-http',process.execPath,['--experimental-transform-types','--test','--test-concurrency=1','test/integration/bodylog-retention-postgres.test.ts','test/integration/bodylog-retention-http.test.ts']],
+ ['postgres-group-admission','python3',['test/support/run_bodylog_group_postgres.py','--root',resolve(out,`group-postgres-${Date.now()}`)]],
 ];
 const results=[];
 for(const [name,cmd,args] of steps){const started=Date.now();const result=spawnSync(cmd,args,{env:process.env,encoding:'utf8',maxBuffer:64*1024*1024,timeout:600000});
