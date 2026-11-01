@@ -485,7 +485,7 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 - 原始调用观察只保存脱敏维度、数值、稳定错误码及最多 300 字符的脱敏错误信息，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。
 - `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）只执行当前生效配置中 Provider 与 route 都启用的模型路由；未配置、Provider 已禁用或 route 已禁用的组合不会进入执行计划、不会请求上游，也不会出现在响应 `items` 中。响应的 `target` 为 `{ "mode": "matrix" }`。
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
-- 指定 route 若不存在、供应商已禁用或 route 已禁用，会直接返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会发起上游请求。可执行 route 会实际调用上游；聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。
+- 指定 route 若不存在、供应商已禁用或 route 已禁用，会直接返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会发起上游请求。可执行 route 会实际调用上游；聊天冒烟、熔断确认及恢复探测使用同一份约 15k 输入 token 的上下文，请求输出约 1,000 个字符，最大输出设为 32,768 个 token。输入 token 根据 B.AI 实测估算，实际数量由上游模型的 tokenizer 决定。
 - 无论全量还是指定路由，冒烟测试共用 10 秒全局冷却；响应中始终包含本次 `target`、`summary` 与 `items`。
 - `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
 - OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。

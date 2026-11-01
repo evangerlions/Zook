@@ -86,7 +86,7 @@ for (const mode of ["complete", "stream"] as const) {
     assert.deepEqual(body.provider, {
       order: ["deepinfra", "gmicloud", "siliconflow"], allow_fallbacks: true,
     });
-    assert.equal(body.max_tokens, 64);
+    assert.equal(body.max_tokens, 32768);
     assert.deepEqual(request.providerOptions, {});
   });
 
