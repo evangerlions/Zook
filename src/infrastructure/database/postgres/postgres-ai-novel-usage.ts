@@ -1,3 +1,4 @@
+import { billingEnvironment } from "../../../modules/billing/billing-environment.ts";
 import type { PoolClient } from "pg";
 import { ApplicationError } from "../../../shared/errors.ts";
 import type {
@@ -21,16 +22,16 @@ export async function readAiNovelUsage(
   client: PoolClient,
   filter: { from: string; to: string; userId?: string },
 ): Promise<UsageSource> {
-  const params = [filter.from, filter.to, filter.userId ?? null, MAX_ROWS + 1];
+  const params = [filter.from, filter.to, filter.userId ?? null, MAX_ROWS + 1, billingEnvironment()];
   const events = await client.query(
     `SELECT user_id,payload FROM zook_ai_novel_credit_events
-    WHERE occurred_at >= $1 AND occurred_at < $2 AND ($3::text IS NULL OR user_id=$3)
+    WHERE environment=$5 AND occurred_at >= $1 AND occurred_at < $2 AND ($3::text IS NULL OR user_id=$3)
     ORDER BY occurred_at,event_id LIMIT $4`,
     params,
   );
   const windows = await client.query(
     `SELECT user_id,payload FROM zook_ai_novel_credit_windows
-    WHERE period_key >= $1 AND refresh_at <= $2 AND ($3::text IS NULL OR user_id=$3)
+    WHERE environment=$5 AND period_key >= $1 AND refresh_at <= $2 AND ($3::text IS NULL OR user_id=$3)
     ORDER BY period_key,user_id LIMIT $4`,
     params,
   );
@@ -38,7 +39,7 @@ export async function readAiNovelUsage(
     `SELECT user_id, product_key, is_sandbox, currency,
     purchased_at, refunded_at, amount_minor, refund_amount_minor
     FROM zook_ai_novel_billing_transactions
-    WHERE app_id='ai_novel' AND ($3::text IS NULL OR user_id=$3)
+    WHERE app_id='ai_novel' AND is_sandbox=($5='sandbox') AND ($3::text IS NULL OR user_id=$3)
       AND status NOT IN ('pending','closed','failed') AND is_sandbox IS NOT NULL AND currency IS NOT NULL
       AND ((purchased_at >= $1 AND purchased_at < $2 AND amount_minor > 0)
         OR (refunded_at >= $1 AND refunded_at < $2 AND refund_amount_minor > 0))
@@ -56,8 +57,8 @@ export async function readAiNovelUsage(
   ];
   const accounts = await client.query(
     `SELECT user_id,payload,updated_at FROM zook_ai_novel_credit_accounts
-    WHERE user_id=ANY($1::text[]) OR user_id=$2 ORDER BY user_id LIMIT $3`,
-    [ids, filter.userId ?? null, MAX_ROWS + 1],
+    WHERE environment=$4 AND (user_id=ANY($1::text[]) OR user_id=$2) ORDER BY user_id LIMIT $3`,
+    [ids, filter.userId ?? null, MAX_ROWS + 1, billingEnvironment()],
   );
   const metadata = await client.query(
     "SELECT started_at FROM zook_ai_novel_credit_reporting_metadata WHERE singleton=true",

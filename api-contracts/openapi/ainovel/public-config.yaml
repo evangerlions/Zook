@@ -22,6 +22,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicConfigResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/ai_novel/public/update:
     get:
       operationId: getAiNovelPublicUpdate
@@ -321,6 +323,19 @@ components:
       type: object
       additionalProperties: true
       properties:
+        appReview:
+          type: object
+          description: Optional review invitation configuration; missing or disabled values turn the feature off.
+          properties:
+            enabled: { type: boolean }
+            markets:
+              type: object
+              description: Market IDs are app_store, google_play, xiaomi, vivo, oppo, huawei, and honor; domestic URLs must be verified before enabling.
+              additionalProperties:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  url: { type: string, description: Verified https or market URL for domestic app listing. }
         app:
           type: string
           example: make_ai_novel_great_again
@@ -360,6 +375,9 @@ components:
       required: [appId, config]
       properties:
         appId: { type: string, example: ai_novel }
+        countryCode:
+          type: string
+          description: Estimated country of the current request, when available (ISO 3166-1 alpha-2).
         config:
           $ref: "#/components/schemas/AINovelPublicConfig"
         updatedAt: { type: string, format: date-time }

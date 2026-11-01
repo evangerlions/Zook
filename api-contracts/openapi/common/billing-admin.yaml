@@ -32,13 +32,25 @@ paths:
   /api/v1/admin/billing/overview:
     get:
       operationId: getBillingAdminOverview
-      summary: Daily UTC revenue grouped by app, channel and currency, never converted or settled revenue
+      summary: Daily UTC revenue by selectable dimensions and currency, never converted or settled revenue
       tags: [admin-billing]
       parameters:
         - $ref: "#/components/parameters/AppId"
         - name: environment
           in: query
           schema: { type: string, enum: [PRODUCTION, SANDBOX], default: PRODUCTION }
+        - name: groupBy
+          in: query
+          description: Comma-separated distinct dimensions. Defaults to appId; source means payment origin; market is an independent distribution-market dimension. Unknown market is grouped as null. UTC date and currency always remain separate. Omitted dimensions return null.
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 4
+            uniqueItems: true
+            default: [appId]
+            items: { type: string, enum: [appId, productKey, source, market] }
         - name: from
           in: query
           description: Inclusive UTC timestamp; default start of current UTC month.
@@ -59,10 +71,14 @@ paths:
   /api/v1/admin/billing/memberships:
     get:
       operationId: listBillingAdminMemberships
-      summary: Current membership snapshots including soft-deleted and sandbox users
+      summary: Current membership snapshots in the selected environment, including soft-deleted users
       tags: [admin-billing]
       parameters:
         - $ref: "#/components/parameters/AppId"
+        - name: environment
+          in: query
+          description: Admin read-only environment filter applied before expiry filtering and pagination; defaults to production. Does not grant sandbox access to product requests.
+          schema: { type: string, enum: [PRODUCTION, SANDBOX], default: PRODUCTION }
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/Limit"
         - name: expiry
@@ -266,16 +282,22 @@ components:
             from: { type: string, format: date-time }
             to: { type: string, format: date-time }
             environment: { type: string, enum: [PRODUCTION, SANDBOX] }
+            groupBy:
+              type: array
+              items: { type: string, enum: [appId, productKey, source, market] }
+              description: Selected dimensions in canonical appId/productKey/source/market order.
             integratedApps: { type: array, items: { type: string } }
             rows:
               type: array
               items:
                 type: object
-                required: [date, appId, source, currency, purchaseCount, grossMinor, refundMinor]
+                required: [date, appId, productKey, source, market, currency, purchaseCount, grossMinor, refundMinor]
                 properties:
                   date: { type: string, format: date, description: 'UTC event day; purchase and refund dates are independent. Newest first; days without events omitted.' }
-                  appId: { type: string }
-                  source: { type: string }
+                  appId: { type: [string, "null"], description: Null when appId is not selected. }
+                  productKey: { type: [string, "null"], description: Canonical product code or null when not selected. }
+                  source: { type: [string, "null"], description: Payment source or null when source is not selected. }
+                  market: { type: [string, "null"], description: Distribution market; null is unknown or dimension not selected. Never inferred from Alipay or generic Android platform. }
                   currency: { type: string }
                   purchaseCount: { type: integer, minimum: 0 }
                   grossMinor: { type: integer, minimum: 0 }
@@ -294,8 +316,9 @@ components:
               type: array
               items:
                 type: object
-                required: [appId, userId, active, state, lastSyncedAt]
+                required: [appId, userId, environment, active, state, lastSyncedAt]
                 properties:
+                  environment: { type: string, enum: [production, sandbox] }
                   appId: { type: string }
                   userId: { type: string }
                   active: { type: boolean }
@@ -333,6 +356,7 @@ components:
           entitlementKey,
           tier,
           purchaseSource,
+          market,
           createdAt,
           updatedAt,
         ]
@@ -349,6 +373,7 @@ components:
         tier: { type: string, enum: [plus, pro] }
         billingPeriod: { type: [string, "null"], enum: [P1M, P3M, P1Y, null] }
         purchaseSource: { type: string, enum: [app_store, play_store, alipay] }
+        market: { type: [string, "null"], enum: [app_store, google_play, xiaomi, vivo, oppo, huawei, honor, direct, null] }
         catalogRevision: { type: [string, "null"] }
         providerProductId: { type: string }
         providerPackageId: { type: "null" }

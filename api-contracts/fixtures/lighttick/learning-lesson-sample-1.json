@@ -1,0 +1,21 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "binding_id": "sample-only",
+    "observed_at": "2026-10-25T12:00:00Z",
+    "lesson": {
+      "id": "lesson-sample-1",
+      "collection_id": "sample",
+      "collection_title": "本机体验课程",
+      "number": 1,
+      "title": "Day001 · Read for the main idea",
+      "content_version": "94c654ed08c082e168de4f445e2a3a7301a2177f63c488f65e9dfa5dd20ebe72",
+      "learning_state": "unknown",
+      "source_url": "https://example.org/",
+      "content": "# Read for the main idea\n\nA paragraph often develops one central point. Read it once before looking up every word.\n\n## Try it\n\nWrite one sentence that captures the main point. Keep the example separate from the main claim.",
+      "references": "These are original local practice lessons. They do not change your Grow completion history."
+    }
+  },
+  "requestId": "synthetic_learning_progress"
+}

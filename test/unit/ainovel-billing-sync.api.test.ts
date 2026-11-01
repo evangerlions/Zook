@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
+const productionTest = baseTest;
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import { createApplication } from "../support/create-test-application.ts";
 
@@ -56,12 +59,13 @@ function revenueCatOptions(
       allowSandbox,
       fetcher: fixtureFetcher(fetcher, RC_APP_ID),
       projectId: "proj_test",
-      now,
+      // Keep receipt fixtures independent of the real calendar date.
+      now: now ?? (() => new Date("2026-09-24T00:00:00.000Z")),
     },
   };
 }
 
-test("production billing sync excludes sandbox-only RevenueCat entitlements", async () => {
+productionTest("production billing sync excludes sandbox-only RevenueCat entitlements", async () => {
   const runtime = await createApplication(revenueCatOptions(async () =>
     new Response(JSON.stringify(snapshot()), { status: 200 }),
     undefined,
@@ -72,7 +76,7 @@ test("production billing sync excludes sandbox-only RevenueCat entitlements", as
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "purchase" },
+    body: { provider: "revenuecat", reason: "purchase" },
   });
 
   assert.equal(response.statusCode, 200);
@@ -83,7 +87,7 @@ test("production billing sync excludes sandbox-only RevenueCat entitlements", as
   );
 });
 
-test("production sync and webhook preserve membership for Sandbox or unknown environment evidence", async () => {
+productionTest("production sync and webhook preserve membership for Sandbox or unknown environment evidence", async () => {
   let providerSnapshot: unknown = snapshot();
   const runtime = await createApplication(revenueCatOptions(async () =>
     new Response(JSON.stringify(providerSnapshot), { status: 200 }),
@@ -110,7 +114,7 @@ test("production sync and webhook preserve membership for Sandbox or unknown env
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "app_start" },
+    body: { provider: "revenuecat", reason: "app_start" },
   });
   assert.equal(syncResponse.statusCode, 200);
   assert.equal(syncResponse.body.data.syncStatus, "pending");
@@ -126,7 +130,7 @@ test("production sync and webhook preserve membership for Sandbox or unknown env
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "app_start" },
+    body: { provider: "revenuecat", reason: "app_start" },
   });
   assert.equal(unknownEnvironmentSyncResponse.body.data.syncStatus, "pending");
   assert.equal(unknownEnvironmentSyncResponse.body.data.membership.active, true);
@@ -145,7 +149,7 @@ test("production sync and webhook preserve membership for Sandbox or unknown env
   assert.equal(membership?.lastSyncedAt, "2026-09-22T10:00:00.000Z");
 });
 
-test("production webhook records Sandbox events as ignored without granting membership", async () => {
+productionTest("production webhook records Sandbox events as ignored without granting membership", async () => {
   let customerLookups = 0;
   const runtime = await createApplication(revenueCatOptions(async () => {
     customerLookups++;
@@ -187,13 +191,13 @@ test("purchase sync is repeatable, stores provider evidence, and feeds users/me 
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "purchase" },
+    body: { provider: "revenuecat", reason: "purchase" },
   };
 
   const first = await runtime.app.handle(syncRequest);
   const second = await runtime.app.handle(syncRequest);
   assert.equal(first.statusCode, 200);
-  assert.equal(first.body.data.syncStatus, "synchronized");
+  assert.equal(first.body.data.syncStatus, "complete");
   assert.deepEqual(first.body.data.membership, {
     active: true,
     state: "active",
@@ -204,7 +208,7 @@ test("purchase sync is repeatable, stores provider evidence, and feeds users/me 
     source: "app_store",
     managementUrl: "https://apps.apple.com/account/subscriptions",
   });
-  assert.equal(second.body.data.syncStatus, "synchronized");
+  assert.equal(second.body.data.syncStatus, "complete");
   assert.equal(calls, 2);
   assert.equal((await runtime.database.listAiNovelBillingTransactions("ai_novel", "user_alice")).length, 1);
 
@@ -249,11 +253,11 @@ test("purchase sync accepts the configured Pro entitlement identifier", async ()
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "purchase" },
+    body: { provider: "revenuecat", reason: "purchase" },
   });
 
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.data.syncStatus, "synchronized");
+  assert.equal(response.body.data.syncStatus, "complete");
   assert.equal(response.body.data.membership.tier, "pro");
   assert.equal(response.body.data.membership.planKey, "pro_monthly");
 });
@@ -269,7 +273,7 @@ test("sync rejects client-supplied identity, receipt, product, and entitlement f
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "purchase", userId: "someone-else", receipt: "forged" },
+    body: { provider: "revenuecat", reason: "purchase", userId: "someone-else", receipt: "forged" },
   });
   assert.equal(response.statusCode, 400);
   assert.equal(calls, 0);
@@ -313,7 +317,7 @@ test("unknown product or mismatched entitlement never grants membership", async 
       method: "POST",
       path: "/api/v1/ai_novel/billing/sync",
       headers: authHeaders(token),
-      body: { reason: "restore" },
+      body: { provider: "revenuecat", reason: "restore" },
     });
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.data.membership.active, false);
@@ -331,7 +335,7 @@ test("expired provider access revokes membership without inventing a refund from
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "retry" },
+    body: { provider: "revenuecat", reason: "retry" },
   };
   assert.equal((await runtime.app.handle(request)).body.data.membership.active, true);
   current = snapshot({
@@ -368,6 +372,7 @@ test("provider outage returns pending and preserves last confirmed membership", 
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
+    body: { provider: "revenuecat" },
   };
   await runtime.app.handle(request);
   unavailable = true;
@@ -389,6 +394,7 @@ test("provider outage cannot keep a membership active after its effective expiry
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
+    body: { provider: "revenuecat" },
   };
   await runtime.app.handle(request);
 
@@ -448,6 +454,7 @@ test("effective membership expiry preserves access through RevenueCat grace peri
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
+    body: { provider: "revenuecat" },
   });
 
   assert.equal(response.body.data.membership.active, true);
@@ -470,6 +477,7 @@ test("sync finishing after account deletion does not recreate billing access", a
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
+    body: { provider: "revenuecat" },
   });
   assert.equal(response.body.data.membership.active, false);
   assert.equal(await runtime.database.findAiNovelBillingMembership("ai_novel", "user_alice"), undefined);
@@ -713,7 +721,7 @@ test("snapshot can confirm membership without inventing a financial transaction 
     method: "POST",
     path: "/api/v1/ai_novel/billing/sync",
     headers: authHeaders(token),
-    body: { reason: "purchase" },
+    body: { provider: "revenuecat", reason: "purchase" },
   });
 
   assert.equal(response.body.data.membership.active, true);

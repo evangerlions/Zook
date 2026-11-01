@@ -511,21 +511,21 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 ### 3.14 Server 会员与支付（只读）
 
-订单列表可传 `environment=PRODUCTION|SANDBOX`，按环境筛选后分页，未知环境不匹配。省略参数保持全环境查询兼容性。后台顶部环境选择同时用于收入概览和订单列表；订单表不重复显示环境列，详情保留环境，会员列表仍为全环境快照。
+订单列表可传 `environment=PRODUCTION|SANDBOX`，按环境筛选后分页，未知环境不匹配。省略参数保持全环境查询兼容性。后台顶部环境选择同时用于收入概览和订单列表；订单表不重复显示环境列，详情保留环境，会员列表同样按所选环境在服务端分页前过滤，省略 environment 默认 PRODUCTION。
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/admin/billing/apps` | 应用注册表与 `integrated` 标记 |
-| `GET` | `/api/v1/admin/billing/overview` | 按 UTC 日期、应用、渠道、币种统计购买数、购买金额和退款金额 |
+| `GET` | `/api/v1/admin/billing/overview` | 按 UTC 日期、币种和所选维度统计购买数、购买金额和退款金额 |
 | `GET` | `/api/v1/admin/billing/memberships` | 按精确用户 ID 查询当前会员快照，包括没有订单的会员 |
-| `GET` | `/api/v1/admin/billing/orders` | 按用户、支付记录 ID、RevenueCat 交易号、平台、商店、状态和时间范围分页查询订单 |
+| `GET` | `/api/v1/admin/billing/orders` | 按用户、支付记录 ID、服务商交易号、支付服务商、运行平台、分发类型、状态和时间范围分页查询订单 |
 | `GET` | `/api/v1/admin/billing/orders/{paymentId}` | 查看订单、当前会员投影、RevenueCat 交易与已持久化 webhook 时间线；必须指定 `appId` |
 
 页面入口为 Server `/billing`，不再提供旧的 AINovel 订单页面或旧管理 API。查询接口可选 `appId`，省略或 `all` 表示全部已接入应用。首期仅接入 AINovel 的读取适配器；其他注册应用返回 `409 ADMIN_BILLING_NOT_INTEGRATED`，未知应用返回 `400`。未来产品必须接入独立适配器才会纳入列表与统计，会员身份仍是 `(appId, userId)`，不共享权益。
 
-收入概览默认正式环境 `PRODUCTION`、本月 UTC，允许显式 `SANDBOX`。可选 `from`（包含）与 `to`（不包含），最多 366 天。每行 `date` 为 `YYYY-MM-DD` UTC 日期，按日期倒序、应用/渠道/币种排序；无记录日期不补零行。金额单位是各币种的最小单位；购买按 `purchasedAt`，退款按 `refundedAt` 分别归入发生当天。不同币种不相加，不做汇率转换，不代表商店税费扣除后的到账收入。未知金额、币种、环境或发生时间不计入相应统计，软删除用户财务记录仍参与。同步过的交易按主键去重；不推测尚未保存的退款。
+收入概览默认正式环境 `PRODUCTION`、本月 UTC，允许显式 `SANDBOX`。可选 `from`（包含）与 `to`（不包含），最多 366 天。`groupBy` 为逗号分隔的不重复维度，支持 `appId,productKey,source,market`，默认 `appId`。`source` 称为支付来源（`app_store/play_store/alipay`）；渠道 `market` 指小米/vivo/App Store/Google Play 等分发市场，market作为独立字段和分组维度，不以source替代。RevenueCat属于支付服务商provider。groupBy=market现在表示真实市场，与source分开。至少选择一个维度，空值、重复或未知维度返回 400。按所选维度服务端聚合；返回 `groupBy`，每行包含 `productKey/market`，未选择维度对应的 `appId/productKey/source/market` 为 null。每行 `date` 为 `YYYY-MM-DD` UTC 日期，日期和币种始终保留，按日期倒序后维度/币种排序；无记录日期不补零行。金额单位是各币种的最小单位；购买按 `purchasedAt`，退款按 `refundedAt` 分别归入发生当天。不同币种不相加，不做汇率转换，不代表商店税费扣除后的到账收入。未知金额、币种、环境或发生时间不计入相应统计，软删除用户财务记录仍参与。同步过的交易按主键去重；不推测尚未保存的退款。
 
-会员列表每页默认 50、最多 100，`cursor` 为上页最后的 `userId`，翻页时保持应用和查询条件一致。可传 `expiry=expired`（到期时间不晚于查询时间）或 `expiry=not_expired`（到期时间晚于查询时间），数据库筛选后再分页；无到期时间的记录仅在未指定此筛选时返回。账号删除不改变到期时间筛选结果。它是全环境快照（会员表没有独立环境字段），不宣称是正式环境会员数。过期或软删除账号的会员 `active=false`。只读查询不刷新供应商状态、修改会员或发起退款。
+会员列表每页默认 50、最多 100，`cursor` 为上页最后的 `userId`，翻页时保持应用和查询条件一致。可传 `expiry=expired`（到期时间不晚于查询时间）或 `expiry=not_expired`（到期时间晚于查询时间），数据库筛选后再分页；无到期时间的记录仅在未指定此筛选时返回。账号删除不改变到期时间筛选结果。它是所选支付环境的当前快照，会员表按 environment 区分，同一用户可在不同环境拥有不同权益。过期或软删除账号的会员 `active=false`。只读查询不刷新供应商状态、修改会员或发起退款。
 
 Billing 管理接口读取 Zook 持久化 RevenueCat / Alipay 共享订单与验证事件，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，事件时间线也分页。RC 金额来自交易/验证事件证据；不足时返回 `null`，不从商品目录推算。Alipay 在创建时即记录 pending 报价，failed/closed/pending 均可查询，但报价不是收入。Alipay checkoutId/canonical providerTransactionId 是稳定商户订单 ID，providerOrderId 是验证后的支付宝 trade_no；providerTransactionId 搜索兼容两者。createdAt 是不可变创建时间，updatedAt 是最新观察时间；Alipay active/expired 筛选按实际已应用权益到期时间。删除后保留财务行并标记 deletedAt。详情 grant 台账仍返回空数组，不提供编辑/退款/赠送能力。已付款 Alipay 不主动轮询外部退款；后续验证 TRADE_CLOSED 保留在事件历史，但不自动撤销金额/权益。
 
@@ -624,3 +624,81 @@ resource 白名单：accounts、invitations、relationships、grants、sleep_ses
 未登录返回401，仅 Basic Auth 不能调用这些新增会话接口；缺二次授权返回403。非法资源或分页返回400；跨 App/不存在的 job 返回404 `FROGSLEEP_JOB_NOT_FOUND`。重试仅 FAILED/ENQUEUE_FAILED 且retryCount<5；SENT/预算耗尽、设备 processing/outcome_unknown 返回409 `FROGSLEEP_RETRY_NOT_ALLOWED`。已QUEUED重复请求返回当前排队事实、不再次入队。队列失败返回200 `{queued:false,notificationJobId}`，前端提示失败且保留恢复记录；成功后 worker 重新检查静默、撤权、关系、设备归属和能力开关。
 
 邮件provider_accepted不是delivered；未知邮件结果不提供重投入口。现有邀请邮件诊断接口保留原认证/掩码合同，不被新管理路由拦截。页面只读用户关系/方向授权，不替用户授权、解除或拉黑。
+
+## BodyLog campaign review and retention metrics (2026-10-28)
+
+All paths use `/api/v1/admin/apps/bodylog`, require a validated admin Session cookie, and write an audit record. Product Bearer tokens, synthetic user/device headers and Basic-auth credentials alone do not authorize these operations.
+
+- `POST /campaigns/{campaignId}/participations/{userId}/review`, body `{approved:boolean}`: only a `manual_review` participation can transition to `verified`/`rejected`. Stores `session.username` as the reviewer; audit action `bodylog.campaign.review` records the actor, target and decision. Review mutation and audit share the exclusive PostgreSQL transaction. Clients cannot supply this decision via submission/claim. Public participation responses omit the internal reviewer identity.
+- `GET /retention/metrics`: aggregate experiment cohorts and unique-user invitation funnel; audit action `bodylog.retention.metrics`. D1/D7 denominator includes only users exposed to the completed-plan continuation screen whose target UTC action day has ended. Experiments remain separate; user identifiers and health details are not returned. Default disabled experiments do not produce treatment cohorts.
+
+Campaign config `bodylog.campaigns` is a JSON array. Each definition needs a unique opaque `id`, `status`, `title`, `subtitle`, ISO `startsAt`/`endsAt`, `rules:string[]`, `reward:{type:"premium",durationDays:1..31,displayText}`, and `platformPolicy:{allowedPlatforms:string[],freeFormAllowed:boolean,oauthPlatforms:[],manualReviewPlatforms:string[]}`. All allowed platforms must be handled by manual review. Empty/unconfigured means no campaign entry. Use the existing authenticated app-config revision workflow; no default campaign is enabled by this change.
+
+Experiment config `bodylog.retention-experiment` defaults off. Example reviewable configuration: `{ "id":"continuation-v1", "enabled":false, "treatmentPercent":10 }`. Named release and analysis owners, opt-in funnel checks, sample size and mature D7 observation must be recorded before enabling or claiming an effect. The treatment emphasizes an existing local habit after the completed plan; the control retains the existing continuation hint and executable habit list.
+
+### BodyLog retention operations additions (2026-10-29)
+
+The existing session-only `GET /api/v1/admin/apps/bodylog/retention/metrics` now also returns:
+- `invitationBusiness:{attributed,pending,qualified,rewardedInvitees,rewardedInviters}` from stored attribution facts. Qualified includes rewarded accounts. Reading never reconciles qualification or issues grants.
+- `rewards:[{source,type,state,count}]` from the persisted grant ledger. Premium state is active/queued/expired; non-Premium awards use issued. Only aggregate counts leave the server; no user/installation/token identifiers are returned.
+- `experiment:{id,enabled,valid,errors,requiredPerVariant,design}` with disabled-by-default validated readiness. Incomplete/invalid configuration returns disabled assignment. Invalid designs are not rendered as a valid plan.
+
+The Admin page `/bodylog/retention` distinguishes optional observed invitation events from authoritative qualification/reward counts, preserves null immature rates, and reads cumulative UTC cohorts. Exposure and action must share both experiment and variant; maturity begins exactly at the following UTC midnight.
+
+`bodylog.retention-experiment` requires the design fields in [the pre-registration plan](bodylog-retention-experiment-plan.md) to enable assignment. No new write/toggle UI is introduced. The example remains disabled and lacks a real owner. Fixed alpha/power sample planning uses a normal approximation and is not an inference result or an automated operational stop monitor.
+
+Late events that predate the currently published experiment revision remain consented observation facts but are not relabeled into the new cohort. Report owners must keep the experiment ID/design stable through follow-up and the late-arrival window; this conservative exclusion cannot recover an overwritten historical assignment.
+
+## AINovel 支付按钮副标题配置
+
+复用现有应用配置及版本记录：AINovel (`ai_novel`) 的
+`ai_novel.billing_benefits` 根对象可选增加 `purchaseSubtitle`，值为 locale→文案对象，
+例如 `{"purchaseSubtitle":{"zh-CN":"测试副标题 from server","en-US":"Test subtitle from server"}}`。
+合并更新时保留已有 plus/pro 权益数组；未配置、null、空对象或全空白时不显示副标题。
+文案通过公开套餐接口下发，复用现有 locale 选择和 fallback。默认无副标题，不将测试文案写为生产默认值。
+
+同一根对象可选 `purchaseTitle` locale→文案对象，用于主按钮完整文案。
+未配置、null 或解析后为空时，客户端使用当前语言的「立即开通」默认文案；
+非空时直接显示服务端值，客户端不拼接价格或分隔符。登录/渠道不可用状态不会被覆盖。主副标题相互独立。
+
+同一配置支持可选展示字段，均沿用现有 locale→文案与语言回退（不新增接口）：
+
+```json
+{
+  "display": {
+    "title": {"zh-CN":"会员","en-US":"Membership"},
+    "agreement": {"zh-CN":"已阅读并同意付费服务协议、扣款授权协议"},
+    "plusLabel": {"en-US":"Plus"},
+    "proLabel": {"en-US":"Pro"}
+  },
+  "products": {
+    "plus_monthly": {
+      "displayName": {"zh-CN":"Plus 月度会员","en-US":"Plus monthly membership"},
+      "periodLabel": {"zh-CN":"月度","en-US":"Monthly"},
+      "badgeText": {"zh-CN":"推荐","en-US":"Recommended"}
+    }
+  },
+  "checkoutDisplay": {
+    "title": {"zh-CN":"支付宝扫码付款"},
+    "hint": {"zh-CN":"打开支付宝扫一扫"},
+    "waiting": {"zh-CN":"等待支付完成"}
+  }
+}
+```
+
+以上仅为配置结构示例，不默认启用推荐标签。只支持已有六个商品的展示覆盖，不改变档位、渠道、权益或价格；更新时保留其他根字段及 plus/pro 权益数组。必要字段删除/null/空白回退客户端翻译；可选副标题和 badgeText 则隐藏。完整商品名直接下发，客户端不拼接。二维码 amountText 不能配置，由订单真实金额生成。配置清空会在下一次目录刷新生效。
+
+创建/幂等重试订单时仅尽力读取二维码文案，不校验无关的 display 页面字段；错误 JSON 或无效二维码文案字段不阻断支付，回退客户端默认值，有效字段继续下发。不要依赖此容错放宽公开目录配置格式。副标题展示为单行，超出省略，运营配置应保持简短。
+
+### Membership environment
+
+Membership projections and credit usage default to production. Admin membership browsing selects environment through `environment=PRODUCTION|SANDBOX`, defaulting to production; this read-only query does not change product entitlement access. Product requests cannot select sandbox online. Financial order lists retain their explicit sandbox/production evidence
+filter. Order-detail membership comparison uses that transaction's environment.
+
+会员接口 `GET /api/v1/admin/billing/memberships` 接受 `environment=PRODUCTION|SANDBOX`（默认正式），在到期筛选和分页前选择会员快照；空值或非法值返回400。每条会员返回 `environment: production|sandbox`。顶部环境切换同时切换收入、会员与订单，重置会员筛选和游标，提示当前只显示正式或沙箱会员。不存在将沙箱会员合并进正式列表的行为。
+
+后台“支付记录与事件”默认选中已支付（`status=provider_paid`），首次加载、刷新、切换应用/环境及清空筛选后均默认查询已支付。可取消状态选择查询全部，或选择待付款、已关闭等其他状态。接口省略status的全状态查询语义保持不变。
+
+支付后台术语与取值展示统一：`provider` 为支付服务商，`source/purchaseSource` 为支付来源，`platform` 为运行平台，`distribution` 为分发类型，`environment` 为支付环境。筛选请求保留接口原始枚举，所有tab的表格和详情共用展示映射（App Store / Google Play / 支付宝 / RevenueCat / iOS等）。例如source=play_store和distribution=google_play都显示Google Play，但字段语义不合并。未知值显示未知并保留原值，不默认归类；未采集market时不推断小米/vivo。
+
+Market取值为app_store/google_play/xiaomi/vivo/oppo/huawei/honor/direct；未知为null。勾选市场后null作为“未知渠道”组保留收入，不丢弃金额。App Store/Google Play由确切交易商店证据识别；Alipay由订单构建market归因保留，通用china_android_store或alipay不能推断小米/vivo。迁移077只回填明确的商店或官方直发记录。订单列表和详情返回market并复用统一显示字典。

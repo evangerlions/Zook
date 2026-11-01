@@ -60,7 +60,7 @@ export interface LightTickTaskGuidance { purpose?: string; materials?: string[];
 
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
-  priority: number; estimatedMinutes: number; scheduledFor?: string;
+  priority: number; estimatedMinutes: number | null; scheduledFor?: string;
   startedAt?: string; completedAt?: string; notes?: string;
   lineageId?: string; selectedVariant?: LightTickTaskVariant;
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;

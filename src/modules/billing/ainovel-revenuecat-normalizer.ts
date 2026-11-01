@@ -1,3 +1,4 @@
+import { billingEnvironment } from "./billing-environment.ts";
 import type { AiNovelBillingMembershipInfo, AiNovelBillingMembershipRecord, AiNovelBillingTransactionRecord } from "../../shared/types.ts";
 import { isObject, type RevenueCatSnapshot, type RevenueCatSubscriptionEvidence } from "../../services/ainovel-revenuecat-types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
@@ -28,6 +29,7 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
   let ignoredEntitlementCount = 0;
   let ignoredProductCount = 0;
   let hasActiveUnverifiedEnvironmentEntitlement = false;
+  let hasActiveOtherEnvironment = false;
   for (const evidence of payload.subscriptions) {
     const { subscription: sub, product, entitlements } = evidence;
     const productId = nullableString(product.store_identifier);
@@ -39,8 +41,10 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
     const active = matches.map(e => payload.activeEntitlements.find(a => a.entitlement_id === e.id));
     const hasActive = active.some(Boolean) && sub.gives_access === true;
     const environmentKnown = sub.environment === "sandbox" || sub.environment === "production";
-    const allowed = sub.environment === "production" || (options.allowSandbox === true && sub.environment === "sandbox");
-    if (hasActive && !allowed) hasActiveUnverifiedEnvironmentEntitlement = true;
+    const allowed = sub.environment === billingEnvironment() &&
+      (sub.environment === "production" || options.allowSandbox === true);
+    if (hasActive && environmentKnown && !allowed) hasActiveOtherEnvironment = true;
+    if (hasActive && !environmentKnown) hasActiveUnverifiedEnvironmentEntitlement = true;
     if (!environmentKnown || !allowed) { ignoredEntitlementCount++; continue; }
     if (typeof sub.gives_access !== "boolean" || !STATUSES.has(String(sub.status))) {
       throw new Error("RevenueCat subscription state is invalid.");
@@ -78,12 +82,13 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
   return {
     activeMemberships: candidates.map(candidate => candidate.info),
     observedMemberships: summaries,
-    membership: { appId: "ai_novel", userId, active: current?.active ?? false,
+    membership: { appId: "ai_novel", userId, environment: billingEnvironment(), active: current?.active ?? false,
       state: current?.state ?? "free", tier: current?.tier ?? null, planKey: current?.planKey ?? null,
       expiresAt: current?.expiresAt ?? null, autoRenew: current?.autoRenew ?? null,
       source: current?.source ?? null, managementUrl: current?.managementUrl ?? null,
       lastSyncedAt: payload.observedAt, accountDeletedAt: null },
-    transactions, ignoredEntitlementCount, ignoredProductCount, hasActiveUnverifiedEnvironmentEntitlement,
+    transactions, ignoredEntitlementCount, ignoredProductCount,
+    hasActiveUnverifiedEnvironmentEntitlement: hasActiveUnverifiedEnvironmentEntitlement || (hasActiveOtherEnvironment && candidates.length === 0),
   };
 }
 

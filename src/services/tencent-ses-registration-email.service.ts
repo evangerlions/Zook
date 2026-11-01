@@ -206,6 +206,7 @@ export class TencentSesRegistrationEmailSender implements VerificationEmailSende
 
     const response = await fetch(`https://${host}/`, {
       method: "POST",
+      signal: AbortSignal.timeout(10_000),
       headers: {
         Authorization: authorization,
         "Content-Type": contentType,

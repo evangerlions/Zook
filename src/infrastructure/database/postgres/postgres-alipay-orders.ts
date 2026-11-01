@@ -1,3 +1,4 @@
+import { billingEnvironment } from "../../../modules/billing/billing-environment.ts";
 import type { QueryResult, QueryResultRow } from "pg";
 import type { AlipayOrder } from "../../../modules/billing/alipay-models.ts";
 type Query = (sql: string, values?: unknown[]) => Promise<QueryResult<QueryResultRow>>;
@@ -17,11 +18,22 @@ export class PostgresAlipayOrders {
     [environment, merchant, seller, limit]);
     return result.rows.map(row => row.record as AlipayOrder);
   }
+  async listOrders(userId: string, filter: { before: string; after?: string; limit: number }): Promise<AlipayOrder[]> {
+    const result = await this.query(`SELECT record FROM zook_ai_novel_alipay_orders
+      WHERE user_id = $1 AND environment = $2 AND (record->>'createdAt')::timestamptz <= $3::timestamptz
+      AND ($4::text IS NULL OR order_id > $4) ORDER BY order_id LIMIT $5`,
+      [userId, billingEnvironment(), filter.before, filter.after ?? null, filter.limit]);
+    return result.rows.map(row => row.record as AlipayOrder);
+  }
   async listAccess(userId: string, now: string): Promise<AlipayOrder[]> {
     const result = await this.query(`SELECT DISTINCT ON (split_part(record->>'productKey', '_', 1)) record
-      FROM zook_ai_novel_alipay_orders WHERE user_id = $1 AND membership_applied AND membership_expires_at > $2::timestamptz
-      AND record->>'accountDeletedAt' IS NULL
-      ORDER BY split_part(record->>'productKey', '_', 1), membership_expires_at DESC`, [userId, now]);
+      FROM zook_ai_novel_alipay_orders o WHERE user_id = $1 AND status = 'paid' AND membership_applied AND membership_expires_at > $2::timestamptz
+      AND EXISTS (SELECT 1 FROM zook_ai_novel_alipay_orders a WHERE a.user_id = o.user_id AND a.environment = o.environment
+        AND a.status = 'paid' AND a.membership_applied AND a.record->>'accountDeletedAt' IS NULL
+        AND split_part(a.record->>'productKey','_',1) = split_part(o.record->>'productKey','_',1)
+        AND (a.record->>'membershipStartsAt')::timestamptz <= $2::timestamptz AND a.membership_expires_at > $2::timestamptz)
+      AND record->>'accountDeletedAt' IS NULL AND environment = $3
+      ORDER BY split_part(record->>'productKey', '_', 1), membership_expires_at DESC`, [userId, now, billingEnvironment()]);
     return result.rows.map(row => row.record as AlipayOrder);
   }
   async save(order: AlipayOrder): Promise<void> {

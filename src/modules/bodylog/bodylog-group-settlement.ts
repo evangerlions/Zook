@@ -85,7 +85,7 @@ export class BodyLogGroupSettlement {
             const members = await this.store.listGroupMembers(group.id);
             const activeMembers = members.filter((m) => m.status === "active");
             for (const member of activeMembers) {
-              await this.grantPremiumReward(member.userId, rewardDays);
+              await this.grantPremiumReward(member.userId, rewardDays, `${group.id}:${newTier}`);
               // 发送等级提升通知
               await this.sendGroupNotification(member.userId, "group_tier_upgraded", group.id, undefined, undefined, newTier);
             }
@@ -176,23 +176,9 @@ export class BodyLogGroupSettlement {
   /**
    * 辅助方法：授予Premium奖励
    */
-  private async grantPremiumReward(userId: string, days: number): Promise<void> {
-    if (!this.subscriptionService) {
-      console.warn("Subscription service not available, skipping premium reward");
-      return;
-    }
-
-    try {
-      await this.subscriptionService.grantReward(
-        BODYLOG_APP_ID,
-        userId,
-        SubscriptionTier.PLUS,
-        days,
-        "Group tier reward"
-      );
-    } catch (error) {
-      console.error("Failed to grant premium reward:", error);
-    }
+  private async grantPremiumReward(userId: string, days: number, sourceId: string): Promise<void> {
+    if (!this.subscriptionService) return;
+    await this.subscriptionService.grantReward(BODYLOG_APP_ID, userId, SubscriptionTier.PLUS, days, "Group tier reward", { source: "group", id: sourceId });
   }
 
   /**

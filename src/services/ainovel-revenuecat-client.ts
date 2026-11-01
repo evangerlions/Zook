@@ -14,25 +14,21 @@ export interface RevenueCatCustomerApiOptions {
   now?: () => Date;
 }
 export class RevenueCatCustomerApi {
-  private lastObservationMs = 0;
   constructor(private readonly options: RevenueCatCustomerApiOptions) {}
   async getSnapshot(userId: string, requestSignal?: AbortSignal,
     requestId?: string): Promise<RevenueCatSnapshot> {
     const startedAt = performance.now();
-    this.lastObservationMs = Math.max((this.options.now?.() ?? new Date()).getTime(), this.lastObservationMs + 1);
-    const observedAt = new Date(this.lastObservationMs).toISOString();
+    const observedAt = (this.options.now?.() ?? new Date()).toISOString();
     const context = { userId, requestId, appId: "ai_novel", provider: "revenuecat", apiVersion: "v2" };
     const { logger } = this.options;
     logger?.info("ainovel billing revenuecat lookup started", context);
-    const timeout = new AbortController();
-    const timer = setTimeout(() => timeout.abort(), this.options.timeoutMs ?? 8_000);
-    const signal = requestSignal ? AbortSignal.any([requestSignal, timeout.signal]) : timeout.signal;
+    const signal = requestSignal ?? new AbortController().signal;
     try {
       const key = this.options.secretApiKey?.trim();
       const projectId = this.options.projectId?.trim();
       const appId = this.options.appId?.trim();
       if (!key || !projectId || (!appId && !this.options.googleAppId?.trim())) throw new RevenueCatApiError("not_configured");
-      const session = new RevenueCatV2ReadSession(projectId, key, this.options.fetcher ?? fetch, signal);
+      const session = new RevenueCatV2ReadSession(projectId, key, this.options.fetcher ?? fetch, signal, this.options.timeoutMs ?? 20_000);
       const root = `/customers/${encodeURIComponent(userId)}`;
       const [subscriptions, activeEntitlements] = await Promise.all([
         session.list(`${root}/subscriptions?limit=100`),
@@ -63,13 +59,13 @@ export class RevenueCatCustomerApi {
       return { subscriptions: evidence, activeEntitlements, observedAt };
     } catch (error) {
       const failure = error instanceof RevenueCatApiError ? error : new RevenueCatApiError("request_failed", {
-        failureKind: requestSignal?.aborted ? "request_cancelled" : timeout.signal.aborted ? "timeout" : "network_error",
+        failureKind: requestSignal?.aborted ? "request_cancelled" : "network_error",
       });
       logger?.warn("ainovel billing revenuecat lookup failed", {
         ...context, failureReason: failure.reason, ...failure.diagnostics,
         durationMs: Math.round(performance.now() - startedAt),
       });
       throw failure;
-    } finally { clearTimeout(timer); }
+    }
   }
 }

@@ -37,6 +37,7 @@ export function parseUser(row: QueryResultRow): UserRecord {
     phone: row.phone ?? undefined,
     passwordHash: String(row.password_hash),
     passwordAlgo: String(row.password_algo),
+    credentialVersion: Number(row.credential_version ?? 1),
     status: row.status as UserRecord["status"],
     createdAt: toIsoString(row.created_at) as string,
   };

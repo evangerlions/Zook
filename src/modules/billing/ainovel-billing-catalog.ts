@@ -8,7 +8,9 @@ import type { AccountRegion } from "../../shared/types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
 import { billingStoreProductId } from "./ainovel-store-products.ts";
 import { billingBenefits } from "./ainovel-billing-benefits.ts";
+import { billingPurchaseSubtitle, billingPurchaseTitle } from "./ainovel-billing-purchase-copy.ts";
 import { LOCAL_CREDIT_QUOTAS } from "../ai-novel/credits/ai-novel-credits-model.ts";
+import { billingDisplay, billingAmountText } from "./ainovel-billing-display.ts";
 
 export interface AiNovelBillingCatalogInput {
   accountRegion: AccountRegion;
@@ -38,12 +40,17 @@ const PRODUCT_DEFINITIONS: readonly ProductDefinition[] = [
 export function buildAiNovelBillingCatalog(
   input: AiNovelBillingCatalogInput,
 ): CatalogData {
+  const display = billingDisplay(input.locale, input.benefitsConfig);
   return {
     accountRegion: input.accountRegion,
     platform: input.platform,
     distribution: input.distribution,
+    display: display.page,
     products: PRODUCT_DEFINITIONS.map((product) => ({
       ...product,
+      ...display.product(product.productKey),
+      purchaseSubtitle: billingPurchaseSubtitle(input.locale, input.benefitsConfig),
+      purchaseTitle: billingPurchaseTitle(input.locale, input.benefitsConfig),
       benefits: billingBenefits(product.tier, input.locale, input.benefitsConfig),
       usage: { credits: LOCAL_CREDIT_QUOTAS[product.tier], resetPeriod: "P7D" },
       providers: [resolveProvider(input, product)],
@@ -97,7 +104,8 @@ function resolveProvider(
   if (input.accountRegion === "CN" && input.alipayAvailable) {
     return { provider: "alipay", available: true, blockedReason: null,
       providerProductId: product.productKey, providerPackageId: null, providerEntitlementId: product.tier,
-      price: { amountMinor: input.alipayPrices![product.productKey], currency: "CNY" } };
+      price: { amountMinor: input.alipayPrices![product.productKey], currency: "CNY",
+        localizedDisplay: billingAmountText(input.alipayPrices![product.productKey], input.locale) } };
   }
 
   return {

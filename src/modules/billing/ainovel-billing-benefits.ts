@@ -1,7 +1,7 @@
 import { LOCAL_CREDIT_QUOTAS } from "../ai-novel/credits/ai-novel-credits-model.ts";
 import { DEFAULT_APP_I18N_SETTINGS, isI18nText, pickI18nText, type I18nText } from "../../shared/i18n.ts";
 import type { BillingTier } from "../../generated/openapi/public-contracts.generated.ts";
-import { BENEFIT_TRANSLATIONS, FREE_ALLOWANCE_MULTIPLIER } from "./ainovel-billing-benefits-locales.ts";
+import { BENEFIT_TRANSLATIONS, FREE_ALLOWANCE_MULTIPLIER, CROSS_PLATFORM_MEMBERSHIP } from "./ainovel-billing-benefits-locales.ts";
 
 export const BILLING_BENEFITS_CONFIG_KEY = "ai_novel.billing_benefits";
 type BenefitDefinition = { key: string; text: I18nText; included: boolean; order: number; comingSoon: boolean };
@@ -30,9 +30,12 @@ function defaults(tier: "plus" | "pro"): BenefitDefinition[] {
   for (const locale of Object.keys(labels[0])) {
     labels[0][locale] += FREE_ALLOWANCE_MULTIPLIER[locale];
   }
-  return ["usage", "models", "priority", "base", "memory", "sync"].map((key, index) => ({
-    key, text: labels[index], included: true, order: index + 1, comingSoon: key === "sync",
-  }));
+  return [
+    { key: "cross_platform_membership", text: CROSS_PLATFORM_MEMBERSHIP, included: true, order: 0, comingSoon: false },
+    ...["usage", "models", "priority", "base", "memory", "sync"].map((key, index) => ({
+      key, text: labels[index], included: true, order: index + 1, comingSoon: key === "sync",
+    })),
+  ];
 }
 
 /** Existing app-config storage can replace either tier's display configuration.

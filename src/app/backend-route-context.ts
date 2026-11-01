@@ -69,6 +69,8 @@ function parseBasicAuthorization(
 }
 
 export class BackendRouteContext {
+  resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
+    async () => undefined;
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
   public readonly billingAdminService: BillingAdminService;
@@ -195,6 +197,10 @@ export class BackendRouteContext {
 
   public async assertAdminSensitiveOperation(session: AdminSessionRecord, operation: string): Promise<void> {
     await this.adminSensitiveOperationService.assertGranted(session, operation);
+  }
+
+  public async recordAdminMutationAudit(entry: Parameters<AuditInterceptor["record"]>[0]): Promise<void> {
+    await this.routeAuditInterceptor.record(entry);
   }
 
   public async recordAdminReadAudit(adminUser: string, action: string, resourceType: string,

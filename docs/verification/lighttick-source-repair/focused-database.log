@@ -1,0 +1,224 @@
+(node:31701) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+▶ BodyLog Admin Regression Tests
+  ▶ 用户管理回归
+    ✔ 应该能够查看用户详情（对应客户端 profile 功能） (2.100334ms)
+    ✔ 应该能够修改用户状态（对应客户端封禁功能） (0.294458ms)
+    ✔ 应该能够重置用户数据（对应客户端数据清理功能） (0.443917ms)
+    ✔ 应该能够列出用户（对应客户端用户搜索功能） (0.729834ms)
+  ✔ 用户管理回归 (4.513084ms)
+  ▶ 社交审核回归
+    ✔ 应该能够查看举报列表（对应客户端举报功能） (0.328875ms)
+    ✔ 应该能够处理举报（对应客户端举报处理流程） (0.097667ms)
+    ✔ 应该能够查看屏蔽列表（对应客户端屏蔽功能） (0.096458ms)
+    ✔ 应该能够移除屏蔽（对应客户端解除屏蔽功能） (0.070459ms)
+  ✔ 社交审核回归 (0.711709ms)
+  ▶ 排行榜管理回归
+    ✔ 应该能够查看赛季列表（对应客户端排行榜功能） (0.099458ms)
+    ✔ 应该能够查看赛季排名（对应客户端排行榜排名功能） (1.31175ms)
+    ✔ 应该能够移除排名条目（对应客户端排行榜管理功能） (0.104708ms)
+  ✔ 排行榜管理回归 (1.59025ms)
+  ▶ 挑战管理回归
+    ✔ 应该能够查看挑战列表（对应客户端挑战功能） (0.105625ms)
+    ✔ 应该能够查看挑战统计（对应客户端挑战数据功能） (0.094042ms)
+  ✔ 挑战管理回归 (0.251708ms)
+  ▶ 奖励管理回归
+    ✔ 应该能够查看奖励列表（对应客户端奖励功能） (0.088583ms)
+    ✔ 应该能够手动发放奖励（对应客户端奖励补发功能） (0.079041ms)
+    ✔ 应该能够查看奖励统计（对应客户端奖励数据功能） (0.05975ms)
+  ✔ 奖励管理回归 (0.267875ms)
+  ▶ 成长计划回归
+    ✔ 应该能够查看成长计划列表（对应客户端七日计划功能） (0.081417ms)
+    ✔ 应该能够查看成长统计（对应客户端成长数据功能） (0.05225ms)
+  ✔ 成长计划回归 (0.158667ms)
+  ▶ 功能开关回归
+    ✔ 应该能够查看功能开关列表（对应客户端功能开关功能） (36.065666ms)
+    ✔ 应该能够切换功能开关（对应客户端功能控制功能） (0.168333ms)
+    ✔ 应该能够查看功能使用分析（对应客户端功能分析功能） (0.062417ms)
+  ✔ 功能开关回归 (36.357417ms)
+  ▶ 运营概览回归
+    ✔ 应该能够查看运营数据总览（对应运营数据看板功能） (0.124708ms)
+    ✔ 应该能够查看分时段指标（对应运营趋势分析功能） (0.1035ms)
+  ✔ 运营概览回归 (0.260917ms)
+  ▶ 系统配置回归
+    ✔ 应该能够查看和更新通知配置（对应全局通知控制功能） (0.100167ms)
+    ✔ 应该能够查看和更新计分配置（对应全局计分规则功能） (0.069458ms)
+    ✔ 应该能够查看和更新赛季配置（对应全局赛季参数功能） (0.082333ms)
+  ✔ 系统配置回归 (0.299625ms)
+  ▶ 数据一致性回归
+    ✔ 应该确保用户统计数据来源一致 (0.081875ms)
+    ✔ 应该确保挑战统计数据来源一致 (0.057ms)
+    ✔ 应该确保成长计划统计数据来源一致 (0.051958ms)
+  ✔ 数据一致性回归 (0.242917ms)
+  ▶ 边界条件回归
+    ✔ 应该正确处理分页边界 (0.067833ms)
+    ✔ 应该正确处理空数据 (0.052667ms)
+    ✔ 应该正确处理不存在的资源 (0.038958ms)
+  ✔ 边界条件回归 (0.191292ms)
+✔ BodyLog Admin Regression Tests (45.57575ms)
+(node:31702) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+▶ BodyLogAdminService
+  ▶ Operations Dashboard
+    ✔ should return operations summary (0.798166ms)
+    ✔ should return operations metrics for 7d period (0.150792ms)
+    ✔ should return operations metrics for 30d period (0.115375ms)
+    ✔ should return operations metrics for 90d period (1.298083ms)
+  ✔ Operations Dashboard (2.771792ms)
+  ▶ User Management
+    ✔ should list users with pagination (0.474667ms)
+    ✔ should fall back to safe defaults for invalid pagination values (0.271042ms)
+    ✔ should return user details (0.207125ms)
+    ✔ should update user status (0.282625ms)
+    ✔ should reset user data (0.258916ms)
+  ✔ User Management (1.7875ms)
+  ▶ Social Moderation
+    ✔ should list reports with pagination (0.345ms)
+    ✔ should resolve report (0.190292ms)
+    ✔ should list blocks with pagination (0.238792ms)
+    ✔ should remove block (0.166542ms)
+  ✔ Social Moderation (1.078583ms)
+  ▶ Leaderboard Management
+    ✔ should list seasons with pagination (0.25725ms)
+    ✔ should list season rankings (0.192833ms)
+    ✔ should remove season entry (0.162209ms)
+  ✔ Leaderboard Management (0.72525ms)
+  ▶ Challenge Management
+    ✔ should list challenges with pagination (0.237292ms)
+    ✔ should return challenge statistics (0.171041ms)
+  ✔ Challenge Management (0.46875ms)
+  ▶ Reward Management
+    ✔ should list rewards with pagination (0.241709ms)
+    ✔ should return reward statistics (0.156084ms)
+    ✔ should manually issue reward (0.287875ms)
+  ✔ Reward Management (0.767333ms)
+  ▶ Feature Flag Management
+    ✔ should list feature flags (0.257584ms)
+    ✔ should update feature flag (0.158875ms)
+    ✔ should return feature flag analytics (0.184792ms)
+  ✔ Feature Flag Management (0.68825ms)
+  ▶ Growth Plan Management
+    ✔ should list growth plans with pagination (0.247167ms)
+    ✔ should return growth statistics (0.146042ms)
+  ✔ Growth Plan Management (0.454208ms)
+  ▶ System Configuration
+    ✔ should return notification config (0.197542ms)
+    ✔ should update notification config (0.179333ms)
+    ✔ should return scoring config (0.141458ms)
+    ✔ should update scoring config (0.134417ms)
+    ✔ should return season config (0.259167ms)
+    ✔ should update season config (0.158125ms)
+  ✔ System Configuration (1.213666ms)
+✔ BodyLogAdminService (10.671958ms)
+(node:31703) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ BodyLog association document is public and limited to invitation paths (483.708959ms)
+(node:31704) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ challenge requires friends, starts after acceptance, and ignores client score (460.635333ms)
+✔ challenge rejects non-friends and blocked friends (375.737208ms)
+(node:31705) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ BodyLog capability flags fail closed for social and competition routes (437.743667ms)
+✔ friends and challenge creation flags can roll back independently (410.00675ms)
+(node:31706) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ enrollment creates seven local goal missions and one reward in the selected time zone (40.408208ms)
+✔ growth plan, mission and reward reads enforce account ownership and missing resources (2.371375ms)
+✔ legacy manual completion always requires local aggregate evidence (0.669042ms)
+✔ daily aggregate retries count once and a correction reverses the same mission (2.574ms)
+✔ seven daily aggregates complete the plan and reward claims replay safely (3.262458ms)
+✔ unclaimed completed plans can be corrected and later completed again (2.22825ms)
+✔ invalid dates and aggregate counts return application errors without changing progress (0.6175ms)
+✔ aggregate dates and time zones must belong to the enrolled plan (0.536875ms)
+✔ legacy plans without local goal missions reject aggregate evidence (0.211625ms)
+✔ reward claims reject missing rewards and rewards from another plan (0.977292ms)
+✔ aggregate day assignment uses the enrolled local date across UTC midnight (0.23225ms)
+(node:31707) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ inactive buddy sweep warns both members at seven days and dissolves at fourteen (20.722ms)
+✔ inactive buddy sweep continues when warning notifications cannot be queued (0.13775ms)
+(node:31708) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ invitation binds once and qualifies after three distinct current-or-recorded plan days (470.32ms)
+✔ self invitation is rejected (389.058959ms)
+(node:31709) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ public leaderboard defaults off, requires three days, ignores client score, and hides on exit (429.373625ms)
+✔ friend leaderboard excludes non-friends and blocked users (367.589584ms)
+(node:31710) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ BodyLog buddy invitation requires recipient consent and returns a usable URL (369.963542ms)
+✔ BodyLog group create, invite, join, detail, and leadership transfer stay consistent (381.195125ms)
+✔ BodyLog expired invitations release capacity and can be renewed (365.054875ms)
+✔ BodyLog growth stays disabled and notification preferences/devices isolate users (273.621042ms)
+✔ BodyLog local log retries are idempotent and preserve occurrence time (230.529167ms)
+✔ BodyLog cloud entitlement defaults to free without a server grant (222.648666ms)
+✔ BodyLog latest plan survives completion and isolates accounts (232.552666ms)
+✔ BodyLog push uses owned devices, category preferences and invalidation (268.713667ms)
+(node:31711) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ bodylog profile is app scoped and update validates nickname (420.401333ms)
+✔ bodylog profile rejects an unsupported avatar (399.189375ms)
+✔ bodylog profile rejects a nickname blocked by content safety (385.305708ms)
+✔ deleting the BodyLog app account removes its server profile (306.042709ms)
+(node:31712) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ verified store purchase becomes the cloud entitlement and retries are idempotent (2.033875ms)
+✔ a store transaction cannot be claimed by a second BodyLog account (0.311292ms)
+✔ expired or revoked verified purchase synchronizes as free (0.141125ms)
+✔ purchase verification route requires auth and fails closed when store config is absent (260.463667ms)
+(node:31714) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ score caps each habit at one instance per day and totals one hundred (1.3525ms)
+✔ two qualified days are not public-rank eligible (0.089833ms)
+✔ rank tie-breaks by effective days, completed instances, then earliest reached time (6.712833ms)
+(node:31715) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ BodyLog friendship requires recipient acceptance (238.9685ms)
+✔ BodyLog block removes friendship and prevents new requests (242.670583ms)
+✔ BodyLog reports accept fixed reasons and reject free-form values (237.378125ms)
+(node:31716) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ daily BodyLog worker runs the inactive-buddy sweep once per UTC day (3.305041ms)
+(node:31717) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Postgres conversation records persist optional message ids without changing legacy rows (1.791708ms)
+(node:31718) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Postgres writing snapshot clears omitted writing fields and preserves tokens (2.616333ms)
+(node:31719) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Postgres app-user runtime deletion removes account-owned records (1.612ms)
+✔ Postgres app-user runtime deletion removes FrogSleep app-scoped runtime records (0.397666ms)
+✔ Postgres app-user runtime deletion removes every LightTick owner table only for LightTick (0.288ms)
+✔ Postgres app deletion includes all LightTick product tables (0.317875ms)
+(node:31720) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Postgres account-region finalization lets only the first concrete region win (3.180708ms)
+(node:31721) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ BodyLog admin dashboard calculates weighted check-in rates for day, week, and month (0.902792ms)
+✔ BodyLog admin member contributions include app-scoped profile fields (0.14175ms)
+(node:31722) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ postgres buddy command transaction ensures then locks normalized unique slots in deterministic order (1.834125ms)
+✔ postgres buddy command transaction validates before connecting (0.406583ms)
+✔ postgres buddy command transaction rolls back, releases and rethrows callback errors (0.161042ms)
+✔ postgres buddy command transaction rejects a missing ensured slot before callback (0.11725ms)
+✔ nested postgres buddy transactions reuse subset and reject additional keys without reconnecting (0.179875ms)
+(node:31723) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ postgres bootstrap inserts default apps without overwriting existing app names (1.855083ms)
+(node:31724) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ rbac service grants admin permissions through app-scoped roles (270.315625ms)
+✔ rbac service keeps member permissions narrower than admin permissions (273.403166ms)
+ℹ tests 126
+ℹ suites 22
+ℹ pass 126
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4605.135417

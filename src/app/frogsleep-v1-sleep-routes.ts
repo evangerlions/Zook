@@ -120,11 +120,13 @@ export async function handleSleepPreferenceUpdate(context: BackendRouteContext, 
 export async function handleSleepSessionBegin(context: BackendRouteContext, request: HttpRequest) {
   const auth = await authenticateFrogSleepRequest(context, request);
   const body = asBody(request);
+  const jointActivityId = body.joint_activity_id !== undefined || body.jointActivityId !== undefined
+    ? requireStringField(body, "joint_activity_id", "jointActivityId") : undefined;
   const session = await sleepBuddyService(context).beginSession(
     auth.userId,
     requireStringField(body, "relationship_id", "relationshipId"),
     stringField(body, "date_anchor", "dateAnchor"),
-    stringField(body, "joint_activity_id", "jointActivityId"),
+    jointActivityId,
   );
   emitSleepAnalytics(context, {
     name: "frogsleep_session_started",

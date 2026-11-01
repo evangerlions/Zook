@@ -29,11 +29,11 @@ async function actor(app: Runtime, suffix: string): Promise<Actor> {
   return { id, email, token: session.accessToken };
 }
 
-async function relationship(app: Runtime, alice: Actor, bob: Actor) {
+async function relationship(app: Runtime, alice: Actor, bob: Actor, domain = "focus") {
   const invited = await request(app, alice, "POST", "/buddy/invitations", {
-    target: { email: bob.email }, domains: ["focus"] });
+    target: { email: bob.email }, domains: [domain] });
   assert.equal(invited.statusCode, 200, JSON.stringify(invited.body));
-  const accepted = await request(app, bob, "POST", `/buddy/invitations/${invited.body.data.invitation_id}/domains/focus/accept`,
+  const accepted = await request(app, bob, "POST", `/buddy/invitations/${invited.body.data.invitation_id}/domains/${domain}/accept`,
     { expected_version: 1, idempotency_key: `${runId}_accept` });
   assert.equal(accepted.statusCode, 200, JSON.stringify(accepted.body));
   const id = String(accepted.body.data.relationship_id);
@@ -145,4 +145,88 @@ async function concurrentGoalAdjustments(app: Runtime, alice: Actor, bob: Actor,
       target: 3, expected_version: 2, idempotency_key: `${runId}_race_bob` }),
   ]);
   assert.deepEqual(results.map(result => result.statusCode).sort(), [200, 409]);
+}
+
+test("PostgreSQL keeps one joint sleep session across midnight, retries, and runtime restart", async context => {
+  const database = await PostgresDatabase.create(databaseUrl,
+    buildDefaultSeed(new DevelopmentPasswordHasher(), { includeFrogSleep: true }));
+  const accessTokenSecret = "local-p0-postgres-restart-acceptance";
+  let app = await createApplication({ frogsleepEnabled: true, queueBackend: "memory", database, accessTokenSecret });
+  context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-19T23:55:00.000Z") });
+  try {
+    const alice = await actor(app, "sleep_alice"), bob = await actor(app, "sleep_bob");
+    const id = await relationship(app, alice, bob, "sleep");
+    const { goalId, activityId } = await prepareSleep(app, alice, bob, id);
+    const sessionId = await joinSleepAcrossDates(app, alice, bob, id, activityId);
+    context.mock.timers.tick(7 * 3600_000);
+    for (const participant of [alice, bob]) {
+      participant.token = (await app.services.authService.issueSession(participant.id, "frogsleep")).accessToken;
+    }
+    await sleepMorning(app, alice, sessionId);
+    await assertSleepResult(app, bob, activityId, goalId, alice, bob, false);
+    await sleepMorning(app, bob, sessionId);
+    await assertSleepResult(app, alice, activityId, goalId, alice, bob, true);
+    await app.close();
+    app = await createApplication({ frogsleepEnabled: true, queueBackend: "memory", accessTokenSecret,
+      database: await PostgresDatabase.create(databaseUrl) });
+    const restored = await request(app, bob, "POST", "/sleep-buddy/shared-sessions", {
+      relationship_id: id, joint_activity_id: activityId, date_anchor: "2026-10-21" });
+    assert.equal(restored.statusCode, 200, JSON.stringify(restored.body));
+    assert.equal(restored.body.data.session_id, sessionId);
+    await sleepMorning(app, bob, sessionId);
+    await assertSleepResult(app, alice, activityId, goalId, alice, bob, true);
+  } finally { await app.close(); }
+});
+
+async function prepareSleep(app: Runtime, alice: Actor, bob: Actor, relationshipId: string) {
+  const goal = await request(app, alice, "POST", "/buddy/goals", {
+    relationship_id: relationshipId, type: "sleep_schedule_days", target: 1,
+    timezone: "UTC", idempotency_key: `${runId}_sleep_goal` });
+  assert.equal(goal.statusCode, 200, JSON.stringify(goal.body));
+  const goalId = String(goal.body.data.id);
+  const accepted = await request(app, bob, "POST", `/buddy/goals/${goalId}/accept`, {
+    expected_version: 1, idempotency_key: `${runId}_sleep_goal_accept` });
+  assert.equal(accepted.statusCode, 200, JSON.stringify(accepted.body));
+  const activity = await request(app, alice, "POST", "/buddy/joint-activities", {
+    relationship_id: relationshipId, type: "tonight_together", idempotency_key: `${runId}_sleep_activity` });
+  assert.equal(activity.statusCode, 200, JSON.stringify(activity.body));
+  const activityId = String(activity.body.data.id), path = `/buddy/joint-activities/${activityId}`;
+  assert.equal((await request(app, bob, "POST", `${path}/accept`)).statusCode, 200);
+  for (const participant of [alice, bob]) assert.equal((await request(app, participant, "POST", `${path}/start`)).statusCode, 200);
+  return { goalId, activityId };
+}
+
+async function joinSleepAcrossDates(app: Runtime, alice: Actor, bob: Actor, relationshipId: string, activityId: string) {
+  const results = await Promise.all([alice, bob].map((participant, index) => request(app, participant, "POST",
+    "/sleep-buddy/shared-sessions", { relationship_id: relationshipId, joint_activity_id: activityId,
+      date_anchor: index ? "2026-10-20" : "2026-10-19" })));
+  for (const result of results) assert.equal(result.statusCode, 200, JSON.stringify(result.body));
+  const id = String(results[0].body.data.session_id);
+  assert.equal(results[1].body.data.session_id, id);
+  const sessions = await app.database.listFrogSleepEntities({ appId: "frogsleep", kind: "sleep_session", relationshipId });
+  assert.equal(sessions.length, 1);
+  for (const participant of [alice, bob]) {
+    assert.equal((await request(app, participant, "POST", `/sleep-buddy/shared-sessions/${id}/accept`)).statusCode, 200);
+  }
+  return id;
+}
+
+async function sleepMorning(app: Runtime, participant: Actor, id: string) {
+  for (let retry = 0; retry < 2; retry += 1) {
+    const result = await request(app, participant, "POST", `/sleep-buddy/shared-sessions/${id}/events`, {
+      event_type: "morning_completed", occurred_at: new Date().toISOString() });
+    assert.equal(result.statusCode, 200, JSON.stringify(result.body));
+  }
+}
+
+async function assertSleepResult(app: Runtime, viewer: Actor, activityId: string, goalId: string,
+  alice: Actor, bob: Actor, completed: boolean) {
+  const feed = await request(app, viewer, "GET", "/buddy/activity");
+  assert.equal(feed.statusCode, 200, JSON.stringify(feed.body));
+  assert.equal(feed.body.data.items.find((item: any) => item.id === activityId).status, completed ? "completed" : "accepted");
+  const goals = await request(app, viewer, "GET", "/buddy/goals");
+  assert.equal(goals.statusCode, 200, JSON.stringify(goals.body));
+  const goal = goals.body.data.goals.find((item: any) => item.id === goalId);
+  assert.equal(goal.status, completed ? "completed" : "active");
+  assert.deepEqual(goal.participant_progress, { [alice.id]: 1, [bob.id]: completed ? 1 : 0 });
 }

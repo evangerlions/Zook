@@ -1,3 +1,5 @@
+import { InMemoryBuddySupportRepository } from "./in-memory-buddy-support.ts";
+import type { SupportNote, SupportPermission, SupportOperation } from "../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import { InMemorySleepGuestStore } from "./in-memory-sleep-guest.ts";
 import { InMemoryPersonalSyncRepository } from "./in-memory-personal-sync.ts";
 import { InMemoryFrogSleepAdminStore } from "./in-memory-frogsleep-admin.ts";
@@ -120,9 +122,16 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private readonly alipayOrders = new InMemoryAlipayOrders();
   findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
   findAiNovelAlipayIdempotency(user: string, key: string) { const result = this.alipayOrders.findIdempotency(user, key); return result && structuredClone(result); }
+  listAiNovelAlipayOrders(user: string, filter: { before: string; after?: string; limit: number }) { return this.alipayOrders.listOrders(user, filter); }
   listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
   listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) { return this.alipayOrders.listRecovery(environment, merchant, seller, limit); }
   saveAiNovelAlipayOrder(order: AlipayOrder) { this.alipayOrders.save(order); }
+  supportNotes: SupportNote[] = [];
+  supportPermissions: SupportPermission[] = [];
+  supportOperations: SupportOperation[] = [];
+  supportPolicies: { app: string; relationship: string }[] = [];
+  supportAcks: { app: string; id: string; recipient: string }[] = [];
+  getBuddySupportRepository() { return new InMemoryBuddySupportRepository(this); }
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
   private readonly aiNovelStatistics: InMemoryAiNovelStatisticsStore;
@@ -274,6 +283,18 @@ export class InMemoryDatabase extends ApplicationDatabase {
         return await fn();
       } finally {
         turn.current();
+      }
+    });
+  }
+
+  async withNewUserTransaction<T>(userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      try { return await fn(); }
+      catch (error) {
+        this.users = this.users.filter(user => user.id !== userId);
+        this.appUsers = this.appUsers.filter(member => member.userId !== userId);
+        this.userRoles = this.userRoles.filter(role => role.userId !== userId);
+        throw error;
       }
     });
   }
@@ -797,6 +818,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
       item.appId === appId && item.code === code));
   }
 
+  updateBodyLogInvitation(record: BodyLogInvitationRecord): void {
+    const index = this.bodyLogInvitations.findIndex(item => item.id === record.id);
+    if (index >= 0) this.bodyLogInvitations[index] = structuredClone(record);
+  }
+
   insertBodyLogInvitation(record: BodyLogInvitationRecord): void {
     this.bodyLogInvitations.push(structuredClone(record));
   }
@@ -925,6 +951,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
     user.passwordHash = passwordHash;
     user.passwordAlgo = passwordAlgo;
+    user.credentialVersion = (user.credentialVersion ?? 1) + 1;
   }
 
   insertAuditLog(record: AuditLogRecord): void {

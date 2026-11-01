@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
+const productionTest = baseTest;
 import { createApplication } from "../support/create-test-application.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import { startAlipayRecovery } from "../../src/services/ainovel-alipay-recovery.ts";
@@ -66,7 +69,7 @@ test("bounded sequential recovery settles missed notifications, then notify/quer
     const settledId = f.queried[0];
     const before = (await f.database.findAiNovelAlipayOrder(settledId))!.membershipExpiresAt;
     await f.service.notify(Buffer.from(new URLSearchParams(f.evidence(settledId)).toString()));
-    await f.service.query("user_alice", settledId);
+    await f.service.readOrder("user_alice", settledId);
     assert.equal((await f.database.findAiNovelAlipayOrder(settledId))!.membershipExpiresAt, before);
     await f.service.recoverOrders(1);
     assert.equal((await f.database.findAiNovelAlipayOrder(first))!.membershipApplied, true);

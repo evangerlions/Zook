@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
 import { billingProductKey } from "../../src/modules/billing/ainovel-store-products.ts";
 import { buildAiNovelBillingCatalog } from "../../src/modules/billing/ainovel-billing-catalog.ts";
 import { normalizeRevenueCatSnapshot } from "../../src/modules/billing/ainovel-revenuecat-normalizer.ts";

@@ -1,3 +1,4 @@
+import { parseMembershipSync } from "../modules/billing/membership-sync.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import { tryHandleAlipayRoutes } from "./ainovel-alipay-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -23,31 +24,12 @@ export async function tryHandleAiNovelBillingRoutes(
   if (alipay) return alipay;
   if (request.method === "POST" && request.path === BILLING_SYNC_PATH) {
     const auth = await this.authenticateProductRequest(request, "ai_novel");
-    const body = request.body === undefined ? {} : this.validationPipe.asObject(request.body);
-    const keys = Object.keys(body);
-    if (keys.some((key) => key !== "reason")) {
-      throw new ApplicationError(
-        400,
-        "REQ_INVALID_BODY",
-        "Only the optional reason field is accepted.",
-      );
-    }
-    const reason = body.reason;
-    if (
-      reason !== undefined && reason !== "purchase" && reason !== "restore" &&
-      reason !== "app_start" && reason !== "retry"
-    ) {
-      throw new ApplicationError(
-        400,
-        "REQ_INVALID_BODY",
-        "reason must be purchase, restore, app_start, or retry.",
-      );
-    }
+    const body = parseMembershipSync(request.body);
     return this.ok(
-      await this.aiNovelBillingService.sync({
+      await this.aiNovelBillingService.syncMembership({
         userId: auth.userId,
         requestId: request.requestId as string,
-        reason,
+        ...body,
         signal: request.signal,
       }),
       request.requestId as string,

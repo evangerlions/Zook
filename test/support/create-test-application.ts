@@ -1,3 +1,4 @@
+import { billingEnvironment } from "../../src/modules/billing/billing-environment.ts";
 import {
   createApplication as createRuntimeApplication,
   type CreateApplicationOptions,
@@ -8,6 +9,7 @@ export type { CreateApplicationOptions } from "../../src/app.module.ts";
 
 export async function createApplication(options: CreateApplicationOptions = {}) {
   return await createRuntimeApplication({
+    billingEnvironment: { allowSandbox: true, defaultEnvironment: billingEnvironment() },
     ...options,
     databaseFactory: options.databaseFactory ?? ((seed) => new InMemoryDatabase(seed)),
   });

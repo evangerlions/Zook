@@ -1,3 +1,5 @@
+import { inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { parseBillingRevenueDimensions } from "../modules/billing/billing-revenue-dimensions.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import { AiNovelBillingAdminService } from "./ainovel-billing-admin.service.ts";
@@ -49,14 +51,17 @@ export class BillingAdminService {
 
   async listMemberships(query: Query) {
     await this.assertScope(query.appId);
+    const environment = query.environment ?? "PRODUCTION";
+    if (!["PRODUCTION", "SANDBOX"].includes(environment)) invalid("Invalid environment.");
     const limit = query.limit === undefined ? 50 : Number(query.limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) invalid("limit must be 1–100.");
     if (query.expiry !== undefined && query.expiry !== "expired" && query.expiry !== "not_expired") invalid("Invalid membership expiry filter.");
     if (!(await this.hasIntegratedApp())) return { items: [], nextCursor: null };
     const now = Date.now();
-    const records = await this.database.listBillingAdminMemberships({ userId: boundedText(query.userId),
+    const records = await inBillingEnvironment(environment === "SANDBOX" ? "sandbox" : "production",
+      () => this.database.listBillingAdminMemberships({ userId: boundedText(query.userId),
       after: boundedText(query.cursor), limit: limit + 1, expiry: query.expiry,
-      now: new Date(now).toISOString() });
+      now: new Date(now).toISOString() }));
     const items = records.slice(0, limit).map((item) => effectiveBillingMembership(item, now));
     return { items, nextCursor: records.length > limit ? items.at(-1)!.userId : null };
   }
@@ -72,9 +77,10 @@ export class BillingAdminService {
       invalid("Use a positive reporting window of at most 366 days.");
     }
     const environment = query.environment ?? "PRODUCTION";
+    const groupBy = parseBillingRevenueDimensions(query.groupBy);
     const rows = await this.hasIntegratedApp() ? await this.database.getBillingAdminRevenue({ from: new Date(start).toISOString(),
-      to: new Date(end).toISOString(), sandbox: environment === "SANDBOX" }) : [];
-    return { from: new Date(start).toISOString(), to: new Date(end).toISOString(), environment, rows,
+      to: new Date(end).toISOString(), sandbox: environment === "SANDBOX", groupBy }) : [];
+    return { from: new Date(start).toISOString(), to: new Date(end).toISOString(), environment, groupBy, rows,
       integratedApps: (await this.listApps()).filter((item) => item.integrated).map((item) => item.appId) };
   }
 

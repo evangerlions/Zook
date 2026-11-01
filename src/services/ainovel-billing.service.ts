@@ -1,10 +1,14 @@
+import { readWebhookEvent, toWebhookRecord, type ParsedWebhookEvent } from "../modules/billing/revenuecat-webhook-event.ts";
+import { billingEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { timingSafeEqual } from "node:crypto";
 import { AiNovelAlipayService } from "./ainovel-alipay.service.ts";
-import { refreshAlipayMembership } from "./ainovel-alipay-projection.ts";
+import { readAlipayMembership } from "./ainovel-alipay-projection.ts";
 import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 import { selectStoreMembership, storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
 import type { AlipayOptions } from "../modules/billing/alipay-models.ts";
-import { runBillingSync, type BillingSyncInput } from "./ainovel-billing-sync.ts";
+import { syncMembership } from "./ainovel-billing-sync.ts";
+import { syncRevenueCatMembership } from "./ainovel-revenuecat-membership-sync.ts";
+import type { MembershipSyncInput, MembershipSyncResult } from "../modules/billing/membership-sync.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type {
   AiNovelBillingMembershipInfo,
@@ -24,14 +28,11 @@ import { normalizeRevenueCatWebhookTransaction } from "../modules/billing/ainove
 import {
   RevenueCatApiError,
   RevenueCatCustomerApi,
-  isObject,
 } from "./ainovel-revenuecat-client.ts";
 
 const APP_ID = "ai_novel" as const;
 const SUPPORTED_STORES = new Set(["APP_STORE", "MAC_APP_STORE", "PLAY_STORE"]);
-const REVENUECAT_SYNC_TIMEOUT_MS = 8_000;
-const WEBHOOK_EVENT_ID_MAX_LENGTH = 256;
-const MAX_TRANSFER_USER_IDS = 32;
+const REVENUECAT_SYNC_TIMEOUT_MS = 20_000;
 const WEBHOOK_HANDLED_EVENTS = new Set([
   "INITIAL_PURCHASE",
   "RENEWAL",
@@ -57,11 +58,6 @@ export interface AiNovelBillingServiceOptions {
   fetcher?: typeof fetch;
   timeoutMs?: number;
   now?: () => Date;
-}
-
-export interface AiNovelBillingSyncResult {
-  syncStatus: "synchronized" | "pending";
-  membership: AiNovelBillingMembershipInfo;
 }
 
 export class AiNovelBillingService {
@@ -105,24 +101,19 @@ export class AiNovelBillingService {
 
   /** Internal consistent entitlement snapshot, including billing-owned credit anchor. */
   async getMembershipRecord(userId: string): Promise<AiNovelBillingMembershipRecord | undefined> {
-    return this.database.withExclusiveSession(async () => {
-      const record = await refreshAlipayMembership(this.database, userId, this.now());
-      if (!record?.active || record.accountDeletedAt || record.creditWindowAnchorAt) return record;
-      // Backfill existing members from persisted, financially merged evidence,
-      // not from this read's time. Public membership DTO stays unchanged.
-      const anchored = anchorMembershipCredits(record, record,
-        await this.database.listAiNovelBillingTransactions(APP_ID, userId));
-      if (anchored.creditWindowAnchorAt) await this.database.upsertAiNovelBillingMembership(anchored);
-      return anchored;
-    });
+    return readAlipayMembership(this.database, userId, this.now());
   }
 
-  async sync(input: BillingSyncInput): Promise<AiNovelBillingSyncResult> {
-    return runBillingSync(input, {
+  async syncMembership(input: MembershipSyncInput): Promise<MembershipSyncResult> {
+    return syncMembership(input, {
+      alipay: () => this.alipay.syncAlipayMembership(input),
+      revenuecat: () => syncRevenueCatMembership(input, {
       logger: this.logger,
       fetchSnapshot: () => this.fetchSnapshot(input.userId, input.signal, input.requestId),
       persistSnapshot: (snapshot) => this.persistSnapshot(snapshot),
       getMembership: () => this.getMembership(input.userId),
+      now: this.now,
+    }),
     });
   }
 
@@ -143,6 +134,10 @@ export class AiNovelBillingService {
     }
 
     const event = readWebhookEvent(input.request.body);
+    return inBillingEnvironment(event.environment === "SANDBOX" ? "sandbox" : "production", () => this.receiveScopedWebhook(input, event));
+  }
+
+  private async receiveScopedWebhook(input: { request: HttpRequest; requestId: string }, event: ParsedWebhookEvent): Promise<{ status: "processed" | "ignored" | "duplicate" }> {
     this.logWebhook(input.requestId, event, "processing");
     const configuredApps = [this.revenueCatAppId, this.revenueCatGoogleAppId].filter(Boolean);
     const expectedAppId = event.store === "PLAY_STORE" ? this.revenueCatGoogleAppId : this.revenueCatAppId;
@@ -296,7 +291,11 @@ export class AiNovelBillingService {
     try {
       for (const user of knownUsers) {
         if (user.status === "ACTIVE") {
-          snapshots.push(await this.fetchSnapshot(user.userId, signal, requestId));
+          const environments = event.environment === null && this.allowSandbox
+            ? ["production", "sandbox"] as const : [billingEnvironment()];
+          const payload = await this.customerApi.getSnapshot(user.userId, signal, requestId);
+          for (const environment of environments) snapshots.push(inBillingEnvironment(environment,
+            () => normalizeRevenueCatSnapshot(payload, user.userId, this.now(), { allowSandbox: this.allowSandbox })));
         }
       }
     } catch (error) {
@@ -389,6 +388,10 @@ export class AiNovelBillingService {
   }
 
   private async writeSnapshot(snapshot: NormalizedRevenueCatSnapshot, transferredAway = false): Promise<void> {
+    return inBillingEnvironment(snapshot.membership.environment ?? billingEnvironment(),
+      () => this.writeScopedSnapshot(snapshot, transferredAway));
+  }
+  private async writeScopedSnapshot(snapshot: NormalizedRevenueCatSnapshot, transferredAway: boolean): Promise<void> {
     if (snapshot.hasActiveUnverifiedEnvironmentEntitlement) {
       this.logger.warn("ainovel billing snapshot deferred for unverified store environment", {
         appId: APP_ID,
@@ -400,7 +403,7 @@ export class AiNovelBillingService {
     }
     const current = await this.database.findAiNovelBillingMembership(APP_ID, snapshot.membership.userId);
     if (current?.accountDeletedAt) return;
-    const effective = current?.source === "alipay" ? await refreshAlipayMembership(this.database, snapshot.membership.userId, this.now()) : current;
+    const effective = current?.source === "alipay" ? await readAlipayMembership(this.database, snapshot.membership.userId, this.now()) : current;
     const selected = selectStoreMembership(snapshot, effective, this.now(), transferredAway);
     if (storeSnapshotConflicts(snapshot, selected)) this.logger.warn("ainovel billing cross-channel payment conflict", {
       appId: APP_ID, userId: snapshot.membership.userId, provider: "revenuecat",
@@ -410,7 +413,7 @@ export class AiNovelBillingService {
       await this.database.upsertAiNovelBillingTransaction(transaction);
     }
     if (selected !== effective) await this.database.upsertAiNovelBillingMembership(
-      anchorMembershipCredits(effective, selected, await this.database.listAiNovelBillingTransactions(APP_ID, snapshot.membership.userId)));
+      anchorMembershipCredits(effective, selected, (await this.database.listAiNovelBillingTransactions(APP_ID, snapshot.membership.userId)).filter(t => t.isSandbox === (billingEnvironment() === "sandbox"))));
   }
 
   private async persistWebhookOnly(
@@ -464,118 +467,6 @@ export class AiNovelBillingService {
   }
 }
 
-interface ParsedWebhookEvent {
-  id: string;
-  type: string;
-  appId: string;
-  appUserId: string;
-  store: string;
-  environment: "SANDBOX" | "PRODUCTION" | null;
-  productId: string | null;
-  providerTransactionId: string | null;
-  occurredAt: string | null;
-  transaction: Record<string, unknown>;
-  transferredFrom: string[];
-  transferredTo: string[];
-}
-
-function readWebhookEvent(body: unknown): ParsedWebhookEvent {
-  if (!isObject(body) || !boundedString(body.api_version, 64) || !isObject(body.event)) {
-    throw new ApplicationError(400, "BILLING_WEBHOOK_INVALID", "RevenueCat webhook event is invalid.");
-  }
-  const raw = body.event;
-  const id = boundedString(raw.id, WEBHOOK_EVENT_ID_MAX_LENGTH);
-  const type = boundedString(raw.type, 64);
-  const appId = boundedString(raw.app_id, 256);
-  const isTransfer = type === "TRANSFER";
-  const transferFrom = isTransfer ? boundedStringList(raw.transferred_from) : [];
-  const transferTo = isTransfer ? boundedStringList(raw.transferred_to) : [];
-  const appUserId = boundedString(raw.app_user_id, 256) ??
-    (isTransfer ? transferTo?.[0] : undefined);
-  const store = boundedString(raw.store, 64) ?? "";
-  const environment = raw.environment;
-  if (
-    !id || !type || !appId || !appUserId ||
-    (!isTransfer && (!store ||
-      (environment !== "PRODUCTION" && environment !== "SANDBOX"))) ||
-    (isTransfer && (
-      transferFrom === undefined ||
-      transferTo === undefined ||
-      transferFrom.length + transferTo.length > MAX_TRANSFER_USER_IDS
-    ))
-  ) {
-    throw new ApplicationError(400, "BILLING_WEBHOOK_INVALID", "RevenueCat webhook event is invalid.");
-  }
-  const occurredAt = typeof raw.event_timestamp_ms === "number" && Number.isFinite(raw.event_timestamp_ms)
-    ? new Date(raw.event_timestamp_ms).toISOString()
-    : null;
-  return {
-    id,
-    type,
-    appId,
-    appUserId,
-    store,
-    environment: environment === "SANDBOX" || environment === "PRODUCTION"
-      ? environment
-      : null,
-    productId: boundedString(raw.product_id, 128) || null,
-    providerTransactionId: boundedString(raw.transaction_id, 256) || null,
-    occurredAt,
-    transferredFrom: transferFrom ?? [],
-    transferredTo: transferTo ?? [],
-    transaction: {
-      type,
-      product_id: raw.product_id,
-      transaction_id: raw.transaction_id,
-      store,
-      environment,
-      purchased_at_ms: raw.purchased_at_ms,
-      original_purchased_at_ms: raw.original_purchased_at_ms,
-      expiration_at_ms: raw.expiration_at_ms,
-      cancel_reason: raw.cancel_reason,
-      price_in_purchased_currency: raw.price_in_purchased_currency,
-      currency: raw.currency,
-      period_type: raw.period_type,
-    },
-  };
-}
-
-function boundedStringList(value: unknown): string[] | undefined {
-  if (!Array.isArray(value) || value.length === 0) return undefined;
-  if (value.length > MAX_TRANSFER_USER_IDS) return undefined;
-  const values = value.map((item) => boundedString(item, 256));
-  if (values.some((item) => item === undefined)) return undefined;
-  return values as string[];
-}
-
-function boundedString(value: unknown, maxLength: number): string | undefined {
-  return typeof value === "string" && value.trim().length > 0 && value.length <= maxLength
-    ? value.trim()
-    : undefined;
-}
-
-function toWebhookRecord(
-  event: ParsedWebhookEvent,
-  userId: string | null,
-  status: AiNovelBillingWebhookEventRecord["status"],
-  processedAt: string,
-  accountDeletedAt: string | null = null,
-  affectedUserIds: string[] = [],
-): AiNovelBillingWebhookEventRecord {
-  return {
-    appId: APP_ID,
-    eventId: event.id,
-    eventType: event.type,
-    userId,
-    affectedUserIds,
-    productId: event.productId,
-    providerTransactionId: event.providerTransactionId,
-    status,
-    occurredAt: event.occurredAt,
-    processedAt,
-    accountDeletedAt,
-  };
-}
 
 function constantTimeEqual(left: string, right: string): boolean {
   const leftBytes = Buffer.from(left, "utf8");

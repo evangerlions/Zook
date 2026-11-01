@@ -1,3 +1,4 @@
+import { validateAlipayMarket } from "./billing-market.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import type { AiNovelBillingMembershipRecord } from "../../shared/types.ts";
 import type { AlipayCreateInput, AlipayOptions, AlipayOrder, AlipayPublicOrder } from "./alipay-models.ts";
@@ -24,14 +25,15 @@ export function assertAlipayChannel(region: string, platform: string, distributi
 export function parseAlipayCreate(body: unknown): AlipayCreateInput {
   if (!body || typeof body !== "object" || Array.isArray(body)) invalid();
   const value = body as Record<string, unknown>;
-  if (Object.keys(value).some(key => !["productKey", "platform", "distribution", "idempotencyKey", "checkoutMode"].includes(key)) ||
+  if (Object.keys(value).some(key => !["productKey", "platform", "distribution", "idempotencyKey", "checkoutMode", "market"].includes(key)) ||
     typeof value.productKey !== "string" || !Object.hasOwn(ALIPAY_PRICES, value.productKey) ||
     !["android", "web", "windows"].includes(String(value.platform)) ||
     !["china_android_store", "direct_android", "web", "windows"].includes(String(value.distribution)) ||
     typeof value.idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(value.idempotencyKey)) invalid();
   if (value.checkoutMode !== undefined &&
-    (!(value.checkoutMode === "qr" || value.checkoutMode === "mobile_web") ||
+    (!(value.checkoutMode === "qr" || value.checkoutMode === "mobile_web" || value.checkoutMode === "desktop_web") ||
       value.platform === "android" || (value.platform === "windows" && value.checkoutMode !== "qr"))) invalid();
+  validateAlipayMarket(value.market, String(value.distribution));
   return value as unknown as AlipayCreateInput;
 }
 function invalid(): never { throw new ApplicationError(400, "REQ_INVALID_BODY", "Invalid Alipay order request."); }

@@ -56,9 +56,14 @@ test("AINovel billing catalog keeps the deferred Alipay products unavailable for
     ],
   );
   const { benefits, usage, ...product } = response.body.data.products[0];
-  assert.equal(benefits.length, 6);
+  assert.equal(benefits.length, 7);
   assert.deepEqual(usage, { credits: 1000, resetPeriod: "P7D" });
   assert.deepEqual(product, {
+    displayName: null,
+    periodLabel: null,
+    badgeText: null,
+    purchaseSubtitle: null,
+    purchaseTitle: null,
     productKey: "plus_monthly",
     tier: "plus",
     billingPeriod: "P1M",

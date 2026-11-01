@@ -1,3 +1,4 @@
+import { ApplicationError } from "../shared/errors.ts";
 import type { BodyLogSubscriptionStore } from "../infrastructure/bodylog-store-ports.ts";
 import type { UserSubscriptionRecord } from "../modules/bodylog/bodylog-subscription.types.ts";
 import { randomId } from "../shared/utils.ts";
@@ -22,7 +23,7 @@ export enum SubscriptionEventType {
  * 负责查询用户订阅状态、授予订阅奖励
  */
 export class SubscriptionService {
-  constructor(private readonly database: BodyLogSubscriptionStore) {}
+  constructor(private readonly database: BodyLogSubscriptionStore, private readonly promotional?: import("../modules/bodylog/bodylog-reward-ledger.ts").BodyLogRewardLedger) {}
 
   /**
    * 检查用户是否为 Premium（Plus 或 Pro）
@@ -37,7 +38,14 @@ export class SubscriptionService {
    * 获取用户当前有效的订阅
    */
   async getActiveSubscription(appId: string, userId: string): Promise<UserSubscriptionRecord | null> {
-    return await this.database.findActiveUserSubscription(appId, userId);
+    const paid = await this.database.findActiveUserSubscription(appId, userId);
+    if (appId !== "bodylog" || !this.promotional) return paid;
+    const entitlement = (await this.promotional.entitlements(userId)).effective;
+    if (!entitlement.isPremium || !entitlement.premiumUntil) return paid;
+    if (paid && paid.tier !== "free") return { ...paid, expiresAt: entitlement.premiumUntil };
+    const now = new Date().toISOString();
+    return { id: `promotional:${userId}`, appId, userId, tier: "plus", startedAt: now,
+      expiresAt: entitlement.premiumUntil, originalTransactionId: null, autoRenew: false, createdAt: now, updatedAt: now };
   }
 
   /**
@@ -51,8 +59,14 @@ export class SubscriptionService {
     tier: SubscriptionTier,
     days: number,
     reason: string,
+    source?: { source: "buddy" | "group"; id: string },
   ): Promise<void> {
-    const existing = await this.getActiveSubscription(appId, userId);
+    if (appId === "bodylog" && this.promotional) {
+      if (!source || !Number.isInteger(days) || days < 1 || days > 365) throw new ApplicationError(400, "REQ_INVALID_BODY", "A stable milestone reward source is required.");
+      await this.promotional.grant(userId, source.source, source.id, "premium", `${days}_day_premium`, days);
+      return;
+    }
+    const existing = await this.database.findActiveUserSubscription(appId, userId);
     const now = new Date();
     const daysMs = days * 24 * 60 * 60 * 1000;
 

@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import baseTest from "node:test";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+const test = (name: string, work: () => unknown) => baseTest(name, () => inBillingEnvironment("sandbox", work));
 import { buildAiNovelBillingCatalog } from "../../src/modules/billing/ainovel-billing-catalog.ts";
 import { selectStoreMembership, storeSnapshotConflicts } from "../../src/modules/billing/billing-channel-policy.ts";
 import type { AiNovelBillingMembershipRecord, AiNovelBillingSource } from "../../src/shared/types.ts";
 import type { NormalizedRevenueCatSnapshot } from "../../src/modules/billing/ainovel-revenuecat-normalizer.ts";
-import { runBillingSync } from "../../src/services/ainovel-billing-sync.ts";
+import { syncRevenueCatMembership } from "../../src/services/ainovel-revenuecat-membership-sync.ts";
 import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { createApplication } from "../support/create-test-application.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
@@ -64,8 +66,8 @@ test("a higher tier in another store never steals the established store; same-st
 });
 
 test("confirmation of the same plan in another store is pending, not successful", async () => {
-  const result = await runBillingSync({ userId: "user_alice", requestId: "channel_test", reason: "purchase" }, {
-    logger: new StructuredLogger("test", { emitToConsole: false }), fetchSnapshot: async () => snapshot("app_store"),
+  const result = await syncRevenueCatMembership({ provider: "revenuecat", userId: "user_alice", requestId: "channel_test", reason: "purchase" }, {
+    now: () => now, logger: new StructuredLogger("test", { emitToConsole: false }), fetchSnapshot: async () => snapshot("app_store"),
     persistSnapshot: async () => {}, getMembership: async () => membership("play_store"),
   });
   assert.equal(result.syncStatus, "pending"); assert.equal(result.membership.source, "play_store");
@@ -123,11 +125,11 @@ test("real sync persists cross-store financial evidence, protects membership and
     googleAppId: "google_app", allowSandbox: true, now: () => now,
     fetcher: fixtureFetcher(async () => Response.json(providerFixture()), "apple_app") } });
   await runtime.database.upsertAiNovelBillingMembership(membership("play_store"));
-  const result = await runtime.services.aiNovelBillingService.sync({ userId: "user_alice", requestId: "channel_real_sync", reason: "purchase" });
+  const result = await runtime.services.aiNovelBillingService.syncMembership({ provider: "revenuecat", userId: "user_alice", requestId: "channel_real_sync", reason: "purchase" });
   assert.equal(result.syncStatus, "pending"); assert.equal(result.membership.source, "play_store");
   const financial = await runtime.database.listAiNovelBillingTransactions("ai_novel", "user_alice");
   assert.equal(financial.length, 1); assert.equal(financial[0].source, "app_store");
   assert.ok(runtime.logger.records.some(record => record.status === "provider_conflict"));
   await runtime.database.upsertAiNovelBillingMembership({ ...membership("play_store"), expiresAt: "2026-10-04T00:00:00Z" });
-  assert.equal((await runtime.services.aiNovelBillingService.sync({ userId: "user_alice", requestId: "channel_expired" })).membership.source, "app_store");
+  assert.equal((await runtime.services.aiNovelBillingService.syncMembership({ provider: "revenuecat", userId: "user_alice", requestId: "channel_expired" })).membership.source, "app_store");
 });

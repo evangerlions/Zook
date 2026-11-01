@@ -9,7 +9,10 @@ test('action API authenticates, isolates accounts and matches populated canonica
   const runtime=await createApplication({seed,lighttickEnabled:true});
   const call=(user:string,method='GET',body?:unknown)=>runtime.app.handle({method,path:'/api/v1/lighttick/action-plans',headers:user?{authorization:'Bearer '+runtime.services.tokenService.issueAccessToken(user,'lighttick'),'x-app-id':'lighttick'}:{},body});
   assert.equal((await call('')).statusCode,401);
-  const created=await call('user_alice','POST',{key:'api-create-action',title:'读书',period:'day',start_date:'2026-10-20',end_date:'2026-10-20'});assert.equal(created.statusCode,200);
+  const created=await call('user_alice','POST',{key:'api-create-action',title:'读书',period:'day',start_date:'2026-10-20',end_date:'2026-10-20'});assert.equal(created.statusCode,409);
+  assert.equal(created.body.code,'CONTRACT_UPGRADE_REQUIRED');
+  await runtime.services.lighttickRuntime!.actions.request({appId:'lighttick',userId:'user_alice'},'POST','',
+   {key:'internal-fixture-create',title:'P0 fixture',period:'day',completion_mode:'check',start_date:null,end_date:null});
   const ajv=new Ajv2020({strict:false});addFormats(ajv);const validate=ajv.compile(LightTickActionWorkspaceSchema);
   const snapshot=await call('user_alice');assert.equal(validate(JSON.parse(JSON.stringify(snapshot.body.data))),true,JSON.stringify(validate.errors));
   for(const file of ['action-workspace-success.json','action-workspace-running.json']){const fixture=JSON.parse(readFileSync(new URL('../../api-contracts/fixtures/lighttick/'+file,import.meta.url),'utf8'));assert.equal(validate(fixture.data),true,JSON.stringify(validate.errors));}

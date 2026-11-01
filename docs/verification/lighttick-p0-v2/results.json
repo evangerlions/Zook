@@ -1,0 +1,47 @@
+{
+  "base": "53cf8d3d2559531a6a4b6a07ec033f928d519496",
+  "branch": "feature/lighttick-p0-v2-contract-runtime",
+  "recorded_at_utc": "2026-10-20T15:39:10.396841+00:00",
+  "full_regression": {
+    "tests": 1497,
+    "pass": 1497,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "focused": {
+    "tests": 27,
+    "pass": 27,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "postgres": {
+    "tests": 1,
+    "pass": 1,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "connection_writes_enabled": false,
+  "native_modified": false,
+  "global_line_count_gate_passed": false,
+  "unchanged_baseline_oversized_files": 8,
+  "intermittent_redaction_assertion_baseline_reproduced": true,
+  "tested_code_sha256": {
+    "src/modules/lighttick/actions/action.validation.ts": "7d12d4752abb7bd47c0cbe909aafa9304b7d39e88b69a1dece6415342b36a44f",
+    "src/modules/lighttick/actions/action.summary.ts": "779115aa11fb8446d38c04f09a9d665d5bff6a4549a48857e04730fc6d51c710",
+    "src/modules/lighttick/actions/action.facts.ts": "4ab09d536a3d9aa9931d76ff918c8d4427fe19057d4b6841be8962dcef3c6a81",
+    "src/modules/lighttick/actions/action.gates.ts": "4458c716b50069cf6bbba2cb041d2414ac96f2abb99c7d8c5455cf6ddec553c4",
+    "src/modules/lighttick/actions/action.types.ts": "82b2723af7517da58a5c50c3dfceaebd7d6e8cf34d5ec1b9048aa5df020a5953",
+    "src/modules/lighttick/actions/action.commands.ts": "ad9d83d806634767ca84e4147478c0de9e448e3e6a0bff3623942950db3e52ed",
+    "src/modules/lighttick/actions/action.service.ts": "a31f8df28ba8b58a74e525ad74b3e4b9638b5c3841457c8f396c5a597b7c8c61",
+    "src/modules/lighttick/actions/action-link.service.ts": "764a20f55c9995b1dd9a6d0aa50112c6d5650f38c9074b438e8786bad9c24d52",
+    "src/modules/lighttick/actions/action.projections.ts": "857801c45f5c25e9f6aa03dd0026a47742d6fb7a57f09421a976f4c7edbe3e7c",
+    "src/app/lighttick-action-routes.ts": "78628f0c8fa8296be1bfb68a8af3eafed9f1e3d02e8ecb44384d95da29e2c414",
+    "src/generated/openapi/public-contracts.generated.ts": "c077d72a1d4e507e5af04e2e485cc153ed88072417990881b76fd1c144a02288",
+    "api-contracts/openapi/lighttick/api.yaml": "4baab0388a495032b068302a656ed1ad67017bcde08aa6d7d0dfcbbfe677707e"
+  },
+  "implementation_commit": "37fe3ce",
+  "openapi_lint_warnings": 204
+}

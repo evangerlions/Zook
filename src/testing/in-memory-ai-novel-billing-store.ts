@@ -1,3 +1,5 @@
+import { billingMarket } from "../modules/billing/billing-market.ts";
+import { billingEnvironment } from "../modules/billing/billing-environment.ts";
 import type {
   AiNovelBillingAdminEventFilter,
   AiNovelBillingAdminEventPage,
@@ -50,18 +52,19 @@ export class InMemoryAiNovelBillingStore {
   constructor(seed: Pick<DatabaseSeed,
     "aiNovelBillingMemberships" | "aiNovelBillingTransactions" | "aiNovelBillingWebhookEvents"
   > = {}) {
-    this.memberships = structuredClone(seed.aiNovelBillingMemberships ?? []);
+    this.memberships = structuredClone(seed.aiNovelBillingMemberships ?? []).map(record => ({ ...record, environment: record.environment ?? billingEnvironment() }));
     this.transactions = structuredClone(seed.aiNovelBillingTransactions ?? []);
     this.webhookEvents = structuredClone(seed.aiNovelBillingWebhookEvents ?? []);
   }
 
   findMembership(appId: "ai_novel", userId: string): AiNovelBillingMembershipRecord | undefined {
-    const record = this.memberships.find((item) => item.appId === appId && item.userId === userId);
+    const record = this.memberships.find((item) => item.appId === appId && item.userId === userId && (item.environment ?? "production") === billingEnvironment());
     return record ? structuredClone(record) : undefined;
   }
 
   listAdminMemberships(filter: import("../shared/types/billing-admin.ts").BillingMembershipFilter) {
     return structuredClone(this.memberships
+      .filter((item) => (item.environment ?? "production") === billingEnvironment())
       .filter((item) => (!filter.userId || item.userId === filter.userId) && (!filter.after || item.userId > filter.after))
       .filter((item) => !filter.expiry || (item.expiresAt !== null &&
         (filter.expiry === "expired" ? Date.parse(item.expiresAt) <= Date.parse(filter.now!) : Date.parse(item.expiresAt) > Date.parse(filter.now!))))
@@ -70,11 +73,12 @@ export class InMemoryAiNovelBillingStore {
 
   upsertMembership(record: AiNovelBillingMembershipRecord): void {
     const index = this.memberships.findIndex(
-      (item) => item.appId === record.appId && item.userId === record.userId,
+      (item) => item.appId === record.appId && item.userId === record.userId &&
+        (item.environment ?? "production") === (record.environment ?? billingEnvironment()),
     );
     const existing = this.memberships[index];
     if (existing && existing.lastSyncedAt > record.lastSyncedAt) return;
-    const next = structuredClone(record);
+    const next = { ...structuredClone(record), environment: record.environment ?? billingEnvironment() };
     if (index < 0) this.memberships.push(next);
     else this.memberships[index] = next;
   }
@@ -82,11 +86,12 @@ export class InMemoryAiNovelBillingStore {
   upsertTransaction(record: AiNovelBillingTransactionRecord): void {
     const index = this.transactions.findIndex(
       (item) => item.appId === record.appId && item.userId === record.userId &&
-        item.providerTransactionId === record.providerTransactionId,
+        item.providerTransactionId === record.providerTransactionId && item.isSandbox === record.isSandbox,
     );
     const existing = this.transactions[index];
     const isCurrentObservation = !existing || existing.observedAt <= record.observedAt;
     const next = structuredClone(isCurrentObservation ? record : existing);
+    next.market = existing?.market ?? billingMarket(record);
     if (existing) {
       const financialStatuses = ["provider_paid", "refunded", "revoked"];
       const existingFinancial = financialStatuses.includes(existing.status);

@@ -15,6 +15,7 @@ export interface AiNovelBillingMembershipInfo {
 }
 
 export interface AiNovelBillingMembershipRecord extends AiNovelBillingMembershipInfo {
+  environment?: import("../../modules/billing/billing-environment.ts").BillingEnvironment;
   /** Internal continuous-membership start; never reset by renewal or upgrade. */
   creditWindowAnchorAt?: string;
   appId: "ai_novel";
@@ -35,6 +36,7 @@ export type AiNovelBillingTransactionStatus =
   | "unknown";
 
 export interface AiNovelBillingTransactionRecord {
+  market?: import("../../modules/billing/billing-market.ts").BillingMarket | null;
   appId: "ai_novel";
   userId: string;
   provider: "revenuecat" | "alipay";
