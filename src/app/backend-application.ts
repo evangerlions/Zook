@@ -1,5 +1,6 @@
 import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
+import { tryHandleYaoheziV1Routes, ownsYaoheziHealthTransaction } from "./yaohezi-v1-routes.ts";
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 
@@ -163,6 +164,8 @@ export class BackendApplication extends BackendRouteContext {
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
     private readonly billingPolicy: { allowSandbox: boolean; defaultEnvironment?: import("../modules/billing/billing-environment.ts").BillingEnvironment } = { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" as const },
+    private readonly yaoheziEnabled = false,
+    private readonly yaoheziHealthEnabled = false,
   ) {
     super(
       database,
@@ -200,8 +203,8 @@ export class BackendApplication extends BackendRouteContext {
     };
     const startedAt = Date.now();
     try {
-      const ownsTransaction = isAuthCodeDeliveryRequest(request) ||
-        isRevenueCatBillingRequest(request.method, request.path) ||
+      const ownsTransaction = ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) ||
+        isAuthCodeDeliveryRequest(request) || isRevenueCatBillingRequest(request.method, request.path) ||
         (request.method === "GET" && request.path === "/api/health") ||
         (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));
       const response = ownsTransaction ? await execute() : await this.database.withExclusiveSession(execute);
@@ -255,6 +258,8 @@ export class BackendApplication extends BackendRouteContext {
       );
     }
 
+    const yaoheziResponse = await tryHandleYaoheziV1Routes(this, this.yaoheziEnabled, request, this.yaoheziHealthEnabled);
+    if (yaoheziResponse) return yaoheziResponse;
     const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
     if (lightTickAdminResponse) return lightTickAdminResponse;
     const bodyLogAdminResponse = await tryHandleBodyLogManagementRoutes(this, true, this.bodyLogAdminService, request);

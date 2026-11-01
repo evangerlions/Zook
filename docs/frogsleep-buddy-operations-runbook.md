@@ -73,6 +73,10 @@ acceptance requires `APNS_SANDBOX=true`; production preflight requires
 `APNS_SANDBOX=false`. Keep the `.p8` key outside Git and provide it through
 `APNS_PRIVATE_KEY_PATH`.
 
+The default APNs transport uses Node HTTP/2 with a 15-second request deadline.
+A passing mock dispatcher test does not prove provider connectivity. Validate the
+actual transport as well as device receipt; HTTP/1.1 fetch must not be used for APNs.
+
 Before enabling Push:
 
 1. Confirm key ID, team `LTN9Y4UXN3`, topic, private-key permissions, and server
