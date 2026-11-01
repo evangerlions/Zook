@@ -1,3 +1,4 @@
+import { transferBodyLogGroupOwnership } from "./bodylog-group-ownership.ts";
 import type {GroupLeaderboardResponse} from './bodylog-group-queries.ts';
 import { groupInvitationCode, groupInvitationExpiresAt, resolveGroupCode } from "./bodylog-group-codes.ts";
 import { getMyGroups } from './bodylog-group-queries.ts';
@@ -450,54 +451,9 @@ export class BodyLogGroupService {
     await this.reconcileTodayDailyRecord(groupId);
   }
 
-  /**
-   * 转让组长（仅现任 leader 可操作）
-   * 原组长降为 admin，新组长保持 active。
-   */
+  /** Transfer leadership to an active member and record the change. */
   async transferGroupOwnership(leaderUserId: string, groupId: string, newLeaderUserId: string): Promise<void> {
-    const group = await this.store.findCheckInGroup(groupId);
-    if (!group) {
-      throw new ApplicationError(404, "GROUP_NOT_FOUND", "Group not found.");
-    }
-    if (group.status !== "active") {
-      throw new ApplicationError(409, "GROUP_NOT_ACTIVE", "Group is not active.");
-    }
-
-    if (leaderUserId === newLeaderUserId) {
-      throw new ApplicationError(400, "GROUP_INVALID_TARGET", "Already the group leader.");
-    }
-
-    const operator = await this.store.findGroupMember(groupId, leaderUserId);
-    if (!operator || operator.status !== "active" || operator.role !== "leader" || group.leaderUserId !== leaderUserId) {
-      throw new ApplicationError(403, "GROUP_NOT_AUTHORIZED", "Only the leader can transfer ownership.");
-    }
-
-    const target = await this.store.findGroupMember(groupId, newLeaderUserId);
-    if (!target || target.status !== "active") {
-      throw new ApplicationError(404, "GROUP_NOT_MEMBER", "Target is not an active member of this group.");
-    }
-
-    const now = new Date();
-    await this.store.updateGroupMember({ ...target, role: "leader" });
-    await this.store.updateGroupMember({ ...operator, role: "admin" });
-    await this.store.updateCheckInGroup({
-      ...group,
-      leaderUserId: newLeaderUserId,
-      updatedAt: now.toISOString(),
-    });
-
-    const activity: GroupActivityRecord = {
-      id: randomId("group_activity"),
-      groupId,
-      actorUserId: leaderUserId,
-      type: "leader_changed",
-      targetHabitId: null,
-      payload: { newLeaderUserId },
-      createdAt: now.toISOString(),
-    };
-    await this.store.insertGroupActivity(activity);
-
-    await this.sendGroupNotification(newLeaderUserId, "group_leader_changed", groupId, leaderUserId);
+    await transferBodyLogGroupOwnership(this.store, this.notificationService, leaderUserId, groupId, newLeaderUserId);
   }
 
   /**
