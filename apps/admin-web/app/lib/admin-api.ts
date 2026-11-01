@@ -1,3 +1,4 @@
+import { adminAiNovelModelApi } from "./admin-ai-novel-model-api.ts";
 import { cleanQuery } from './admin-api-query.ts';
 import { adminBodyLogApi } from './admin-bodylog-api.ts';
 import { adminLlmApi } from './admin-llm-api.ts';
@@ -7,15 +8,11 @@ import type {
   BillingOrderStatus,
   AdminAppSummary,
   AdminAiRoutingDocument,
-  AdminAiNovelModelSelectionDocument,
-  AdminAiNovelModelPointPricingDocument,
   AdminAiNovelConversationRecordDocument,
   AdminAiNovelDebugTraceDocument,
   AdminAiNovelDebugTraceListDocument,
   AiNovelTraceKind,
   AiNovelTraceStatus,
-  AiNovelModelSelectionConfig,
-  AiNovelModelPointPricingConfig,
   AdminAppLogSecretRevealDocument,
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
@@ -148,64 +145,7 @@ export const adminApi = {
   getAiRouting(appId: string) {
     return requestJson<AdminAiRoutingDocument>(adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing`));
   },
-  getAiNovelModelSelection() {
-    return requestJson<AdminAiNovelModelSelectionDocument>(
-      adminPath("/apps/ai_novel/model-selection"),
-    );
-  },
-  getAiNovelModelSelectionRevision(revision: number) {
-    return requestJson<AdminAiNovelModelSelectionDocument>(
-      adminPath(`/apps/ai_novel/model-selection/revisions/${revision}`),
-    );
-  },
-  updateAiNovelModelSelection(
-    config: AiNovelModelSelectionConfig,
-    desc?: string,
-  ) {
-    return requestJson<AdminAiNovelModelSelectionDocument>(
-      adminPath("/apps/ai_novel/model-selection"),
-      {
-        method: "PUT",
-        body: { config, desc: desc || undefined },
-      },
-    );
-  },
-  restoreAiNovelModelSelection(revision: number, desc?: string) {
-    return requestJson<AdminAiNovelModelSelectionDocument>(
-      adminPath(
-        `/apps/ai_novel/model-selection/revisions/${revision}/restore`,
-      ),
-      {
-        method: "POST",
-        body: { desc: desc || undefined },
-      },
-    );
-  },
-  getAiNovelModelPointPricing() {
-    return requestJson<AdminAiNovelModelPointPricingDocument>(
-      adminPath("/apps/ai_novel/model-point-pricing"),
-    );
-  },
-  getAiNovelModelPointPricingRevision(revision: number) {
-    return requestJson<AdminAiNovelModelPointPricingDocument>(
-      adminPath(`/apps/ai_novel/model-point-pricing/revisions/${revision}`),
-    );
-  },
-  updateAiNovelModelPointPricing(
-    config: AiNovelModelPointPricingConfig,
-    desc?: string,
-  ) {
-    return requestJson<AdminAiNovelModelPointPricingDocument>(
-      adminPath("/apps/ai_novel/model-point-pricing"),
-      { method: "PUT", body: { config, desc: desc || undefined } },
-    );
-  },
-  restoreAiNovelModelPointPricing(revision: number, desc?: string) {
-    return requestJson<AdminAiNovelModelPointPricingDocument>(
-      adminPath(`/apps/ai_novel/model-point-pricing/revisions/${revision}/restore`),
-      { method: "POST", body: { desc: desc || undefined } },
-    );
-  },
+  ...adminAiNovelModelApi,
   getAiRoutingRevision(appId: string, revision: number) {
     return requestJson<AdminAiRoutingDocument>(
       adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing/revisions/${revision}`),

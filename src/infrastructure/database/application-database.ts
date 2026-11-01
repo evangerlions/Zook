@@ -1,5 +1,5 @@
 import type { BuddySupportRepository } from "../../modules/frogsleep/buddy-support/buddy-support.types.ts";
-import type { ApplicationBodyLogDatabasePort } from './application-bodylog-database-port.ts';
+import { ApplicationBodyLogDatabase } from "./application-bodylog-database.ts";
 import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
 import type { PersonalSyncRepository } from "../../modules/frogsleep/personal-sync/personal-sync.types.ts";
 import type { FrogSleepAdminStore } from "../../modules/frogsleep/admin/frogsleep-admin.types.ts";
@@ -78,7 +78,7 @@ export interface ManagedStateSnapshot {
  * Production implementations should talk to PostgreSQL directly.
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
-export abstract class ApplicationDatabase {
+export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
   /** Optional internal product port; unsupported adapters fail closed. */
   getYaoheziHealthStore(): import("../../modules/yaohezi/security/health-store.ts").YaoheziHealthStore | undefined { return undefined; }
   getYaoheziProfileStore(): import("../../modules/yaohezi/profiles/yaohezi-profile-store.ts").YaoheziProfileStore | undefined { return undefined; }
@@ -131,40 +131,6 @@ export abstract class ApplicationDatabase {
     deletedAt?: string,
   ): MaybePromise<void>;
 
-  abstract findBodyLogProfile(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogProfile']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogProfile']>;
-  abstract listBodyLogProfilesByIds(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogProfilesByIds']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogProfilesByIds']>;
-  abstract upsertBodyLogProfile(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogProfile']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogProfile']>;
-  abstract listBodyLogFriendRequests(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogFriendRequests']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogFriendRequests']>;
-  abstract upsertBodyLogFriendRequest(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogFriendRequest']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogFriendRequest']>;
-  abstract listBodyLogFriendships(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogFriendships']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogFriendships']>;
-  abstract insertBodyLogFriendship(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogFriendship']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogFriendship']>;
-  abstract deleteBodyLogFriendship(...args: Parameters<ApplicationBodyLogDatabasePort['deleteBodyLogFriendship']>): ReturnType<ApplicationBodyLogDatabasePort['deleteBodyLogFriendship']>;
-  abstract listBodyLogBlocks(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogBlocks']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogBlocks']>;
-  abstract insertBodyLogBlock(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogBlock']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogBlock']>;
-  abstract deleteBodyLogBlock(...args: Parameters<ApplicationBodyLogDatabasePort['deleteBodyLogBlock']>): ReturnType<ApplicationBodyLogDatabasePort['deleteBodyLogBlock']>;
-  abstract insertBodyLogReport(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogReport']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogReport']>;
-  abstract listBodyLogReports(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogReports']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogReports']>;
-  abstract findBodyLogWeeklyGoalSnapshot(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogWeeklyGoalSnapshot']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogWeeklyGoalSnapshot']>;
-  abstract upsertBodyLogWeeklyGoalSnapshot(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogWeeklyGoalSnapshot']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogWeeklyGoalSnapshot']>;
-  abstract listBodyLogDailyAggregates(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogDailyAggregates']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogDailyAggregates']>;
-  abstract upsertBodyLogDailyAggregate(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogDailyAggregate']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogDailyAggregate']>;
-  abstract findBodyLogLeaderboardEntry(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogLeaderboardEntry']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogLeaderboardEntry']>;
-  abstract upsertBodyLogLeaderboardEntry(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogLeaderboardEntry']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogLeaderboardEntry']>;
-  abstract listBodyLogLeaderboardEntries(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogLeaderboardEntries']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogLeaderboardEntries']>;
-  abstract findBodyLogInvitationByTokenHash(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogInvitationByTokenHash']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogInvitationByTokenHash']>;
-  abstract findBodyLogInvitationByCode(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogInvitationByCode']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogInvitationByCode']>;
-  abstract updateBodyLogInvitation(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogInvitation']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogInvitation']>;
-  abstract insertBodyLogInvitation(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogInvitation']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogInvitation']>;
-  abstract listBodyLogInvitations(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogInvitations']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogInvitations']>;
-  abstract insertBodyLogInvitationAttribution(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogInvitationAttribution']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogInvitationAttribution']>;
-  abstract updateBodyLogInvitationAttribution(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogInvitationAttribution']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogInvitationAttribution']>;
-  abstract listBodyLogInvitationAttributions(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogInvitationAttributions']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogInvitationAttributions']>;
-  abstract insertBodyLogChallenge(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogChallenge']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogChallenge']>;
-  abstract updateBodyLogChallenge(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogChallenge']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogChallenge']>;
-  abstract listBodyLogChallenges(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogChallenges']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogChallenges']>;
-  abstract insertBodyLogChallengeMembers(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogChallengeMembers']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogChallengeMembers']>;
-  abstract updateBodyLogChallengeMember(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogChallengeMember']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogChallengeMember']>;
-  abstract listBodyLogChallengeMembers(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogChallengeMembers']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogChallengeMembers']>;
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
   abstract insertRoles(records: RoleRecord[]): MaybePromise<void>;
@@ -588,31 +554,7 @@ export abstract class ApplicationDatabase {
     deletedAt: string,
   ): MaybePromise<void>;
 
-  // ─── BodyLog 后台打卡管理 ───
 
-  abstract getBodyLogCheckinDashboard(...args: Parameters<ApplicationBodyLogDatabasePort['getBodyLogCheckinDashboard']>): ReturnType<ApplicationBodyLogDatabasePort['getBodyLogCheckinDashboard']>;
-
-  abstract listBodyLogCheckinUserDates(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogCheckinUserDates']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogCheckinUserDates']>;
-
-  abstract searchBodyLogCheckinRecords(...args: Parameters<ApplicationBodyLogDatabasePort['searchBodyLogCheckinRecords']>): ReturnType<ApplicationBodyLogDatabasePort['searchBodyLogCheckinRecords']>;
-
-  abstract listBodyLogGroupHealth(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogGroupHealth']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogGroupHealth']>;
-
-  abstract listBodyLogGroupMemberContributions(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogGroupMemberContributions']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogGroupMemberContributions']>;
-
-  abstract listBodyLogHabitUsage(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogHabitUsage']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogHabitUsage']>;
-
-  abstract listBodyLogHabitTemplates(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogHabitTemplates']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogHabitTemplates']>;
-
-  abstract findBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplate']>;
-
-  abstract findBodyLogHabitTemplateByKey(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplateByKey']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplateByKey']>;
-
-  abstract insertBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogHabitTemplate']>;
-
-  abstract updateBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogHabitTemplate']>;
-
-  abstract deleteBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['deleteBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['deleteBodyLogHabitTemplate']>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {
