@@ -318,7 +318,7 @@ test("confirmation retries only its route with the existing smoke request before
         async complete(request) {
           attempts += 1;
           assert.equal(request.model.providerModel, "upstream-a");
-          assert.equal(request.maxTokens, 64);
+          assert.equal(request.maxTokens, 32768);
           if (attempts === 1) throw new Error("first probe failed");
           return { provider: "provider-a", modelKey: "model-a", providerModel: "upstream-a", text: "OK" };
         },
