@@ -1410,7 +1410,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     FriendRequestId:
       name: requestId

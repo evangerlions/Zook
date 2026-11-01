@@ -43,6 +43,23 @@ test("TokenService allows custom accessTokenTtlSeconds", () => {
 
 // --- Token verification ---
 
+test("TokenService rejects appended segments, Unicode signatures and malformed signed claims with AUTH_INVALID_TOKEN", () => {
+  const service = new TokenService("test-secret");
+  const now = new Date("2026-10-30T10:00:00Z");
+  const valid = service.issueAccessToken("user_1", "yaohezi", 1, now);
+  const payload = JSON.parse(Buffer.from(valid.split(".")[0], "base64url").toString("utf8"));
+  const signed = (value: unknown) => {
+    const encoded = encodeBase64Url(JSON.stringify(value));
+    return `${encoded}.${signValue("test-secret", encoded)}`;
+  };
+  for (const token of [valid + ".extra", valid + ".", valid.split(".")[0] + "." + "é".repeat(valid.split(".")[1].length),
+    signed(null), signed([]), signed({ ...payload, exp: undefined }), signed({ ...payload, exp: "1793376000" }),
+    signed({ ...payload, exp: Number.MAX_SAFE_INTEGER }), signed({ ...payload, sub: "" }),
+    signed({ ...payload, app_id: 12 }), signed({ ...payload, jti: null })]) {
+    assert.throws(() => service.verifyAccessToken(token, now), { code: "AUTH_INVALID_TOKEN" });
+  }
+});
+
 test("TokenService verifies a valid token within its TTL", () => {
   const service = new TokenService("test-secret");
   const now = new Date("2026-04-13T10:00:00+08:00");

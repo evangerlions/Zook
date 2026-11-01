@@ -42,8 +42,10 @@ export class TokenService {
   }
 
   verifyAccessToken(token: string, now = new Date()): AuthContext {
-    const [serializedPayload, signature] = token.split(".");
-    if (!serializedPayload || !signature) {
+    const parts = token.split(".");
+    const [serializedPayload, signature] = parts;
+    if (parts.length !== 2 || !serializedPayload || !signature ||
+      !/^[A-Za-z0-9_-]+$/.test(serializedPayload) || !/^[A-Za-z0-9_-]+$/.test(signature)) {
       unauthorized("AUTH_INVALID_TOKEN", "Bearer token format is invalid.");
     }
 
@@ -65,7 +67,14 @@ export class TokenService {
     }
 
     if (
+      !payload || typeof payload !== "object" || Array.isArray(payload) ||
+      typeof payload.sub !== "string" || !payload.sub ||
+      typeof payload.app_id !== "string" || !payload.app_id ||
+      typeof payload.jti !== "string" || !payload.jti ||
       payload.type !== "access" ||
+      !Number.isInteger(payload.iat) ||
+      !Number.isInteger(payload.exp) ||
+      !Number.isFinite(new Date(payload.exp * 1000).getTime()) ||
       !Number.isInteger(payload.ver) ||
       payload.ver <= 0 ||
       (payload.credential_ver !== undefined && (!Number.isInteger(payload.credential_ver) || payload.credential_ver <= 0)) ||
