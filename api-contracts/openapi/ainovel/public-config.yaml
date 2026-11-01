@@ -354,22 +354,11 @@ components:
     RevenueCatPublicConfig:
       type: object
       additionalProperties: false
-      required: [enabled, configVersion, proxyUrl, publicSdkKeys]
       properties:
-        enabled: { type: boolean }
-        configVersion: { type: string, minLength: 1 }
         proxyUrl:
           type: [string, "null"]
           format: uri
           description: Optional RevenueCat SDK proxy URL. Must be applied before SDK setup.
-        publicSdkKeys:
-          type: object
-          additionalProperties: false
-          required: [ios, android, web]
-          properties:
-            ios: { type: [string, "null"], minLength: 1 }
-            android: { type: [string, "null"], minLength: 1 }
-            web: { type: [string, "null"], minLength: 1 }
     PublicConfigData:
       type: object
       required: [appId, config]

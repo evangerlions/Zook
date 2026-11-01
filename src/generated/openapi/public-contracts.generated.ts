@@ -2390,20 +2390,7 @@ export const AINovelPublicConfigSchema = {
         "revenueCat": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "enabled",
-            "configVersion",
-            "proxyUrl",
-            "publicSdkKeys"
-          ],
           "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "configVersion": {
-              "type": "string",
-              "minLength": 1
-            },
             "proxyUrl": {
               "type": [
                 "string",
@@ -2411,38 +2398,6 @@ export const AINovelPublicConfigSchema = {
               ],
               "format": "uri",
               "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-            },
-            "publicSdkKeys": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "ios",
-                "android",
-                "web"
-              ],
-              "properties": {
-                "ios": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "minLength": 1
-                },
-                "android": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "minLength": 1
-                },
-                "web": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "minLength": 1
-                }
-              }
             }
           }
         }
@@ -2544,14 +2499,7 @@ export type AINovelPublicConfig = {
 };
   "billing"?: {
   "revenueCat"?: {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
-};
+  "proxyUrl"?: string | null;
 };
 };
   [key: string]: unknown;
@@ -3025,20 +2973,7 @@ export const PublicConfigDataSchema = {
             "revenueCat": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "enabled",
-                "configVersion",
-                "proxyUrl",
-                "publicSdkKeys"
-              ],
               "properties": {
-                "enabled": {
-                  "type": "boolean"
-                },
-                "configVersion": {
-                  "type": "string",
-                  "minLength": 1
-                },
                 "proxyUrl": {
                   "type": [
                     "string",
@@ -3046,38 +2981,6 @@ export const PublicConfigDataSchema = {
                   ],
                   "format": "uri",
                   "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-                },
-                "publicSdkKeys": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "ios",
-                    "android",
-                    "web"
-                  ],
-                  "properties": {
-                    "ios": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "minLength": 1
-                    },
-                    "android": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "minLength": 1
-                    },
-                    "web": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "minLength": 1
-                    }
-                  }
                 }
               }
             }
@@ -3188,14 +3091,7 @@ export type PublicConfigData = {
 };
   "billing"?: {
   "revenueCat"?: {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
-};
+  "proxyUrl"?: string | null;
 };
 };
   [key: string]: unknown;
@@ -4283,20 +4179,7 @@ export const BillingPublicConfigSchema = {
     "revenueCat": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "enabled",
-        "configVersion",
-        "proxyUrl",
-        "publicSdkKeys"
-      ],
       "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "configVersion": {
-          "type": "string",
-          "minLength": 1
-        },
         "proxyUrl": {
           "type": [
             "string",
@@ -4304,38 +4187,6 @@ export const BillingPublicConfigSchema = {
           ],
           "format": "uri",
           "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-        },
-        "publicSdkKeys": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "ios",
-            "android",
-            "web"
-          ],
-          "properties": {
-            "ios": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
-            },
-            "android": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
-            },
-            "web": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
-            }
-          }
         }
       }
     }
@@ -4344,34 +4195,14 @@ export const BillingPublicConfigSchema = {
 
 export type BillingPublicConfig = {
   "revenueCat"?: {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
-};
+  "proxyUrl"?: string | null;
 };
 };
 
 export const RevenueCatPublicConfigSchema = {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "enabled",
-    "configVersion",
-    "proxyUrl",
-    "publicSdkKeys"
-  ],
   "properties": {
-    "enabled": {
-      "type": "boolean"
-    },
-    "configVersion": {
-      "type": "string",
-      "minLength": 1
-    },
     "proxyUrl": {
       "type": [
         "string",
@@ -4379,51 +4210,12 @@ export const RevenueCatPublicConfigSchema = {
       ],
       "format": "uri",
       "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-    },
-    "publicSdkKeys": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "ios",
-        "android",
-        "web"
-      ],
-      "properties": {
-        "ios": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        },
-        "android": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        },
-        "web": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        }
-      }
     }
   }
 } as const;
 
 export type RevenueCatPublicConfig = {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
-};
+  "proxyUrl"?: string | null;
 };
 
 export const AlipayCreateRequestSchema = {
