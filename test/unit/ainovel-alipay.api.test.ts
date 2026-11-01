@@ -23,7 +23,7 @@ async function fixture(overrides: Record<string, unknown> = {}) {
   let response: Record<string, unknown> = { code: "40004" };
   const gateway: AlipayGateway = { payment: async order => order.platform === "android" ? { type: "app", orderString: "secret_checkout_payload" } : { type: "page", url: "https://openapi-sandbox.dl.alipaydev.com/gateway.do?secret" },
     query: async () => response, verifyNotify: async fields => fields.sign === "test_valid" };
-  const runtime = await createApplication({ seed, alipay: { enabled: true, appId: "merchant", sellerId: "seller", environment: "sandbox",
+  const runtime = await createApplication({ seed, alipay: { appId: "merchant", sellerId: "seller", environment: "sandbox",
     notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => NOW, ...overrides }, revenueCat: { now: () => NOW } });
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const headers = { "x-app-id": "ai_novel", authorization: `Bearer ${token}` };
@@ -182,7 +182,7 @@ test("optional seller configuration allows default-merchant checkout and settlem
 });
 
 test("Alipay production remains gated and wrong region/channel are rejected", async () => {
-  const disabled = await fixture({ enabled: false }); assert.equal((await disabled.create()).statusCode, 503);
+  const missingApp = await fixture({ appId: undefined }); assert.equal((await missingApp.create()).statusCode, 503);
   const unapproved = await fixture({ environment: "production" }); assert.equal((await unapproved.create()).statusCode, 503);
   const f = await fixture(); assert.equal((await f.create({ productKey: "plus_monthly", platform: "web", distribution: "direct_android", idempotencyKey: "test_key_0001" })).statusCode, 403);
 });

@@ -20,7 +20,7 @@ async function fixture() {
     gmt_payment: "2026-10-18 18:00:00", sign_type: "RSA2", sign: "valid" });
   const gateway: AlipayGateway = { payment: async () => ({ type: "qr", qrCode: "test" }),
     query: async id => { queried.push(id); return evidence(id); }, verifyNotify: async () => true };
-  const runtime = await createApplication({ seed, alipay: { enabled: true, appId: "merchant", sellerId: "seller",
+  const runtime = await createApplication({ seed, alipay: { appId: "merchant", sellerId: "seller",
     environment: "sandbox", notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => new Date(clock++) }, revenueCat: { now: () => NOW } });
   const service = runtime.services.aiNovelBillingService.alipay;
   const create = async (key: string) => (await service.create("user_alice", "CN", {

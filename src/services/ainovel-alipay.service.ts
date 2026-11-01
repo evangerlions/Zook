@@ -25,7 +25,7 @@ export class AiNovelAlipayService {
   get available() { return alipayConfigured(this.options) && this.options.environment === billingEnvironment() &&
     (this.options.environment === "production" || (this.options.allowSandbox ?? billingSandboxAllowed())); }
   price(product: AlipayCreateInput["productKey"]) { return this.options.prices?.[product] ?? ALIPAY_PRICES[product]; }
-  private configured() { if (!this.available) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay is not enabled and fully configured."); }
+  private configured() { if (!this.available) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay is not fully configured."); }
   async create(userId: string, region: string, input: AlipayCreateInput, requestId?: string) {
     const log = (status: string, order?: AlipayOrder) => this.log(status, order, userId, undefined, requestId);
     log("create_start");

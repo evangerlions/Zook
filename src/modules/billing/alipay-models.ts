@@ -43,7 +43,6 @@ export interface AlipayGateway {
   verifyNotify(fields: Record<string, string>): Promise<boolean>;
 }
 export interface AlipayOptions {
-  enabled?: boolean;
   /** Testable per-query deadline; production defaults to 20 seconds. */
   queryTimeoutMs?: number;
   allowSandbox?: boolean;

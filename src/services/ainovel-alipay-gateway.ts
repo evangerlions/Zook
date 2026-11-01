@@ -77,8 +77,7 @@ export function alipayEnvironmentOptions(): AlipayOptions {
     try { prices = JSON.parse(process.env.ALIPAY_AI_NOVEL_PRICES_JSON); }
     catch { prices = {} as NonNullable<AlipayOptions["prices"]>; }
   }
-  return { enabled: process.env.ALIPAY_AI_NOVEL_ENABLED === "true",
-    prices, pricesApproved: process.env.ALIPAY_AI_NOVEL_PRICES_APPROVED === "true",
+  return { prices, pricesApproved: process.env.ALIPAY_AI_NOVEL_PRICES_APPROVED === "true",
     appId: process.env.ALIPAY_AI_NOVEL_APP_ID, sellerId: process.env.ALIPAY_AI_NOVEL_SELLER_ID?.trim() || undefined,
     notifyUrl: process.env.ALIPAY_AI_NOVEL_NOTIFY_URL, returnUrl: process.env.ALIPAY_AI_NOVEL_RETURN_URL,
     privateKeyPath: process.env.ALIPAY_AI_NOVEL_PRIVATE_KEY_PATH, publicKeyPath: process.env.ALIPAY_AI_NOVEL_PUBLIC_KEY_PATH,

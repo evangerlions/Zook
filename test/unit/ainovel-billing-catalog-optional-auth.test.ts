@@ -9,7 +9,7 @@ test("catalog exposes public prices without membership reads; UserInfo owns pers
   const seed = buildDefaultSeed();
   seed.appUsers!.push({ id: "catalog_alice", appId: "ai_novel", userId: "user_alice",
     status: "ACTIVE", accountRegion: "CN", joinedAt: new Date().toISOString() });
-  const runtime = await createApplication({ seed, alipay: { enabled: true, environment: "sandbox",
+  const runtime = await createApplication({ seed, alipay: { environment: "sandbox",
     appId: "test_merchant", notifyUrl: "https://test.example/notify", returnUrl: "https://test.example/return",
     gateway: { payment: async () => { throw new Error("Not a checkout"); }, query: async () => ({}), verifyNotify: async () => false } } });
   await runtime.database.upsertAiNovelBillingMembership({ appId: "ai_novel", userId: "user_alice",

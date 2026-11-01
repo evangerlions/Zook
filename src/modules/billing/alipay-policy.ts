@@ -9,7 +9,7 @@ export const ALIPAY_PRICES = { plus_monthly: 3800, plus_quarterly: 9800, plus_ye
 
 export function alipayConfigured(options: AlipayOptions): boolean {
   const https = (url?: string) => { try { return new URL(url!).protocol === "https:"; } catch { return false; } };
-  return options.enabled === true && !!options.appId?.trim() &&
+  return !!options.appId?.trim() &&
     (options.environment === "sandbox" || options.environment === "production") &&
     (options.environment !== "production" || (options.pricesApproved === true && !!options.prices)) &&
     (!options.prices || Object.keys(ALIPAY_PRICES).every(key => Number.isSafeInteger(options.prices![key as keyof typeof ALIPAY_PRICES]) && options.prices![key as keyof typeof ALIPAY_PRICES] > 0)) &&
