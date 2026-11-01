@@ -485,7 +485,7 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 - 原始调用观察只保存脱敏维度、数值、稳定错误码及最多 300 字符的脱敏错误信息，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。
 - `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）只执行当前生效配置中 Provider 与 route 都启用的模型路由；未配置、Provider 已禁用或 route 已禁用的组合不会进入执行计划、不会请求上游，也不会出现在响应 `items` 中。响应的 `target` 为 `{ "mode": "matrix" }`。
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
-- 指定 route 若不存在、供应商已禁用或 route 已禁用，会直接返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会发起上游请求。可执行 route 会实际调用上游；聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。
+- 指定 route 若不存在、供应商已禁用或 route 已禁用，会直接返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会发起上游请求。可执行 route 会实际调用上游；聊天冒烟、熔断确认及恢复探测使用同一份约 15k 输入 token 的上下文，请求输出约 1,000 个字符，最大输出设为 32,768 个 token。输入 token 根据 B.AI 实测估算，实际数量由上游模型的 tokenizer 决定。
 - 无论全量还是指定路由，冒烟测试共用 10 秒全局冷却；响应中始终包含本次 `target`、`summary` 与 `items`。
 - `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
 - OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
@@ -702,3 +702,8 @@ filter. Order-detail membership comparison uses that transaction's environment.
 支付后台术语与取值展示统一：`provider` 为支付服务商，`source/purchaseSource` 为支付来源，`platform` 为运行平台，`distribution` 为分发类型，`environment` 为支付环境。筛选请求保留接口原始枚举，所有tab的表格和详情共用展示映射（App Store / Google Play / 支付宝 / RevenueCat / iOS等）。例如source=play_store和distribution=google_play都显示Google Play，但字段语义不合并。未知值显示未知并保留原值，不默认归类；未采集market时不推断小米/vivo。
 
 Market取值为app_store/google_play/xiaomi/vivo/oppo/huawei/honor/direct；未知为null。勾选市场后null作为“未知渠道”组保留收入，不丢弃金额。App Store/Google Play由确切交易商店证据识别；Alipay由订单构建market归因保留，通用china_android_store或alipay不能推断小米/vivo。迁移077只回填明确的商店或官方直发记录。订单列表和详情返回market并复用统一显示字典。
+
+
+### 后台 Web server 的公开邀请转发
+
+`apps/admin-web/server.ts` 的三个精确 GET handoff 路径转发到已配置同槽位 API：`/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。这些是公开预览接力，不授予管理权限、不会自动接受邀请；其他方法405。保留 query、手动302跳转，强制 no-store/no-referrer，公开错误隐藏上游和令牌。请求的 absolute-form URL 不得替换 ADMIN_API_PROXY_TARGET 的 origin。现有 `/api/*` 流式代理保持原行为。外层 Nginx 的日志与 Universal/App Links 仍独立验收。

@@ -1,3 +1,4 @@
+import { parseBailianCompletionToolCalls } from "./bailian-openai-compatible-tool-calls.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import { executeCancellableEmbedding } from "./embedding-cancellation.ts";
 import type {
@@ -22,12 +23,10 @@ import {
   DEFAULT_BAILIAN_BASE_URL,
   ZOOK_LOG_BODY_MODE_OPTION,
   type BailianOpenAICompatibleProviderOptions,
-  type OpenAICompatibleChoice,
   type OpenAICompatibleEmbeddingPayload,
   type OpenAICompatibleResponsePayload,
 } from "./bailian-openai-compatible-types.ts";
 import {
-  buildFallbackToolCallId,
   isAbortError,
   isRecord,
   normalizeBaseUrl,
@@ -133,9 +132,10 @@ export class BailianOpenAICompatibleProvider
     }
 
     const text = readOptionalString(choice.message.content);
-    const toolCalls = this.parseCompletionToolCalls(
+    const toolCalls = parseBailianCompletionToolCalls(
       choice.message.tool_calls,
       request.model.modelKey,
+      this.providerName,
     );
     if (text === undefined && toolCalls.length === 0) {
       throwProviderResponseInvalid(
@@ -551,56 +551,4 @@ export class BailianOpenAICompatibleProvider
     return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted";
   }
 
-  private parseCompletionToolCalls(
-    toolCalls: NonNullable<OpenAICompatibleChoice["message"]>["tool_calls"],
-    modelKey: string,
-  ): NonNullable<LLMCompletionResult["toolCalls"]> {
-    if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
-      return [];
-    }
-
-    return toolCalls.map((toolCall, index) => {
-      const name = readOptionalNonBlankString(toolCall.function?.name);
-      if (!name) {
-        throwProviderResponseInvalid(
-          "Completion response tool call is missing a function name.",
-          undefined,
-          this.providerName,
-        );
-      }
-
-      let input: Record<string, unknown>;
-      try {
-        const parsed = JSON.parse(toolCall.function?.arguments || "{}");
-        if (!isRecord(parsed)) {
-          throwProviderResponseInvalid(
-            "Completion response tool call arguments must be a JSON object.",
-            undefined,
-            this.providerName,
-          );
-        }
-        input = parsed;
-      } catch (error) {
-        if (error instanceof ApplicationError) {
-          throw error;
-        }
-        throwProviderResponseInvalid(
-          "Completion response tool call arguments are not valid JSON.",
-          {
-            cause: error instanceof Error ? error.message : String(error),
-            toolName: name,
-          },
-          this.providerName,
-        );
-      }
-
-      return {
-        id:
-          readOptionalNonBlankString(toolCall.id) ??
-          buildFallbackToolCallId(modelKey, index),
-        name,
-        input,
-      };
-    });
-  }
 }

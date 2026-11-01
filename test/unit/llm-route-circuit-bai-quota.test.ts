@@ -9,6 +9,7 @@ import { OpenRouterOpenAICompatibleProvider } from "../../src/services/openroute
 import { isLlmBalanceFailure } from "../../src/services/llm-balance-failure.ts";
 import { llmErrorDiagnosticCode } from "../../src/services/llm-error-diagnostic-code.ts";
 import { LLMManager } from "../../src/services/llm-manager.ts";
+import { estimateLlmContextRequestTokens } from "../../src/services/llm-usage-estimator.ts";
 
 const quota = "insufficient_user_quota";
 const route = { modelKey: "deepseek-v4-flash", provider: "bai", providerModel: "deepseek-v4.1-flash", operation: "chat" as const };
@@ -81,6 +82,30 @@ for (const provider of ["bai", "openrouter"]) {
     assert.equal(confirmations, 1);
   });
 }
+
+test("confirmation and recovery use the shared 15k context to detect insufficient balance", async () => {
+  const { circuit, ref, configService, at } = await fixture();
+  for (let i = 0; i < 2; i++) await circuit.recordPreFirstChunkFailure(ref, "user", true, quota, true);
+  const sizes: number[] = [];
+  let balanceAvailable = false;
+  const recovery = new LlmRouteCircuitRecoveryService(configService, circuit, { bai: {
+    async complete(request: Parameters<LLMManager["complete"]>[0]) {
+      sizes.push(estimateLlmContextRequestTokens(request));
+      assert.equal(request.maxTokens, 32768);
+      assert.match(request.messages.at(-1)!.content as string, /approximately 1,000 characters/);
+      if (!balanceAvailable && sizes.at(-1)! >= 24_000) throw balanceError("bai");
+      return { text: "OK" };
+    },
+  } } as never);
+  await recovery.confirmRoute(ref);
+  assert.equal((await circuit.getRuntimeStatus(ref, true)).state, "open");
+  balanceAvailable = true;
+  at("2030-01-01T01:00:00Z");
+  assert.equal((await recovery.runDueRecoveries()).restored, 1);
+  assert.equal(sizes.length, 3);
+  // B.AI measured 9,845 input tokens for the previous 47,900-character context.
+  assert.ok(sizes.every(size => size >= 24_000 && size <= 25_000), `estimated input tokens: ${sizes}`);
+});
 
 test("balance window expires at exactly 24h and first effective chunk resets balance counts", async () => {
   const { circuit, ref, at } = await fixture();

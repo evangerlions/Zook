@@ -1048,7 +1048,7 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 
 ### 9.5 FrogSleep 邀请链接与推送
 
-部署 HTTPS handoff 时，将 `deploy_configs/nginx/frogsleep-links.conf.example` 的三个精确路径接入对应槽位 API，避免 Admin SPA fallback 吞掉邀请页。该配置不自动启用 Universal Links/App Links，也不能复用 HabitTap 的 AASA 身份；实际域名、设备唤起与无安装场景仍须单独验收。
+后台 Web server 对 `/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite` 三个精确 GET 路径转发到同槽位 `ADMIN_API_PROXY_TARGET`，保留 query 与深链跳转，强制 no-store/no-referrer，避免 Admin SPA fallback 吞掉邀请页；其他方法返回405。可用 `python3 build_scripts/frogsleep_domain_acceptance.py --base-url https://app-dev.youwoai.net --expected-version <发布版本>` 验证实际页面内容。外层代理日志仍需运维核定，直接代理示例见 `deploy_configs/nginx/frogsleep-links.conf.example`。这不自动启用 Universal Links/App Links，也不能复用 HabitTap 的 AASA 身份；真实设备唤起与无安装场景仍须单独验收。
 
 FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
 
@@ -1661,6 +1661,18 @@ request on transport failures. Alipay QR polling invokes the same POST sync and
 never overlaps. Closing a wait does not cancel payment or erase committed facts.
 RevenueCat SDK purchase transaction identifiers are matched to verified REST V2
 subscription transaction `id`, as specified in the [official transaction reference](https://www.revenuecat.com/docs/api-v2/subscription-transactions). Old active access alone cannot confirm a new purchase.
+
+
+### BodyLog addressed group invitation codes (2026-11-01)
+
+`GET /api/v1/bodylog/public/config` advertises `groupInvitationCodes=true` when these contracts are implemented. Absent capability means the client must hide manual code joining. The `accountSocial` permission gate remains authoritative; capability does not enable production features.
+
+- `POST /api/v1/bodylog/groups/{groupId}/invite` accepts `{userId}` for a leader/admin and returns `{invited:true,code,expiresAt,invitationUrl,invitationToken}`. The six-character uppercase code is bound to the invited account and reuses the persisted addressed invitation grant, with a seven-day expiry. Renewing a pending invitation rotates its grant and invalidates the old code. The URL/token are not log or analytics data.
+- `GET /api/v1/bodylog/groups/preview?code=ABC234` requires the invited account and returns only `{id,name,currentMembers,maxMembers,expiresAt}`. It does not reveal habit/member data or join automatically. Wrong account, removed invitation or unknown code returns404; expired returns410; malformed returns400. Ambiguous codes fail closed. The bounded account lookup rejects excessive invitation records with429.
+- `POST /api/v1/bodylog/groups/join-by-code` accepts `{code,expectedGroupId?}`. A preview identity mismatch returns409 without writing. Success returns the direct group document. Repeated redemption by the same account returns the existing group, with no repeated joined activity. A fresh admission enforces the group capacity and per-account quota atomically in PostgreSQL. Capacity/quota rejection is determined inside admission, so a delayed same-account duplicate also recovers the existing group after its peer consumes the last slot or quota. Removed/archived groups cannot be reopened by replay.
+
+No database migration is required. Existing group-member invitation tokens are retained after acceptance to recover same-account code retries during their original validity period; they are not returned in member lists, and removed/left records are ineligible. Concurrent renewal cannot turn an active member back into pending. Free/Premium limits remain 2/5 groups and 3/5 members. This source change does not certify deployment, signed device acceptance or real push delivery.
+
 ### 药盒子原生退出的创建操作号屏障（2026-10-31）
 
 客户端须在 `sessions` HTTP 前将命令 `operationId` 安全驻留。响应丢失时不可重发创建以索取 token。`close-sessions` 请求为 `{command,signature}`，Ed25519 domain 为 `close-sessions`；command 严格字段为 `version:1, subjectId, operationId, actorAccountId, actorDeviceId, expiresAt, creationOperationIds:[UUID]`（1–100 个不重复值，expiresAt 当前后 5 分钟内）。响应 `{closed:true,creationOperationIds}`。设备公钥必须与该主体下永久绑定记录完全一致；已撤设备仅能提交此负向关闭操作，不能恢复授权。

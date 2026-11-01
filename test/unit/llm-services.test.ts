@@ -1413,8 +1413,8 @@ test("llm smoke test service runs only the selected model/provider route with a 
   assert.equal(run.summary.totalCount, 1);
   assert.equal(run.summary.successCount, 1);
   assert.equal(run.items[0]?.providerModel, "~deepseek/deepseek-v4-flash-latest");
-  assert.equal(run.items[0]?.details.request?.maxTokens, 64);
-  assert.deepEqual(requests, [{ provider: "openrouter", maxTokens: 64 }]);
+  assert.equal(run.items[0]?.details.request?.maxTokens, 32768);
+  assert.deepEqual(requests, [{ provider: "openrouter", maxTokens: 32768 }]);
 
   await assert.rejects(
     () => smokeTestService.run({

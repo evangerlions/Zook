@@ -12,6 +12,7 @@ import type {
 } from "../../bodylog-store-ports.ts";
 import * as buddySql from "./postgres-bodylog-buddy.ts";
 import * as groupSql from "./postgres-bodylog-group.ts";
+import { activateGroupMember } from "./postgres-bodylog-group-admission.ts";
 import * as growthSql from "./postgres-bodylog-growth.ts";
 import { PostgresBodyLogNotificationStore } from "./postgres-bodylog-notification.ts";
 import { PostgresBodyLogFeatureFlagStore } from "./postgres-bodylog-feature-flags.ts";
@@ -34,6 +35,8 @@ const buddyStore = (pool: Pool): BodyLogBuddyStore => ({
 });
 
 const groupStore = (pool: Pool): BodyLogGroupStore => ({
+  listGroupInvitations: (appId, userId) => groupSql.listGroupInvitations(pool, appId, userId),
+  activateGroupMember: (record, token, groupLimit) => activateGroupMember(pool, record, token, groupLimit),
   insertCheckInGroup: (record) => groupSql.insertCheckInGroup(pool, record),
   findCheckInGroup: (groupId) => groupSql.findCheckInGroup(pool, groupId),
   updateCheckInGroup: (record) => groupSql.updateCheckInGroup(pool, record),

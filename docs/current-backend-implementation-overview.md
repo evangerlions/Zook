@@ -1,5 +1,9 @@
 # 当前后端实现概览
 
+## BodyLog 小组邀请码闭环（2026-11-01）
+
+定向邀请返回账号绑定的六位短码与七天有效期；预览不披露成员/打卡，兑换校验预览身份并保持重复请求幂等。PostgreSQL 在同一事务中串行化用户配额和小组最后名额，内存实现对应同样规则。复用既有邀请记录，无新 migration；实现不代表已经部署。接口见 `README_API.md`，并发门禁可用 `test/support/run_bodylog_group_postgres.py` 在全新临时 cluster 复跑。
+
 ## AINovel Alipay backend MVP
 
 CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Production is disabled by default and additionally gated by complete merchant configuration and approved explicit prices. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
@@ -881,3 +885,5 @@ PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会�
 ### 药盒子原生 M2 本地退出补充（2026-10-31）
 
 新增 `health/close-sessions` 和迁移 083，使用本设备签名关闭持久化创建 UUID；支持创建前取消及响应丢失后的撤销，已撤设备仍可关闭自己的会话。会话/关闭同账号→主体事务锁串行化，普通账号 Bearer 和不可变公钥绑定仍必需。协议变更详见 README_API；不新增医疗内容同步。iOS 已用原生 CryptoKit、Keychain 和真实本地 HTTP 联调，不等同于真机或发布批准。
+
+BodyLog group admission follow-up: deterministic stale-pending interleavings now recover the same-account membership after a peer reaches capacity/quota. The release gate invokes the isolated group PostgreSQL runner as its own step (requires initdb/pg_ctl/createdb), rather than passing the retention database connection into that suite.

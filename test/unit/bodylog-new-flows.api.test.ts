@@ -39,7 +39,8 @@ test('BodyLog group create, invite, join, detail, and leadership transfer stay c
   assert.ok(group.id);
   assert.equal(new URL(invitationUrl).pathname, `/g/${group.id}`);
   const invited = await call('user_alice', 'POST', `groups/${group.id}/invite`, { userId: 'user_bob' });
-  assert.deepEqual(invited.body.data, { invited: true });
+  assert.equal(invited.body.data.invited, true);
+  assert.match(invited.body.data.code, /^[A-HJ-NP-Z2-9]{6}$/);
   const accepted = await call('user_bob', 'POST', `groups/${group.id}/accept`, { token: new URL(invitationUrl).searchParams.get('token') });
   assert.equal(accepted.statusCode, 200);
   const detail = await call('user_bob', 'GET', `groups/${group.id}`);

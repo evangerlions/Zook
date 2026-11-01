@@ -117,6 +117,28 @@ export class InMemoryBodyLogGroupStore implements BodyLogGroupStore {
   private readonly dailyRecords: GroupDailyRecordRecord[] = [];
   private readonly activities: GroupActivityRecord[] = [];
 
+  listGroupInvitations(appId: string, userId: string): GroupMemberRecord[] {
+    return cloneList(this.members.filter(m => m.userId === userId && m.invitationToken &&
+      (m.status === "pending" || m.status === "active") && this.groups.some(g => g.id === m.groupId && g.appId === appId))
+      .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt)).slice(0, 1001));
+  }
+
+  // Synchronous memory-store mutation mirrors the PostgreSQL admission transaction.
+  activateGroupMember(record: GroupMemberRecord, token: string, groupLimit: number): "joined" | "alreadyMember" | "full" | "limit" | "invalid" {
+    const group = this.groups.find(g => g.id === record.groupId);
+    const current = this.members.find(m => m.groupId === record.groupId && m.userId === record.userId);
+    if (!group || group.status !== "active") return "invalid";
+    if (current?.status === "active") return "alreadyMember";
+    const shared = group.invitationToken === token;
+    if ((current && current.status !== "pending") || (!shared && current?.invitationToken !== token)) return "invalid";
+    const invitedAt = shared ? group.createdAt : current?.joinedAt;
+    if (!invitedAt || Date.now() - Date.parse(invitedAt) > 7 * 86400000) return "invalid";
+    if (this.members.filter(m => m.groupId === record.groupId && m.status === "active").length >= group.maxMembers) return "full";
+    if (this.listCheckInGroupsByUser(group.appId, record.userId).length >= groupLimit) return "limit";
+    if (current) this.updateGroupMember(record); else this.insertGroupMember(record);
+    return "joined";
+  }
+
   insertCheckInGroup(record: CheckInGroupRecord): void { this.groups.push(clone(record)); }
   findCheckInGroup(groupId: string): CheckInGroupRecord | undefined { return this.cloneGroup(this.groups.find((r) => r.id === groupId)); }
   updateCheckInGroup(record: CheckInGroupRecord): void {
@@ -138,6 +160,7 @@ export class InMemoryBodyLogGroupStore implements BodyLogGroupStore {
   }
   updateGroupMember(record: GroupMemberRecord): void {
     const index = this.members.findIndex((r) => r.id === record.id);
+    if (record.status === "pending" && this.members[index]?.status === "active") return;
     if (index >= 0) { this.members[index] = clone(record); }
   }
   listGroupMembers(groupId: string): GroupMemberRecord[] {

@@ -1,4 +1,6 @@
+import { transferBodyLogGroupOwnership } from "./bodylog-group-ownership.ts";
 import type {GroupLeaderboardResponse} from './bodylog-group-queries.ts';
+import { groupInvitationCode, groupInvitationExpiresAt, resolveGroupCode } from "./bodylog-group-codes.ts";
 import { getMyGroups } from './bodylog-group-queries.ts';
 import { getGroupLeaderboard } from './bodylog-group-queries.ts';
 import { checkIsPremium } from './bodylog-group-queries.ts';
@@ -151,7 +153,7 @@ export class BodyLogGroupService {
   /**
    * 邀请成员加入小组
    */
-  async inviteMember(userId: string, groupId: string, inviteeUserId: string): Promise<{ invitationToken: string }> {
+  async inviteMember(userId: string, groupId: string, inviteeUserId: string): Promise<{ code: string; expiresAt: string; invitationUrl: string; invitationToken: string }> {
     const group = await this.store.findCheckInGroup(groupId);
     if (!group) {
       throw new ApplicationError(404, "GROUP_NOT_FOUND", "Group not found.");
@@ -197,6 +199,7 @@ export class BodyLogGroupService {
       // 更新已有的成员记录
       const updatedMember: GroupMemberRecord = {
         ...existingMember,
+        role: "member",
         status: "pending",
         invitationToken,
         joinedAt: now.toISOString(),
@@ -216,10 +219,36 @@ export class BodyLogGroupService {
       await this.store.insertGroupMember(newMember);
     }
 
+    // A concurrent accept must never be changed back to pending by a late renewal.
+    const saved = await this.store.findGroupMember(groupId, inviteeUserId);
+    if (saved?.status !== "pending" || saved.invitationToken !== invitationToken) {
+      throw new ApplicationError(409, "GROUP_INVITE_CHANGED", "Invitation changed. Refresh the group.");
+    }
     // 发送邀请通知
     await this.sendGroupNotification(inviteeUserId, "group_invite", groupId, userId, undefined, undefined, invitationToken);
 
-    return { invitationToken };
+    return { invitationToken, code: groupInvitationCode(invitationToken), expiresAt: groupInvitationExpiresAt(now.toISOString()),
+      invitationUrl: `https://bodylog.app/g/${groupId}?token=${invitationToken}` };
+  }
+
+  async previewGroupByCode(userId: string, code: string) {
+    const { group, expiresAt } = await resolveGroupCode(this.store, userId, code);
+    const members = await this.store.listGroupMembers(group.id);
+    return { id: group.id, name: group.name, currentMembers: members.filter(m => m.status === "active").length,
+      maxMembers: group.maxMembers, expiresAt };
+  }
+
+  async joinGroupByCode(userId: string, code: string, expectedGroupId?: string): Promise<CheckInGroup> {
+    const { group, member } = await resolveGroupCode(this.store, userId, code);
+    if (expectedGroupId !== undefined && expectedGroupId !== group.id) {
+      throw new ApplicationError(409, "GROUP_INVITE_CHANGED", "The invitation no longer matches the preview.");
+    }
+    if (member.status === "active") return (await this.getGroupDetail(userId, group.id)).group;
+    try { return await this.acceptInvite(userId, group.id, member.invitationToken!); }
+    catch (error) {
+      if (error instanceof ApplicationError && error.code === "GROUP_ALREADY_MEMBER") return (await this.getGroupDetail(userId, group.id)).group;
+      throw error;
+    }
   }
 
   /**
@@ -265,25 +294,21 @@ export class BodyLogGroupService {
       throw new ApplicationError(410, "GROUP_INVITE_EXPIRED", "Invitation has expired.");
     }
 
-    // 检查是否已满员
-    const members = await this.store.listGroupMembers(groupId);
-    const activeMembers = members.filter((m) => m.status === "active");
-    if (activeMembers.length >= group.maxMembers) {
-      throw new ApplicationError(403, "GROUP_FULL", "Group is full.");
-    }
+    // Admission owns fresh capacity/quota checks; stale reads must not reject a
+    // same-account request whose peer has already completed the membership.
     const limit = await this.checkIsPremium(userId) ? GROUP_LIMITS.PREMIUM : GROUP_LIMITS.FREE;
-    if ((await this.getMyGroups(userId)).length >= limit) {
-      throw new ApplicationError(403, 'GROUP_LIMIT_REACHED', 'Group limit reached.');
-    }
 
     // 更新成员状态为active
     const updatedMember: GroupMemberRecord = {
       ...member,
       status: "active",
-      invitationToken: null,
+      invitationToken: member.invitationToken,
     };
-    if (await this.store.findGroupMember(groupId, userId)) await this.store.updateGroupMember(updatedMember);
-    else await this.store.insertGroupMember(updatedMember);
+    const admission = await this.store.activateGroupMember(updatedMember, token, limit);
+    if (admission === "alreadyMember") return (await this.getGroupDetail(userId, groupId)).group;
+    if (admission === "full") throw new ApplicationError(403, "GROUP_FULL", "Group is full.");
+    if (admission === "limit") throw new ApplicationError(403, "GROUP_LIMIT_REACHED", "Group limit reached.");
+    if (admission !== "joined") throw new ApplicationError(403, "GROUP_INVITE_INVALID", "Invitation is no longer valid.");
 
     // 创建活动记录
     const activity: GroupActivityRecord = {
@@ -426,54 +451,9 @@ export class BodyLogGroupService {
     await this.reconcileTodayDailyRecord(groupId);
   }
 
-  /**
-   * 转让组长（仅现任 leader 可操作）
-   * 原组长降为 admin，新组长保持 active。
-   */
+  /** Transfer leadership to an active member and record the change. */
   async transferGroupOwnership(leaderUserId: string, groupId: string, newLeaderUserId: string): Promise<void> {
-    const group = await this.store.findCheckInGroup(groupId);
-    if (!group) {
-      throw new ApplicationError(404, "GROUP_NOT_FOUND", "Group not found.");
-    }
-    if (group.status !== "active") {
-      throw new ApplicationError(409, "GROUP_NOT_ACTIVE", "Group is not active.");
-    }
-
-    if (leaderUserId === newLeaderUserId) {
-      throw new ApplicationError(400, "GROUP_INVALID_TARGET", "Already the group leader.");
-    }
-
-    const operator = await this.store.findGroupMember(groupId, leaderUserId);
-    if (!operator || operator.status !== "active" || operator.role !== "leader" || group.leaderUserId !== leaderUserId) {
-      throw new ApplicationError(403, "GROUP_NOT_AUTHORIZED", "Only the leader can transfer ownership.");
-    }
-
-    const target = await this.store.findGroupMember(groupId, newLeaderUserId);
-    if (!target || target.status !== "active") {
-      throw new ApplicationError(404, "GROUP_NOT_MEMBER", "Target is not an active member of this group.");
-    }
-
-    const now = new Date();
-    await this.store.updateGroupMember({ ...target, role: "leader" });
-    await this.store.updateGroupMember({ ...operator, role: "admin" });
-    await this.store.updateCheckInGroup({
-      ...group,
-      leaderUserId: newLeaderUserId,
-      updatedAt: now.toISOString(),
-    });
-
-    const activity: GroupActivityRecord = {
-      id: randomId("group_activity"),
-      groupId,
-      actorUserId: leaderUserId,
-      type: "leader_changed",
-      targetHabitId: null,
-      payload: { newLeaderUserId },
-      createdAt: now.toISOString(),
-    };
-    await this.store.insertGroupActivity(activity);
-
-    await this.sendGroupNotification(newLeaderUserId, "group_leader_changed", groupId, leaderUserId);
+    await transferBodyLogGroupOwnership(this.store, this.notificationService, leaderUserId, groupId, newLeaderUserId);
   }
 
   /**
