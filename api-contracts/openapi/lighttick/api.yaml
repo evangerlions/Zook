@@ -2436,6 +2436,7 @@ paths:
       tags:
       - lighttick-sync
       summary: Apply an idempotent batch of offline client operations
+      description: Each supported task command, its change record and operation receipt commit atomically. Concurrent matching accepted operation IDs return duplicate without repeating the mutation; conflicts and rejections retain their original status on replay. A storage failure aborts the affected operation; earlier accepted batch members remain committed and clients retry the original IDs and payloads. Unsupported entity writes remain rejected.
       requestBody:
         required: true
         content:

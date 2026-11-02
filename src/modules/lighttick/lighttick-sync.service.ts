@@ -30,12 +30,25 @@ export class LightTickSyncService {
   }
 
   private async apply(owner: LightTickOwner, operation: LightTickSyncOperationInput) {
-    if (!operation?.operation_id || !operation.device_id || !operation.entity_id || !Number.isInteger(operation.base_version))
-      return { operation_id: operation?.operation_id ?? "invalid", status: "rejected", error_code: "LIGHTTICK_SYNC_OPERATION_REJECTED" };
+    return this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      return this.applyLocked(owner, operation);
+    });
+  }
+
+  private async applyLocked(owner: LightTickOwner, operation: LightTickSyncOperationInput) {
+    if (!operation?.operation_id || !operation.device_id || !operation.entity_id || !Number.isInteger(operation.base_version) || operation.base_version < 0 ||
+      typeof operation.operation_id !== "string" || typeof operation.device_id !== "string" || typeof operation.entity_id !== "string" ||
+      !operation.payload || typeof operation.payload !== "object" || Array.isArray(operation.payload))
+      return { operation_id: typeof operation?.operation_id === "string" && operation.operation_id ? operation.operation_id : "invalid", status: "rejected", error_code: "LIGHTTICK_SYNC_OPERATION_REJECTED" };
     const hash = sha256(canonical(operation)); const existing = await this.repository.getOperation(owner, operation.operation_id);
     if (existing) {
       if (existing.payloadHash !== hash) return { operation_id: operation.operation_id, status: "rejected", error_code: "LIGHTTICK_IDEMPOTENCY_MISMATCH" };
-      return { ...existing.resultPayload, status: "duplicate" };
+      // A duplicate is successful only when the original command was accepted.
+      // Native clients remove successful duplicates from their durable queue.
+      return existing.resultPayload.status === "accepted"
+        ? { ...existing.resultPayload, status: "duplicate" }
+        : structuredClone(existing.resultPayload);
     }
     let result: Record<string, unknown>;
     try {
@@ -51,6 +64,8 @@ export class LightTickSyncService {
         : await this.tasks.command(owner, operation.entity_id, operation.base_version, command);
       result = { operation_id: operation.operation_id, status: "accepted", entity_type: "task", entity_id: task.id, version: task.version };
     } catch (error) {
+      // Infrastructure failures must roll back the command, not commit a rejection after partial writes.
+      if (!(error instanceof ApplicationError)) throw error;
       if (error instanceof ApplicationError && ["LIGHTTICK_VERSION_CONFLICT", "LIGHTTICK_STATE_TRANSITION_INVALID"].includes(error.code)) {
         const task = await this.repository.getTask(owner, operation.entity_id);
         result = { operation_id: operation.operation_id, status: "conflict", entity_type: operation.entity_type,
@@ -60,9 +75,11 @@ export class LightTickSyncService {
         error_code: error instanceof ApplicationError ? error.code : "LIGHTTICK_SYNC_OPERATION_REJECTED" };
     }
     const now = this.clock().toISOString();
-    await this.repository.saveOperation({ ...owner, operationId: operation.operation_id, deviceId: operation.device_id,
+    const stored = await this.repository.saveOperation({ ...owner, operationId: operation.operation_id, deviceId: operation.device_id,
       payloadHash: hash, entityType: operation.entity_type, entityId: operation.entity_id, action: operation.action,
       requestPayload: operation as unknown as Record<string, unknown>, resultPayload: result, status: String(result.status), createdAt: now, updatedAt: now });
+    if (stored.payloadHash !== hash)
+      throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "A concurrent domain request used this operation identity.");
     return result;
   }
 

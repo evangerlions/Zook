@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { Pool } from 'pg';
+import { PostgresLightTickRepository } from '../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts';
+import { runPostgresMigrations } from '../../src/infrastructure/database/postgres/migrate.ts';
+import { LightTickSyncService } from '../../src/modules/lighttick/lighttick-sync.service.ts';
+import { LightTickTaskService } from '../../src/modules/lighttick/lighttick-task.service.ts';
+import { LightTickGoalService } from '../../src/modules/lighttick/lighttick-goal.service.ts';
+import { LightTickPlanService } from '../../src/modules/lighttick/lighttick-plan.service.ts';
+const dsn = process.env.LIGHTTICK_TEST_DATABASE_URL;
+if (!dsn || !['localhost', '127.0.0.1'].includes(new URL(dsn).hostname)) throw Error('Explicit disposable localhost PostgreSQL required');
+test('sync command, event and receipt roll back together, then original replay and concurrent requests converge', async () => {
+  await runPostgresMigrations({ connectionString: dsn, log: () => {} });
+  const pool = new Pool({ connectionString: dsn, max: 4 });
+  const repo = new PostgresLightTickRepository(pool);
+  const owner = { appId: 'lighttick', userId: 'sync_receipts_pg_' + process.pid };
+  const clock = () => new Date('2026-08-20T00:00:00.000Z');
+  try {
+    const goal = await new LightTickGoalService(repo, clock).create(owner, { title: 'Receipt QA', constraints: {} });
+    const plans = new LightTickPlanService(repo, clock);
+    const proposed = await plans.createProposed(owner, { goalId: goal.id, granularity: 'week', periodStart: '2026-08-17', periodEnd: '2026-08-23', source: 'manual', tasks: [{ title: 'One action', estimatedMinutes: 10 }] });
+    const task = (await plans.confirm(owner, proposed.id, 1)).tasks[0];
+    const sync = new LightTickSyncService(repo, new LightTickTaskService(repo, clock), 'synthetic-test-cursor', clock);
+    const input = { operation_id: 'sync-pg-start-0001', device_id: 'synthetic-ios', entity_type: 'task', entity_id: task.id, action: 'start', base_version: task.version, client_occurred_at: clock().toISOString(), payload: {} };
+    const original = repo.saveOperation.bind(repo), before = (await repo.pullChanges(owner, 0, 200)).length;
+    repo.saveOperation = async () => { throw Error('injected receipt failure'); };
+    await assert.rejects(sync.push(owner, [input]), /receipt failure/);
+    assert.equal((await repo.getTask(owner, task.id))?.version, task.version);
+    assert.equal((await repo.pullChanges(owner, 0, 200)).length, before);
+    assert.equal(await repo.getOperation(owner, input.operation_id), undefined);
+    repo.saveOperation = original;
+    const first = await sync.push(owner, [input]); assert.equal(first.results[0].status, 'accepted');
+    assert.equal((await sync.push(owner, [input])).results[0].status, 'duplicate');
+    const finish = { ...input, operation_id: 'sync-pg-finish-0001', action: 'complete', base_version: task.version + 1, payload: { actual_duration_minutes: 5 } };
+    const concurrent = await Promise.all([sync.push(owner, [finish]), sync.push(owner, [finish])]);
+    assert.deepEqual(concurrent.map(v => v.results[0].status).sort(), ['accepted', 'duplicate']);
+    assert.equal((await repo.getTask(owner, task.id))?.version, task.version + 2);
+    assert.equal((await repo.pullChanges(owner, 0, 200)).length, before + 2);
+  } finally { await repo.deleteOwnerData(owner); await pool.end(); }
+});

@@ -223,7 +223,9 @@ Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同�
 `DELETE /api/v1/lighttick/me/account`。登出只撤销会话，不删除服务端产品数据。
 
 写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
-`base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
+`base_version`。2026-11-03：sync push 对每个受支持 task 命令在同一事务内提交状态、变更日志与操作回执；并发相同已接受请求返回 duplicate，已冲突/拒绝的原请求重放仍保留 conflict/rejected，不能被客户端误当成功清队列。存储故障回滚当前操作；同批此前已提交的操作不回滚，客户端使用原 operation_id 与原 payload 重试。当前通用 push 不接受 record/learning 写入，它们继续使用各自领域接口与持久请求。
+
+离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
 500 条，准确值和稳定错误码以 OpenAPI 为准。
 
 渐进式启动是 additive 能力：`/onboarding/starter` 只要求模糊愿望和 IANA
