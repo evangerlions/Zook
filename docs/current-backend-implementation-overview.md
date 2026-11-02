@@ -1,12 +1,11 @@
 # 当前后端实现概览
 
-## Grow H5 存储补充（2026-11-02）
+## Grow 原生重构与旧接入清理（2026-11-02，本地候选）
 
-Zook 内的 `services/grow` 支持 PostgreSQL 内容后端：账号记录、规划、课程正文和不可变版本
-使用同槽位数据库的独立 `grow_*` schema；每个 Grow 账号继续隔离数据空间。
-这是现有 Python H5 的兼容承载，并未合并 Grow/Zook 账号或改变原生 LightTick 的数据权威。
-旧服务的历史账号、数据和配置保留不动；本次只接通本地新版供验证。
-操作及验收见 [Grow H5 部署](grow-h5-deployment.md)。
+当前工作区已移除此前导入的 Grow Python 运行副本、第四服务部署组、源码锁和 Admin Python 代理。
+Grow 前端仍在独立仓库，计划采用 React/TypeScript 重构；后端按 Zook 多 App 框架新增 Grow 产品模块，复用平台公共能力。
+新 Grow App 注册和 `/api/v1/grow/...` 合同尚未实现，现有 LightTick 业务合同保留；此变更不代表服务器已发布或历史资源已退役。
+架构、功能保持和阶段验收见 [Grow 重构规划](plans/grow-zook-native-web/README.md)。
 
 ## BodyLog 小组邀请码闭环（2026-11-01）
 

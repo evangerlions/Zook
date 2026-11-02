@@ -1,13 +1,5 @@
 # Admin API Spec
 
-Grow H5 承载：Admin HTTP server 将 `/grow` 和 `/grow/*` 转交同槽位
-`ADMIN_GROW_PROXY_TARGET`，其鉴权由 Grow 独立处理，不使用 Admin session。
-未配置该私有目标时返回503；配置后保留方法、查询参数、状态码、多条 Cookie、
-下载与 SSE 流。`/config` 和 `/api/v1/admin/*` 继续沿用原管理系统行为。
-详见 [Grow H5 部署](grow-h5-deployment.md)。
-Grow 的 `/api/account/github` 兼容响应新增 `storage_backend`。PostgreSQL 模式的
-网页设置显示平台账号数据库，不要求用户填写 GitHub 仓库；该接口仍由 Grow 会话鉴权。
-
 LLM monitoring aggregates (overview and model details) exclude upstream calls
 explicitly marked with internal `callPurpose: "content_safety"`. This applies to
 totals, rates, timelines and grouped denominators; normal calls to the same model
