@@ -37,7 +37,9 @@
     "dev:yaohezi-local": "node --experimental-transform-types scripts/yaohezi-local-server.ts",
     "verify:yaohezi-local": "node scripts/yaohezi-local-verify.mjs",
     "test:postgres:yaohezi-local": "node --experimental-transform-types --test test/integration/yaohezi-local-postgres.test.ts",
-    "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json"
+    "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json",
+    "grow:import": "node --experimental-transform-types scripts/import-grow-artifact.ts",
+    "grow:export-contract": "node --experimental-transform-types scripts/export-grow-contract.ts"
   },
   "devDependencies": {
     "@hpke/core": "1.9.0",

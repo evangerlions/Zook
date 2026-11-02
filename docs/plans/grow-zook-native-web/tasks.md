@@ -10,24 +10,26 @@
 
 ## U0：基线与同步覆盖
 
-- [ ] 对齐当前Grow/iOS/Android/Zook工作树及合同锚点，保护未提交修改；将CF/I/N已有交付和新重构范围分开。
-- [ ] 按records/tasks/manual/actions/learning等登记领域命令、回执、change_log、pull、缓存和客户端实际覆盖，确认task-only push边界。
+- [x] 对齐当前Grow/iOS/Android/Zook工作树及合同锚点，保护未提交修改；将CF/I/N已有交付和新重构范围分开。
+- [x] 按records/tasks/manual/actions/learning等登记领域命令、回执、change_log、pull、缓存和客户端实际覆盖，确认task-only push边界。
 - [ ] 建立状态/版本/时区/幂等、事务故障/游标、旧学习未决回执和行情/回测黄金fixture，固定其他App及后台基线。
 
 验收：每项旧能力可追踪；未知同步覆盖不算已完成；关键风险有可重复合成测试。依赖：无。
 
 ## U1：React、统一身份和记录三端闭环
 
-- [ ] Grow原仓库建立React/TS/Vite feature结构、API/会话层和固定静态包；Zook既有Web挂载/grow/，验证路由/产物兼容。
-- [ ] 接入既有LightTick app membership及Zook普通用户身份；补齐Web安全会话差异；不创建grow appId/平行API。
-- [ ] 复用records实现Web新建/编辑/历史/归档；校验三端同ID、CAS、回执和增量失效/读取，不自动同步纯本机草稿。
+- [x] Grow原仓库建立React/TS/Vite feature结构、API/会话层和固定静态包；Zook既有Web挂载/grow/，验证路由/产物兼容。
+- [x] 接入既有LightTick app membership及Zook普通用户身份；补齐Web安全会话差异；不创建grow appId/平行API。
+- [x] 复用records实现Web新建/编辑/历史/归档；校验三端同ID、CAS、回执和增量失效/读取，不自动同步纯本机草稿。
 
 验收：真实PG+浏览器+双端适用测试完成Web→iOS→Android→Web记录接续、409保留输入、丢响应、重启、A/B与环境隔离；登录不自动上传本机内容。依赖：U0、既有records合同。
 
 ## U2：基础计划与行动
 
-- [ ] Grow接现有goals/manual-plans/planning/tasks/actions，保持task/shared action/课程路线不同身份；已有原生基础路径继续可用。
-- [ ] 确认/改期/暂停/复盘后继续使用同状态机和约束；补齐适用回执与读取覆盖，核对领域队列和通用push不重复执行。
+- [x] Grow接现有goals/manual-plans/tasks与Today，验证手动草稿/编辑/确认和同ID任务执行；已有原生基础路径保留。
+- [ ] 接入规划会话与共享行动全量交互，保持task/shared action/课程路线不同身份，不按标题合并。
+- [x] 手动计划显式确认及今日任务开始/完成/改期/跳过/取消复用既有状态机和领域REST，持久原请求；修复sync命令与回执的事务/重放边界。
+- [ ] 接入目标暂停和复盘后继续，补齐其他领域队列/通用push重复通道的全面核对。
 - [ ] 覆盖多端计划版本变化、撤销权限与离线冲突；同步字段/实体扩展先验证旧客户端兼容。
 
 验收：同planId/taskId三端变化无重复事实；Web/AI关闭原生仍完整，其他App合同不变。依赖：U1。
@@ -58,3 +60,10 @@
 - [ ] 固定Grow产物、Zook main SHA及原生合同/版本；feature→main→dev→同SHA online，App二进制按自身渠道发布。
 
 验收：当前承诺范围完整，不因隐藏菜单算迁完；单写与回退演练成立；生产部署与本地实现分别记录。依赖：U1–U4及专题替代验证。
+
+
+## 2026-11-03 实施证据与阶段依赖细化
+
+首批实现和限制见[验收报告](../../verification/grow-react-u1-20261103/README.md)及[逐领域同步矩阵](../../verification/grow-react-u1-20261103/sync-coverage.md)。原有用户改动61份哈希保持，21个Grow staged路径原index差异保持。
+
+U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fixture与全账本核对假定完成。U0第三项仍未完成；U2拆分为已验收手动/任务切片与尚未接入的共享行动、AI规划、生命周期等，原范围没有删除。Web与原生合同联合HTTP、原生模型单测、真机UI和发布分别记证。

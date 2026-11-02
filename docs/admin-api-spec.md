@@ -1,5 +1,7 @@
 # Admin API Spec
 
+Grow静态承载（2026-11-03本地候选）：既有Web进程在`GROW_WEB_ENABLED=1`时加载`GROW_WEB_ROOT`（默认static/grow）的固定manifest和白名单资源，仅在/grow命名空间分发页面/资源，运行配置仅含公开产品/版本。关闭时/grow返回503且无产物依赖；开启缺包/摘要不符在监听前失败。它不使用Admin会话，不代理到Python；用户业务沿用LightTick公共API。详见首批验证报告。
+
 LLM monitoring aggregates (overview and model details) exclude upstream calls
 explicitly marked with internal `callPurpose: "content_safety"`. This applies to
 totals, rates, timelines and grouped denominators; normal calls to the same model

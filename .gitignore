@@ -24,3 +24,6 @@ openspec/
 
 # Local assistant memory / workspace metadata (never commit)
 .workbuddy-ai/
+
+# Imported, versioned Grow static artifacts (built in the frontend repository)
+static/grow/

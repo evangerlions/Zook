@@ -38,6 +38,8 @@ COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node apps ./apps
 COPY --chown=node:node src ./src
+# Optional verified frontend artifact; absence is valid when GROW_WEB_ENABLED is off.
+COPY --chown=node:node static ./static
 COPY --from=admin-build --chown=node:node /app/apps/admin-web/build ./apps/admin-web/build
 
 USER node

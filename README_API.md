@@ -1,5 +1,7 @@
 # API Interface Specification
 
+Grow React Web（2026-11-03本地候选）是LightTick的Web客户端，复用已有`/api/v1/auth/login|refresh|logout`的web会话（HttpOnly刷新Cookie、响应无refreshToken）以及`/api/v1/lighttick/records`、manual-plans、today/tasks；不新增grow App、Python代理或平行API。旧原生字段/版本保持兼容，范围和未完成项见[首批报告](docs/verification/grow-react-u1-20261103/README.md)。
+
 ### AINovel 试运营额度（2026-10-20）
 
 Free / Plus / Pro 的独立 7 天周期额度分别为 200 / 1000 / 4000 credits。

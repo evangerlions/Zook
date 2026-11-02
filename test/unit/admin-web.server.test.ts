@@ -130,3 +130,32 @@ test('handoff upstream failures retain private headers and do not expose the tok
   assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
   const body = await response.text(); assert.doesNotMatch(body, /PRIVATE_SYNTHETIC_TOKEN|127\.0\.0\.1/);
 });
+
+test('POST auth challenges preserve upstream 401 and binary request bytes remain intact', async t => {
+  const bodies: Buffer[] = [];
+  const upstream = createServer(async (request, response) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    bodies.push(Buffer.concat(chunks));
+    if (request.url === '/api/auth-challenge') {
+      response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="synthetic"', 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({ code: 'AUTH_REQUIRED', data: null }));
+    } else { response.writeHead(200, { 'Content-Type': 'application/octet-stream' }); response.end(bodies.at(-1)); }
+  });
+  const apiPort = await listen(upstream);
+  const admin = createAdminServer({ proxyTarget: `http://127.0.0.1:${apiPort}` });
+  const webPort = await listen(admin);
+  t.after(async () => {
+    admin.closeAllConnections(); upstream.closeAllConnections();
+    await Promise.all([new Promise<void>(resolve => admin.close(() => resolve())), new Promise<void>(resolve => upstream.close(() => resolve()))]);
+  });
+  const authBody = JSON.stringify({ appId: 'lighttick', clientType: 'web' });
+  const unauthorized = await fetch(`http://127.0.0.1:${webPort}/api/auth-challenge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: authBody });
+  assert.equal(unauthorized.status, 401);
+  assert.equal((await unauthorized.json()).code, 'AUTH_REQUIRED');
+  assert.equal(bodies[0].toString(), authBody);
+  const bytes = new Uint8Array([0, 255, 241, 128, 10]);
+  const binary = await fetch(`http://127.0.0.1:${webPort}/api/binary`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: bytes });
+  assert.equal(binary.status, 200);
+  assert.deepEqual(new Uint8Array(await binary.arrayBuffer()), bytes);
+});

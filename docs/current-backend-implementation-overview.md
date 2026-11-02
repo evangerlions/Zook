@@ -1,11 +1,12 @@
 # 当前后端实现概览
 
-## Grow 原生重构与旧接入清理（2026-11-02，本地候选）
+## Grow React Web 首批实现（2026-11-03，本地候选）
 
-当前工作区已移除此前导入的 Grow Python 运行副本、第四服务部署组、源码锁和 Admin Python 代理。
-Grow 前端仍在独立仓库，计划采用 React/TypeScript 重构；后端作为既有 LightTick 产品的 Web 端能力扩展，复用平台公共能力。
-沿用现有 LightTick appId 与 `/api/v1/lighttick/...`，不注册独立 Grow App。学习来源权威原生化及同步覆盖仍待实施；此规划修订不代表服务器已发布或历史资源已退役。
-架构、功能保持和阶段验收见 [Grow 重构规划](plans/grow-zook-native-web/README.md)。
+Grow沿用LightTick appId/公共认证与`/api/v1/lighttick/...`，现有Web进程可默认关闭地承载固定SHA/digest静态包，无独立Grow服务。React源码保留Grow仓库，已接记录、手动基础计划及今日任务；其余领域仍按任务推进，旧Python部署不恢复。
+
+本轮修复task sync状态/变更/回执的事务边界，并保持冲突/拒绝原结果重放；不把task-only push扩大为全实体同步。共享Web代理使用可重放请求体，保留POST认证401及二进制语义。字段合同和原生版本不改变。
+
+实际测试与未完成范围见[首批报告](verification/grow-react-u1-20261103/README.md)及[同步覆盖表](verification/grow-react-u1-20261103/sync-coverage.md)。未发布、未迁移真实数据；学习来源权威及全专题尚未原生化。
 
 ## BodyLog 小组邀请码闭环（2026-11-01）
 
