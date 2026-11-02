@@ -24,4 +24,3 @@ def env_file(path: Path) -> dict[str, str]:
             raise ValueError('Runtime env values must be single-line.')
         values[key] = value
     return values
-

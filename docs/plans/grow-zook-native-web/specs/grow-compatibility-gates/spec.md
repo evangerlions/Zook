@@ -1,29 +1,36 @@
 ## ADDED Requirements
 
-### Requirement: Existing observable behavior remains compatible
-Existing Web routes, API status/envelopes, permissions, guest access, pagination, streaming, client-version rules, product flags and default model choices MUST remain compatible. New business requirements SHALL use additive contracts and migrations.
+### Requirement: Existing functionality has explicit disposition
+The migration SHALL inventory current Grow routes, pages, workflow states, formulas, exports, materials and non-HTTP tasks. Each item MUST map to an accepted implementation or explicit approved replacement with behavioral evidence. Hidden menus or a login demonstration SHALL NOT qualify as completion.
 
-#### Scenario: Existing client exercises its contract
-- **WHEN** existing Admin, FrogSleep, LightTick, BodyLog or AINovel clients call their established flows with Grow disabled and enabled
-- **THEN** contract fixtures and authorization expectations pass in both modes with no newly required Grow credentials or payload fields
+#### Scenario: Research dependency is missing
+- **WHEN** a market provider, strategy result or export lacks an accepted replacement
+- **THEN** the item remains incomplete and the overall migration cannot be declared complete
 
-### Requirement: Disabled Grow has no new background side effects
-Dedicated Grow functionality SHALL be gated independently of existing product master switches. Disabled Grow MUST NOT start Grow-specific jobs, require Grow secrets, contact external content providers or reserve extra database capacity.
+### Requirement: Existing products remain compatible
+LightTick and other products SHALL retain existing contracts, permissions, default models and feature flags. Grow off/on regression and mixed-load tests MUST verify agreed latency, error, database and queue thresholds.
 
-#### Scenario: Existing deployment starts without Grow configuration
-- **WHEN** the original three-service deployment starts with no new Grow-specific settings
-- **THEN** its existing health and business checks pass and no Grow task is scheduled
+#### Scenario: Grow budget is exhausted
+- **WHEN** Grow research jobs consume their allocation
+- **THEN** work is queued or rejected within that budget and existing-product acceptance thresholds still pass
 
-### Requirement: Mixed-load acceptance
-Grow SHALL have dedicated request/job/AI capacity limits. Releases MUST compare fixed-load baselines of existing products with Grow off/on, and reject new5xx or P95 degradation beyond the threshold fixed in the baseline stage, initially10%.
+### Requirement: No rejected deployment dependencies
+The new source and release topology MUST NOT include `services/grow`, Grow Python images, source locks, dedicated release groups or the legacy Python proxy. Source cleanup MUST remain distinct from historical-server and volume retirement.
 
-#### Scenario: Research task consumes its budget
-- **WHEN** Grow import/research jobs reach their configured concurrency or CPU limit while existing APIs receive baseline traffic
-- **THEN** Grow work is queued or rejected within its budget and the existing-product acceptance threshold still passes
+#### Scenario: Clean source is built
+- **WHEN** the supported release topology is built and started
+- **THEN** only existing Zook services are required and no dependency reaches the removed Grow backend
 
-### Requirement: Controlled release and non-destructive rollback
-Code SHALL ship through main and the existing release scripts. Production promotion requires the same main SHA verified in dev. Rollback SHALL preserve database/file writes and MUST NOT restore a database snapshot or route new-user writes into the historical service.
+### Requirement: Verified historical import and single writer
+Historical data import SHALL require verified ownership, source-to-canonical mappings, dry-run comparisons and idempotency. Unknown completion timestamps MUST remain unknown. Product or account names MUST NOT automatically merge identities. Each migrated dataset SHALL have one active writer.
 
-#### Scenario: Failure after new data is saved
-- **WHEN** Grow writes data and the new frontend is subsequently disabled or application code is rolled back
-- **THEN** the saved data remains intact, existing APIs remain operational, and no destructive schema rollback or old-service write fallback occurs
+#### Scenario: Repeated authorized import
+- **WHEN** the same historical dataset is imported twice
+- **THEN** stable mappings prevent duplication and versions, source links and private ownership remain intact
+
+### Requirement: Zook release flow and compatible rollback
+Changes SHALL enter main before release scripts. Online promotion SHALL use the same backend SHA and frontend artifact verified in dev. Rollback MUST use a verified compatible pair and preserve accepted database/file writes, without restoring the whole database or forwarding new-user writes to a historical service.
+
+#### Scenario: Backend rollback is incompatible
+- **WHEN** the previous backend cannot serve the current frontend contract
+- **THEN** deployment selects a compatible verified pair or disables Grow while preserving saved data

@@ -1,33 +1,29 @@
 ## ADDED Requirements
 
-### Requirement: Complete capability disposition
-The migration MUST maintain a reviewed disposition for every inventoried operation and non-HTTP capability, including investment research, knowledge, calibration, exports and background work. A login/homepage demonstration SHALL NOT qualify as complete migration.
+### Requirement: Grow as a product in the multi-App platform
+Grow SHALL have its own product namespace `/api/v1/grow/...` and registered app scope within existing Zook API/worker infrastructure. Authentication, membership, configuration, files, LLM and logging SHALL reuse platform services. URL namespace or browser-supplied owner fields MUST NOT override verified appId/userId.
 
-#### Scenario: Research implementation is missing
-- **WHEN** an investment dataset provider, strategy function, export or background task lacks an accepted replacement
-- **THEN** the ledger remains incomplete and overall migration cannot be marked complete by hiding its menu
+#### Scenario: Cross-product request
+- **WHEN** a user authorized only for LightTick requests a Grow private resource
+- **THEN** existing platform membership and permissions determine access and no LightTick private record is automatically shared
 
-### Requirement: Canonical contracts and single data authority
-New product capabilities SHALL use `/api/v1/lighttick/...` contracts and existing Zook repositories where semantically equivalent. All records, documents, files and jobs MUST enforce owner scope, idempotency and explicit version conflicts. Each module MUST have one active writer.
+### Requirement: Native domain modules and stable contracts
+Grow business logic SHALL reside in `src/modules/grow` with Zook application services, route composition, repository adapters and migration runner. Public contracts SHALL originate only in `api-contracts/openapi/**`, generate committed runtime/client outputs and update API documentation in the same change. Runtime MUST NOT read the contract source directory or import another product's private repository.
 
-#### Scenario: Retry or conflicting version
-- **WHEN** a saved request is retried with its original key or a stale version is submitted
-- **THEN** the original accepted result is returned for a matching replay and conflicting writes are rejected without overwriting newer data
+#### Scenario: New Grow module
+- **WHEN** a product capability is added
+- **THEN** its contract, domain rules, owner-scoped persistence, frontend feature and tests are delivered without a new backend service
 
-### Requirement: Platform AI and durable background services
-Grow SHALL use platform model routing, worker/job infrastructure, file authorization, audit and request tracing. Existing model/provider configuration MUST remain compatible. Job execution MUST enforce authorization, capacity, cancellation, idempotency and recoverability.
+### Requirement: Data and workflow invariants
+Writes SHALL enforce idempotency, version conflicts and owner scope. Draft publication, immutable lesson versions, private notes and explicit completion SHALL remain distinct. Monetary results SHALL preserve exact precision and documented market/time conventions.
 
-#### Scenario: Worker restarts or account is disabled
-- **WHEN** a worker restarts during an AI/collection job or its owner is disabled before submission
-- **THEN** the durable task reaches a recoverable terminal state without duplicate formal writes, and disabled owners cannot receive unauthorized new writes
+#### Scenario: Request replay and stale edit
+- **WHEN** an accepted request is replayed with the same key or a stale edit is submitted
+- **THEN** replay returns its accepted result and stale writes preserve newer data without silent overwrite
 
-#### Scenario: Legacy browser keys exist
-- **WHEN** a user enters the new Grow Web with old browser AI credentials or GitHub settings
-- **THEN** those secrets are not automatically uploaded or logged and platform scene configuration is used for new AI requests
+### Requirement: Platform AI and bounded durable jobs
+Grow SHALL use product-specific AI scenes and budgets, existing logical models/provider routes and bounded worker tasks. Request/user/stream/job state MUST remain execution-local. Provider adapters and compute MUST NOT require Python, a sidecar or arbitrary user code execution.
 
-### Requirement: No independent Python runtime in target deployment
-The final Grow deployment MUST run without Python, pip, a Python child process or a Grow sidecar. Data providers and CPU-intensive work SHALL have audited Node-compatible or controlled external replacements and bounded execution outside the API event loop.
-
-#### Scenario: Target image has no Python executable
-- **WHEN** the integrated target image starts without Python and all Grow capability tests run
-- **THEN** all accepted module workflows succeed through Zook API/worker paths and no request attempts to reach the legacy Python upstream
+#### Scenario: Job restarts or owner is disabled
+- **WHEN** a worker restarts or membership is disabled during execution
+- **THEN** durable state enables recovery without duplicate formal writes and permissions are rechecked before execution and commit

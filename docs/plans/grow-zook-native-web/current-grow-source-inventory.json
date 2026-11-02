@@ -1,0 +1,4160 @@
+{
+  "recorded_at": "2026-11-02",
+  "source_root": "/Volumes/肖豪/project/grow",
+  "source_head": "a9437c89f69faa46b6a0ea51c5f7d6c27332b504",
+  "includes_working_tree_changes": true,
+  "scope": "Hashes of current backend reference code and frontend assets only; excludes tests, private data and env. AST declarations are not registered HTTP operations; prefixes, multi-method decorators and hidden routes require further review. No source imports or backend requests executed.",
+  "files": [
+    {
+      "path": "知行成长/server/accounts.py",
+      "sha256": "054e7e5a6348ffa65d1817f5878b4731d9569aece5c9fcb1055e17cd5b911abf"
+    },
+    {
+      "path": "知行成长/server/action_content.py",
+      "sha256": "8b63dd8eedf3d3dc8f709426c28805ae5eeae52568c37b3d0ad7fd0cf9cd469f"
+    },
+    {
+      "path": "知行成长/server/action_handoff.py",
+      "sha256": "00e5bc582bb9875b7eca6801e993fda1c6e97c57064187f6899f14f8b427e3ab"
+    },
+    {
+      "path": "知行成长/server/action_handoff_coordinator.py",
+      "sha256": "62c8545e665553587816553b5550cb673f834f69c9ea9541f58ebe697fc00a2a"
+    },
+    {
+      "path": "知行成长/server/action_link.py",
+      "sha256": "f53a43e028389dd414662660817f243e1120e754d62294e078fe1b792e857f99"
+    },
+    {
+      "path": "知行成长/server/action_plans.py",
+      "sha256": "6da2ebdb546db28506f36bf1356865db4564525e49c982ec1b8105eb26220c37"
+    },
+    {
+      "path": "知行成长/server/action_reviews.py",
+      "sha256": "ceebb8aa5d369fc17e087e7eda53186b539c2af4ae1a11236045b0a8136ea634"
+    },
+    {
+      "path": "知行成长/server/action_source_delivery.py",
+      "sha256": "06c8f92c65ac22fae8b07776113e8b8feb8717cb06fbbdceca8273c898c73bc0"
+    },
+    {
+      "path": "知行成长/server/action_source_worker.py",
+      "sha256": "a383dfd9d62bbabd1da6a0f9f4edc3f48a245a503e58439ca0b87aa4d41df161"
+    },
+    {
+      "path": "知行成长/server/ai_evidence.py",
+      "sha256": "4771de03d563025764faed0771808465289cbbfd0023e808d2b8b2712f78f2de"
+    },
+    {
+      "path": "知行成长/server/app.py",
+      "sha256": "4ce16201ae2abd60d4f11f1e8bc4799a6f490ab801075ba53b285f12e8b355a8"
+    },
+    {
+      "path": "知行成长/server/behavior/__init__.py",
+      "sha256": "5b19a49146ad07f935413b25ae44b1ddaf2eba0c28715813e0b705cc50eb7c00"
+    },
+    {
+      "path": "知行成长/server/behavior/api.py",
+      "sha256": "87ad2a3fcf30edebcf753cdb69d769b70e5987235664e68aaeec3f641f73a4c7"
+    },
+    {
+      "path": "知行成长/server/behavior/store.py",
+      "sha256": "cb10a7b9b4327b65a32a4103591e230c3d932e028e831b84725536f64a7d036f"
+    },
+    {
+      "path": "知行成长/server/behavior_report/__init__.py",
+      "sha256": "c33bcf754ab83146a3383e730843debacfcb71745ab5306d4a8b23a34603c5fd"
+    },
+    {
+      "path": "知行成长/server/behavior_report/analyzer.py",
+      "sha256": "a987bd5e616e36bc511e666bc34ba8c8ea705f00027b03612bf107047ed3828a"
+    },
+    {
+      "path": "知行成长/server/behavior_report/api.py",
+      "sha256": "c51ebcaa11bb287d77d350a6c8fd10411947b6b853f9e4a5399b1f80610996e7"
+    },
+    {
+      "path": "知行成长/server/behavior_report/jobs.py",
+      "sha256": "98a4a5ee2eac46a016d0305827c0a7111b36db882fc14ad3077a7bf75f5c6168"
+    },
+    {
+      "path": "知行成长/server/behavior_report/store.py",
+      "sha256": "4512ef98ce666518b7f8915385d562d5eb039ee03dd485531a622c561b88811e"
+    },
+    {
+      "path": "知行成长/server/cloud_auth.py",
+      "sha256": "43bfb2ffb7feb0026ff61e52cea55e025d559b2e2e96d2a9f66805aa1f5b8711"
+    },
+    {
+      "path": "知行成长/server/cloud_content.py",
+      "sha256": "ec9079501f66a8bbaa9594e004978259e8032c4746b272f3de2b1fdf25424d4d"
+    },
+    {
+      "path": "知行成长/server/coach_facts.py",
+      "sha256": "4bf34c399697f0ee92316ff4aac1c199d9e1c0958917df1c68a7db49b418325f"
+    },
+    {
+      "path": "知行成长/server/copilot/__init__.py",
+      "sha256": "0540f689c03486d4528af0abcbe0f27fa7cf78e8424c1abd5448bf26cde0939f"
+    },
+    {
+      "path": "知行成长/server/copilot/ai_api.py",
+      "sha256": "cbce5a01ab221cffa7fe0640ecdfa00ae64b5d9e91b6443c4ea32a328edfc377"
+    },
+    {
+      "path": "知行成长/server/copilot/ai_config.py",
+      "sha256": "c23ffd8ab878ac236a91003abea7d87731cf35b4a7cfcf1af1b3450b91802ebc"
+    },
+    {
+      "path": "知行成长/server/copilot/api.py",
+      "sha256": "b64a0e19bf903463f75f063571d20d6b3aebc693f9d8b083950e538004e65944"
+    },
+    {
+      "path": "知行成长/server/copilot/background.py",
+      "sha256": "e3a6de6ebd9863f053d5db903f7b9f5a275af1b88496bcaf9fc64737bf4e3456"
+    },
+    {
+      "path": "知行成长/server/copilot/backup.py",
+      "sha256": "b0cf358404f1373be0db3de822d52f0b8453e8cefba4fa22952b68f49bc8b062"
+    },
+    {
+      "path": "知行成长/server/copilot/cloud_store.py",
+      "sha256": "987272f4d22085eabc8466684de93b24bd340040ce3f08d3e7fa1d24e0fad061"
+    },
+    {
+      "path": "知行成长/server/copilot/core.py",
+      "sha256": "e60a3486d965e4eff8240ba6390653db947636dffef786ff04bb6dbd2d623449"
+    },
+    {
+      "path": "知行成长/server/copilot/generation.py",
+      "sha256": "94bf16fc94364e44b0bcb6659a96811f68583eb98de46a92e2874c3ec1bb4e73"
+    },
+    {
+      "path": "知行成长/server/copilot/schema.py",
+      "sha256": "adc244a6ed51dfd063fb5cbc3c7d9c08f0b084debd4e1962cbac1019bfca4a17"
+    },
+    {
+      "path": "知行成长/server/copilot/summary.py",
+      "sha256": "9c435fc7e95b80dad78dcb4ee5e5ee0d4a83b50f2a34ca704373410b8563e615"
+    },
+    {
+      "path": "知行成长/server/copilot/transport.py",
+      "sha256": "454c24bfbb90736b4212f47f498f5107c6eb53dd37dfef688d6f0ab4e51b98f4"
+    },
+    {
+      "path": "知行成长/server/course_activity.py",
+      "sha256": "f2a6d60d388ddf15c81f12305e460b192ca0b86ef7f290c6905d9723774c4ad1"
+    },
+    {
+      "path": "知行成长/server/course_continuation_sources.py",
+      "sha256": "4407f62adfb51c7e6a303e020d01b16f37021e3b5cbf419dfe4a0fd98f5c2339"
+    },
+    {
+      "path": "知行成长/server/course_continuation_store.py",
+      "sha256": "f6f8b658d902d93d5355e8939a38630f89683fdf2c9dfce50d70e2a7ca946bef"
+    },
+    {
+      "path": "知行成长/server/course_continuations.py",
+      "sha256": "8d70ca17985688570371e6da2d1d75cf53da300eb8fe6736d0232fa51ffa1c24"
+    },
+    {
+      "path": "知行成长/server/create_tables.py",
+      "sha256": "5d98fd20b352e4ad0d962d36a4fd7712acfd98b19dd7f8bf508cde8f941a04af"
+    },
+    {
+      "path": "知行成长/server/db.py",
+      "sha256": "117c756e37c6ef1bdaf77e4f9df1540e2ac33a295fe41851696965d3ba3bd3fe"
+    },
+    {
+      "path": "知行成长/server/db_read_pool.py",
+      "sha256": "7a637b21529bbcb0344ad8f66d2e9f565851103e58e8f454b287b0fa1f6aab35"
+    },
+    {
+      "path": "知行成长/server/deployment.py",
+      "sha256": "9ed0b6f9b3665627e0b22882e9992942cf6eba0c70a2702e55da0a4495f8dbbb"
+    },
+    {
+      "path": "知行成长/server/errors/__init__.py",
+      "sha256": "26c85c739fe35f40be0144e9c431551a82ac505bf25dee4524e907a0523f20f1"
+    },
+    {
+      "path": "知行成长/server/errors/api.py",
+      "sha256": "402c0766556bce29d28b527d3833ddb14e1fc6ec4ebb3d840eeaa5551f67e001"
+    },
+    {
+      "path": "知行成长/server/errors/store.py",
+      "sha256": "39234f718b77e84b66e39fdbb65ec7b07ad4fba08e1f2945e0aaadbb2b3abe5f"
+    },
+    {
+      "path": "知行成长/server/goal_planning.py",
+      "sha256": "e703d36a84b99a2f2c47b2524642ca459da07c5cd4a6da879f3569160defd0c9"
+    },
+    {
+      "path": "知行成长/server/goal_workspace.py",
+      "sha256": "83ae0ad31d990cfe6b28aad9992d4cd1edb7b2beaa5387edd01871b5b13dd875"
+    },
+    {
+      "path": "知行成长/server/growth_reports.py",
+      "sha256": "cec16df6ac0fb8dc25d95a46910c6ce492199aab1f02f292ebc28c8e54630c8c"
+    },
+    {
+      "path": "知行成长/server/growth_statistics.py",
+      "sha256": "cb7576c51f9dcdf9fc9f056ecd61f08ae4eb1e62746f2cff442ca56db2b381d1"
+    },
+    {
+      "path": "知行成长/server/history_sources.py",
+      "sha256": "97f5856c5196beaf938e9006b1b88fef0646ec08856fa6123229c5fef94d1e6d"
+    },
+    {
+      "path": "知行成长/server/investments/__init__.py",
+      "sha256": "4cedfe2a47c78f0cc937b2e087f557d7ee67d7aa9d9ba7a64f7fcf3640cb34f4"
+    },
+    {
+      "path": "知行成长/server/investments/accounting.py",
+      "sha256": "3c1f929dbee5d4feb77992a56665b149b7a4fb29386963e94a0b45276120b313"
+    },
+    {
+      "path": "知行成长/server/investments/ai_relay.py",
+      "sha256": "657dd5100a1b8441dbf24b2f6c53c4a13924184a73da1393e29a1cf96b0aa9d2"
+    },
+    {
+      "path": "知行成长/server/investments/akshare_daily.py",
+      "sha256": "f1cee4bfeff936cd99aec78ec9ba6cc4062766511d876a52aae571a0bf3d4468"
+    },
+    {
+      "path": "知行成长/server/investments/akshare_worker.py",
+      "sha256": "7e0db614605e388934ac9010e6105cd0acd2441affa6c9f3e9abcad89bbb5834"
+    },
+    {
+      "path": "知行成长/server/investments/analysis.py",
+      "sha256": "3b5fa852a76d4fad225a8f64e1d2cac5df81f8e11d053e445aef20abf7c418a8"
+    },
+    {
+      "path": "知行成长/server/investments/api.py",
+      "sha256": "b598d1c27e9dc5d091caabb059ecb3f68aae1673e910b55121c1ca64e6972860"
+    },
+    {
+      "path": "知行成长/server/investments/bounded_http.py",
+      "sha256": "88bab2815e4230f3fd0d052d431751c7b1e63cf0bd128abc4e6b29f4a10e6d94"
+    },
+    {
+      "path": "知行成长/server/investments/browser_execution.py",
+      "sha256": "bcd0c64ab9efe4cb39b1d86b4056b707a633dcaf75149e393a633fcf2b059323"
+    },
+    {
+      "path": "知行成长/server/investments/browser_screening_v2.py",
+      "sha256": "1b35933aba57d24f543ad2d596f0d35cec709f4cb407cf9e393185f22afc2e71"
+    },
+    {
+      "path": "知行成长/server/investments/campaigns.py",
+      "sha256": "0372d957623e9d8427a60b1625be0ff28e3a53047491a9ddcbb5e25c39c642ca"
+    },
+    {
+      "path": "知行成长/server/investments/conditions.py",
+      "sha256": "7c82b4c1ec64d88e8e1ebb7cec8a049221e48138d5efb553595d0f24891e33e4"
+    },
+    {
+      "path": "知行成长/server/investments/contracts.py",
+      "sha256": "296d2726a65ca579b739ac1b81c210e85016224fa70bacbe87232e296e0c9655"
+    },
+    {
+      "path": "知行成长/server/investments/execution.py",
+      "sha256": "1b1b1a6865bb763c25eb7516357692da675d95ec6c39fc5147ad26ff2d31b529"
+    },
+    {
+      "path": "知行成长/server/investments/execution_studies.py",
+      "sha256": "2f80253a326068bbb62f61565ae92772eed5a67b314fe6bad400c57ae8090901"
+    },
+    {
+      "path": "知行成长/server/investments/experiments.py",
+      "sha256": "1c6a181c1b66fc3f933b046b1bdfde73f1505b6f71cb6351478bd03e64b12d8c"
+    },
+    {
+      "path": "知行成长/server/investments/integration.py",
+      "sha256": "746b1704b27701b2dd8ecb7bcf8dbc7d5d2eb791c1db181835ddcd57906b0c27"
+    },
+    {
+      "path": "知行成长/server/investments/investment_knowledge.py",
+      "sha256": "c90507dc45de5c1e160922bcd2ba9de9c51db8ccd3de21efb9954caed8385c78"
+    },
+    {
+      "path": "知行成长/server/investments/legacy.py",
+      "sha256": "36788937907c09b355a5b0b7d800938e7c3fcef934d9177973b15d62cc3672e7"
+    },
+    {
+      "path": "知行成长/server/investments/market_data.py",
+      "sha256": "8ec2c8116554f4a0d37f5445ac09688bd2a2ba7e1acd35079b0a86e66e758b86"
+    },
+    {
+      "path": "知行成长/server/investments/market_data_schema.py",
+      "sha256": "3e369337474d96afcad31de17fd22109721b2a469dc9a886ef44c1e6b162ae24"
+    },
+    {
+      "path": "知行成长/server/investments/market_evidence.py",
+      "sha256": "cc901530b5721fecd5a1503ca0ec50f24c0759793d00df610fb951013b5b6040"
+    },
+    {
+      "path": "知行成长/server/investments/market_import.py",
+      "sha256": "d19df83f0d398eaa53de3f1db663fa6d0c7644fbb90042ef54cc54a62daa8254"
+    },
+    {
+      "path": "知行成长/server/investments/monitoring.py",
+      "sha256": "b2f0a4deeff65db70e834f987a7e3d1df6d0846c20c3e13b490a525375adcf71"
+    },
+    {
+      "path": "知行成长/server/investments/observable_conditions.py",
+      "sha256": "f525fac706bdf200a84c260953c8a704be02b8502a05ea94991ed290b2a8748d"
+    },
+    {
+      "path": "知行成长/server/investments/operations.py",
+      "sha256": "f7a3a176e53f9094777b6a232d5a868c2b0479f27e629aecaf381ec0a72dc3ad"
+    },
+    {
+      "path": "知行成长/server/investments/param_extractor.py",
+      "sha256": "8e69959aa54157b55a8cd942aed4a4bc8a5bfbc14040a23f82a30b7554194353"
+    },
+    {
+      "path": "知行成长/server/investments/plan_checks.py",
+      "sha256": "368ef503f0c78dc0a263dcbfdcf9e76838d203f2e3a78d532af84002400aafd7"
+    },
+    {
+      "path": "知行成长/server/investments/planning.py",
+      "sha256": "8c1f80d1e9e55ad85d067ead91166b969a45015892ad454ba9e202841fbcb034"
+    },
+    {
+      "path": "知行成长/server/investments/platform_store.py",
+      "sha256": "b1091ebf49458f2feea38375d7d4d027ee61ac2b85743e521b7a13198b7eb9ee"
+    },
+    {
+      "path": "知行成长/server/investments/portfolio.py",
+      "sha256": "3563dc317aa4dc8b892ac0416fdabc7537c552176b1eb250fe889b8777bebdab"
+    },
+    {
+      "path": "知行成长/server/investments/portfolio_api.py",
+      "sha256": "36e2b3362d877aa5be3867a267e027d2ac8951388a50d8bf60cf7723eb432e11"
+    },
+    {
+      "path": "知行成长/server/investments/prediction_journal.py",
+      "sha256": "4c1a6ccb775cca7c229d546397c366aa53ff4565f483c6ffe88312eba2c04467"
+    },
+    {
+      "path": "知行成长/server/investments/providers.py",
+      "sha256": "82d999ae8b85567d463c6d51947bae2d6486513f16ec3009c07c7b4c63320a1e"
+    },
+    {
+      "path": "知行成长/server/investments/readiness.py",
+      "sha256": "585b5401fbd9fcfca21bfcbcb45fdabafe4467815596e2046c362079bf8e11f4"
+    },
+    {
+      "path": "知行成长/server/investments/reconciliation.py",
+      "sha256": "8273d579ebf678a63b58d70c2d79c99b48d55cb85e12a07618da9a6bdd451fbf"
+    },
+    {
+      "path": "知行成长/server/investments/replay.py",
+      "sha256": "8afc976620d097e2e76875c02666cef9bb045d9fa2f5bc091cd197e687e04abf"
+    },
+    {
+      "path": "知行成长/server/investments/research_archive.py",
+      "sha256": "b1e3456030b07941b49b880c8deba97cb6b80dfa49af6bb006db8a1dcd2c5ebe"
+    },
+    {
+      "path": "知行成长/server/investments/research_archive_backup.py",
+      "sha256": "5e04bc9f5c2bbd753dba6bb9bcd7d8a5fb5c311aa87623fa4f496cebe28b79c2"
+    },
+    {
+      "path": "知行成长/server/investments/research_comparison.py",
+      "sha256": "7947d2d6785968fd69df3524f44f9235578a791ce7a4acb319bdc098882e1ea2"
+    },
+    {
+      "path": "知行成长/server/investments/research_files.py",
+      "sha256": "aded6f93f695b4c2d4cb4e26a54426e21d30c772233e8b85369e0d59a087d1e9"
+    },
+    {
+      "path": "知行成长/server/investments/research_history.py",
+      "sha256": "e9e6e912bcfcbe494d2fb4f21c91163e93e03804f5818a9ae457feaf21e89d20"
+    },
+    {
+      "path": "知行成长/server/investments/research_sources.py",
+      "sha256": "160a108b27bdf07bdc04e508c98c6a1441a5388f3aa90bc4c346600bac45718b"
+    },
+    {
+      "path": "知行成长/server/investments/research_tools.py",
+      "sha256": "b1f4a150d0c76fd653b8d9614126c9da6d30f0633aad70c6664e505b97fec9a2"
+    },
+    {
+      "path": "知行成长/server/investments/research_worker.py",
+      "sha256": "14dddbf955a6d3c9af312c78626fecd09e71caed96c7057e378151de85ae453a"
+    },
+    {
+      "path": "知行成长/server/investments/reviews.py",
+      "sha256": "be3762323bc3b862e553da8a384f79cbdffecf938500b7b758d737d5f7ab8d5a"
+    },
+    {
+      "path": "知行成长/server/investments/rule_screening.py",
+      "sha256": "76919720cb6b681cfa73d480cd67e67212bc6cc05cf35c70d561a5529cb02a89"
+    },
+    {
+      "path": "知行成长/server/investments/rules.py",
+      "sha256": "5cc56532bde668eecb2c1a5a7978673dd5bac9b85718485b2f9a5016013514b6"
+    },
+    {
+      "path": "知行成长/server/investments/schema.py",
+      "sha256": "78af8351675c553f78f091ed46f3a25a40aba7ad7f64d4ff76c71dfa575d401b"
+    },
+    {
+      "path": "知行成长/server/investments/screening.py",
+      "sha256": "67b9a40460755b7180f58a3caeab3928566391191db4908908ca5e0bb8840bec"
+    },
+    {
+      "path": "知行成长/server/investments/store.py",
+      "sha256": "433946b02901b0788508620aea5605dbfa0d58f6862c2fb1cf926fcbd40a212b"
+    },
+    {
+      "path": "知行成长/server/investments/strategy_backtest.py",
+      "sha256": "6e3714deea3591e43f59b8b5f4305cbba5211760885c3698ff75f25a23db4bf1"
+    },
+    {
+      "path": "知行成长/server/investments/strategy_ide.py",
+      "sha256": "7a538ee22a7eaa1ccc90c40b5f143552a9ea9b448a94b7a077144aa21bf23f7e"
+    },
+    {
+      "path": "知行成长/server/investments/templates.py",
+      "sha256": "0df669d10a332910a7c27bd05268a1af05a9c2c49ee4b562f6634bbe23dca8d5"
+    },
+    {
+      "path": "知行成长/server/investments/workspace.py",
+      "sha256": "c3ad45dcd122c719224c958f3a1bb8f58795dd4d5e82a696f68019d915dca556"
+    },
+    {
+      "path": "知行成长/server/knowledge/__init__.py",
+      "sha256": "48516f98851058528b5e1cd3ad8ecac858dab8f05dc3e2ad6b2602a7409fad8e"
+    },
+    {
+      "path": "知行成长/server/knowledge/api.py",
+      "sha256": "d454d3dac10a41acf70b4f0cf6cc24ea879e913f89439b5ba7a68c31feb9c5ca"
+    },
+    {
+      "path": "知行成长/server/knowledge/catalog.py",
+      "sha256": "b7ffde6df1fc61cae952deff170a9b2693a4f64c5eb5b2317e3b847a0ff3a6d7"
+    },
+    {
+      "path": "知行成长/server/knowledge/graph.py",
+      "sha256": "823bd353d1399b3301646e32ce3811e0f1ed1adc1837e7f3a2f106144e0f2b43"
+    },
+    {
+      "path": "知行成长/server/knowledge/scanning.py",
+      "sha256": "2d900f3e733d13389ac5c1259c200e26f16bca9b651bb9d052a2d319948ac498"
+    },
+    {
+      "path": "知行成长/server/knowledge/schema.py",
+      "sha256": "8f328aa7d165330d885dd202b6ca60f3f155305216aba6d726a8008c4f8f272c"
+    },
+    {
+      "path": "知行成长/server/knowledge/store.py",
+      "sha256": "be90d41112dbf8d461bbd73bd7f73eb5a17ebfa4ea0575764cf34ca43c6878f9"
+    },
+    {
+      "path": "知行成长/server/learning_actions.py",
+      "sha256": "5fc838c3fdbe8f5f83228b3d65b0f5edad81134b21a02c18b95bb3f59606fcb7"
+    },
+    {
+      "path": "知行成长/server/learning_checkins.py",
+      "sha256": "28e6e8f5f5f959ab5c87e10f17a08dcb6a2c09f59ce6cf5d2f7cc112dce4d6b6"
+    },
+    {
+      "path": "知行成长/server/legacy_files.py",
+      "sha256": "689ada5177be79fd52ea5a61c4df2ac8ed0761c211f1a094dde620db919bc3b2"
+    },
+    {
+      "path": "知行成长/server/legacy_migrations.py",
+      "sha256": "f310441f67415ae47d2ad41d7ce10c9110308831fd22bc557b05f419287ce9d1"
+    },
+    {
+      "path": "知行成长/server/legacy_schema.py",
+      "sha256": "402b7620f0f7b9212c65a08f172e5995a15202d311394e785d0bbee1325ec6bf"
+    },
+    {
+      "path": "知行成长/server/legacy_sqlite.py",
+      "sha256": "b08422ea75ae9d9c4e2b60cb03e7fef5a1df554bae78c86e1a381032337c1884"
+    },
+    {
+      "path": "知行成长/server/legacy_state.py",
+      "sha256": "e795fc6a52118f5ca1108c96e8de012f862ce0835bfdf6fa95df79ced7e7bb96"
+    },
+    {
+      "path": "知行成长/server/migrate_data.py",
+      "sha256": "546e6d3cc0ea868ba1f229f119ceaf2d2170a97383b8daeeddcfa38e41289aac"
+    },
+    {
+      "path": "知行成长/server/migrate_knowledge_stable_ids.py",
+      "sha256": "e4eaf5d7049bd72d67fb305041664782eec1f0e88363d25f5fa78af2f3ff0e6c"
+    },
+    {
+      "path": "知行成长/server/migrate_plan_status.py",
+      "sha256": "bdd0fe609eb55bd9d0ace41911150c53108041dff2c58b482b746cc463e07dd8"
+    },
+    {
+      "path": "知行成长/server/migration_api.py",
+      "sha256": "b440249bb1a8f47a7f817d6646fbf79120e205b8ef19a029aa805fe3f4f8ba06"
+    },
+    {
+      "path": "知行成长/server/mobile_learning_questions.py",
+      "sha256": "6b4dc672abfdb483742bf63cb07ba4d0245cb3ed270f8da7f9329ed0b712615a"
+    },
+    {
+      "path": "知行成长/server/mobile_library.py",
+      "sha256": "80e41585aeb0e3c9c387194a9cd816dde80f5c3d066da16c350fa2f5861484b2"
+    },
+    {
+      "path": "知行成长/server/mobile_private.py",
+      "sha256": "b022f9b1aeb705fefd3d9535fec9eeec542d15da566d018bd4007cede6e00c9f"
+    },
+    {
+      "path": "知行成长/server/mobile_progress.py",
+      "sha256": "85921e669a6d25e7e1af8afa3d96a327549a6db88309fbb4dd030d26cf76585f"
+    },
+    {
+      "path": "知行成长/server/plans/__init__.py",
+      "sha256": "3a6abe07bb1c5788733d1aee7d604c96ba11f4c55a57ada2fb0a14901e7caacf"
+    },
+    {
+      "path": "知行成长/server/plans/api.py",
+      "sha256": "5562c3132f49c9c54492cba5753e7c104863c5e7fcd1736205843d3bda6d3bd3"
+    },
+    {
+      "path": "知行成长/server/plans/backup.py",
+      "sha256": "f1231bcb183bfc567a2f948c74a05ddc7891b53500a1ea339a8a174e9f4ddb56"
+    },
+    {
+      "path": "知行成长/server/plans/continuation.py",
+      "sha256": "83b98fc624350baa78455d57c0d3b7f638be094370e6dc0a3d4605d1da5b1bb3"
+    },
+    {
+      "path": "知行成长/server/plans/generation.py",
+      "sha256": "7e43170b5e6261e7be29d0e2c8229c7dc62e7d210cc8e7b06bc2d9949399f9cc"
+    },
+    {
+      "path": "知行成长/server/plans/github.py",
+      "sha256": "8496cdc4832e09ea8557222a186eba2354f2a1269fc5e7374cea984cff0b2219"
+    },
+    {
+      "path": "知行成长/server/plans/github_store.py",
+      "sha256": "9367e1ee807e6cf247e60c612842145284ff6e23e74e200a00b796e998edf665"
+    },
+    {
+      "path": "知行成长/server/plans/progress.py",
+      "sha256": "f699d930fcb151fc27bf5001d59a5b985a75d7760a25baadfb24eef1a6d8789f"
+    },
+    {
+      "path": "知行成长/server/plans/refinement.py",
+      "sha256": "272d96e441eb445a22dfff26c8a74adc4a25a9fc7443e56221ab54a4c6086514"
+    },
+    {
+      "path": "知行成长/server/plans/store.py",
+      "sha256": "9d442b2dac39db854b507084127b88996d3a2a594853b0be6c94ea2fb56d3fbd"
+    },
+    {
+      "path": "知行成长/server/platform_schema.py",
+      "sha256": "66e9461aa30771c0a50eee1ff87c387418e6f346b7252074bbff9f638e86cefe"
+    },
+    {
+      "path": "知行成长/server/predictions/__init__.py",
+      "sha256": "582782e2e9621e4a06de9ecae402c9dbfc667b70867c1f59fc4a11b429dd9bbb"
+    },
+    {
+      "path": "知行成长/server/predictions/api.py",
+      "sha256": "d2b81917e38eaacb6d61d9972a99248b38c3b6db190fed08b2afc23189f0d55c"
+    },
+    {
+      "path": "知行成长/server/predictions/store.py",
+      "sha256": "87f40dafe1d6f583c1bb956ad036667b9fdb81824d51304030a016fdb701242f"
+    },
+    {
+      "path": "知行成长/server/prepare_materials.py",
+      "sha256": "61377f6caa0073fbf2b0c2624c94f26b6b1859c83c0cbb3f9b20b545f941413e"
+    },
+    {
+      "path": "知行成长/server/reading/__init__.py",
+      "sha256": "301af7077351f18bf2308bc29945ba75692dac186c433e729774d6ef182e1d70"
+    },
+    {
+      "path": "知行成长/server/reading/api.py",
+      "sha256": "f39e31deaacd288177513dc48fa9318fc931fe69cea96850a7ddda3c8cd8ca95"
+    },
+    {
+      "path": "知行成长/server/reading/cloud_store.py",
+      "sha256": "8246896602aeb82f3c7e617dd33c330a4b0c1bcee252b3e87e5d063067c1598e"
+    },
+    {
+      "path": "知行成长/server/reading/content.py",
+      "sha256": "d3d05879b8f2ad7b5caba6eef671a105d37032706fbbd14f52203e7794bcec36"
+    },
+    {
+      "path": "知行成长/server/reading/guides.py",
+      "sha256": "bfde47ae6a573b7eba7a2e4dc9edbe47cc35d9432b7e699fc824d093ff8e09bb"
+    },
+    {
+      "path": "知行成长/server/reading/scheduled.py",
+      "sha256": "14d8451cca84bead6dee05b03ebfa8f1d8f13350e0770c6aaec9f3cf3c177020"
+    },
+    {
+      "path": "知行成长/server/reading/schema.py",
+      "sha256": "0e3926917346bcfbe28269a4281405aacc3afb20a695921beaa5f1411321e409"
+    },
+    {
+      "path": "知行成长/server/reading/service.py",
+      "sha256": "0b9f89fbc054b065374d9f53fb602384bd0509e0bd945bc4e6f229956f62f87b"
+    },
+    {
+      "path": "知行成长/server/reading/sources.py",
+      "sha256": "4d5b5a6970bdac09e071f3335910feca72dabdc73622a9a9915dd93c9bcf7f28"
+    },
+    {
+      "path": "知行成长/server/reading/store.py",
+      "sha256": "91f7e1eb17a4911dbb867f0718ad1a52e7018daec49dcfe3adb8b8252c006d0f"
+    },
+    {
+      "path": "知行成长/server/record_handoff.py",
+      "sha256": "53e0fd02311f402575276455a3614f36eddc7190e05c11aa34976cf7dfc481e5"
+    },
+    {
+      "path": "知行成长/server/record_handoff_api.py",
+      "sha256": "ad748100a073f78b3d4736850bc4a743c5190e56252e93f805f2469c14d173c6"
+    },
+    {
+      "path": "知行成长/server/reflections/__init__.py",
+      "sha256": "7fb6ee436742ececde0afbc7e1f14e7adf1f692ca057aa036387f94434043cae"
+    },
+    {
+      "path": "知行成长/server/reflections/api.py",
+      "sha256": "1fca33fa8ff905ba0157e26402ce4ea779a66ee83097e8f313b138d2d9032d7e"
+    },
+    {
+      "path": "知行成长/server/reflections/assist.py",
+      "sha256": "18e05e615275766ca0fe72bc93be827059df87a17a7fdbd900d05036d4f8067f"
+    },
+    {
+      "path": "知行成长/server/reflections/store.py",
+      "sha256": "ac0462e67ce50e80fc94af6a070ad72e3f0e91a83a4a04ce0102af21402871c1"
+    },
+    {
+      "path": "知行成长/server/request_limit.py",
+      "sha256": "095fec9518aaa306a72d591836313047aac617f81fead8c5740589962f17fd40"
+    },
+    {
+      "path": "知行成长/server/rhythm/__init__.py",
+      "sha256": "de46a34b14d7a2bb5ed263f09871b635588668923e4e0b86c6c0056fca2db455"
+    },
+    {
+      "path": "知行成长/server/rhythm/api.py",
+      "sha256": "589029a7326a98cc75cc9c80ef18241e71e358a31892ae8a5faefe7be5fe7c0b"
+    },
+    {
+      "path": "知行成长/server/rhythm/contracts.py",
+      "sha256": "d1b8d2cfa45f0667816f25dd8c76443c6d21feb699b5212c6706cca66d08e819"
+    },
+    {
+      "path": "知行成长/server/rhythm/events.py",
+      "sha256": "26a5aaf4b4dc2ff0eef020cd6b3748f1ce07f950fb6a54943054aa917676c57e"
+    },
+    {
+      "path": "知行成长/server/rhythm/export.py",
+      "sha256": "39c6eedc6dfbd4b52b7ef4a29fa4764738e825233c31e993de38a2b0f9c3d6ab"
+    },
+    {
+      "path": "知行成长/server/rhythm/facts.py",
+      "sha256": "4c5b8aa11ea9483481c7506189782549ed8324461fcefc55cecff1cbdfff2be1"
+    },
+    {
+      "path": "知行成长/server/rhythm/metrics.py",
+      "sha256": "61335f2f23e72a5a24caeac6cd4f93d01eaf80d09b22516f0073ea78ec072bfe"
+    },
+    {
+      "path": "知行成长/server/rhythm/recap.py",
+      "sha256": "5adce6f21d40fc7c06084aba3568b25ff049786f95b7122720bf809a4b001615"
+    },
+    {
+      "path": "知行成长/server/rhythm/reminders.py",
+      "sha256": "4de351d0901f1a3a2bd4e60c659a410a779cb3ede4fddea1ac03cb0a468df4c8"
+    },
+    {
+      "path": "知行成长/server/rhythm/schema.py",
+      "sha256": "d1b6af4a41c7cd31637a7a089bed851b6492b03b32b2200373c162942873df07"
+    },
+    {
+      "path": "知行成长/server/rhythm/service.py",
+      "sha256": "d08eae0a1b44dbda4a9ec20650afb2d94b0d0ac26d5609dcd0465bc9e5380d47"
+    },
+    {
+      "path": "知行成长/server/rhythm/store.py",
+      "sha256": "82184d8ebb8200e6b6025e91b8aba08d1efb1cd2752a5a2adb86c75c30a397b7"
+    },
+    {
+      "path": "知行成长/server/rhythm/trial.py",
+      "sha256": "1934adebb70cff2c6cf6c92c22e71818de4651403fc0316c662c18b95f712fea"
+    },
+    {
+      "path": "知行成长/server/rhythm/weekly.py",
+      "sha256": "ce83d86c3875e21754324e31059009626f0bdec05f2f1539236c553d1a1b830c"
+    },
+    {
+      "path": "知行成长/server/run_local.py",
+      "sha256": "bfe65c93aec202888020991174168034f9eb2fdb5d243a792a560948a2bb7b55"
+    },
+    {
+      "path": "知行成长/server/search_api.py",
+      "sha256": "96c2d9be89b0f18ffd6eb39155deb68c3f49eeefdd5070609ca2406baa5727ed"
+    },
+    {
+      "path": "知行成长/server/search_service.py",
+      "sha256": "c80e8c774a5ec6ae61b9ade8c00c9379cffb315203b0b7e6067b14343f179608"
+    },
+    {
+      "path": "知行成长/server/standalone_backup.py",
+      "sha256": "06e92a4c05e5439868e0fbe9a8dd9d10f42a2d9b3dd51be9230401c70d6c52a3"
+    },
+    {
+      "path": "知行成长/server/static/account.css",
+      "sha256": "43263c14028aea5dfa2953825b98dae0d1d47d68cdb828eb3625d6c3b715bed7"
+    },
+    {
+      "path": "知行成长/server/static/account.js",
+      "sha256": "7a2f55d5ff39a9b31383cb8bae0fce0811b7fd1a67fa4986b1b09e7e395a76cd"
+    },
+    {
+      "path": "知行成长/server/static/action-link.js",
+      "sha256": "6556a9d0c3e44d58b551f5a200a94207bc03551d22302c37017062b02c54877f"
+    },
+    {
+      "path": "知行成长/server/static/action-plan-client.js",
+      "sha256": "85a9cde92f491a58202abb2f587821c1bc9af5e27adef1dee8f093a3b3b63358"
+    },
+    {
+      "path": "知行成长/server/static/action-plans.css",
+      "sha256": "2550e67d2639f1444236a355a550720ffa3ff22bf8f3b2790011cfcb8a54f6b2"
+    },
+    {
+      "path": "知行成长/server/static/action-plans.js",
+      "sha256": "0d0a73c553d0bed5211886468c6483d0bab79d006ad658ef4a4f98eeb23ef496"
+    },
+    {
+      "path": "知行成长/server/static/action-quick-editor.js",
+      "sha256": "12d2b527523a9161a82514034193a1da0dad8bb0481929cee2981ec15a5a5389"
+    },
+    {
+      "path": "知行成长/server/static/action-recovery.css",
+      "sha256": "65a39ddd47e1b51e6c26500a08c10cff5fe4b1f8a7e6832dbaf68084ece841b9"
+    },
+    {
+      "path": "知行成长/server/static/action-recovery.js",
+      "sha256": "2cc846bcae8875db8828fc49f7b17b58bc3f212e54f4dfdf202808e079093494"
+    },
+    {
+      "path": "知行成长/server/static/action-reviews.js",
+      "sha256": "ba63bc9d9d762b04c7ff9948e745d985d090944654db5888e5a7cf98cffba2c9"
+    },
+    {
+      "path": "知行成长/server/static/ai-config.js",
+      "sha256": "b142fcb78cf237ee6257700ec6e6149e37484d2693a8e1eae61ddcb3eca46743"
+    },
+    {
+      "path": "知行成长/server/static/ai-evidence.js",
+      "sha256": "a66406cb2736ad12b300ca2788bb5fc6f55a5be3898528100d5102f77e1061f0"
+    },
+    {
+      "path": "知行成长/server/static/ai-setup.js",
+      "sha256": "c80b028572e494de4b28b548eefd645e54cd852f83dfa9b2e7814cce562b77af"
+    },
+    {
+      "path": "知行成长/server/static/behavior-report.js",
+      "sha256": "75b8e5c8d1e6991a278b4e3337e47a9fe511a18522fb07e83a6441322e6de08e"
+    },
+    {
+      "path": "知行成长/server/static/coach-facts.js",
+      "sha256": "25aa18038a7b93ca817b6b73f6f7b505d3a468e030f45a4fb88f3fe35f005b18"
+    },
+    {
+      "path": "知行成长/server/static/copilot.css",
+      "sha256": "cc723348bdfe25c4279c87663a36c36e15b80ec7c7d7eaa15784456b7f73fc17"
+    },
+    {
+      "path": "知行成长/server/static/copilot.js",
+      "sha256": "03b630f617038eafa862a895021ea3f0d2f6758bf365742a5236a945e3f7d1a4"
+    },
+    {
+      "path": "知行成长/server/static/course-archive.js",
+      "sha256": "7f323b0892bda1f1674258766ddf7bc1b03adf9de206441dbfad8a291b8844c1"
+    },
+    {
+      "path": "知行成长/server/static/course-continuation.css",
+      "sha256": "7b77e040be89dcbb69f124a9117dfe9b31da2204a80c5b3b5e5713f922870353"
+    },
+    {
+      "path": "知行成长/server/static/course-continuation.js",
+      "sha256": "b22d4e8f26ce8365e7e1a1c566282fd246e14ec092901288babdb08d358139aa"
+    },
+    {
+      "path": "知行成长/server/static/course-feedback.js",
+      "sha256": "bee252d17728067316782807b04003058532cf69b5aba548b03ea67d3361e381"
+    },
+    {
+      "path": "知行成长/server/static/course-library-model.js",
+      "sha256": "2a117b708cd78ecd182ba1a230853297bfc1a5f9c7cd7f0e14427710d840890c"
+    },
+    {
+      "path": "知行成长/server/static/course-library.css",
+      "sha256": "5689fa520b7debb856b123ab3cb46b6cf6766979a29b16579caaebe941a3684a"
+    },
+    {
+      "path": "知行成长/server/static/course-library.js",
+      "sha256": "122999b6f208a8b8115eef51aaed043cd63bbd12be714f393663e2cf92c6020f"
+    },
+    {
+      "path": "知行成长/server/static/course-reflection.js",
+      "sha256": "afb6fe759dbc60a5ab20b368115f27b30f3b32537c83d55f5e35a14d850cd2e7"
+    },
+    {
+      "path": "知行成长/server/static/course-summary.js",
+      "sha256": "d207a72b636db63b8eb0877d0efd05fa6c8865803b797953203de841cbc7efa5"
+    },
+    {
+      "path": "知行成长/server/static/daily-agenda.js",
+      "sha256": "ccc8052e1d9423d34a866bdb64f3fa06895b0bf671c96912bc7666d4289f5603"
+    },
+    {
+      "path": "知行成长/server/static/daily-learning.js",
+      "sha256": "62924d2760d0dfb786b1f83ee1e119f2b43312e36f61503858a8015e853b91c0"
+    },
+    {
+      "path": "知行成长/server/static/daily-rhythm.css",
+      "sha256": "c67a74f9cbc0bee79f391483c728260c8ce9f4c017c864bf7655645bc3844f9c"
+    },
+    {
+      "path": "知行成长/server/static/daily-rhythm.js",
+      "sha256": "70fd8b2272cbed345c311cd6d1b55800ffe7b335c88da748241e90e3717e5c0d"
+    },
+    {
+      "path": "知行成长/server/static/design-tokens.css",
+      "sha256": "3b00e8727a77740097854a9b2848883df7b842924a68b83a3ab2207c57d61867"
+    },
+    {
+      "path": "知行成长/server/static/event-bus.js",
+      "sha256": "250ca29f46fcbd23621c1261fb525cbee3f4821efd8e90b8aec6043c889ed579"
+    },
+    {
+      "path": "知行成长/server/static/floating-panels.js",
+      "sha256": "5f7232e8c5e24e3a62e5931b30207fab7a233c263e38896ee861aaaf6c1ac671"
+    },
+    {
+      "path": "知行成长/server/static/goal-editor.js",
+      "sha256": "59242db8ab587561cb4ee18f7279d5a76b7b65c026d393272a95d681913966d6"
+    },
+    {
+      "path": "知行成长/server/static/goal-planning.js",
+      "sha256": "167d4f2af8924216848355bee81f075ed7a539b94dabd041780cd70df9b65170"
+    },
+    {
+      "path": "知行成长/server/static/goal-workspace.css",
+      "sha256": "15d88c0ffbdcbe8722fbf99c7504462e9a909833a2b32c9fae6a170b9bb65468"
+    },
+    {
+      "path": "知行成长/server/static/goal-workspace.js",
+      "sha256": "dafa90ab4b39d6fae1df7909d4cd1dab44383901b401d5bfa876cfd634c8ec27"
+    },
+    {
+      "path": "知行成长/server/static/growth.css",
+      "sha256": "d940ced32012f81203a246b16f0580ba442fa2c59309811612f7eb0c23fdac52"
+    },
+    {
+      "path": "知行成长/server/static/index.html",
+      "sha256": "e94ed77401c29c383d3586f22d99ae2e94326f1c5e020cfaf64d1a57f97d1ecd"
+    },
+    {
+      "path": "知行成长/server/static/investment-analysis.js",
+      "sha256": "c7c9c3d124f2892c58758f5c223fbecbdaf025b15b82ecc290a35758416e45d8"
+    },
+    {
+      "path": "知行成长/server/static/investment-browser-core.js",
+      "sha256": "a861b31f45b52e76f092395747f07050be8d14d8b41258034194e3df34145ecb"
+    },
+    {
+      "path": "知行成长/server/static/investment-browser.js",
+      "sha256": "0fa43cbcba019e55c30cf63889783960ad5e7b1a909ac1057c2ea5563a297e80"
+    },
+    {
+      "path": "知行成长/server/static/investment-growth.js",
+      "sha256": "5fe7f732c240612f105521a5ba1bc14e40bd6b28c43a8c60b15cbf7a8fbb86ef"
+    },
+    {
+      "path": "知行成长/server/static/investment-ide.js",
+      "sha256": "74e42dcfbc0d72475ee294adf2d1b05d3180ac68a8cb7aa2e93ea1e11577d630"
+    },
+    {
+      "path": "知行成长/server/static/investment-market.js",
+      "sha256": "b0edf2479165fff6d08d8fa10dc9aca16936c7c1e6286ac006c086e6e030b66e"
+    },
+    {
+      "path": "知行成长/server/static/investment-monitoring.js",
+      "sha256": "1b693d7502841cbb633d444ad867d6ae4f4981d56f2f6e78bbb37e758cfaad76"
+    },
+    {
+      "path": "知行成长/server/static/investment-portfolio.js",
+      "sha256": "6b87ebc72400de85c66ec91fbf12a0f063d95500d470c1ab76827a8fee08bd18"
+    },
+    {
+      "path": "知行成长/server/static/investment-research-archive.js",
+      "sha256": "10ad163d641d3c3f59642e0d03cdbdb499632881b8b80a4bd4ac08c13d48983d"
+    },
+    {
+      "path": "知行成长/server/static/investment-research-charts.js",
+      "sha256": "72ad6a4f452abf0bc83daaa8bdafea787f48e1371cd17e11111f1023a20c8253"
+    },
+    {
+      "path": "知行成长/server/static/investment-research.css",
+      "sha256": "932f8c555166b25867e3e3653b681ba4ad8429c7002a9ab085874c7e5e2a6658"
+    },
+    {
+      "path": "知行成长/server/static/investment-research.js",
+      "sha256": "1b62b8bf3c83397203680be2c5877cf778fc01268c3213756f9bb4a551d84714"
+    },
+    {
+      "path": "知行成长/server/static/investment-rule-screen.js",
+      "sha256": "81e16da50266679136639141e8c5de406fb293a416cbaecf5781a82e862b8c12"
+    },
+    {
+      "path": "知行成长/server/static/investment-screening-v2.js",
+      "sha256": "615d76b82d4610bcc5bd5b2981cb5682bbd0cfd96667e9ab3ae245f7bfb955a2"
+    },
+    {
+      "path": "知行成长/server/static/investments.css",
+      "sha256": "60fcc8556461114892197dc06226c147f15d73cf356a26faa5e4e782ed7297fd"
+    },
+    {
+      "path": "知行成长/server/static/investments.js",
+      "sha256": "317d7383c88e8e36876d3e1cfb43cae1de70c0c8eef0f1f4b63ebb637a2dae1d"
+    },
+    {
+      "path": "知行成长/server/static/learning-completion.js",
+      "sha256": "089ec085e0842390fcf4d86c2661680d2879f496394e5ab25b556d25cddd265c"
+    },
+    {
+      "path": "知行成长/server/static/learning-history.css",
+      "sha256": "70d24b79f059a55a95828f1e14949ec8a19da050b6885a47a7c71676466de184"
+    },
+    {
+      "path": "知行成长/server/static/learning-history.js",
+      "sha256": "73e985017f7e04db02acbfa6b845750e5cb1870d33d6d0594bf2d6af7fe09b4b"
+    },
+    {
+      "path": "知行成长/server/static/learning-notebook.css",
+      "sha256": "40d04d0c64c1e76534b4d8f1265e49059292bf9ad0c435bd6a7304bce9df4d49"
+    },
+    {
+      "path": "知行成长/server/static/learning-notebook.js",
+      "sha256": "0fdcc864d4e269c367718d4529e14a1ddb113681672636aa8ae747a479c8410e"
+    },
+    {
+      "path": "知行成长/server/static/learning-plan-actions.js",
+      "sha256": "d294603b5a0fcc9d695b6ea9f178d4a4d36058af1bf450b2cefb3f9df044092a"
+    },
+    {
+      "path": "知行成长/server/static/loading-state.css",
+      "sha256": "24d80118ffcfe784377cb524f7c1a01925a73a0a8956d46a01fab1e65bb185a3"
+    },
+    {
+      "path": "知行成长/server/static/loading-state.js",
+      "sha256": "6f43eff7375559aa9596e7a24f9213a55871bfa60fec9f5c101a3f6c635d1083"
+    },
+    {
+      "path": "知行成长/server/static/login.html",
+      "sha256": "dc5a1d95c8af298512c9784361f936f5d5ac832f9facecfcb343f982009c1cc6"
+    },
+    {
+      "path": "知行成长/server/static/login.js",
+      "sha256": "7f7ab3aee4b23aa13983cdf72eaccceaca5e743e4eb0c3241fd8dd2885af2588"
+    },
+    {
+      "path": "知行成长/server/static/mobile-learning.js",
+      "sha256": "ed69c29d94a987d309736630abbebc16bed9b72bd79a1e2b5654914d37de808e"
+    },
+    {
+      "path": "知行成长/server/static/plans.css",
+      "sha256": "4386a0da0c6a4670b978d5a9a564d508795ac523c9b69885b4fbe4ab2e9aa81f"
+    },
+    {
+      "path": "知行成长/server/static/plans.js",
+      "sha256": "ca33423e0dfff69b18c233be62adfc055d4c7228f6f891199d2d7f8880b31fa9"
+    },
+    {
+      "path": "知行成长/server/static/reading-body.js",
+      "sha256": "27ec1d31fdafce54f7aed6839e0fa836322a339286493e4aac49ec7bc2cf4e1f"
+    },
+    {
+      "path": "知行成长/server/static/reading-growth.js",
+      "sha256": "09c31319a64111141159c67d59034af07851ccb7f7cccbf757d95477e189b47b"
+    },
+    {
+      "path": "知行成长/server/static/reading-position.js",
+      "sha256": "687abdf5890c41fd9a97cc875876dd96138799a383f6fa970da802eb0a071894"
+    },
+    {
+      "path": "知行成长/server/static/reading-tasks.js",
+      "sha256": "3c6357a1e328682a08b8f267fdfa6b320b7764f04bef9c79a8af2e1fbc7c7f87"
+    },
+    {
+      "path": "知行成长/server/static/reading.css",
+      "sha256": "0cf0c927a270d6f0ba1ed489d19656e312d1e56fcc8667db8d428b17a9c0618a"
+    },
+    {
+      "path": "知行成长/server/static/reading.js",
+      "sha256": "edd128593a369a5d2e20adec7c2a26359075f64afeac4b5b3936148ee39bc6dd"
+    },
+    {
+      "path": "知行成长/server/static/record-link.js",
+      "sha256": "51673dee2c24622b34d593cc267f200b6a1ecd7f411510bc89564744b5726b07"
+    },
+    {
+      "path": "知行成长/server/static/reflections.css",
+      "sha256": "6cc6f4cef3c4f073adceaaf0404f125eb258209c9fc0c765f799444ee76c18b2"
+    },
+    {
+      "path": "知行成长/server/static/reflections.js",
+      "sha256": "8e32b894ae946ca22da41ad9fd6157e8c0fc5b23ddb4ed7962f6b2a9b7a10a5d"
+    },
+    {
+      "path": "知行成长/server/static/rhythm-client.js",
+      "sha256": "165f855d40ecf214dfc60af20ca55496fe8dca21d0b01f42292e8686dbf5db5b"
+    },
+    {
+      "path": "知行成长/server/static/rhythm-trial.js",
+      "sha256": "af0c861897289a0bdba1940dd983054c9b016cd1176cf23927cf80d38cb5764a"
+    },
+    {
+      "path": "知行成长/server/static/search.css",
+      "sha256": "305e564755df59a89795eb3ae6e5b7b20eae69c02efa6d2e26ae1cbd177cc24f"
+    },
+    {
+      "path": "知行成长/server/static/search.js",
+      "sha256": "3c5472d72cc5ebd33d17f3f442d4db50f5d7b4d6835b49d456a5aeda9a4f5cd3"
+    },
+    {
+      "path": "知行成长/server/static/stocks-original.css",
+      "sha256": "afe1d0460c054a97902bce1b422972535024f1a3aeeb89845767120704b10df0"
+    },
+    {
+      "path": "知行成长/server/static/stocks.css",
+      "sha256": "87c617c4624a9e0a85a0c0401cf5ee2fe86d5e08b782c169e8e30d4ebc1fc486"
+    },
+    {
+      "path": "知行成长/server/static/stocks.js",
+      "sha256": "303e9cace84a900b0e213905dfb8d3d528e73d957bcd9d86189ac063f4306827"
+    },
+    {
+      "path": "知行成长/server/static/study-generation.js",
+      "sha256": "231acdf57e9f6145077b56564249eb9ebbb195dc6a4e424943d5d36412d0f574"
+    },
+    {
+      "path": "知行成长/server/static/study-note-session.js",
+      "sha256": "5f04b1ba96729572bb672c977381ea64800152338d313bf7c4c250a72bb7fb29"
+    },
+    {
+      "path": "知行成长/server/static/study-notes.css",
+      "sha256": "7c02c43c37f23fe5ca4dfd705b0e61e749f39592b8b0032cdd6357712659317b"
+    },
+    {
+      "path": "知行成长/server/static/study-notes.js",
+      "sha256": "8ff55df1db3f86e41c01d428a67c1b40c1cc27b1035182bfd77e345d5d066c0e"
+    },
+    {
+      "path": "知行成长/server/static/theme.js",
+      "sha256": "5d7644149d45d315d2b8a3dd42ebbeb1a65b81dd3697632717628f7acaab7fa4"
+    },
+    {
+      "path": "知行成长/server/static/timeline.css",
+      "sha256": "4307430be5badf84337a121b6ef052822ec7f9afed6761b7fae937871e8706f4"
+    },
+    {
+      "path": "知行成长/server/static/timeline.js",
+      "sha256": "9c41109c88b0f4495914fe3abbc0416cc91087708a74ad7a638774663597f631"
+    },
+    {
+      "path": "知行成长/server/static/weekly-rhythm.js",
+      "sha256": "d9b62db8c65bbe19fb506bf24669ffe384948455fd48738da0270f4221cd3b58"
+    },
+    {
+      "path": "知行成长/server/stocks/__init__.py",
+      "sha256": "cab8207facc60dd41977f4d6f219eb5cc74baa440c8f61daf0d8883d74a3a513"
+    },
+    {
+      "path": "知行成长/server/stocks/api.py",
+      "sha256": "ea3b1cdc53efa7a1dc9f8d5521bdfb981cc227ff2dde657368deff67b4d8d1f7"
+    },
+    {
+      "path": "知行成长/server/stocks/store.py",
+      "sha256": "eaa76b7d6e5b26d60ee7dbde1cb7098841df0311968cc01ac96f7b2cb12b56db"
+    },
+    {
+      "path": "知行成长/server/study_generation.py",
+      "sha256": "2c4f529875214cf031cf27f102bf1a499c17f458db6291caeef2b5f0c1143533"
+    },
+    {
+      "path": "知行成长/server/study_materials.py",
+      "sha256": "94294cc345fe1f84cae65e03ede0ea5e3850fabbbf166be2f1312c0ac0147490"
+    },
+    {
+      "path": "知行成长/server/study_notes.py",
+      "sha256": "2fa570295d0a2596f5212c7f0830ba65f466194cb3a560bde373fe4ce53801cd"
+    },
+    {
+      "path": "知行成长/server/sync_reviews.py",
+      "sha256": "7ea7829a53a51c685783029670f71bc3c8f33c781f69b2ef4d2ccf712ae60247"
+    },
+    {
+      "path": "知行成长/server/tenancy.py",
+      "sha256": "1f08676afc9d928b53d3c00316954122bc23a5f921153821227f5a61ddea06dc"
+    },
+    {
+      "path": "知行成长/server/test_phase1_apis.py",
+      "sha256": "b537c7d069a745511ea718576ea8aa2b62e1a8f9abd46a6674cd1113828c6ced"
+    },
+    {
+      "path": "知行成长/server/timeline_api.py",
+      "sha256": "68c59d6643e0ddebe7338201a109a0835273b1fc2e5f4fad74f3cb12d9a7d258"
+    },
+    {
+      "path": "知行成长/server/timeline_service.py",
+      "sha256": "30a2ac6a5e14762a78841354f92cbe4e6658065c6722212bc787cac041c3d52a"
+    },
+    {
+      "path": "知行成长/server/tools/rhythm_trial_report.py",
+      "sha256": "d98760f85af22ab51a6bd796db64510ef36f739cf6ba228496b2e1d2810de6f9"
+    },
+    {
+      "path": "知行成长/server/verify_apis.py",
+      "sha256": "9d7947e90f2c5a917d60f79ab8cd11aabd0f765593710689358a85303cb76edb"
+    },
+    {
+      "path": "知行成长/server/verify_changes.py",
+      "sha256": "1d688d9b11d7245dc90e0a25d93ac8335e97acc33256c08a453645a9558c46f5"
+    }
+  ],
+  "route_declarations": [
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 318,
+      "handler": "register",
+      "method_decorator": "post",
+      "declared_path": "/register"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 324,
+      "handler": "login",
+      "method_decorator": "post",
+      "declared_path": "/login"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 331,
+      "handler": "logout",
+      "method_decorator": "post",
+      "declared_path": "/logout"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 338,
+      "handler": "me",
+      "method_decorator": "get",
+      "declared_path": "/me"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 341,
+      "handler": "invitations",
+      "method_decorator": "get",
+      "declared_path": "/api/account/invitations"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 344,
+      "handler": "create_invitation",
+      "method_decorator": "post",
+      "declared_path": "/api/account/invitations"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 347,
+      "handler": "revoke_invitation",
+      "method_decorator": "delete",
+      "declared_path": "/api/account/invitations/{invitation_id}"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 350,
+      "handler": "github_settings",
+      "method_decorator": "get",
+      "declared_path": "/api/account/github"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 353,
+      "handler": "save_github",
+      "method_decorator": "put",
+      "declared_path": "/api/account/github"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 356,
+      "handler": "test_github",
+      "method_decorator": "post",
+      "declared_path": "/api/account/github/test"
+    },
+    {
+      "source": "知行成长/server/accounts.py",
+      "line": 363,
+      "handler": "login_page",
+      "method_decorator": "get",
+      "declared_path": "/login"
+    },
+    {
+      "source": "知行成长/server/action_link.py",
+      "line": 137,
+      "handler": "status",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/action_link.py",
+      "line": 143,
+      "handler": "source_deliveries",
+      "method_decorator": "get",
+      "declared_path": "/source-deliveries"
+    },
+    {
+      "source": "知行成长/server/action_link.py",
+      "line": 149,
+      "handler": "retry_sources",
+      "method_decorator": "post",
+      "declared_path": "/source-deliveries/retry"
+    },
+    {
+      "source": "知行成长/server/action_link.py",
+      "line": 156,
+      "handler": "preview",
+      "method_decorator": "post",
+      "declared_path": "/preview"
+    },
+    {
+      "source": "知行成长/server/action_link.py",
+      "line": 181,
+      "handler": "confirm",
+      "method_decorator": "post",
+      "declared_path": "/confirm"
+    },
+    {
+      "source": "知行成长/server/action_link.py",
+      "line": 214,
+      "handler": "retry",
+      "method_decorator": "post",
+      "declared_path": "/retry"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 894,
+      "handler": "read",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 899,
+      "handler": "arrange",
+      "method_decorator": "post",
+      "declared_path": "/schedules"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 903,
+      "handler": "add",
+      "method_decorator": "post",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 909,
+      "handler": "change",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/operations"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 915,
+      "handler": "records",
+      "method_decorator": "get",
+      "declared_path": "/records"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 926,
+      "handler": "request_result",
+      "method_decorator": "get",
+      "declared_path": "/requests/{key}"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 934,
+      "handler": "read_templates",
+      "method_decorator": "get",
+      "declared_path": "/templates"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 938,
+      "handler": "add_template",
+      "method_decorator": "post",
+      "declared_path": "/templates"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 945,
+      "handler": "remove_template",
+      "method_decorator": "delete",
+      "declared_path": "/templates/{tid}"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 949,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/{pid}/calendar.ics"
+    },
+    {
+      "source": "知行成长/server/action_plans.py",
+      "line": 953,
+      "handler": "claim",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/reminder-claim"
+    },
+    {
+      "source": "知行成长/server/action_reviews.py",
+      "line": 146,
+      "handler": "preview",
+      "method_decorator": "post",
+      "declared_path": "/reviews/preview"
+    },
+    {
+      "source": "知行成长/server/action_reviews.py",
+      "line": 152,
+      "handler": "save",
+      "method_decorator": "post",
+      "declared_path": "/reviews"
+    },
+    {
+      "source": "知行成长/server/action_reviews.py",
+      "line": 163,
+      "handler": "history",
+      "method_decorator": "get",
+      "declared_path": "/reviews"
+    },
+    {
+      "source": "知行成长/server/action_reviews.py",
+      "line": 180,
+      "handler": "generate",
+      "method_decorator": "post",
+      "declared_path": "/reviews/generate"
+    },
+    {
+      "source": "知行成长/server/ai_evidence.py",
+      "line": 182,
+      "handler": "by_resource",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/ai_evidence.py",
+      "line": 193,
+      "handler": "detail",
+      "method_decorator": "get",
+      "declared_path": "/{snapshot_id}"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 446,
+      "handler": "storage_status",
+      "method_decorator": "get",
+      "declared_path": "/api/storage-status"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 459,
+      "handler": "health",
+      "method_decorator": "get",
+      "declared_path": "/api/health"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 467,
+      "handler": "get_data",
+      "method_decorator": "get",
+      "declared_path": "/api/data"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 472,
+      "handler": "get_learning_checkins",
+      "method_decorator": "get",
+      "declared_path": "/api/learning-checkins"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 479,
+      "handler": "put_data",
+      "method_decorator": "put",
+      "declared_path": "/api/data"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 493,
+      "handler": "patch_data",
+      "method_decorator": "patch",
+      "declared_path": "/api/data"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 507,
+      "handler": "get_knowledge",
+      "method_decorator": "get",
+      "declared_path": "/api/knowledge"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 512,
+      "handler": "rescan_knowledge",
+      "method_decorator": "post",
+      "declared_path": "/api/knowledge/scan"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 518,
+      "handler": "get_report",
+      "method_decorator": "get",
+      "declared_path": "/api/report"
+    },
+    {
+      "source": "知行成长/server/app.py",
+      "line": 524,
+      "handler": "index",
+      "method_decorator": "get",
+      "declared_path": "/"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 43,
+      "handler": "list_applications",
+      "method_decorator": "get",
+      "declared_path": "/applications"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 57,
+      "handler": "create_application",
+      "method_decorator": "post",
+      "declared_path": "/applications"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 68,
+      "handler": "list_concepts",
+      "method_decorator": "get",
+      "declared_path": "/applications/concepts"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 72,
+      "handler": "get_application",
+      "method_decorator": "get",
+      "declared_path": "/applications/{app_id}"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 79,
+      "handler": "update_application",
+      "method_decorator": "put",
+      "declared_path": "/applications/{app_id}"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 91,
+      "handler": "delete_application",
+      "method_decorator": "delete",
+      "declared_path": "/applications/{app_id}"
+    },
+    {
+      "source": "知行成长/server/behavior/api.py",
+      "line": 96,
+      "handler": "get_stats",
+      "method_decorator": "get",
+      "declared_path": "/stats"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 70,
+      "handler": "generate_report",
+      "method_decorator": "post",
+      "declared_path": "/generate"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 78,
+      "handler": "create_job",
+      "method_decorator": "post",
+      "declared_path": "/jobs"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 82,
+      "handler": "jobs",
+      "method_decorator": "get",
+      "declared_path": "/jobs"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 86,
+      "handler": "job",
+      "method_decorator": "get",
+      "declared_path": "/jobs/{job_id}"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 90,
+      "handler": "by_request",
+      "method_decorator": "get",
+      "declared_path": "/jobs/by-request/{request_key}"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 97,
+      "handler": "cancel_job",
+      "method_decorator": "post",
+      "declared_path": "/jobs/{job_id}/cancel"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 101,
+      "handler": "list_reports",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 105,
+      "handler": "get_report",
+      "method_decorator": "get",
+      "declared_path": "/{report_id}"
+    },
+    {
+      "source": "知行成长/server/behavior_report/api.py",
+      "line": 112,
+      "handler": "delete_report",
+      "method_decorator": "delete",
+      "declared_path": "/{report_id}"
+    },
+    {
+      "source": "知行成长/server/coach_facts.py",
+      "line": 115,
+      "handler": "read",
+      "method_decorator": "get",
+      "declared_path": "/api/coach-facts"
+    },
+    {
+      "source": "知行成长/server/copilot/ai_api.py",
+      "line": 31,
+      "handler": "settings",
+      "method_decorator": "get",
+      "declared_path": "/api/ai/settings"
+    },
+    {
+      "source": "知行成长/server/copilot/ai_api.py",
+      "line": 31,
+      "handler": "settings",
+      "method_decorator": "get",
+      "declared_path": "/api/copilot/settings"
+    },
+    {
+      "source": "知行成长/server/copilot/ai_api.py",
+      "line": 35,
+      "handler": "old_settings",
+      "method_decorator": "put",
+      "declared_path": "/api/copilot/settings"
+    },
+    {
+      "source": "知行成长/server/copilot/ai_api.py",
+      "line": 40,
+      "handler": "test",
+      "method_decorator": "post",
+      "declared_path": "/api/ai/test"
+    },
+    {
+      "source": "知行成长/server/copilot/ai_api.py",
+      "line": 40,
+      "handler": "test",
+      "method_decorator": "post",
+      "declared_path": "/api/copilot/settings/test"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 129,
+      "handler": "background_jobs",
+      "method_decorator": "get",
+      "declared_path": "/background-jobs"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 132,
+      "handler": "background_job",
+      "method_decorator": "get",
+      "declared_path": "/background-jobs/{id}"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 135,
+      "handler": "cancel_background_job",
+      "method_decorator": "post",
+      "declared_path": "/background-jobs/{id}/cancel"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 183,
+      "handler": "today_task",
+      "method_decorator": "get",
+      "declared_path": "/today-task"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 191,
+      "handler": "scan",
+      "method_decorator": "post",
+      "declared_path": "/scan"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 195,
+      "handler": "lessons",
+      "method_decorator": "get",
+      "declared_path": "/lessons"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 203,
+      "handler": "archived_lessons",
+      "method_decorator": "get",
+      "declared_path": "/lessons/archived"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 207,
+      "handler": "lesson",
+      "method_decorator": "get",
+      "declared_path": "/lessons/{number}"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 211,
+      "handler": "learning",
+      "method_decorator": "patch",
+      "declared_path": "/lessons/{number}/learning-state"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 219,
+      "handler": "submit_review",
+      "method_decorator": "post",
+      "declared_path": "/lessons/{number}/review"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 224,
+      "handler": "submit_summary",
+      "method_decorator": "post",
+      "declared_path": "/lessons/{number}/summary"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 229,
+      "handler": "quick_complete",
+      "method_decorator": "post",
+      "declared_path": "/lessons/{number}/complete"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 234,
+      "handler": "learning_record",
+      "method_decorator": "get",
+      "declared_path": "/lessons/{number}/learning-record"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 238,
+      "handler": "review_questions",
+      "method_decorator": "get",
+      "declared_path": "/lessons/{number}/review-questions"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 245,
+      "handler": "submit_feedback",
+      "method_decorator": "post",
+      "declared_path": "/lessons/{number}/feedback"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 249,
+      "handler": "get_feedback",
+      "method_decorator": "get",
+      "declared_path": "/lessons/{number}/feedback"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 256,
+      "handler": "archive",
+      "method_decorator": "post",
+      "declared_path": "/lessons/{number}/archive"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 260,
+      "handler": "unarchive",
+      "method_decorator": "post",
+      "declared_path": "/lessons/{number}/unarchive"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 264,
+      "handler": "generate_summary",
+      "method_decorator": "post",
+      "declared_path": "/summaries/generate"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 269,
+      "handler": "summaries",
+      "method_decorator": "get",
+      "declared_path": "/summaries"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 274,
+      "handler": "summary",
+      "method_decorator": "get",
+      "declared_path": "/summaries/{summary_id}"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 279,
+      "handler": "generate_advanced",
+      "method_decorator": "post",
+      "declared_path": "/summaries/generate-advanced"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 284,
+      "handler": "learning_history_by_date",
+      "method_decorator": "get",
+      "declared_path": "/learning-history/by-date"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 290,
+      "handler": "learning_history_months",
+      "method_decorator": "get",
+      "declared_path": "/learning-history/months"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 296,
+      "handler": "learning_history",
+      "method_decorator": "get",
+      "declared_path": "/learning-history"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 300,
+      "handler": "plan",
+      "method_decorator": "get",
+      "declared_path": "/plan"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 304,
+      "handler": "confirm_plan",
+      "method_decorator": "post",
+      "declared_path": "/plan/confirm"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 308,
+      "handler": "writer_session",
+      "method_decorator": "post",
+      "declared_path": "/writer-session"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 312,
+      "handler": "generate",
+      "method_decorator": "post",
+      "declared_path": "/generations"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 334,
+      "handler": "cancel",
+      "method_decorator": "post",
+      "declared_path": "/generations/{draft_id}/cancel"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 338,
+      "handler": "drafts",
+      "method_decorator": "get",
+      "declared_path": "/drafts"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 345,
+      "handler": "draft",
+      "method_decorator": "get",
+      "declared_path": "/drafts/{draft_id}"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 349,
+      "handler": "edit",
+      "method_decorator": "patch",
+      "declared_path": "/drafts/{draft_id}"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 353,
+      "handler": "publish",
+      "method_decorator": "post",
+      "declared_path": "/publications"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 357,
+      "handler": "operations",
+      "method_decorator": "get",
+      "declared_path": "/operations"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 366,
+      "handler": "operation",
+      "method_decorator": "get",
+      "declared_path": "/operations/{op_id}"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 371,
+      "handler": "recover",
+      "method_decorator": "post",
+      "declared_path": "/operations/{op_id}/recover"
+    },
+    {
+      "source": "知行成长/server/copilot/api.py",
+      "line": 375,
+      "handler": "backup",
+      "method_decorator": "post",
+      "declared_path": "/backups"
+    },
+    {
+      "source": "知行成长/server/course_activity.py",
+      "line": 32,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": "/library/activity"
+    },
+    {
+      "source": "知行成长/server/course_activity.py",
+      "line": 38,
+      "handler": "opened",
+      "method_decorator": "post",
+      "declared_path": "/library/activity"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 271,
+      "handler": "context",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 273,
+      "handler": "save",
+      "method_decorator": "post",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 275,
+      "handler": "jobs",
+      "method_decorator": "get",
+      "declared_path": "/jobs"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 279,
+      "handler": "job",
+      "method_decorator": "get",
+      "declared_path": "/jobs/{id}"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 281,
+      "handler": "cancel",
+      "method_decorator": "post",
+      "declared_path": "/jobs/{id}/cancel"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 283,
+      "handler": "suggest",
+      "method_decorator": "post",
+      "declared_path": "/{id}/suggest"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 285,
+      "handler": "plan",
+      "method_decorator": "post",
+      "declared_path": "/{id}/plan"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 287,
+      "handler": "adopt",
+      "method_decorator": "post",
+      "declared_path": "/{id}/adopt"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 289,
+      "handler": "first",
+      "method_decorator": "post",
+      "declared_path": "/{id}/first-lesson"
+    },
+    {
+      "source": "知行成长/server/course_continuations.py",
+      "line": 291,
+      "handler": "next_course",
+      "method_decorator": "post",
+      "declared_path": "/next"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 56,
+      "handler": "list_errors",
+      "method_decorator": "get",
+      "declared_path": "/"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 72,
+      "handler": "create_error",
+      "method_decorator": "post",
+      "declared_path": "/"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 84,
+      "handler": "list_error_types",
+      "method_decorator": "get",
+      "declared_path": "/types"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 88,
+      "handler": "create_error_type",
+      "method_decorator": "post",
+      "declared_path": "/types"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 95,
+      "handler": "delete_error_type",
+      "method_decorator": "delete",
+      "declared_path": "/types/{type_id}"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 103,
+      "handler": "get_stats",
+      "method_decorator": "get",
+      "declared_path": "/stats"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 109,
+      "handler": "get_repeated_errors",
+      "method_decorator": "get",
+      "declared_path": "/repeated"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 113,
+      "handler": "get_error",
+      "method_decorator": "get",
+      "declared_path": "/{error_id}"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 120,
+      "handler": "update_error",
+      "method_decorator": "put",
+      "declared_path": "/{error_id}"
+    },
+    {
+      "source": "知行成长/server/errors/api.py",
+      "line": 132,
+      "handler": "delete_error",
+      "method_decorator": "delete",
+      "declared_path": "/{error_id}"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 240,
+      "handler": "read",
+      "method_decorator": "get",
+      "declared_path": "/week-plans/{week}"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 244,
+      "handler": "write_week",
+      "method_decorator": "post",
+      "declared_path": "/week-plans/{week}"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 248,
+      "handler": "preview",
+      "method_decorator": "post",
+      "declared_path": "/planning-drafts/preview"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 254,
+      "handler": "drafts",
+      "method_decorator": "get",
+      "declared_path": "/planning-drafts"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 260,
+      "handler": "detail",
+      "method_decorator": "get",
+      "declared_path": "/planning-drafts/{did}"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 264,
+      "handler": "generate",
+      "method_decorator": "post",
+      "declared_path": "/planning-drafts/generate"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 293,
+      "handler": "edit",
+      "method_decorator": "post",
+      "declared_path": "/planning-drafts/{did}/edit"
+    },
+    {
+      "source": "知行成长/server/goal_planning.py",
+      "line": 305,
+      "handler": "apply",
+      "method_decorator": "post",
+      "declared_path": "/planning-drafts/{did}/adopt"
+    },
+    {
+      "source": "知行成长/server/goal_workspace.py",
+      "line": 88,
+      "handler": "workspace",
+      "method_decorator": "get",
+      "declared_path": "/workspace"
+    },
+    {
+      "source": "知行成长/server/goal_workspace.py",
+      "line": 91,
+      "handler": "goals",
+      "method_decorator": "get",
+      "declared_path": "/goals"
+    },
+    {
+      "source": "知行成长/server/goal_workspace.py",
+      "line": 94,
+      "handler": "create_goal",
+      "method_decorator": "post",
+      "declared_path": "/goals"
+    },
+    {
+      "source": "知行成长/server/goal_workspace.py",
+      "line": 100,
+      "handler": "goal",
+      "method_decorator": "get",
+      "declared_path": "/goals/{pid}"
+    },
+    {
+      "source": "知行成长/server/goal_workspace.py",
+      "line": 106,
+      "handler": "operate_goal",
+      "method_decorator": "post",
+      "declared_path": "/goals/{pid}/operations"
+    },
+    {
+      "source": "知行成长/server/goal_workspace.py",
+      "line": 113,
+      "handler": "save_result",
+      "method_decorator": "post",
+      "declared_path": "/goals/{pid}/result"
+    },
+    {
+      "source": "知行成长/server/investments/ai_relay.py",
+      "line": 152,
+      "handler": "relay_config",
+      "method_decorator": "get",
+      "declared_path": "/ai-relay/config"
+    },
+    {
+      "source": "知行成长/server/investments/ai_relay.py",
+      "line": 155,
+      "handler": "relay_receipt",
+      "method_decorator": "get",
+      "declared_path": "/ai-relay/calls/{call_key}"
+    },
+    {
+      "source": "知行成长/server/investments/ai_relay.py",
+      "line": 165,
+      "handler": "relay_call",
+      "method_decorator": "post",
+      "declared_path": "/ai-relay"
+    },
+    {
+      "source": "知行成长/server/investments/ai_relay.py",
+      "line": 175,
+      "handler": "recover",
+      "method_decorator": "post",
+      "declared_path": "/ai-relay/jobs/{job_id}/recover"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 185,
+      "handler": "capabilities",
+      "method_decorator": "get",
+      "declared_path": "/capabilities"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 197,
+      "handler": "today_overview",
+      "method_decorator": "get",
+      "declared_path": "/overview"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 202,
+      "handler": "import_minute_path",
+      "method_decorator": "post",
+      "declared_path": "/paths/import"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 207,
+      "handler": "minute_paths",
+      "method_decorator": "get",
+      "declared_path": "/paths"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 212,
+      "handler": "original_minute_path",
+      "method_decorator": "get",
+      "declared_path": "/paths/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 215,
+      "handler": "holding_path",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{account_id}/campaigns/{campaign_id}/replay"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 220,
+      "handler": "new_experiment",
+      "method_decorator": "post",
+      "declared_path": "/experiments"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 225,
+      "handler": "condition_drill",
+      "method_decorator": "post",
+      "declared_path": "/condition-drills"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 230,
+      "handler": "condition_drills",
+      "method_decorator": "get",
+      "declared_path": "/condition-drills"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 235,
+      "handler": "saved_condition_drill",
+      "method_decorator": "get",
+      "declared_path": "/condition-drills/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 238,
+      "handler": "execution_study",
+      "method_decorator": "post",
+      "declared_path": "/execution-studies"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 243,
+      "handler": "execution_studies",
+      "method_decorator": "get",
+      "declared_path": "/execution-studies"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 248,
+      "handler": "saved_execution_study",
+      "method_decorator": "get",
+      "declared_path": "/execution-studies/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 251,
+      "handler": "experiments",
+      "method_decorator": "get",
+      "declared_path": "/experiments"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 256,
+      "handler": "experiment",
+      "method_decorator": "get",
+      "declared_path": "/experiments/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 259,
+      "handler": "experiment_history",
+      "method_decorator": "get",
+      "declared_path": "/experiments/{object_id}/history"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 262,
+      "handler": "edit_experiment",
+      "method_decorator": "put",
+      "declared_path": "/experiments/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 267,
+      "handler": "register_forward_experiment",
+      "method_decorator": "post",
+      "declared_path": "/experiments/{object_id}/register"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 275,
+      "handler": "experiment_evaluation",
+      "method_decorator": "get",
+      "declared_path": "/experiments/{object_id}/evaluation"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 280,
+      "handler": "finish_forward_experiment",
+      "method_decorator": "post",
+      "declared_path": "/experiments/{object_id}/finish"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 285,
+      "handler": "investment_requirements",
+      "method_decorator": "get",
+      "declared_path": "/readiness"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 290,
+      "handler": "public_calendar",
+      "method_decorator": "get",
+      "declared_path": "/calendar"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 298,
+      "handler": "public_rules",
+      "method_decorator": "get",
+      "declared_path": "/instruments/{object_id}/rules"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 303,
+      "handler": "instrument_freshness",
+      "method_decorator": "get",
+      "declared_path": "/instruments/{object_id}/data-status"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 308,
+      "handler": "private_investment_search",
+      "method_decorator": "get",
+      "declared_path": "/search"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 313,
+      "handler": "review_actions",
+      "method_decorator": "get",
+      "declared_path": "/reviews/{object_id}/actions"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 318,
+      "handler": "create_review_action",
+      "method_decorator": "post",
+      "declared_path": "/reviews/{object_id}/actions"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 323,
+      "handler": "daily_fetch",
+      "method_decorator": "post",
+      "declared_path": "/provider/daily"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 329,
+      "handler": "data_sources",
+      "method_decorator": "get",
+      "declared_path": "/data-sources"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 340,
+      "handler": "legacy_records",
+      "method_decorator": "get",
+      "declared_path": "/legacy-records"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 345,
+      "handler": "legacy_link",
+      "method_decorator": "post",
+      "declared_path": "/legacy-links"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 350,
+      "handler": "browser_run",
+      "method_decorator": "post",
+      "declared_path": "/local-runs"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 354,
+      "handler": "captured_market_snapshot",
+      "method_decorator": "get",
+      "declared_path": "/market-snapshots/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 357,
+      "handler": "browser_runs",
+      "method_decorator": "get",
+      "declared_path": "/local-runs"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 361,
+      "handler": "browser_run_detail",
+      "method_decorator": "get",
+      "declared_path": "/local-runs/{run_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 364,
+      "handler": "browser_run_inputs",
+      "method_decorator": "get",
+      "declared_path": "/local-runs/{run_id}/inputs"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 367,
+      "handler": "browser_screen_result",
+      "method_decorator": "post",
+      "declared_path": "/local-runs/{run_id}/screening"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 371,
+      "handler": "screening_catalog",
+      "method_decorator": "get",
+      "declared_path": "/screening-catalog"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 374,
+      "handler": "analysis_selection",
+      "method_decorator": "post",
+      "declared_path": "/local-runs/{run_id}/analysis-selection"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 378,
+      "handler": "browser_candidate",
+      "method_decorator": "post",
+      "declared_path": "/local-runs/{run_id}/candidates/{instrument_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 382,
+      "handler": "browser_cancel",
+      "method_decorator": "post",
+      "declared_path": "/local-runs/{run_id}/cancel"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 385,
+      "handler": "browser_input",
+      "method_decorator": "get",
+      "declared_path": "/local-jobs/{job_id}/input"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 389,
+      "handler": "browser_pause",
+      "method_decorator": "post",
+      "declared_path": "/local-jobs/{job_id}/pause"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 392,
+      "handler": "browser_output",
+      "method_decorator": "post",
+      "declared_path": "/local-jobs/{job_id}/{stage}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 397,
+      "handler": "screening",
+      "method_decorator": "post",
+      "declared_path": "/screen"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 402,
+      "handler": "history_import",
+      "method_decorator": "post",
+      "declared_path": "/market/import"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 408,
+      "handler": "akshare_daily_fetch",
+      "method_decorator": "post",
+      "declared_path": "/provider/akshare/daily"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 414,
+      "handler": "analysis_preview",
+      "method_decorator": "post",
+      "declared_path": "/analysis/preview"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 418,
+      "handler": "analysis_submit",
+      "method_decorator": "post",
+      "declared_path": "/analysis/jobs"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 422,
+      "handler": "analysis_listing",
+      "method_decorator": "get",
+      "declared_path": "/analysis/jobs"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 426,
+      "handler": "analysis_get",
+      "method_decorator": "get",
+      "declared_path": "/analysis/jobs/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 430,
+      "handler": "analysis_cancel",
+      "method_decorator": "post",
+      "declared_path": "/analysis/jobs/{object_id}/cancel"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 434,
+      "handler": "analysis_preview_get",
+      "method_decorator": "get",
+      "declared_path": "/analysis/previews/{object_id}"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 438,
+      "handler": "recommendation_decision",
+      "method_decorator": "post",
+      "declared_path": "/analysis/jobs/{object_id}/suggestions/{index}/decision"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 443,
+      "handler": "adopt_capital_scenario",
+      "method_decorator": "post",
+      "declared_path": "/analysis/jobs/{object_id}/scenarios/{index}/policy-draft"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 447,
+      "handler": "recommendations",
+      "method_decorator": "get",
+      "declared_path": "/recommendations"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 453,
+      "handler": "balance",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{object_id}/balance"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 457,
+      "handler": "capital_status",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{object_id}/policy-status"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 462,
+      "handler": "campaigns",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{object_id}/campaigns"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 466,
+      "handler": "campaign_review",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{object_id}/campaigns/{campaign_id}/review"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 471,
+      "handler": "period_review",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{object_id}/summary"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 476,
+      "handler": "plan_assessment",
+      "method_decorator": "get",
+      "declared_path": "/trade-plans/{object_id}/assessment"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 481,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/export"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 486,
+      "handler": "preview",
+      "method_decorator": "post",
+      "declared_path": "/imports/preview"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 491,
+      "handler": "commit",
+      "method_decorator": "post",
+      "declared_path": "/imports/commit"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 496,
+      "handler": "correct",
+      "method_decorator": "post",
+      "declared_path": "/fills/{object_id}/corrections"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 501,
+      "handler": "confirm_fund_order",
+      "method_decorator": "post",
+      "declared_path": "/fund-orders/{object_id}/confirm"
+    },
+    {
+      "source": "知行成长/server/investments/api.py",
+      "line": 506,
+      "handler": "settle_fund_order",
+      "method_decorator": "post",
+      "declared_path": "/fund-orders/{object_id}/settle"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 267,
+      "handler": "source_policy",
+      "method_decorator": "get",
+      "declared_path": "/monitors/source-policy"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 270,
+      "handler": "create",
+      "method_decorator": "post",
+      "declared_path": "/monitors"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 274,
+      "handler": "edit",
+      "method_decorator": "put",
+      "declared_path": "/monitors/{monitor_id}"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 278,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": "/monitors"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 289,
+      "handler": "stop",
+      "method_decorator": "post",
+      "declared_path": "/monitors/{monitor_id}/stop"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 295,
+      "handler": "check",
+      "method_decorator": "post",
+      "declared_path": "/monitors/{monitor_id}/check"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 298,
+      "handler": "events",
+      "method_decorator": "get",
+      "declared_path": "/monitor-events"
+    },
+    {
+      "source": "知行成长/server/investments/monitoring.py",
+      "line": 307,
+      "handler": "read",
+      "method_decorator": "post",
+      "declared_path": "/monitor-events/{event_id}/read"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 36,
+      "handler": "opening_preview",
+      "method_decorator": "post",
+      "declared_path": "/accounts/opening-preview"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 42,
+      "handler": "baseline_preview",
+      "method_decorator": "post",
+      "declared_path": "/accounts/{account_id}/baseline/preview"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 46,
+      "handler": "baseline_commit",
+      "method_decorator": "post",
+      "declared_path": "/accounts/{account_id}/baseline"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 51,
+      "handler": "valuation_preview",
+      "method_decorator": "post",
+      "declared_path": "/accounts/{account_id}/valuations/preview"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 55,
+      "handler": "valuation_commit",
+      "method_decorator": "post",
+      "declared_path": "/accounts/{account_id}/valuations"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 60,
+      "handler": "valuations",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{account_id}/valuations"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 64,
+      "handler": "valuation_detail",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{account_id}/valuations/{valuation_id}"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 67,
+      "handler": "performance",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{account_id}/performance"
+    },
+    {
+      "source": "知行成长/server/investments/portfolio_api.py",
+      "line": 70,
+      "handler": "fund_nav",
+      "method_decorator": "post",
+      "declared_path": "/fund-nav"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 149,
+      "handler": "baseline",
+      "method_decorator": "get",
+      "declared_path": "/forecast-baseline"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 156,
+      "handler": "evaluations",
+      "method_decorator": "get",
+      "declared_path": "/forecast-evaluations"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 161,
+      "handler": "create",
+      "method_decorator": "post",
+      "declared_path": "/forecasts"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 164,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": "/forecasts"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 169,
+      "handler": "research_briefing",
+      "method_decorator": "get",
+      "declared_path": "/briefing"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 171,
+      "handler": "evaluate_research",
+      "method_decorator": "post",
+      "declared_path": "/forecasts/evaluate"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 174,
+      "handler": "research_stats",
+      "method_decorator": "get",
+      "declared_path": "/forecast-calibration"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 176,
+      "handler": "evaluate",
+      "method_decorator": "post",
+      "declared_path": "/accounts/{account_id}/forecasts/evaluate"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 179,
+      "handler": "stats",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{account_id}/forecast-calibration"
+    },
+    {
+      "source": "知行成长/server/investments/prediction_journal.py",
+      "line": 181,
+      "handler": "daily_briefing",
+      "method_decorator": "get",
+      "declared_path": "/accounts/{account_id}/briefing"
+    },
+    {
+      "source": "知行成长/server/investments/research_archive.py",
+      "line": 186,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": "/research/archives"
+    },
+    {
+      "source": "知行成长/server/investments/research_archive.py",
+      "line": 188,
+      "handler": "write",
+      "method_decorator": "post",
+      "declared_path": "/research/archives"
+    },
+    {
+      "source": "知行成长/server/investments/research_archive.py",
+      "line": 190,
+      "handler": "verify",
+      "method_decorator": "post",
+      "declared_path": "/research/archives/verify"
+    },
+    {
+      "source": "知行成长/server/investments/research_archive.py",
+      "line": 192,
+      "handler": "download",
+      "method_decorator": "get",
+      "declared_path": "/research/archives/{identity}/download"
+    },
+    {
+      "source": "知行成长/server/investments/research_comparison.py",
+      "line": 128,
+      "handler": "create",
+      "method_decorator": "post",
+      "declared_path": "/research/comparisons"
+    },
+    {
+      "source": "知行成长/server/investments/research_comparison.py",
+      "line": 130,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/research/comparisons/{identity}/export"
+    },
+    {
+      "source": "知行成长/server/investments/research_history.py",
+      "line": 175,
+      "handler": "series",
+      "method_decorator": "post",
+      "declared_path": "/research/series"
+    },
+    {
+      "source": "知行成长/server/investments/research_history.py",
+      "line": 177,
+      "handler": "series_csv",
+      "method_decorator": "post",
+      "declared_path": "/research/series/csv"
+    },
+    {
+      "source": "知行成长/server/investments/research_history.py",
+      "line": 179,
+      "handler": "run",
+      "method_decorator": "post",
+      "declared_path": "/research/backtests"
+    },
+    {
+      "source": "知行成长/server/investments/research_sources.py",
+      "line": 154,
+      "handler": "market_csv",
+      "method_decorator": "post",
+      "declared_path": "/research/datasets/csv"
+    },
+    {
+      "source": "知行成长/server/investments/research_sources.py",
+      "line": 157,
+      "handler": "market",
+      "method_decorator": "post",
+      "declared_path": "/research/provider/akshare/market"
+    },
+    {
+      "source": "知行成长/server/investments/research_sources.py",
+      "line": 183,
+      "handler": "history",
+      "method_decorator": "post",
+      "declared_path": "/research/provider/akshare/history"
+    },
+    {
+      "source": "知行成长/server/investments/research_sources.py",
+      "line": 216,
+      "handler": "interface",
+      "method_decorator": "post",
+      "declared_path": "/research/interface"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 328,
+      "handler": "catalog",
+      "method_decorator": "get",
+      "declared_path": "/research/catalog"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 330,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/research/export"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 332,
+      "handler": "dataset",
+      "method_decorator": "post",
+      "declared_path": "/research/datasets"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 334,
+      "handler": "screen",
+      "method_decorator": "post",
+      "declared_path": "/research/screens"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 336,
+      "handler": "candidate",
+      "method_decorator": "post",
+      "declared_path": "/research/candidate"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 352,
+      "handler": "preset",
+      "method_decorator": "post",
+      "declared_path": "/research/presets"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 355,
+      "handler": "alert",
+      "method_decorator": "post",
+      "declared_path": "/research/alerts"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 358,
+      "handler": "check",
+      "method_decorator": "post",
+      "declared_path": "/research/alerts/check"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 363,
+      "handler": "edit_alert",
+      "method_decorator": "post",
+      "declared_path": "/research/alerts/{identity}"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 366,
+      "handler": "edit_preset",
+      "method_decorator": "post",
+      "declared_path": "/research/presets/{identity}"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 370,
+      "handler": "detail",
+      "method_decorator": "get",
+      "declared_path": "/research/objects/{identity}"
+    },
+    {
+      "source": "知行成长/server/investments/research_tools.py",
+      "line": 373,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": "/research/objects"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 463,
+      "handler": "templates",
+      "method_decorator": "get",
+      "declared_path": "/strategy-templates"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 466,
+      "handler": "extract",
+      "method_decorator": "post",
+      "declared_path": "/strategy/extract-params"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 469,
+      "handler": "strategies",
+      "method_decorator": "get",
+      "declared_path": "/user-strategies"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 475,
+      "handler": "save",
+      "method_decorator": "post",
+      "declared_path": "/user-strategies"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 481,
+      "handler": "run",
+      "method_decorator": "post",
+      "declared_path": "/strategy/run"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 487,
+      "handler": "available_series",
+      "method_decorator": "get",
+      "declared_path": "/strategy/series"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 499,
+      "handler": "grid_search",
+      "method_decorator": "post",
+      "declared_path": "/strategy/grid-search"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 524,
+      "handler": "seed_knowledge",
+      "method_decorator": "post",
+      "declared_path": "/knowledge/seed"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 530,
+      "handler": "knowledge_nodes",
+      "method_decorator": "get",
+      "declared_path": "/knowledge"
+    },
+    {
+      "source": "知行成长/server/investments/strategy_ide.py",
+      "line": 535,
+      "handler": "knowledge_tip",
+      "method_decorator": "get",
+      "declared_path": "/knowledge/tip"
+    },
+    {
+      "source": "知行成长/server/investments/templates.py",
+      "line": 106,
+      "handler": "catalog",
+      "method_decorator": "get",
+      "declared_path": "/rule-recipes"
+    },
+    {
+      "source": "知行成长/server/investments/templates.py",
+      "line": 109,
+      "handler": "run_experiment",
+      "method_decorator": "post",
+      "declared_path": "/template-experiments"
+    },
+    {
+      "source": "知行成长/server/investments/templates.py",
+      "line": 113,
+      "handler": "experiments",
+      "method_decorator": "get",
+      "declared_path": "/template-experiments"
+    },
+    {
+      "source": "知行成长/server/investments/templates.py",
+      "line": 124,
+      "handler": "run",
+      "method_decorator": "post",
+      "declared_path": "/screening-templates/{template_id}/evaluate"
+    },
+    {
+      "source": "知行成长/server/investments/templates.py",
+      "line": 128,
+      "handler": "history",
+      "method_decorator": "get",
+      "declared_path": "/template-evaluations"
+    },
+    {
+      "source": "知行成长/server/investments/templates.py",
+      "line": 134,
+      "handler": "status",
+      "method_decorator": "post",
+      "declared_path": "/security-status"
+    },
+    {
+      "source": "知行成长/server/investments/workspace.py",
+      "line": 119,
+      "handler": "summary",
+      "method_decorator": "get",
+      "declared_path": "/workspace"
+    },
+    {
+      "source": "知行成长/server/investments/workspace.py",
+      "line": 123,
+      "handler": "data_health",
+      "method_decorator": "get",
+      "declared_path": "/data-health"
+    },
+    {
+      "source": "知行成长/server/knowledge/api.py",
+      "line": 42,
+      "handler": "get_graph",
+      "method_decorator": "get",
+      "declared_path": "/graph"
+    },
+    {
+      "source": "知行成长/server/knowledge/api.py",
+      "line": 48,
+      "handler": "scan_knowledge_links",
+      "method_decorator": "post",
+      "declared_path": "/scan-links"
+    },
+    {
+      "source": "知行成长/server/knowledge/api.py",
+      "line": 58,
+      "handler": "get_stats",
+      "method_decorator": "get",
+      "declared_path": "/stats"
+    },
+    {
+      "source": "知行成长/server/knowledge/api.py",
+      "line": 62,
+      "handler": "get_by_stable_id",
+      "method_decorator": "get",
+      "declared_path": "/by-stable-id/{stable_id}"
+    },
+    {
+      "source": "知行成长/server/knowledge/api.py",
+      "line": 70,
+      "handler": "get_related_by_stable_id",
+      "method_decorator": "get",
+      "declared_path": "/by-stable-id/{stable_id}/related"
+    },
+    {
+      "source": "知行成长/server/knowledge/api.py",
+      "line": 81,
+      "handler": "upsert_knowledge",
+      "method_decorator": "post",
+      "declared_path": "/upsert"
+    },
+    {
+      "source": "知行成长/server/learning_actions.py",
+      "line": 124,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": "/api/plan-actions"
+    },
+    {
+      "source": "知行成长/server/learning_actions.py",
+      "line": 130,
+      "handler": "read",
+      "method_decorator": "get",
+      "declared_path": "/{pid}/actions"
+    },
+    {
+      "source": "知行成长/server/learning_actions.py",
+      "line": 134,
+      "handler": "write",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/actions"
+    },
+    {
+      "source": "知行成长/server/migration_api.py",
+      "line": 26,
+      "handler": "status",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/migration_api.py",
+      "line": 35,
+      "handler": "preview_files",
+      "method_decorator": "post",
+      "declared_path": "/files/preview"
+    },
+    {
+      "source": "知行成长/server/migration_api.py",
+      "line": 38,
+      "handler": "apply_files",
+      "method_decorator": "post",
+      "declared_path": "/files/apply"
+    },
+    {
+      "source": "知行成长/server/migration_api.py",
+      "line": 41,
+      "handler": "recover",
+      "method_decorator": "post",
+      "declared_path": "/recover"
+    },
+    {
+      "source": "知行成长/server/mobile_library.py",
+      "line": 137,
+      "handler": "read",
+      "method_decorator": "get",
+      "declared_path": "/api/mobile-learning"
+    },
+    {
+      "source": "知行成长/server/mobile_library.py",
+      "line": 140,
+      "handler": "pairing_preview",
+      "method_decorator": "post",
+      "declared_path": "/api/mobile-learning/preview"
+    },
+    {
+      "source": "知行成长/server/mobile_library.py",
+      "line": 146,
+      "handler": "pairing",
+      "method_decorator": "post",
+      "declared_path": "/api/mobile-learning/connect"
+    },
+    {
+      "source": "知行成长/server/mobile_library.py",
+      "line": 152,
+      "handler": "write",
+      "method_decorator": "post",
+      "declared_path": "/api/mobile-learning/consent"
+    },
+    {
+      "source": "知行成长/server/mobile_library.py",
+      "line": 158,
+      "handler": "source",
+      "method_decorator": "get",
+      "declared_path": "/api/mobile-learning/source/{lesson_id}"
+    },
+    {
+      "source": "知行成长/server/mobile_private.py",
+      "line": 179,
+      "handler": "authorize",
+      "method_decorator": "post",
+      "declared_path": "/api/mobile-learning/private-consent"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 46,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 70,
+      "handler": "budget",
+      "method_decorator": "post",
+      "declared_path": "/budget"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 78,
+      "handler": "create_draft",
+      "method_decorator": "post",
+      "declared_path": "/drafts"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 82,
+      "handler": "read_draft",
+      "method_decorator": "get",
+      "declared_path": "/drafts/{did}"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 85,
+      "handler": "history",
+      "method_decorator": "get",
+      "declared_path": "/drafts/{did}/history"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 90,
+      "handler": "adopt",
+      "method_decorator": "post",
+      "declared_path": "/drafts/{did}/adopt"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 99,
+      "handler": "edit_course",
+      "method_decorator": "post",
+      "declared_path": "/drafts/{did}/edit-course"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 106,
+      "handler": "redate",
+      "method_decorator": "post",
+      "declared_path": "/drafts/{did}/redate"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 111,
+      "handler": "refine",
+      "method_decorator": "post",
+      "declared_path": "/drafts/{did}/refine"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 118,
+      "handler": "publish",
+      "method_decorator": "post",
+      "declared_path": "/drafts/{did}/publish"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 124,
+      "handler": "generate",
+      "method_decorator": "post",
+      "declared_path": "/generate"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 130,
+      "handler": "progress",
+      "method_decorator": "get",
+      "declared_path": "/attempts/{aid}/progress"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 134,
+      "handler": "attempt",
+      "method_decorator": "get",
+      "declared_path": "/attempts/{aid}"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 137,
+      "handler": "cancel",
+      "method_decorator": "post",
+      "declared_path": "/attempts/{aid}/cancel"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 140,
+      "handler": "recover",
+      "method_decorator": "post",
+      "declared_path": "/recover"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 145,
+      "handler": "backup",
+      "method_decorator": "post",
+      "declared_path": "/backup"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 152,
+      "handler": "detail",
+      "method_decorator": "get",
+      "declared_path": "/{pid}"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 167,
+      "handler": "metadata",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/metadata"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 183,
+      "handler": "save_sources",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/sources"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 186,
+      "handler": "get_sources",
+      "method_decorator": "get",
+      "declared_path": "/{pid}/sources"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 192,
+      "handler": "read_course",
+      "method_decorator": "get",
+      "declared_path": "/{pid}/lessons/{number}"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 196,
+      "handler": "feedback",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/lessons/{number}/feedback"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 204,
+      "handler": "pause_plan",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/pause"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 241,
+      "handler": "resume_plan",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/resume"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 276,
+      "handler": "archive_plan",
+      "method_decorator": "post",
+      "declared_path": "/{pid}/archive"
+    },
+    {
+      "source": "知行成长/server/plans/api.py",
+      "line": 311,
+      "handler": "get_status_history",
+      "method_decorator": "get",
+      "declared_path": "/{pid}/status-history"
+    },
+    {
+      "source": "知行成长/server/predictions/api.py",
+      "line": 15,
+      "handler": "get_calibration",
+      "method_decorator": "get",
+      "declared_path": "/calibration"
+    },
+    {
+      "source": "知行成长/server/predictions/api.py",
+      "line": 19,
+      "handler": "get_accuracy_stats",
+      "method_decorator": "get",
+      "declared_path": "/stats"
+    },
+    {
+      "source": "知行成长/server/predictions/api.py",
+      "line": 23,
+      "handler": "investment_calibration",
+      "method_decorator": "get",
+      "declared_path": "/investment-calibration"
+    },
+    {
+      "source": "知行成长/server/predictions/api.py",
+      "line": 29,
+      "handler": "get_overconfident",
+      "method_decorator": "get",
+      "declared_path": "/overconfident"
+    },
+    {
+      "source": "知行成长/server/predictions/api.py",
+      "line": 35,
+      "handler": "get_trend",
+      "method_decorator": "get",
+      "declared_path": "/trend"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 40,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 53,
+      "handler": "setup",
+      "method_decorator": "get",
+      "declared_path": "/setup"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 55,
+      "handler": "library",
+      "method_decorator": "get",
+      "declared_path": "/library"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 61,
+      "handler": "prefs",
+      "method_decorator": "post",
+      "declared_path": "/preferences"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 63,
+      "handler": "add_source",
+      "method_decorator": "post",
+      "declared_path": "/sources"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 65,
+      "handler": "remove_source",
+      "method_decorator": "delete",
+      "declared_path": "/sources/{sid}"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 67,
+      "handler": "collect",
+      "method_decorator": "post",
+      "declared_path": "/collect"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 74,
+      "handler": "job",
+      "method_decorator": "get",
+      "declared_path": "/jobs/{jid}"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 76,
+      "handler": "cancel",
+      "method_decorator": "post",
+      "declared_path": "/jobs/{jid}/cancel"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 78,
+      "handler": "save",
+      "method_decorator": "post",
+      "declared_path": "/jobs/{jid}/save"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 107,
+      "handler": "article",
+      "method_decorator": "get",
+      "declared_path": "/articles/{aid}"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 129,
+      "handler": "personal",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/personal"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 135,
+      "handler": "position",
+      "method_decorator": "get",
+      "declared_path": "/articles/{aid}/position"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 137,
+      "handler": "save_position",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/position"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 139,
+      "handler": "feedback",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/feedback"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 146,
+      "handler": "guide",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/guide"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 150,
+      "handler": "summary",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/summary"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 154,
+      "handler": "english",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/english"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 158,
+      "handler": "fetch_full",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/fetch_full"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 165,
+      "handler": "import_url",
+      "method_decorator": "post",
+      "declared_path": "/import-url"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 181,
+      "handler": "import_paste",
+      "method_decorator": "post",
+      "declared_path": "/import-paste"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 191,
+      "handler": "archive",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/archive"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 193,
+      "handler": "restore",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/restore"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 196,
+      "handler": "get_translation",
+      "method_decorator": "get",
+      "declared_path": "/articles/{aid}/translation"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 198,
+      "handler": "save_translation",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/translation"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 204,
+      "handler": "adopt_translation",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/translation/adopt"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 210,
+      "handler": "save_summary_draft",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/summary-draft"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 212,
+      "handler": "adopt_summary_draft",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/summary-draft/adopt"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 214,
+      "handler": "save_english_draft",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/english-draft"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 216,
+      "handler": "adopt_english_draft",
+      "method_decorator": "post",
+      "declared_path": "/articles/{aid}/english-draft/adopt"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 219,
+      "handler": "list_vocab",
+      "method_decorator": "get",
+      "declared_path": "/vocabulary"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 221,
+      "handler": "due_vocab",
+      "method_decorator": "get",
+      "declared_path": "/vocabulary/due"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 223,
+      "handler": "vocab_stats",
+      "method_decorator": "get",
+      "declared_path": "/vocabulary/stats"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 225,
+      "handler": "add_vocab",
+      "method_decorator": "post",
+      "declared_path": "/vocabulary"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 231,
+      "handler": "get_vocab",
+      "method_decorator": "get",
+      "declared_path": "/vocabulary/{vid}"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 233,
+      "handler": "review_vocab",
+      "method_decorator": "post",
+      "declared_path": "/vocabulary/{vid}/review"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 235,
+      "handler": "pause_vocab",
+      "method_decorator": "post",
+      "declared_path": "/vocabulary/{vid}/pause"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 237,
+      "handler": "archive_vocab",
+      "method_decorator": "post",
+      "declared_path": "/vocabulary/{vid}/archive"
+    },
+    {
+      "source": "知行成长/server/reading/api.py",
+      "line": 239,
+      "handler": "delete_vocab",
+      "method_decorator": "delete",
+      "declared_path": "/vocabulary/{vid}"
+    },
+    {
+      "source": "知行成长/server/reading/scheduled.py",
+      "line": 57,
+      "handler": "scheduled_run",
+      "method_decorator": "api_route",
+      "declared_path": "/scheduled-run"
+    },
+    {
+      "source": "知行成长/server/record_handoff_api.py",
+      "line": 20,
+      "handler": "status",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/record_handoff_api.py",
+      "line": 25,
+      "handler": "propose",
+      "method_decorator": "post",
+      "declared_path": "/preview"
+    },
+    {
+      "source": "知行成长/server/record_handoff_api.py",
+      "line": 27,
+      "handler": "accept",
+      "method_decorator": "post",
+      "declared_path": "/confirm"
+    },
+    {
+      "source": "知行成长/server/record_handoff_api.py",
+      "line": 29,
+      "handler": "retry",
+      "method_decorator": "post",
+      "declared_path": "/retry"
+    },
+    {
+      "source": "知行成长/server/record_handoff_api.py",
+      "line": 31,
+      "handler": "abort",
+      "method_decorator": "post",
+      "declared_path": "/cancel"
+    },
+    {
+      "source": "知行成长/server/record_handoff_api.py",
+      "line": 33,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/export"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 87,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 93,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/export"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 98,
+      "handler": "create",
+      "method_decorator": "post",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 102,
+      "handler": "detail",
+      "method_decorator": "get",
+      "declared_path": "/{entry_id}"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 108,
+      "handler": "update",
+      "method_decorator": "put",
+      "declared_path": "/{entry_id}"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 112,
+      "handler": "versions",
+      "method_decorator": "get",
+      "declared_path": "/{entry_id}/versions"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 116,
+      "handler": "file_status",
+      "method_decorator": "get",
+      "declared_path": "/{entry_id}/file-status"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 120,
+      "handler": "archive",
+      "method_decorator": "post",
+      "declared_path": "/{entry_id}/archive"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 124,
+      "handler": "restore",
+      "method_decorator": "post",
+      "declared_path": "/{entry_id}/restore"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 128,
+      "handler": "assist",
+      "method_decorator": "post",
+      "declared_path": "/{entry_id}/assist"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 133,
+      "handler": "attempt",
+      "method_decorator": "get",
+      "declared_path": "/attempts/{attempt_key}"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 137,
+      "handler": "cancel",
+      "method_decorator": "post",
+      "declared_path": "/attempts/{attempt_key}/cancel"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 141,
+      "handler": "save_answers",
+      "method_decorator": "post",
+      "declared_path": "/attempts/{attempt_key}/answers"
+    },
+    {
+      "source": "知行成长/server/reflections/api.py",
+      "line": 145,
+      "handler": "adopt",
+      "method_decorator": "post",
+      "declared_path": "/{entry_id}/adopt"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 11,
+      "handler": "capabilities",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/capabilities"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 16,
+      "handler": "today",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/today"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 20,
+      "handler": "preferences",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/preferences"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 24,
+      "handler": "focus",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/focus"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 28,
+      "handler": "mode",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/focus/{focus_id}/mode"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 32,
+      "handler": "execution",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/executions/{execution_id}"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 46,
+      "handler": "recap",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/executions/{execution_id}/recap"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 51,
+      "handler": "week",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/weeks/{week_start}"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 58,
+      "handler": "confirm_week",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/weeks/{week_start}/confirm"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 63,
+      "handler": "reminder",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/reminder-claim"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 68,
+      "handler": "enrollment",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/enrollment"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 73,
+      "handler": "survey",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/survey"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 78,
+      "handler": "export",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/export"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 84,
+      "handler": "trial",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/trial"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 96,
+      "handler": "events",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/events"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 101,
+      "handler": "step",
+      "method_decorator": "post",
+      "declared_path": "/rhythm/steps"
+    },
+    {
+      "source": "知行成长/server/rhythm/api.py",
+      "line": 106,
+      "handler": "source_receipt",
+      "method_decorator": "get",
+      "declared_path": "/rhythm/source-receipts/{event_id}"
+    },
+    {
+      "source": "知行成长/server/search_api.py",
+      "line": 22,
+      "handler": "search",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/search_api.py",
+      "line": 64,
+      "handler": "get_stats",
+      "method_decorator": "get",
+      "declared_path": "/stats"
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 68,
+      "handler": "listing",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 74,
+      "handler": "statistics",
+      "method_decorator": "get",
+      "declared_path": "/statistics"
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 78,
+      "handler": "create",
+      "method_decorator": "post",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 82,
+      "handler": "detail",
+      "method_decorator": "get",
+      "declared_path": "/{record_id}"
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 86,
+      "handler": "update",
+      "method_decorator": "put",
+      "declared_path": "/{record_id}"
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 90,
+      "handler": "outcome",
+      "method_decorator": "post",
+      "declared_path": "/{record_id}/outcome"
+    },
+    {
+      "source": "知行成长/server/stocks/api.py",
+      "line": 94,
+      "handler": "delete",
+      "method_decorator": "delete",
+      "declared_path": "/{record_id}"
+    },
+    {
+      "source": "知行成长/server/study_generation.py",
+      "line": 259,
+      "handler": "generate",
+      "method_decorator": "post",
+      "declared_path": "/{module}/generations"
+    },
+    {
+      "source": "知行成长/server/study_generation.py",
+      "line": 263,
+      "handler": "status",
+      "method_decorator": "get",
+      "declared_path": "/{module}/generations/{key}"
+    },
+    {
+      "source": "知行成长/server/study_generation.py",
+      "line": 267,
+      "handler": "publish",
+      "method_decorator": "post",
+      "declared_path": "/{module}/generations/{key}/publish"
+    },
+    {
+      "source": "知行成长/server/study_generation.py",
+      "line": 271,
+      "handler": "cancel",
+      "method_decorator": "post",
+      "declared_path": "/{module}/generations/{key}/cancel"
+    },
+    {
+      "source": "知行成长/server/study_materials.py",
+      "line": 182,
+      "handler": "modules",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/study_materials.py",
+      "line": 188,
+      "handler": "history",
+      "method_decorator": "get",
+      "declared_path": "/learning-history"
+    },
+    {
+      "source": "知行成长/server/study_materials.py",
+      "line": 200,
+      "handler": "lesson",
+      "method_decorator": "get",
+      "declared_path": "/{module}/{filename}"
+    },
+    {
+      "source": "知行成长/server/study_materials.py",
+      "line": 204,
+      "handler": "record",
+      "method_decorator": "get",
+      "declared_path": "/{module}/{filename}/learning-record"
+    },
+    {
+      "source": "知行成长/server/study_materials.py",
+      "line": 209,
+      "handler": "complete",
+      "method_decorator": "post",
+      "declared_path": "/{module}/{filename}/learning-record"
+    },
+    {
+      "source": "知行成长/server/study_notes.py",
+      "line": 127,
+      "handler": "notebook",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/study_notes.py",
+      "line": 133,
+      "handler": "notes",
+      "method_decorator": "api_route",
+      "declared_path": "/{kind}/{course:path}"
+    },
+    {
+      "source": "知行成长/server/timeline_api.py",
+      "line": 19,
+      "handler": "get_timeline",
+      "method_decorator": "get",
+      "declared_path": ""
+    },
+    {
+      "source": "知行成长/server/timeline_api.py",
+      "line": 49,
+      "handler": "get_stats",
+      "method_decorator": "get",
+      "declared_path": "/stats"
+    }
+  ]
+}
