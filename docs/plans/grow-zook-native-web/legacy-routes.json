@@ -1,0 +1,6528 @@
+{
+  "baseline_zook_commit": "aae6160",
+  "scope": "OpenAPI-visible registered operations; static assets and hidden routes excluded; declaration inventory also included; not contract parity evidence",
+  "operations": 511,
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/account/github",
+      "operation_id": "github_settings_api_account_github_get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/account/github",
+      "operation_id": "save_github_api_account_github_put",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/github/test",
+      "operation_id": "test_github_api_account_github_test_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/account/invitations",
+      "operation_id": "invitations_api_account_invitations_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/invitations",
+      "operation_id": "create_invitation_api_account_invitations_post",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/account/invitations/{invitation_id}",
+      "operation_id": "revoke_invitation_api_account_invitations__invitation_id__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-link",
+      "operation_id": "status_api_action_link_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-link/confirm",
+      "operation_id": "confirm_api_action_link_confirm_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-link/preview",
+      "operation_id": "preview_api_action_link_preview_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-link/retry",
+      "operation_id": "retry_api_action_link_retry_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-link/source-deliveries",
+      "operation_id": "source_deliveries_api_action_link_source_deliveries_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-link/source-deliveries/retry",
+      "operation_id": "retry_sources_api_action_link_source_deliveries_retry_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans",
+      "operation_id": "read_api_action_plans_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans",
+      "operation_id": "add_api_action_plans_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/goals",
+      "operation_id": "goals_api_action_plans_goals_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/goals",
+      "operation_id": "create_goal_api_action_plans_goals_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/goals/{pid}",
+      "operation_id": "goal_api_action_plans_goals__pid__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/goals/{pid}/operations",
+      "operation_id": "operate_goal_api_action_plans_goals__pid__operations_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/goals/{pid}/result",
+      "operation_id": "save_result_api_action_plans_goals__pid__result_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/planning-drafts",
+      "operation_id": "drafts_api_action_plans_planning_drafts_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/planning-drafts/generate",
+      "operation_id": "generate_api_action_plans_planning_drafts_generate_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/planning-drafts/preview",
+      "operation_id": "preview_api_action_plans_planning_drafts_preview_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/planning-drafts/{did}",
+      "operation_id": "detail_api_action_plans_planning_drafts__did__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/planning-drafts/{did}/adopt",
+      "operation_id": "apply_api_action_plans_planning_drafts__did__adopt_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/planning-drafts/{did}/edit",
+      "operation_id": "edit_api_action_plans_planning_drafts__did__edit_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/records",
+      "operation_id": "records_api_action_plans_records_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/requests/{key}",
+      "operation_id": "request_result_api_action_plans_requests__key__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/reviews",
+      "operation_id": "save_api_action_plans_reviews_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/reviews",
+      "operation_id": "history_api_action_plans_reviews_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/reviews/generate",
+      "operation_id": "generate_api_action_plans_reviews_generate_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/reviews/preview",
+      "operation_id": "preview_api_action_plans_reviews_preview_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/capabilities",
+      "operation_id": "capabilities_api_action_plans_rhythm_capabilities_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/enrollment",
+      "operation_id": "enrollment_api_action_plans_rhythm_enrollment_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/events",
+      "operation_id": "events_api_action_plans_rhythm_events_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/executions/{execution_id}",
+      "operation_id": "execution_api_action_plans_rhythm_executions__execution_id__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/executions/{execution_id}/recap",
+      "operation_id": "recap_api_action_plans_rhythm_executions__execution_id__recap_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/export",
+      "operation_id": "export_api_action_plans_rhythm_export_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/focus",
+      "operation_id": "focus_api_action_plans_rhythm_focus_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/focus/{focus_id}/mode",
+      "operation_id": "mode_api_action_plans_rhythm_focus__focus_id__mode_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/preferences",
+      "operation_id": "preferences_api_action_plans_rhythm_preferences_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/reminder-claim",
+      "operation_id": "reminder_api_action_plans_rhythm_reminder_claim_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/source-receipts/{event_id}",
+      "operation_id": "source_receipt_api_action_plans_rhythm_source_receipts__event_id__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/steps",
+      "operation_id": "step_api_action_plans_rhythm_steps_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/survey",
+      "operation_id": "survey_api_action_plans_rhythm_survey_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/today",
+      "operation_id": "today_api_action_plans_rhythm_today_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/trial",
+      "operation_id": "trial_api_action_plans_rhythm_trial_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/rhythm/weeks/{week_start}",
+      "operation_id": "week_api_action_plans_rhythm_weeks__week_start__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/rhythm/weeks/{week_start}/confirm",
+      "operation_id": "confirm_week_api_action_plans_rhythm_weeks__week_start__confirm_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/schedules",
+      "operation_id": "arrange_api_action_plans_schedules_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/templates",
+      "operation_id": "read_templates_api_action_plans_templates_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/templates",
+      "operation_id": "add_template_api_action_plans_templates_post",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/action-plans/templates/{tid}",
+      "operation_id": "remove_template_api_action_plans_templates__tid__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/week-plans/{week}",
+      "operation_id": "read_api_action_plans_week_plans__week__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/week-plans/{week}",
+      "operation_id": "write_week_api_action_plans_week_plans__week__post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/workspace",
+      "operation_id": "workspace_api_action_plans_workspace_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/action-plans/{pid}/calendar.ics",
+      "operation_id": "export_api_action_plans__pid__calendar_ics_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/{pid}/operations",
+      "operation_id": "change_api_action_plans__pid__operations_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/action-plans/{pid}/reminder-claim",
+      "operation_id": "claim_api_action_plans__pid__reminder_claim_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/evidence",
+      "operation_id": "by_resource_api_ai_evidence_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/evidence/{snapshot_id}",
+      "operation_id": "detail_api_ai_evidence__snapshot_id__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/settings",
+      "operation_id": "settings_api_ai_settings_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/test",
+      "operation_id": "test_api_ai_test_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "operation_id": "login_api_auth_login_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "operation_id": "logout_api_auth_logout_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "operation_id": "me_api_auth_me_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "operation_id": "register_api_auth_register_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior-report",
+      "operation_id": "list_reports_api_behavior_report_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/behavior-report/generate",
+      "operation_id": "generate_report_api_behavior_report_generate_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/behavior-report/jobs",
+      "operation_id": "create_job_api_behavior_report_jobs_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior-report/jobs",
+      "operation_id": "jobs_api_behavior_report_jobs_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior-report/jobs/by-request/{request_key}",
+      "operation_id": "by_request_api_behavior_report_jobs_by_request__request_key__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior-report/jobs/{job_id}",
+      "operation_id": "job_api_behavior_report_jobs__job_id__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/behavior-report/jobs/{job_id}/cancel",
+      "operation_id": "cancel_job_api_behavior_report_jobs__job_id__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior-report/{report_id}",
+      "operation_id": "get_report_api_behavior_report__report_id__get",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/behavior-report/{report_id}",
+      "operation_id": "delete_report_api_behavior_report__report_id__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior/applications",
+      "operation_id": "list_applications_api_behavior_applications_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/behavior/applications",
+      "operation_id": "create_application_api_behavior_applications_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior/applications/concepts",
+      "operation_id": "list_concepts_api_behavior_applications_concepts_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior/applications/{app_id}",
+      "operation_id": "get_application_api_behavior_applications__app_id__get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/behavior/applications/{app_id}",
+      "operation_id": "update_application_api_behavior_applications__app_id__put",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/behavior/applications/{app_id}",
+      "operation_id": "delete_application_api_behavior_applications__app_id__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/behavior/stats",
+      "operation_id": "get_stats_api_behavior_stats_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/coach-facts",
+      "operation_id": "read_api_coach_facts_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/background-jobs",
+      "operation_id": "background_jobs_api_copilot_background_jobs_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/background-jobs/{id}",
+      "operation_id": "background_job_api_copilot_background_jobs__id__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/background-jobs/{id}/cancel",
+      "operation_id": "cancel_background_job_api_copilot_background_jobs__id__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/backups",
+      "operation_id": "backup_api_copilot_backups_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/drafts",
+      "operation_id": "drafts_api_copilot_drafts_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/drafts/{draft_id}",
+      "operation_id": "draft_api_copilot_drafts__draft_id__get",
+      "tags": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/copilot/drafts/{draft_id}",
+      "operation_id": "edit_api_copilot_drafts__draft_id__patch",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/generations",
+      "operation_id": "generate_api_copilot_generations_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/generations/{draft_id}/cancel",
+      "operation_id": "cancel_api_copilot_generations__draft_id__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/learning-history",
+      "operation_id": "learning_history_api_copilot_learning_history_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/learning-history/by-date",
+      "operation_id": "learning_history_by_date_api_copilot_learning_history_by_date_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/learning-history/months",
+      "operation_id": "learning_history_months_api_copilot_learning_history_months_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/lessons",
+      "operation_id": "lessons_api_copilot_lessons_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/lessons/archived",
+      "operation_id": "archived_lessons_api_copilot_lessons_archived_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/lessons/{number}",
+      "operation_id": "lesson_api_copilot_lessons__number__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/lessons/{number}/archive",
+      "operation_id": "archive_api_copilot_lessons__number__archive_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/lessons/{number}/complete",
+      "operation_id": "quick_complete_api_copilot_lessons__number__complete_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/lessons/{number}/feedback",
+      "operation_id": "submit_feedback_api_copilot_lessons__number__feedback_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/lessons/{number}/feedback",
+      "operation_id": "get_feedback_api_copilot_lessons__number__feedback_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/lessons/{number}/learning-record",
+      "operation_id": "learning_record_api_copilot_lessons__number__learning_record_get",
+      "tags": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/copilot/lessons/{number}/learning-state",
+      "operation_id": "learning_api_copilot_lessons__number__learning_state_patch",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/lessons/{number}/review",
+      "operation_id": "submit_review_api_copilot_lessons__number__review_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/lessons/{number}/review-questions",
+      "operation_id": "review_questions_api_copilot_lessons__number__review_questions_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/lessons/{number}/summary",
+      "operation_id": "submit_summary_api_copilot_lessons__number__summary_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/lessons/{number}/unarchive",
+      "operation_id": "unarchive_api_copilot_lessons__number__unarchive_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/operations",
+      "operation_id": "operations_api_copilot_operations_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/operations/{op_id}",
+      "operation_id": "operation_api_copilot_operations__op_id__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/operations/{op_id}/recover",
+      "operation_id": "recover_api_copilot_operations__op_id__recover_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/plan",
+      "operation_id": "plan_api_copilot_plan_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/plan/confirm",
+      "operation_id": "confirm_plan_api_copilot_plan_confirm_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/publications",
+      "operation_id": "publish_api_copilot_publications_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/scan",
+      "operation_id": "scan_api_copilot_scan_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/summaries",
+      "operation_id": "summaries_api_copilot_summaries_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/summaries/generate",
+      "operation_id": "generate_summary_api_copilot_summaries_generate_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/summaries/generate-advanced",
+      "operation_id": "generate_advanced_api_copilot_summaries_generate_advanced_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/summaries/{summary_id}",
+      "operation_id": "summary_api_copilot_summaries__summary_id__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/copilot/today-task",
+      "operation_id": "today_task_api_copilot_today_task_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/copilot/writer-session",
+      "operation_id": "writer_session_api_copilot_writer_session_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/course-continuations",
+      "operation_id": "context_api_course_continuations_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations",
+      "operation_id": "save_api_course_continuations_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/course-continuations/jobs",
+      "operation_id": "jobs_api_course_continuations_jobs_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/course-continuations/jobs/{id}",
+      "operation_id": "job_api_course_continuations_jobs__id__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations/jobs/{id}/cancel",
+      "operation_id": "cancel_api_course_continuations_jobs__id__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations/next",
+      "operation_id": "next_course_api_course_continuations_next_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations/{id}/adopt",
+      "operation_id": "adopt_api_course_continuations__id__adopt_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations/{id}/first-lesson",
+      "operation_id": "first_api_course_continuations__id__first_lesson_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations/{id}/plan",
+      "operation_id": "plan_api_course_continuations__id__plan_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/course-continuations/{id}/suggest",
+      "operation_id": "suggest_api_course_continuations__id__suggest_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/data",
+      "operation_id": "get_data_api_data_get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/data",
+      "operation_id": "put_data_api_data_put",
+      "tags": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/data",
+      "operation_id": "patch_data_api_data_patch",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/errors/",
+      "operation_id": "list_errors_api_errors__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/errors/",
+      "operation_id": "create_error_api_errors__post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/errors/repeated",
+      "operation_id": "get_repeated_errors_api_errors_repeated_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/errors/stats",
+      "operation_id": "get_stats_api_errors_stats_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/errors/types",
+      "operation_id": "list_error_types_api_errors_types_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/errors/types",
+      "operation_id": "create_error_type_api_errors_types_post",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/errors/types/{type_id}",
+      "operation_id": "delete_error_type_api_errors_types__type_id__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/errors/{error_id}",
+      "operation_id": "get_error_api_errors__error_id__get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/errors/{error_id}",
+      "operation_id": "update_error_api_errors__error_id__put",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/errors/{error_id}",
+      "operation_id": "delete_error_api_errors__error_id__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "operation_id": "health_api_health_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts",
+      "operation_id": "create_investment_accounts_api_investments_accounts_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts",
+      "operation_id": "listing_api_investments_accounts_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts/opening-preview",
+      "operation_id": "opening_preview_api_investments_accounts_opening_preview_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts/{account_id}/baseline",
+      "operation_id": "baseline_commit_api_investments_accounts__account_id__baseline_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts/{account_id}/baseline/preview",
+      "operation_id": "baseline_preview_api_investments_accounts__account_id__baseline_preview_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{account_id}/briefing",
+      "operation_id": "daily_briefing_api_investments_accounts__account_id__briefing_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{account_id}/campaigns/{campaign_id}/replay",
+      "operation_id": "holding_path_api_investments_accounts__account_id__campaigns__campaign_id__replay_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{account_id}/forecast-calibration",
+      "operation_id": "stats_api_investments_accounts__account_id__forecast_calibration_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts/{account_id}/forecasts/evaluate",
+      "operation_id": "evaluate_api_investments_accounts__account_id__forecasts_evaluate_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{account_id}/performance",
+      "operation_id": "performance_api_investments_accounts__account_id__performance_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts/{account_id}/valuations",
+      "operation_id": "valuation_commit_api_investments_accounts__account_id__valuations_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{account_id}/valuations",
+      "operation_id": "valuations_api_investments_accounts__account_id__valuations_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/accounts/{account_id}/valuations/preview",
+      "operation_id": "valuation_preview_api_investments_accounts__account_id__valuations_preview_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{account_id}/valuations/{valuation_id}",
+      "operation_id": "valuation_detail_api_investments_accounts__account_id__valuations__valuation_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}",
+      "operation_id": "get_api_investments_accounts__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}/balance",
+      "operation_id": "balance_api_investments_accounts__object_id__balance_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}/campaigns",
+      "operation_id": "campaigns_api_investments_accounts__object_id__campaigns_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}/campaigns/{campaign_id}/review",
+      "operation_id": "campaign_review_api_investments_accounts__object_id__campaigns__campaign_id__review_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}/history",
+      "operation_id": "history_api_investments_accounts__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}/policy-status",
+      "operation_id": "capital_status_api_investments_accounts__object_id__policy_status_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/accounts/{object_id}/summary",
+      "operation_id": "period_review_api_investments_accounts__object_id__summary_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/ai-relay",
+      "operation_id": "relay_call_api_investments_ai_relay_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/ai-relay/calls/{call_key}",
+      "operation_id": "relay_receipt_api_investments_ai_relay_calls__call_key__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/ai-relay/config",
+      "operation_id": "relay_config_api_investments_ai_relay_config_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/ai-relay/jobs/{job_id}/recover",
+      "operation_id": "recover_api_investments_ai_relay_jobs__job_id__recover_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/analysis/jobs",
+      "operation_id": "analysis_submit_api_investments_analysis_jobs_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/analysis/jobs",
+      "operation_id": "analysis_listing_api_investments_analysis_jobs_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/analysis/jobs/{object_id}",
+      "operation_id": "analysis_get_api_investments_analysis_jobs__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/analysis/jobs/{object_id}/cancel",
+      "operation_id": "analysis_cancel_api_investments_analysis_jobs__object_id__cancel_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/analysis/jobs/{object_id}/scenarios/{index}/policy-draft",
+      "operation_id": "adopt_capital_scenario_api_investments_analysis_jobs__object_id__scenarios__index__policy_draft_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/analysis/jobs/{object_id}/suggestions/{index}/decision",
+      "operation_id": "recommendation_decision_api_investments_analysis_jobs__object_id__suggestions__index__decision_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/analysis/preview",
+      "operation_id": "analysis_preview_api_investments_analysis_preview_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/analysis/previews/{object_id}",
+      "operation_id": "analysis_preview_get_api_investments_analysis_previews__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/briefing",
+      "operation_id": "research_briefing_api_investments_briefing_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/calendar",
+      "operation_id": "public_calendar_api_investments_calendar_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/capabilities",
+      "operation_id": "capabilities_api_investments_capabilities_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/cash-events",
+      "operation_id": "create_investment_cash_events_api_investments_cash_events_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/cash-events",
+      "operation_id": "listing_api_investments_cash_events_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/cash-events/{object_id}",
+      "operation_id": "get_api_investments_cash_events__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/cash-events/{object_id}/history",
+      "operation_id": "history_api_investments_cash_events__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/condition-drills",
+      "operation_id": "condition_drill_api_investments_condition_drills_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/condition-drills",
+      "operation_id": "condition_drills_api_investments_condition_drills_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/condition-drills/{object_id}",
+      "operation_id": "saved_condition_drill_api_investments_condition_drills__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/data-health",
+      "operation_id": "data_health_api_investments_data_health_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/data-sources",
+      "operation_id": "data_sources_api_investments_data_sources_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/dossiers",
+      "operation_id": "create_investment_dossiers_api_investments_dossiers_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/dossiers",
+      "operation_id": "listing_api_investments_dossiers_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/dossiers/{object_id}",
+      "operation_id": "get_api_investments_dossiers__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/dossiers/{object_id}",
+      "operation_id": "edit_api_investments_dossiers__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/dossiers/{object_id}/history",
+      "operation_id": "history_api_investments_dossiers__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/execution-studies",
+      "operation_id": "execution_study_api_investments_execution_studies_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/execution-studies",
+      "operation_id": "execution_studies_api_investments_execution_studies_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/execution-studies/{object_id}",
+      "operation_id": "saved_execution_study_api_investments_execution_studies__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/experiments",
+      "operation_id": "new_experiment_api_investments_experiments_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/experiments",
+      "operation_id": "experiments_api_investments_experiments_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/experiments/{object_id}",
+      "operation_id": "experiment_api_investments_experiments__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/experiments/{object_id}",
+      "operation_id": "edit_experiment_api_investments_experiments__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/experiments/{object_id}/evaluation",
+      "operation_id": "experiment_evaluation_api_investments_experiments__object_id__evaluation_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/experiments/{object_id}/finish",
+      "operation_id": "finish_forward_experiment_api_investments_experiments__object_id__finish_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/experiments/{object_id}/history",
+      "operation_id": "experiment_history_api_investments_experiments__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/experiments/{object_id}/register",
+      "operation_id": "register_forward_experiment_api_investments_experiments__object_id__register_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/export",
+      "operation_id": "export_api_investments_export_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/fills",
+      "operation_id": "create_investment_fills_api_investments_fills_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/fills",
+      "operation_id": "listing_api_investments_fills_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/fills/{object_id}",
+      "operation_id": "get_api_investments_fills__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/fills/{object_id}/corrections",
+      "operation_id": "correct_api_investments_fills__object_id__corrections_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/fills/{object_id}/history",
+      "operation_id": "history_api_investments_fills__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/forecast-baseline",
+      "operation_id": "baseline_api_investments_forecast_baseline_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/forecast-calibration",
+      "operation_id": "research_stats_api_investments_forecast_calibration_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/forecast-evaluations",
+      "operation_id": "evaluations_api_investments_forecast_evaluations_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/forecasts",
+      "operation_id": "create_api_investments_forecasts_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/forecasts",
+      "operation_id": "listing_api_investments_forecasts_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/forecasts/evaluate",
+      "operation_id": "evaluate_research_api_investments_forecasts_evaluate_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/fund-nav",
+      "operation_id": "fund_nav_api_investments_fund_nav_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/fund-orders",
+      "operation_id": "create_investment_fund_orders_api_investments_fund_orders_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/fund-orders",
+      "operation_id": "listing_api_investments_fund_orders_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/fund-orders/{object_id}",
+      "operation_id": "get_api_investments_fund_orders__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/fund-orders/{object_id}/confirm",
+      "operation_id": "confirm_fund_order_api_investments_fund_orders__object_id__confirm_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/fund-orders/{object_id}/history",
+      "operation_id": "history_api_investments_fund_orders__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/fund-orders/{object_id}/settle",
+      "operation_id": "settle_fund_order_api_investments_fund_orders__object_id__settle_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/imports/commit",
+      "operation_id": "commit_api_investments_imports_commit_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/imports/preview",
+      "operation_id": "preview_api_investments_imports_preview_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/instruments",
+      "operation_id": "create_investment_instruments_api_investments_instruments_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/instruments",
+      "operation_id": "listing_api_investments_instruments_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/instruments/{object_id}",
+      "operation_id": "get_api_investments_instruments__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/instruments/{object_id}/data-status",
+      "operation_id": "instrument_freshness_api_investments_instruments__object_id__data_status_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/instruments/{object_id}/history",
+      "operation_id": "history_api_investments_instruments__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/instruments/{object_id}/rules",
+      "operation_id": "public_rules_api_investments_instruments__object_id__rules_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/knowledge",
+      "operation_id": "knowledge_nodes_api_investments_knowledge_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/knowledge/seed",
+      "operation_id": "seed_knowledge_api_investments_knowledge_seed_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/knowledge/tip",
+      "operation_id": "knowledge_tip_api_investments_knowledge_tip_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/ledger-notices",
+      "operation_id": "create_investment_ledger_notices_api_investments_ledger_notices_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/ledger-notices",
+      "operation_id": "listing_api_investments_ledger_notices_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/ledger-notices/{object_id}",
+      "operation_id": "get_api_investments_ledger_notices__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/ledger-notices/{object_id}",
+      "operation_id": "edit_api_investments_ledger_notices__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/ledger-notices/{object_id}/history",
+      "operation_id": "history_api_investments_ledger_notices__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/legacy-links",
+      "operation_id": "legacy_link_api_investments_legacy_links_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/legacy-records",
+      "operation_id": "legacy_records_api_investments_legacy_records_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/local-jobs/{job_id}/input",
+      "operation_id": "browser_input_api_investments_local_jobs__job_id__input_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-jobs/{job_id}/pause",
+      "operation_id": "browser_pause_api_investments_local_jobs__job_id__pause_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-jobs/{job_id}/{stage}",
+      "operation_id": "browser_output_api_investments_local_jobs__job_id___stage__post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-runs",
+      "operation_id": "browser_run_api_investments_local_runs_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/local-runs",
+      "operation_id": "browser_runs_api_investments_local_runs_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/local-runs/{run_id}",
+      "operation_id": "browser_run_detail_api_investments_local_runs__run_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-runs/{run_id}/analysis-selection",
+      "operation_id": "analysis_selection_api_investments_local_runs__run_id__analysis_selection_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-runs/{run_id}/cancel",
+      "operation_id": "browser_cancel_api_investments_local_runs__run_id__cancel_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-runs/{run_id}/candidates/{instrument_id}",
+      "operation_id": "browser_candidate_api_investments_local_runs__run_id__candidates__instrument_id__post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/local-runs/{run_id}/inputs",
+      "operation_id": "browser_run_inputs_api_investments_local_runs__run_id__inputs_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/local-runs/{run_id}/screening",
+      "operation_id": "browser_screen_result_api_investments_local_runs__run_id__screening_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/market-snapshots/{object_id}",
+      "operation_id": "captured_market_snapshot_api_investments_market_snapshots__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/market/import",
+      "operation_id": "history_import_api_investments_market_import_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/monitor-events",
+      "operation_id": "events_api_investments_monitor_events_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/monitor-events/{event_id}/read",
+      "operation_id": "read_api_investments_monitor_events__event_id__read_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/monitors",
+      "operation_id": "create_api_investments_monitors_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/monitors",
+      "operation_id": "listing_api_investments_monitors_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/monitors/source-policy",
+      "operation_id": "source_policy_api_investments_monitors_source_policy_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/monitors/{monitor_id}",
+      "operation_id": "edit_api_investments_monitors__monitor_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/monitors/{monitor_id}/check",
+      "operation_id": "check_api_investments_monitors__monitor_id__check_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/monitors/{monitor_id}/stop",
+      "operation_id": "stop_api_investments_monitors__monitor_id__stop_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/overview",
+      "operation_id": "today_overview_api_investments_overview_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/paths",
+      "operation_id": "minute_paths_api_investments_paths_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/paths/import",
+      "operation_id": "import_minute_path_api_investments_paths_import_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/paths/{object_id}",
+      "operation_id": "original_minute_path_api_investments_paths__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/period-plans",
+      "operation_id": "create_investment_period_plans_api_investments_period_plans_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/period-plans",
+      "operation_id": "listing_api_investments_period_plans_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/period-plans/{object_id}",
+      "operation_id": "get_api_investments_period_plans__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/period-plans/{object_id}",
+      "operation_id": "edit_api_investments_period_plans__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/period-plans/{object_id}/history",
+      "operation_id": "history_api_investments_period_plans__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/period-plans/{object_id}/state",
+      "operation_id": "change_api_investments_period_plans__object_id__state_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/plan-checks",
+      "operation_id": "create_investment_plan_checks_api_investments_plan_checks_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/plan-checks",
+      "operation_id": "listing_api_investments_plan_checks_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/plan-checks/{object_id}",
+      "operation_id": "get_api_investments_plan_checks__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/plan-checks/{object_id}/history",
+      "operation_id": "history_api_investments_plan_checks__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/policies",
+      "operation_id": "create_investment_policies_api_investments_policies_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/policies",
+      "operation_id": "listing_api_investments_policies_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/policies/{object_id}",
+      "operation_id": "get_api_investments_policies__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/policies/{object_id}",
+      "operation_id": "edit_api_investments_policies__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/policies/{object_id}/history",
+      "operation_id": "history_api_investments_policies__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/policies/{object_id}/state",
+      "operation_id": "change_api_investments_policies__object_id__state_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/principles",
+      "operation_id": "create_investment_principles_api_investments_principles_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/principles",
+      "operation_id": "listing_api_investments_principles_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/principles/{object_id}",
+      "operation_id": "get_api_investments_principles__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/principles/{object_id}",
+      "operation_id": "edit_api_investments_principles__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/principles/{object_id}/history",
+      "operation_id": "history_api_investments_principles__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/principles/{object_id}/state",
+      "operation_id": "change_api_investments_principles__object_id__state_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/provider/akshare/daily",
+      "operation_id": "akshare_daily_fetch_api_investments_provider_akshare_daily_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/provider/daily",
+      "operation_id": "daily_fetch_api_investments_provider_daily_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/readiness",
+      "operation_id": "investment_requirements_api_investments_readiness_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/recommendations",
+      "operation_id": "recommendations_api_investments_recommendations_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research",
+      "operation_id": "create_investment_research_api_investments_research_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research",
+      "operation_id": "listing_api_investments_research_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/alerts",
+      "operation_id": "alert_api_investments_research_alerts_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/alerts/check",
+      "operation_id": "check_api_investments_research_alerts_check_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/alerts/{identity}",
+      "operation_id": "edit_alert_api_investments_research_alerts__identity__post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/archives",
+      "operation_id": "listing_api_investments_research_archives_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/archives",
+      "operation_id": "write_api_investments_research_archives_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/archives/verify",
+      "operation_id": "verify_api_investments_research_archives_verify_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/archives/{identity}/download",
+      "operation_id": "download_api_investments_research_archives__identity__download_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/backtests",
+      "operation_id": "run_api_investments_research_backtests_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/candidate",
+      "operation_id": "candidate_api_investments_research_candidate_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/catalog",
+      "operation_id": "catalog_api_investments_research_catalog_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/comparisons",
+      "operation_id": "create_api_investments_research_comparisons_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/comparisons/{identity}/export",
+      "operation_id": "export_api_investments_research_comparisons__identity__export_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/datasets",
+      "operation_id": "dataset_api_investments_research_datasets_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/datasets/csv",
+      "operation_id": "market_csv_api_investments_research_datasets_csv_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/export",
+      "operation_id": "export_api_investments_research_export_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/interface",
+      "operation_id": "interface_api_investments_research_interface_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/objects",
+      "operation_id": "listing_api_investments_research_objects_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/objects/{identity}",
+      "operation_id": "detail_api_investments_research_objects__identity__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/presets",
+      "operation_id": "preset_api_investments_research_presets_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/presets/{identity}",
+      "operation_id": "edit_preset_api_investments_research_presets__identity__post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/provider/akshare/history",
+      "operation_id": "history_api_investments_research_provider_akshare_history_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/provider/akshare/market",
+      "operation_id": "market_api_investments_research_provider_akshare_market_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/screens",
+      "operation_id": "screen_api_investments_research_screens_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/series",
+      "operation_id": "series_api_investments_research_series_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/research/series/csv",
+      "operation_id": "series_csv_api_investments_research_series_csv_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/{object_id}",
+      "operation_id": "get_api_investments_research__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/research/{object_id}/history",
+      "operation_id": "history_api_investments_research__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/reviews",
+      "operation_id": "create_investment_reviews_api_investments_reviews_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/reviews",
+      "operation_id": "listing_api_investments_reviews_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/reviews/{object_id}",
+      "operation_id": "get_api_investments_reviews__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/reviews/{object_id}",
+      "operation_id": "edit_api_investments_reviews__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/reviews/{object_id}/actions",
+      "operation_id": "review_actions_api_investments_reviews__object_id__actions_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/reviews/{object_id}/actions",
+      "operation_id": "create_review_action_api_investments_reviews__object_id__actions_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/reviews/{object_id}/history",
+      "operation_id": "history_api_investments_reviews__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/rule-recipes",
+      "operation_id": "catalog_api_investments_rule_recipes_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/screen",
+      "operation_id": "screening_api_investments_screen_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/screening-catalog",
+      "operation_id": "screening_catalog_api_investments_screening_catalog_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/screening-templates",
+      "operation_id": "create_investment_screening_templates_api_investments_screening_templates_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/screening-templates",
+      "operation_id": "listing_api_investments_screening_templates_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/screening-templates/{object_id}",
+      "operation_id": "get_api_investments_screening_templates__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/screening-templates/{object_id}",
+      "operation_id": "edit_api_investments_screening_templates__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/screening-templates/{object_id}/history",
+      "operation_id": "history_api_investments_screening_templates__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/screening-templates/{template_id}/evaluate",
+      "operation_id": "run_api_investments_screening_templates__template_id__evaluate_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/search",
+      "operation_id": "private_investment_search_api_investments_search_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/security-status",
+      "operation_id": "status_api_investments_security_status_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/strategies",
+      "operation_id": "create_investment_strategies_api_investments_strategies_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/strategies",
+      "operation_id": "listing_api_investments_strategies_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/strategies/{object_id}",
+      "operation_id": "get_api_investments_strategies__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/strategies/{object_id}",
+      "operation_id": "edit_api_investments_strategies__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/strategies/{object_id}/history",
+      "operation_id": "history_api_investments_strategies__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/strategies/{object_id}/state",
+      "operation_id": "change_api_investments_strategies__object_id__state_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/strategy-templates",
+      "operation_id": "templates_api_investments_strategy_templates_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/strategy/extract-params",
+      "operation_id": "extract_api_investments_strategy_extract_params_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/strategy/grid-search",
+      "operation_id": "grid_search_api_investments_strategy_grid_search_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/strategy/run",
+      "operation_id": "run_api_investments_strategy_run_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/strategy/series",
+      "operation_id": "available_series_api_investments_strategy_series_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/template-evaluations",
+      "operation_id": "history_api_investments_template_evaluations_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/template-experiments",
+      "operation_id": "run_experiment_api_investments_template_experiments_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/template-experiments",
+      "operation_id": "experiments_api_investments_template_experiments_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/trade-plans",
+      "operation_id": "create_investment_trade_plans_api_investments_trade_plans_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/trade-plans",
+      "operation_id": "listing_api_investments_trade_plans_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/trade-plans/{object_id}",
+      "operation_id": "get_api_investments_trade_plans__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/trade-plans/{object_id}",
+      "operation_id": "edit_api_investments_trade_plans__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/trade-plans/{object_id}/assessment",
+      "operation_id": "plan_assessment_api_investments_trade_plans__object_id__assessment_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/trade-plans/{object_id}/history",
+      "operation_id": "history_api_investments_trade_plans__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/trade-plans/{object_id}/state",
+      "operation_id": "change_api_investments_trade_plans__object_id__state_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/user-strategies",
+      "operation_id": "strategies_api_investments_user_strategies_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/user-strategies",
+      "operation_id": "save_api_investments_user_strategies_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/investments/watchlist",
+      "operation_id": "create_investment_watchlist_api_investments_watchlist_post",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/watchlist",
+      "operation_id": "listing_api_investments_watchlist_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/watchlist/{object_id}",
+      "operation_id": "get_api_investments_watchlist__object_id__get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/investments/watchlist/{object_id}",
+      "operation_id": "edit_api_investments_watchlist__object_id__put",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/watchlist/{object_id}/history",
+      "operation_id": "history_api_investments_watchlist__object_id__history_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/investments/workspace",
+      "operation_id": "summary_api_investments_workspace_get",
+      "tags": [
+        "investments"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge",
+      "operation_id": "get_knowledge_api_knowledge_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge/by-stable-id/{stable_id}",
+      "operation_id": "get_by_stable_id_api_knowledge_by_stable_id__stable_id__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge/by-stable-id/{stable_id}/related",
+      "operation_id": "get_related_by_stable_id_api_knowledge_by_stable_id__stable_id__related_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge/graph",
+      "operation_id": "get_graph_api_knowledge_graph_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/knowledge/scan",
+      "operation_id": "rescan_knowledge_api_knowledge_scan_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/knowledge/scan-links",
+      "operation_id": "scan_knowledge_links_api_knowledge_scan_links_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/knowledge/stats",
+      "operation_id": "get_stats_api_knowledge_stats_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/knowledge/upsert",
+      "operation_id": "upsert_knowledge_api_knowledge_upsert_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/learning-checkins",
+      "operation_id": "get_learning_checkins_api_learning_checkins_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/migrations",
+      "operation_id": "status_api_migrations_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/migrations/files/apply",
+      "operation_id": "apply_files_api_migrations_files_apply_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/migrations/files/preview",
+      "operation_id": "preview_files_api_migrations_files_preview_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/migrations/recover",
+      "operation_id": "recover_api_migrations_recover_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/mobile-learning",
+      "operation_id": "read_api_mobile_learning_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile-learning/connect",
+      "operation_id": "pairing_api_mobile_learning_connect_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile-learning/consent",
+      "operation_id": "write_api_mobile_learning_consent_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile-learning/preview",
+      "operation_id": "pairing_preview_api_mobile_learning_preview_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/mobile-learning/private-consent",
+      "operation_id": "authorize_api_mobile_learning_private_consent_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/mobile-learning/source/{lesson_id}",
+      "operation_id": "source_api_mobile_learning_source__lesson_id__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plan-actions",
+      "operation_id": "listing_api_plan_actions_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans",
+      "operation_id": "listing_api_plans_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/attempts/{aid}",
+      "operation_id": "attempt_api_plans_attempts__aid__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/attempts/{aid}/cancel",
+      "operation_id": "cancel_api_plans_attempts__aid__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/attempts/{aid}/progress",
+      "operation_id": "progress_api_plans_attempts__aid__progress_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/backup",
+      "operation_id": "backup_api_plans_backup_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/budget",
+      "operation_id": "budget_api_plans_budget_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/drafts",
+      "operation_id": "create_draft_api_plans_drafts_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/drafts/{did}",
+      "operation_id": "read_draft_api_plans_drafts__did__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/drafts/{did}/adopt",
+      "operation_id": "adopt_api_plans_drafts__did__adopt_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/drafts/{did}/edit-course",
+      "operation_id": "edit_course_api_plans_drafts__did__edit_course_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/drafts/{did}/history",
+      "operation_id": "history_api_plans_drafts__did__history_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/drafts/{did}/publish",
+      "operation_id": "publish_api_plans_drafts__did__publish_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/drafts/{did}/redate",
+      "operation_id": "redate_api_plans_drafts__did__redate_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/drafts/{did}/refine",
+      "operation_id": "refine_api_plans_drafts__did__refine_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/generate",
+      "operation_id": "generate_api_plans_generate_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/recover",
+      "operation_id": "recover_api_plans_recover_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/{pid}",
+      "operation_id": "detail_api_plans__pid__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/{pid}/actions",
+      "operation_id": "read_api_plans__pid__actions_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/actions",
+      "operation_id": "write_api_plans__pid__actions_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/archive",
+      "operation_id": "archive_plan_api_plans__pid__archive_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/{pid}/lessons/{number}",
+      "operation_id": "read_course_api_plans__pid__lessons__number__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/lessons/{number}/feedback",
+      "operation_id": "feedback_api_plans__pid__lessons__number__feedback_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/metadata",
+      "operation_id": "metadata_api_plans__pid__metadata_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/pause",
+      "operation_id": "pause_plan_api_plans__pid__pause_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/resume",
+      "operation_id": "resume_plan_api_plans__pid__resume_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/plans/{pid}/sources",
+      "operation_id": "save_sources_api_plans__pid__sources_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/{pid}/sources",
+      "operation_id": "get_sources_api_plans__pid__sources_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/{pid}/status-history",
+      "operation_id": "get_status_history_api_plans__pid__status_history_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/predictions/calibration",
+      "operation_id": "get_calibration_api_predictions_calibration_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/predictions/investment-calibration",
+      "operation_id": "investment_calibration_api_predictions_investment_calibration_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/predictions/overconfident",
+      "operation_id": "get_overconfident_api_predictions_overconfident_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/predictions/stats",
+      "operation_id": "get_accuracy_stats_api_predictions_stats_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/predictions/trend",
+      "operation_id": "get_trend_api_predictions_trend_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading",
+      "operation_id": "listing_api_reading_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/articles/{aid}",
+      "operation_id": "article_api_reading_articles__aid__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/archive",
+      "operation_id": "archive_api_reading_articles__aid__archive_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/english",
+      "operation_id": "english_api_reading_articles__aid__english_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/english-draft",
+      "operation_id": "save_english_draft_api_reading_articles__aid__english_draft_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/english-draft/adopt",
+      "operation_id": "adopt_english_draft_api_reading_articles__aid__english_draft_adopt_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/feedback",
+      "operation_id": "feedback_api_reading_articles__aid__feedback_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/fetch_full",
+      "operation_id": "fetch_full_api_reading_articles__aid__fetch_full_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/guide",
+      "operation_id": "guide_api_reading_articles__aid__guide_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/personal",
+      "operation_id": "personal_api_reading_articles__aid__personal_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/articles/{aid}/position",
+      "operation_id": "position_api_reading_articles__aid__position_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/position",
+      "operation_id": "save_position_api_reading_articles__aid__position_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/restore",
+      "operation_id": "restore_api_reading_articles__aid__restore_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/summary",
+      "operation_id": "summary_api_reading_articles__aid__summary_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/summary-draft",
+      "operation_id": "save_summary_draft_api_reading_articles__aid__summary_draft_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/summary-draft/adopt",
+      "operation_id": "adopt_summary_draft_api_reading_articles__aid__summary_draft_adopt_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/articles/{aid}/translation",
+      "operation_id": "get_translation_api_reading_articles__aid__translation_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/translation",
+      "operation_id": "save_translation_api_reading_articles__aid__translation_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/articles/{aid}/translation/adopt",
+      "operation_id": "adopt_translation_api_reading_articles__aid__translation_adopt_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/collect",
+      "operation_id": "collect_api_reading_collect_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/import-paste",
+      "operation_id": "import_paste_api_reading_import_paste_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/import-url",
+      "operation_id": "import_url_api_reading_import_url_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/jobs/{jid}",
+      "operation_id": "job_api_reading_jobs__jid__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/jobs/{jid}/cancel",
+      "operation_id": "cancel_api_reading_jobs__jid__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/jobs/{jid}/save",
+      "operation_id": "save_api_reading_jobs__jid__save_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/library",
+      "operation_id": "library_api_reading_library_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/preferences",
+      "operation_id": "prefs_api_reading_preferences_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/scheduled-run",
+      "operation_id": "scheduled_run_api_reading_scheduled_run_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/scheduled-run",
+      "operation_id": "scheduled_run_api_reading_scheduled_run_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/setup",
+      "operation_id": "setup_api_reading_setup_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/sources",
+      "operation_id": "add_source_api_reading_sources_post",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/reading/sources/{sid}",
+      "operation_id": "remove_source_api_reading_sources__sid__delete",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/vocabulary",
+      "operation_id": "list_vocab_api_reading_vocabulary_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/vocabulary",
+      "operation_id": "add_vocab_api_reading_vocabulary_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/vocabulary/due",
+      "operation_id": "due_vocab_api_reading_vocabulary_due_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/vocabulary/stats",
+      "operation_id": "vocab_stats_api_reading_vocabulary_stats_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reading/vocabulary/{vid}",
+      "operation_id": "get_vocab_api_reading_vocabulary__vid__get",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/reading/vocabulary/{vid}",
+      "operation_id": "delete_vocab_api_reading_vocabulary__vid__delete",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/vocabulary/{vid}/archive",
+      "operation_id": "archive_vocab_api_reading_vocabulary__vid__archive_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/vocabulary/{vid}/pause",
+      "operation_id": "pause_vocab_api_reading_vocabulary__vid__pause_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reading/vocabulary/{vid}/review",
+      "operation_id": "review_vocab_api_reading_vocabulary__vid__review_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/record-link",
+      "operation_id": "status_api_record_link_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/record-link/cancel",
+      "operation_id": "abort_api_record_link_cancel_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/record-link/confirm",
+      "operation_id": "accept_api_record_link_confirm_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/record-link/export",
+      "operation_id": "export_api_record_link_export_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/record-link/preview",
+      "operation_id": "propose_api_record_link_preview_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/record-link/retry",
+      "operation_id": "retry_api_record_link_retry_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reflections",
+      "operation_id": "listing_api_reflections_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections",
+      "operation_id": "create_api_reflections_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reflections/attempts/{attempt_key}",
+      "operation_id": "attempt_api_reflections_attempts__attempt_key__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections/attempts/{attempt_key}/answers",
+      "operation_id": "save_answers_api_reflections_attempts__attempt_key__answers_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections/attempts/{attempt_key}/cancel",
+      "operation_id": "cancel_api_reflections_attempts__attempt_key__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reflections/export",
+      "operation_id": "export_api_reflections_export_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reflections/{entry_id}",
+      "operation_id": "detail_api_reflections__entry_id__get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/reflections/{entry_id}",
+      "operation_id": "update_api_reflections__entry_id__put",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections/{entry_id}/adopt",
+      "operation_id": "adopt_api_reflections__entry_id__adopt_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections/{entry_id}/archive",
+      "operation_id": "archive_api_reflections__entry_id__archive_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections/{entry_id}/assist",
+      "operation_id": "assist_api_reflections__entry_id__assist_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reflections/{entry_id}/file-status",
+      "operation_id": "file_status_api_reflections__entry_id__file_status_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/reflections/{entry_id}/restore",
+      "operation_id": "restore_api_reflections__entry_id__restore_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/reflections/{entry_id}/versions",
+      "operation_id": "versions_api_reflections__entry_id__versions_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/report",
+      "operation_id": "get_report_api_report_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "operation_id": "search_api_search_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/search/stats",
+      "operation_id": "get_stats_api_search_stats_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/stocks",
+      "operation_id": "listing_api_stocks_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/stocks",
+      "operation_id": "create_api_stocks_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/stocks/statistics",
+      "operation_id": "statistics_api_stocks_statistics_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/stocks/{record_id}",
+      "operation_id": "detail_api_stocks__record_id__get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/stocks/{record_id}",
+      "operation_id": "update_api_stocks__record_id__put",
+      "tags": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/stocks/{record_id}",
+      "operation_id": "delete_api_stocks__record_id__delete",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/stocks/{record_id}/outcome",
+      "operation_id": "outcome_api_stocks__record_id__outcome_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/storage-status",
+      "operation_id": "storage_status_api_storage_status_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-materials",
+      "operation_id": "modules_api_study_materials_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-materials/learning-history",
+      "operation_id": "history_api_study_materials_learning_history_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-materials/library/activity",
+      "operation_id": "listing_api_study_materials_library_activity_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/study-materials/library/activity",
+      "operation_id": "opened_api_study_materials_library_activity_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/study-materials/{module}/generations",
+      "operation_id": "generate_api_study_materials__module__generations_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-materials/{module}/generations/{key}",
+      "operation_id": "status_api_study_materials__module__generations__key__get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/study-materials/{module}/generations/{key}/cancel",
+      "operation_id": "cancel_api_study_materials__module__generations__key__cancel_post",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/study-materials/{module}/generations/{key}/publish",
+      "operation_id": "publish_api_study_materials__module__generations__key__publish_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-materials/{module}/{filename}",
+      "operation_id": "lesson_api_study_materials__module___filename__get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-materials/{module}/{filename}/learning-record",
+      "operation_id": "record_api_study_materials__module___filename__learning_record_get",
+      "tags": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/study-materials/{module}/{filename}/learning-record",
+      "operation_id": "complete_api_study_materials__module___filename__learning_record_post",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-notes",
+      "operation_id": "notebook_api_study_notes_get",
+      "tags": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/study-notes/{kind}/{course}",
+      "operation_id": "notes_api_study_notes__kind___course__put",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/study-notes/{kind}/{course}",
+      "operation_id": "notes_api_study_notes__kind___course__put",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/timeline",
+      "operation_id": "get_timeline_api_timeline_get",
+      "tags": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/timeline/stats",
+      "operation_id": "get_stats_api_timeline_stats_get",
+      "tags": []
+    }
+  ],
+  "declarations": [
+    {
+      "source": "accounts.py",
+      "line": 324,
+      "handler": "register",
+      "method": "POST",
+      "relative_path": "/register"
+    },
+    {
+      "source": "accounts.py",
+      "line": 330,
+      "handler": "login",
+      "method": "POST",
+      "relative_path": "/login"
+    },
+    {
+      "source": "accounts.py",
+      "line": 337,
+      "handler": "logout",
+      "method": "POST",
+      "relative_path": "/logout"
+    },
+    {
+      "source": "accounts.py",
+      "line": 344,
+      "handler": "me",
+      "method": "GET",
+      "relative_path": "/me"
+    },
+    {
+      "source": "accounts.py",
+      "line": 347,
+      "handler": "invitations",
+      "method": "GET",
+      "relative_path": "/api/account/invitations"
+    },
+    {
+      "source": "accounts.py",
+      "line": 350,
+      "handler": "create_invitation",
+      "method": "POST",
+      "relative_path": "/api/account/invitations"
+    },
+    {
+      "source": "accounts.py",
+      "line": 353,
+      "handler": "revoke_invitation",
+      "method": "DELETE",
+      "relative_path": "/api/account/invitations/{invitation_id}"
+    },
+    {
+      "source": "accounts.py",
+      "line": 356,
+      "handler": "github_settings",
+      "method": "GET",
+      "relative_path": "/api/account/github"
+    },
+    {
+      "source": "accounts.py",
+      "line": 359,
+      "handler": "save_github",
+      "method": "PUT",
+      "relative_path": "/api/account/github"
+    },
+    {
+      "source": "accounts.py",
+      "line": 362,
+      "handler": "test_github",
+      "method": "POST",
+      "relative_path": "/api/account/github/test"
+    },
+    {
+      "source": "accounts.py",
+      "line": 369,
+      "handler": "login_page",
+      "method": "GET",
+      "relative_path": "/login"
+    },
+    {
+      "source": "action_link.py",
+      "line": 137,
+      "handler": "status",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "action_link.py",
+      "line": 143,
+      "handler": "source_deliveries",
+      "method": "GET",
+      "relative_path": "/source-deliveries"
+    },
+    {
+      "source": "action_link.py",
+      "line": 149,
+      "handler": "retry_sources",
+      "method": "POST",
+      "relative_path": "/source-deliveries/retry"
+    },
+    {
+      "source": "action_link.py",
+      "line": 156,
+      "handler": "preview",
+      "method": "POST",
+      "relative_path": "/preview"
+    },
+    {
+      "source": "action_link.py",
+      "line": 181,
+      "handler": "confirm",
+      "method": "POST",
+      "relative_path": "/confirm"
+    },
+    {
+      "source": "action_link.py",
+      "line": 214,
+      "handler": "retry",
+      "method": "POST",
+      "relative_path": "/retry"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 894,
+      "handler": "read",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "action_plans.py",
+      "line": 899,
+      "handler": "arrange",
+      "method": "POST",
+      "relative_path": "/schedules"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 903,
+      "handler": "add",
+      "method": "POST",
+      "relative_path": ""
+    },
+    {
+      "source": "action_plans.py",
+      "line": 909,
+      "handler": "change",
+      "method": "POST",
+      "relative_path": "/{pid}/operations"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 915,
+      "handler": "records",
+      "method": "GET",
+      "relative_path": "/records"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 926,
+      "handler": "request_result",
+      "method": "GET",
+      "relative_path": "/requests/{key}"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 934,
+      "handler": "read_templates",
+      "method": "GET",
+      "relative_path": "/templates"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 938,
+      "handler": "add_template",
+      "method": "POST",
+      "relative_path": "/templates"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 945,
+      "handler": "remove_template",
+      "method": "DELETE",
+      "relative_path": "/templates/{tid}"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 949,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/{pid}/calendar.ics"
+    },
+    {
+      "source": "action_plans.py",
+      "line": 953,
+      "handler": "claim",
+      "method": "POST",
+      "relative_path": "/{pid}/reminder-claim"
+    },
+    {
+      "source": "action_reviews.py",
+      "line": 146,
+      "handler": "preview",
+      "method": "POST",
+      "relative_path": "/reviews/preview"
+    },
+    {
+      "source": "action_reviews.py",
+      "line": 152,
+      "handler": "save",
+      "method": "POST",
+      "relative_path": "/reviews"
+    },
+    {
+      "source": "action_reviews.py",
+      "line": 163,
+      "handler": "history",
+      "method": "GET",
+      "relative_path": "/reviews"
+    },
+    {
+      "source": "action_reviews.py",
+      "line": 180,
+      "handler": "generate",
+      "method": "POST",
+      "relative_path": "/reviews/generate"
+    },
+    {
+      "source": "ai_evidence.py",
+      "line": 182,
+      "handler": "by_resource",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "ai_evidence.py",
+      "line": 193,
+      "handler": "detail",
+      "method": "GET",
+      "relative_path": "/{snapshot_id}"
+    },
+    {
+      "source": "app.py",
+      "line": 447,
+      "handler": "storage_status",
+      "method": "GET",
+      "relative_path": "/api/storage-status"
+    },
+    {
+      "source": "app.py",
+      "line": 460,
+      "handler": "health",
+      "method": "GET",
+      "relative_path": "/api/health"
+    },
+    {
+      "source": "app.py",
+      "line": 468,
+      "handler": "get_data",
+      "method": "GET",
+      "relative_path": "/api/data"
+    },
+    {
+      "source": "app.py",
+      "line": 473,
+      "handler": "get_learning_checkins",
+      "method": "GET",
+      "relative_path": "/api/learning-checkins"
+    },
+    {
+      "source": "app.py",
+      "line": 480,
+      "handler": "put_data",
+      "method": "PUT",
+      "relative_path": "/api/data"
+    },
+    {
+      "source": "app.py",
+      "line": 494,
+      "handler": "patch_data",
+      "method": "PATCH",
+      "relative_path": "/api/data"
+    },
+    {
+      "source": "app.py",
+      "line": 508,
+      "handler": "get_knowledge",
+      "method": "GET",
+      "relative_path": "/api/knowledge"
+    },
+    {
+      "source": "app.py",
+      "line": 513,
+      "handler": "rescan_knowledge",
+      "method": "POST",
+      "relative_path": "/api/knowledge/scan"
+    },
+    {
+      "source": "app.py",
+      "line": 519,
+      "handler": "get_report",
+      "method": "GET",
+      "relative_path": "/api/report"
+    },
+    {
+      "source": "app.py",
+      "line": 525,
+      "handler": "index",
+      "method": "GET",
+      "relative_path": "/"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 43,
+      "handler": "list_applications",
+      "method": "GET",
+      "relative_path": "/applications"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 57,
+      "handler": "create_application",
+      "method": "POST",
+      "relative_path": "/applications"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 68,
+      "handler": "list_concepts",
+      "method": "GET",
+      "relative_path": "/applications/concepts"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 72,
+      "handler": "get_application",
+      "method": "GET",
+      "relative_path": "/applications/{app_id}"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 79,
+      "handler": "update_application",
+      "method": "PUT",
+      "relative_path": "/applications/{app_id}"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 91,
+      "handler": "delete_application",
+      "method": "DELETE",
+      "relative_path": "/applications/{app_id}"
+    },
+    {
+      "source": "behavior/api.py",
+      "line": 96,
+      "handler": "get_stats",
+      "method": "GET",
+      "relative_path": "/stats"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 70,
+      "handler": "generate_report",
+      "method": "POST",
+      "relative_path": "/generate"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 78,
+      "handler": "create_job",
+      "method": "POST",
+      "relative_path": "/jobs"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 82,
+      "handler": "jobs",
+      "method": "GET",
+      "relative_path": "/jobs"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 86,
+      "handler": "job",
+      "method": "GET",
+      "relative_path": "/jobs/{job_id}"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 90,
+      "handler": "by_request",
+      "method": "GET",
+      "relative_path": "/jobs/by-request/{request_key}"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 97,
+      "handler": "cancel_job",
+      "method": "POST",
+      "relative_path": "/jobs/{job_id}/cancel"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 101,
+      "handler": "list_reports",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 105,
+      "handler": "get_report",
+      "method": "GET",
+      "relative_path": "/{report_id}"
+    },
+    {
+      "source": "behavior_report/api.py",
+      "line": 112,
+      "handler": "delete_report",
+      "method": "DELETE",
+      "relative_path": "/{report_id}"
+    },
+    {
+      "source": "coach_facts.py",
+      "line": 115,
+      "handler": "read",
+      "method": "GET",
+      "relative_path": "/api/coach-facts"
+    },
+    {
+      "source": "copilot/ai_api.py",
+      "line": 31,
+      "handler": "settings",
+      "method": "GET",
+      "relative_path": "/api/ai/settings"
+    },
+    {
+      "source": "copilot/ai_api.py",
+      "line": 31,
+      "handler": "settings",
+      "method": "GET",
+      "relative_path": "/api/copilot/settings"
+    },
+    {
+      "source": "copilot/ai_api.py",
+      "line": 35,
+      "handler": "old_settings",
+      "method": "PUT",
+      "relative_path": "/api/copilot/settings"
+    },
+    {
+      "source": "copilot/ai_api.py",
+      "line": 40,
+      "handler": "test",
+      "method": "POST",
+      "relative_path": "/api/ai/test"
+    },
+    {
+      "source": "copilot/ai_api.py",
+      "line": 40,
+      "handler": "test",
+      "method": "POST",
+      "relative_path": "/api/copilot/settings/test"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 129,
+      "handler": "background_jobs",
+      "method": "GET",
+      "relative_path": "/background-jobs"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 132,
+      "handler": "background_job",
+      "method": "GET",
+      "relative_path": "/background-jobs/{id}"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 135,
+      "handler": "cancel_background_job",
+      "method": "POST",
+      "relative_path": "/background-jobs/{id}/cancel"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 183,
+      "handler": "today_task",
+      "method": "GET",
+      "relative_path": "/today-task"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 191,
+      "handler": "scan",
+      "method": "POST",
+      "relative_path": "/scan"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 195,
+      "handler": "lessons",
+      "method": "GET",
+      "relative_path": "/lessons"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 203,
+      "handler": "archived_lessons",
+      "method": "GET",
+      "relative_path": "/lessons/archived"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 207,
+      "handler": "lesson",
+      "method": "GET",
+      "relative_path": "/lessons/{number}"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 211,
+      "handler": "learning",
+      "method": "PATCH",
+      "relative_path": "/lessons/{number}/learning-state"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 219,
+      "handler": "submit_review",
+      "method": "POST",
+      "relative_path": "/lessons/{number}/review"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 224,
+      "handler": "submit_summary",
+      "method": "POST",
+      "relative_path": "/lessons/{number}/summary"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 229,
+      "handler": "quick_complete",
+      "method": "POST",
+      "relative_path": "/lessons/{number}/complete"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 234,
+      "handler": "learning_record",
+      "method": "GET",
+      "relative_path": "/lessons/{number}/learning-record"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 238,
+      "handler": "review_questions",
+      "method": "GET",
+      "relative_path": "/lessons/{number}/review-questions"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 245,
+      "handler": "submit_feedback",
+      "method": "POST",
+      "relative_path": "/lessons/{number}/feedback"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 249,
+      "handler": "get_feedback",
+      "method": "GET",
+      "relative_path": "/lessons/{number}/feedback"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 256,
+      "handler": "archive",
+      "method": "POST",
+      "relative_path": "/lessons/{number}/archive"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 260,
+      "handler": "unarchive",
+      "method": "POST",
+      "relative_path": "/lessons/{number}/unarchive"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 264,
+      "handler": "generate_summary",
+      "method": "POST",
+      "relative_path": "/summaries/generate"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 269,
+      "handler": "summaries",
+      "method": "GET",
+      "relative_path": "/summaries"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 274,
+      "handler": "summary",
+      "method": "GET",
+      "relative_path": "/summaries/{summary_id}"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 279,
+      "handler": "generate_advanced",
+      "method": "POST",
+      "relative_path": "/summaries/generate-advanced"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 284,
+      "handler": "learning_history_by_date",
+      "method": "GET",
+      "relative_path": "/learning-history/by-date"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 290,
+      "handler": "learning_history_months",
+      "method": "GET",
+      "relative_path": "/learning-history/months"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 296,
+      "handler": "learning_history",
+      "method": "GET",
+      "relative_path": "/learning-history"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 300,
+      "handler": "plan",
+      "method": "GET",
+      "relative_path": "/plan"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 304,
+      "handler": "confirm_plan",
+      "method": "POST",
+      "relative_path": "/plan/confirm"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 308,
+      "handler": "writer_session",
+      "method": "POST",
+      "relative_path": "/writer-session"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 312,
+      "handler": "generate",
+      "method": "POST",
+      "relative_path": "/generations"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 334,
+      "handler": "cancel",
+      "method": "POST",
+      "relative_path": "/generations/{draft_id}/cancel"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 338,
+      "handler": "drafts",
+      "method": "GET",
+      "relative_path": "/drafts"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 345,
+      "handler": "draft",
+      "method": "GET",
+      "relative_path": "/drafts/{draft_id}"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 349,
+      "handler": "edit",
+      "method": "PATCH",
+      "relative_path": "/drafts/{draft_id}"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 353,
+      "handler": "publish",
+      "method": "POST",
+      "relative_path": "/publications"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 357,
+      "handler": "operations",
+      "method": "GET",
+      "relative_path": "/operations"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 366,
+      "handler": "operation",
+      "method": "GET",
+      "relative_path": "/operations/{op_id}"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 371,
+      "handler": "recover",
+      "method": "POST",
+      "relative_path": "/operations/{op_id}/recover"
+    },
+    {
+      "source": "copilot/api.py",
+      "line": 375,
+      "handler": "backup",
+      "method": "POST",
+      "relative_path": "/backups"
+    },
+    {
+      "source": "course_activity.py",
+      "line": 32,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": "/library/activity"
+    },
+    {
+      "source": "course_activity.py",
+      "line": 38,
+      "handler": "opened",
+      "method": "POST",
+      "relative_path": "/library/activity"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 271,
+      "handler": "context",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 273,
+      "handler": "save",
+      "method": "POST",
+      "relative_path": ""
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 275,
+      "handler": "jobs",
+      "method": "GET",
+      "relative_path": "/jobs"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 279,
+      "handler": "job",
+      "method": "GET",
+      "relative_path": "/jobs/{id}"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 281,
+      "handler": "cancel",
+      "method": "POST",
+      "relative_path": "/jobs/{id}/cancel"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 283,
+      "handler": "suggest",
+      "method": "POST",
+      "relative_path": "/{id}/suggest"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 285,
+      "handler": "plan",
+      "method": "POST",
+      "relative_path": "/{id}/plan"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 287,
+      "handler": "adopt",
+      "method": "POST",
+      "relative_path": "/{id}/adopt"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 289,
+      "handler": "first",
+      "method": "POST",
+      "relative_path": "/{id}/first-lesson"
+    },
+    {
+      "source": "course_continuations.py",
+      "line": 291,
+      "handler": "next_course",
+      "method": "POST",
+      "relative_path": "/next"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 56,
+      "handler": "list_errors",
+      "method": "GET",
+      "relative_path": "/"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 72,
+      "handler": "create_error",
+      "method": "POST",
+      "relative_path": "/"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 84,
+      "handler": "list_error_types",
+      "method": "GET",
+      "relative_path": "/types"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 88,
+      "handler": "create_error_type",
+      "method": "POST",
+      "relative_path": "/types"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 95,
+      "handler": "delete_error_type",
+      "method": "DELETE",
+      "relative_path": "/types/{type_id}"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 103,
+      "handler": "get_stats",
+      "method": "GET",
+      "relative_path": "/stats"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 109,
+      "handler": "get_repeated_errors",
+      "method": "GET",
+      "relative_path": "/repeated"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 113,
+      "handler": "get_error",
+      "method": "GET",
+      "relative_path": "/{error_id}"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 120,
+      "handler": "update_error",
+      "method": "PUT",
+      "relative_path": "/{error_id}"
+    },
+    {
+      "source": "errors/api.py",
+      "line": 132,
+      "handler": "delete_error",
+      "method": "DELETE",
+      "relative_path": "/{error_id}"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 240,
+      "handler": "read",
+      "method": "GET",
+      "relative_path": "/week-plans/{week}"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 244,
+      "handler": "write_week",
+      "method": "POST",
+      "relative_path": "/week-plans/{week}"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 248,
+      "handler": "preview",
+      "method": "POST",
+      "relative_path": "/planning-drafts/preview"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 254,
+      "handler": "drafts",
+      "method": "GET",
+      "relative_path": "/planning-drafts"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 260,
+      "handler": "detail",
+      "method": "GET",
+      "relative_path": "/planning-drafts/{did}"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 264,
+      "handler": "generate",
+      "method": "POST",
+      "relative_path": "/planning-drafts/generate"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 293,
+      "handler": "edit",
+      "method": "POST",
+      "relative_path": "/planning-drafts/{did}/edit"
+    },
+    {
+      "source": "goal_planning.py",
+      "line": 305,
+      "handler": "apply",
+      "method": "POST",
+      "relative_path": "/planning-drafts/{did}/adopt"
+    },
+    {
+      "source": "goal_workspace.py",
+      "line": 88,
+      "handler": "workspace",
+      "method": "GET",
+      "relative_path": "/workspace"
+    },
+    {
+      "source": "goal_workspace.py",
+      "line": 91,
+      "handler": "goals",
+      "method": "GET",
+      "relative_path": "/goals"
+    },
+    {
+      "source": "goal_workspace.py",
+      "line": 94,
+      "handler": "create_goal",
+      "method": "POST",
+      "relative_path": "/goals"
+    },
+    {
+      "source": "goal_workspace.py",
+      "line": 100,
+      "handler": "goal",
+      "method": "GET",
+      "relative_path": "/goals/{pid}"
+    },
+    {
+      "source": "goal_workspace.py",
+      "line": 106,
+      "handler": "operate_goal",
+      "method": "POST",
+      "relative_path": "/goals/{pid}/operations"
+    },
+    {
+      "source": "goal_workspace.py",
+      "line": 113,
+      "handler": "save_result",
+      "method": "POST",
+      "relative_path": "/goals/{pid}/result"
+    },
+    {
+      "source": "investments/ai_relay.py",
+      "line": 152,
+      "handler": "relay_config",
+      "method": "GET",
+      "relative_path": "/ai-relay/config"
+    },
+    {
+      "source": "investments/ai_relay.py",
+      "line": 155,
+      "handler": "relay_receipt",
+      "method": "GET",
+      "relative_path": "/ai-relay/calls/{call_key}"
+    },
+    {
+      "source": "investments/ai_relay.py",
+      "line": 165,
+      "handler": "relay_call",
+      "method": "POST",
+      "relative_path": "/ai-relay"
+    },
+    {
+      "source": "investments/ai_relay.py",
+      "line": 175,
+      "handler": "recover",
+      "method": "POST",
+      "relative_path": "/ai-relay/jobs/{job_id}/recover"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 185,
+      "handler": "capabilities",
+      "method": "GET",
+      "relative_path": "/capabilities"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 197,
+      "handler": "today_overview",
+      "method": "GET",
+      "relative_path": "/overview"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 202,
+      "handler": "import_minute_path",
+      "method": "POST",
+      "relative_path": "/paths/import"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 207,
+      "handler": "minute_paths",
+      "method": "GET",
+      "relative_path": "/paths"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 212,
+      "handler": "original_minute_path",
+      "method": "GET",
+      "relative_path": "/paths/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 215,
+      "handler": "holding_path",
+      "method": "GET",
+      "relative_path": "/accounts/{account_id}/campaigns/{campaign_id}/replay"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 220,
+      "handler": "new_experiment",
+      "method": "POST",
+      "relative_path": "/experiments"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 225,
+      "handler": "condition_drill",
+      "method": "POST",
+      "relative_path": "/condition-drills"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 230,
+      "handler": "condition_drills",
+      "method": "GET",
+      "relative_path": "/condition-drills"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 235,
+      "handler": "saved_condition_drill",
+      "method": "GET",
+      "relative_path": "/condition-drills/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 238,
+      "handler": "execution_study",
+      "method": "POST",
+      "relative_path": "/execution-studies"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 243,
+      "handler": "execution_studies",
+      "method": "GET",
+      "relative_path": "/execution-studies"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 248,
+      "handler": "saved_execution_study",
+      "method": "GET",
+      "relative_path": "/execution-studies/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 251,
+      "handler": "experiments",
+      "method": "GET",
+      "relative_path": "/experiments"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 256,
+      "handler": "experiment",
+      "method": "GET",
+      "relative_path": "/experiments/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 259,
+      "handler": "experiment_history",
+      "method": "GET",
+      "relative_path": "/experiments/{object_id}/history"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 262,
+      "handler": "edit_experiment",
+      "method": "PUT",
+      "relative_path": "/experiments/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 267,
+      "handler": "register_forward_experiment",
+      "method": "POST",
+      "relative_path": "/experiments/{object_id}/register"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 275,
+      "handler": "experiment_evaluation",
+      "method": "GET",
+      "relative_path": "/experiments/{object_id}/evaluation"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 280,
+      "handler": "finish_forward_experiment",
+      "method": "POST",
+      "relative_path": "/experiments/{object_id}/finish"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 285,
+      "handler": "investment_requirements",
+      "method": "GET",
+      "relative_path": "/readiness"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 290,
+      "handler": "public_calendar",
+      "method": "GET",
+      "relative_path": "/calendar"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 298,
+      "handler": "public_rules",
+      "method": "GET",
+      "relative_path": "/instruments/{object_id}/rules"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 303,
+      "handler": "instrument_freshness",
+      "method": "GET",
+      "relative_path": "/instruments/{object_id}/data-status"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 308,
+      "handler": "private_investment_search",
+      "method": "GET",
+      "relative_path": "/search"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 313,
+      "handler": "review_actions",
+      "method": "GET",
+      "relative_path": "/reviews/{object_id}/actions"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 318,
+      "handler": "create_review_action",
+      "method": "POST",
+      "relative_path": "/reviews/{object_id}/actions"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 323,
+      "handler": "daily_fetch",
+      "method": "POST",
+      "relative_path": "/provider/daily"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 329,
+      "handler": "data_sources",
+      "method": "GET",
+      "relative_path": "/data-sources"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 340,
+      "handler": "legacy_records",
+      "method": "GET",
+      "relative_path": "/legacy-records"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 345,
+      "handler": "legacy_link",
+      "method": "POST",
+      "relative_path": "/legacy-links"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 350,
+      "handler": "browser_run",
+      "method": "POST",
+      "relative_path": "/local-runs"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 354,
+      "handler": "captured_market_snapshot",
+      "method": "GET",
+      "relative_path": "/market-snapshots/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 357,
+      "handler": "browser_runs",
+      "method": "GET",
+      "relative_path": "/local-runs"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 361,
+      "handler": "browser_run_detail",
+      "method": "GET",
+      "relative_path": "/local-runs/{run_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 364,
+      "handler": "browser_run_inputs",
+      "method": "GET",
+      "relative_path": "/local-runs/{run_id}/inputs"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 367,
+      "handler": "browser_screen_result",
+      "method": "POST",
+      "relative_path": "/local-runs/{run_id}/screening"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 371,
+      "handler": "screening_catalog",
+      "method": "GET",
+      "relative_path": "/screening-catalog"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 374,
+      "handler": "analysis_selection",
+      "method": "POST",
+      "relative_path": "/local-runs/{run_id}/analysis-selection"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 378,
+      "handler": "browser_candidate",
+      "method": "POST",
+      "relative_path": "/local-runs/{run_id}/candidates/{instrument_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 382,
+      "handler": "browser_cancel",
+      "method": "POST",
+      "relative_path": "/local-runs/{run_id}/cancel"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 385,
+      "handler": "browser_input",
+      "method": "GET",
+      "relative_path": "/local-jobs/{job_id}/input"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 389,
+      "handler": "browser_pause",
+      "method": "POST",
+      "relative_path": "/local-jobs/{job_id}/pause"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 392,
+      "handler": "browser_output",
+      "method": "POST",
+      "relative_path": "/local-jobs/{job_id}/{stage}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 397,
+      "handler": "screening",
+      "method": "POST",
+      "relative_path": "/screen"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 402,
+      "handler": "history_import",
+      "method": "POST",
+      "relative_path": "/market/import"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 408,
+      "handler": "akshare_daily_fetch",
+      "method": "POST",
+      "relative_path": "/provider/akshare/daily"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 414,
+      "handler": "analysis_preview",
+      "method": "POST",
+      "relative_path": "/analysis/preview"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 418,
+      "handler": "analysis_submit",
+      "method": "POST",
+      "relative_path": "/analysis/jobs"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 422,
+      "handler": "analysis_listing",
+      "method": "GET",
+      "relative_path": "/analysis/jobs"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 426,
+      "handler": "analysis_get",
+      "method": "GET",
+      "relative_path": "/analysis/jobs/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 430,
+      "handler": "analysis_cancel",
+      "method": "POST",
+      "relative_path": "/analysis/jobs/{object_id}/cancel"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 434,
+      "handler": "analysis_preview_get",
+      "method": "GET",
+      "relative_path": "/analysis/previews/{object_id}"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 438,
+      "handler": "recommendation_decision",
+      "method": "POST",
+      "relative_path": "/analysis/jobs/{object_id}/suggestions/{index}/decision"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 443,
+      "handler": "adopt_capital_scenario",
+      "method": "POST",
+      "relative_path": "/analysis/jobs/{object_id}/scenarios/{index}/policy-draft"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 447,
+      "handler": "recommendations",
+      "method": "GET",
+      "relative_path": "/recommendations"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 453,
+      "handler": "balance",
+      "method": "GET",
+      "relative_path": "/accounts/{object_id}/balance"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 457,
+      "handler": "capital_status",
+      "method": "GET",
+      "relative_path": "/accounts/{object_id}/policy-status"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 462,
+      "handler": "campaigns",
+      "method": "GET",
+      "relative_path": "/accounts/{object_id}/campaigns"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 466,
+      "handler": "campaign_review",
+      "method": "GET",
+      "relative_path": "/accounts/{object_id}/campaigns/{campaign_id}/review"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 471,
+      "handler": "period_review",
+      "method": "GET",
+      "relative_path": "/accounts/{object_id}/summary"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 476,
+      "handler": "plan_assessment",
+      "method": "GET",
+      "relative_path": "/trade-plans/{object_id}/assessment"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 481,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/export"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 486,
+      "handler": "preview",
+      "method": "POST",
+      "relative_path": "/imports/preview"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 491,
+      "handler": "commit",
+      "method": "POST",
+      "relative_path": "/imports/commit"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 496,
+      "handler": "correct",
+      "method": "POST",
+      "relative_path": "/fills/{object_id}/corrections"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 501,
+      "handler": "confirm_fund_order",
+      "method": "POST",
+      "relative_path": "/fund-orders/{object_id}/confirm"
+    },
+    {
+      "source": "investments/api.py",
+      "line": 506,
+      "handler": "settle_fund_order",
+      "method": "POST",
+      "relative_path": "/fund-orders/{object_id}/settle"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 267,
+      "handler": "source_policy",
+      "method": "GET",
+      "relative_path": "/monitors/source-policy"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 270,
+      "handler": "create",
+      "method": "POST",
+      "relative_path": "/monitors"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 274,
+      "handler": "edit",
+      "method": "PUT",
+      "relative_path": "/monitors/{monitor_id}"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 278,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": "/monitors"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 289,
+      "handler": "stop",
+      "method": "POST",
+      "relative_path": "/monitors/{monitor_id}/stop"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 295,
+      "handler": "check",
+      "method": "POST",
+      "relative_path": "/monitors/{monitor_id}/check"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 298,
+      "handler": "events",
+      "method": "GET",
+      "relative_path": "/monitor-events"
+    },
+    {
+      "source": "investments/monitoring.py",
+      "line": 307,
+      "handler": "read",
+      "method": "POST",
+      "relative_path": "/monitor-events/{event_id}/read"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 36,
+      "handler": "opening_preview",
+      "method": "POST",
+      "relative_path": "/accounts/opening-preview"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 42,
+      "handler": "baseline_preview",
+      "method": "POST",
+      "relative_path": "/accounts/{account_id}/baseline/preview"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 46,
+      "handler": "baseline_commit",
+      "method": "POST",
+      "relative_path": "/accounts/{account_id}/baseline"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 51,
+      "handler": "valuation_preview",
+      "method": "POST",
+      "relative_path": "/accounts/{account_id}/valuations/preview"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 55,
+      "handler": "valuation_commit",
+      "method": "POST",
+      "relative_path": "/accounts/{account_id}/valuations"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 60,
+      "handler": "valuations",
+      "method": "GET",
+      "relative_path": "/accounts/{account_id}/valuations"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 64,
+      "handler": "valuation_detail",
+      "method": "GET",
+      "relative_path": "/accounts/{account_id}/valuations/{valuation_id}"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 67,
+      "handler": "performance",
+      "method": "GET",
+      "relative_path": "/accounts/{account_id}/performance"
+    },
+    {
+      "source": "investments/portfolio_api.py",
+      "line": 70,
+      "handler": "fund_nav",
+      "method": "POST",
+      "relative_path": "/fund-nav"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 149,
+      "handler": "baseline",
+      "method": "GET",
+      "relative_path": "/forecast-baseline"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 156,
+      "handler": "evaluations",
+      "method": "GET",
+      "relative_path": "/forecast-evaluations"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 161,
+      "handler": "create",
+      "method": "POST",
+      "relative_path": "/forecasts"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 164,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": "/forecasts"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 169,
+      "handler": "research_briefing",
+      "method": "GET",
+      "relative_path": "/briefing"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 171,
+      "handler": "evaluate_research",
+      "method": "POST",
+      "relative_path": "/forecasts/evaluate"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 174,
+      "handler": "research_stats",
+      "method": "GET",
+      "relative_path": "/forecast-calibration"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 176,
+      "handler": "evaluate",
+      "method": "POST",
+      "relative_path": "/accounts/{account_id}/forecasts/evaluate"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 179,
+      "handler": "stats",
+      "method": "GET",
+      "relative_path": "/accounts/{account_id}/forecast-calibration"
+    },
+    {
+      "source": "investments/prediction_journal.py",
+      "line": 181,
+      "handler": "daily_briefing",
+      "method": "GET",
+      "relative_path": "/accounts/{account_id}/briefing"
+    },
+    {
+      "source": "investments/research_archive.py",
+      "line": 186,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": "/research/archives"
+    },
+    {
+      "source": "investments/research_archive.py",
+      "line": 188,
+      "handler": "write",
+      "method": "POST",
+      "relative_path": "/research/archives"
+    },
+    {
+      "source": "investments/research_archive.py",
+      "line": 190,
+      "handler": "verify",
+      "method": "POST",
+      "relative_path": "/research/archives/verify"
+    },
+    {
+      "source": "investments/research_archive.py",
+      "line": 192,
+      "handler": "download",
+      "method": "GET",
+      "relative_path": "/research/archives/{identity}/download"
+    },
+    {
+      "source": "investments/research_comparison.py",
+      "line": 128,
+      "handler": "create",
+      "method": "POST",
+      "relative_path": "/research/comparisons"
+    },
+    {
+      "source": "investments/research_comparison.py",
+      "line": 130,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/research/comparisons/{identity}/export"
+    },
+    {
+      "source": "investments/research_history.py",
+      "line": 175,
+      "handler": "series",
+      "method": "POST",
+      "relative_path": "/research/series"
+    },
+    {
+      "source": "investments/research_history.py",
+      "line": 177,
+      "handler": "series_csv",
+      "method": "POST",
+      "relative_path": "/research/series/csv"
+    },
+    {
+      "source": "investments/research_history.py",
+      "line": 179,
+      "handler": "run",
+      "method": "POST",
+      "relative_path": "/research/backtests"
+    },
+    {
+      "source": "investments/research_sources.py",
+      "line": 154,
+      "handler": "market_csv",
+      "method": "POST",
+      "relative_path": "/research/datasets/csv"
+    },
+    {
+      "source": "investments/research_sources.py",
+      "line": 157,
+      "handler": "market",
+      "method": "POST",
+      "relative_path": "/research/provider/akshare/market"
+    },
+    {
+      "source": "investments/research_sources.py",
+      "line": 183,
+      "handler": "history",
+      "method": "POST",
+      "relative_path": "/research/provider/akshare/history"
+    },
+    {
+      "source": "investments/research_sources.py",
+      "line": 216,
+      "handler": "interface",
+      "method": "POST",
+      "relative_path": "/research/interface"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 328,
+      "handler": "catalog",
+      "method": "GET",
+      "relative_path": "/research/catalog"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 330,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/research/export"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 332,
+      "handler": "dataset",
+      "method": "POST",
+      "relative_path": "/research/datasets"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 334,
+      "handler": "screen",
+      "method": "POST",
+      "relative_path": "/research/screens"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 336,
+      "handler": "candidate",
+      "method": "POST",
+      "relative_path": "/research/candidate"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 352,
+      "handler": "preset",
+      "method": "POST",
+      "relative_path": "/research/presets"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 355,
+      "handler": "alert",
+      "method": "POST",
+      "relative_path": "/research/alerts"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 358,
+      "handler": "check",
+      "method": "POST",
+      "relative_path": "/research/alerts/check"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 363,
+      "handler": "edit_alert",
+      "method": "POST",
+      "relative_path": "/research/alerts/{identity}"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 366,
+      "handler": "edit_preset",
+      "method": "POST",
+      "relative_path": "/research/presets/{identity}"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 370,
+      "handler": "detail",
+      "method": "GET",
+      "relative_path": "/research/objects/{identity}"
+    },
+    {
+      "source": "investments/research_tools.py",
+      "line": 373,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": "/research/objects"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 463,
+      "handler": "templates",
+      "method": "GET",
+      "relative_path": "/strategy-templates"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 466,
+      "handler": "extract",
+      "method": "POST",
+      "relative_path": "/strategy/extract-params"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 469,
+      "handler": "strategies",
+      "method": "GET",
+      "relative_path": "/user-strategies"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 475,
+      "handler": "save",
+      "method": "POST",
+      "relative_path": "/user-strategies"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 481,
+      "handler": "run",
+      "method": "POST",
+      "relative_path": "/strategy/run"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 487,
+      "handler": "available_series",
+      "method": "GET",
+      "relative_path": "/strategy/series"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 499,
+      "handler": "grid_search",
+      "method": "POST",
+      "relative_path": "/strategy/grid-search"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 524,
+      "handler": "seed_knowledge",
+      "method": "POST",
+      "relative_path": "/knowledge/seed"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 530,
+      "handler": "knowledge_nodes",
+      "method": "GET",
+      "relative_path": "/knowledge"
+    },
+    {
+      "source": "investments/strategy_ide.py",
+      "line": 535,
+      "handler": "knowledge_tip",
+      "method": "GET",
+      "relative_path": "/knowledge/tip"
+    },
+    {
+      "source": "investments/templates.py",
+      "line": 106,
+      "handler": "catalog",
+      "method": "GET",
+      "relative_path": "/rule-recipes"
+    },
+    {
+      "source": "investments/templates.py",
+      "line": 109,
+      "handler": "run_experiment",
+      "method": "POST",
+      "relative_path": "/template-experiments"
+    },
+    {
+      "source": "investments/templates.py",
+      "line": 113,
+      "handler": "experiments",
+      "method": "GET",
+      "relative_path": "/template-experiments"
+    },
+    {
+      "source": "investments/templates.py",
+      "line": 124,
+      "handler": "run",
+      "method": "POST",
+      "relative_path": "/screening-templates/{template_id}/evaluate"
+    },
+    {
+      "source": "investments/templates.py",
+      "line": 128,
+      "handler": "history",
+      "method": "GET",
+      "relative_path": "/template-evaluations"
+    },
+    {
+      "source": "investments/templates.py",
+      "line": 134,
+      "handler": "status",
+      "method": "POST",
+      "relative_path": "/security-status"
+    },
+    {
+      "source": "investments/workspace.py",
+      "line": 119,
+      "handler": "summary",
+      "method": "GET",
+      "relative_path": "/workspace"
+    },
+    {
+      "source": "investments/workspace.py",
+      "line": 123,
+      "handler": "data_health",
+      "method": "GET",
+      "relative_path": "/data-health"
+    },
+    {
+      "source": "knowledge/api.py",
+      "line": 42,
+      "handler": "get_graph",
+      "method": "GET",
+      "relative_path": "/graph"
+    },
+    {
+      "source": "knowledge/api.py",
+      "line": 48,
+      "handler": "scan_knowledge_links",
+      "method": "POST",
+      "relative_path": "/scan-links"
+    },
+    {
+      "source": "knowledge/api.py",
+      "line": 58,
+      "handler": "get_stats",
+      "method": "GET",
+      "relative_path": "/stats"
+    },
+    {
+      "source": "knowledge/api.py",
+      "line": 62,
+      "handler": "get_by_stable_id",
+      "method": "GET",
+      "relative_path": "/by-stable-id/{stable_id}"
+    },
+    {
+      "source": "knowledge/api.py",
+      "line": 70,
+      "handler": "get_related_by_stable_id",
+      "method": "GET",
+      "relative_path": "/by-stable-id/{stable_id}/related"
+    },
+    {
+      "source": "knowledge/api.py",
+      "line": 81,
+      "handler": "upsert_knowledge",
+      "method": "POST",
+      "relative_path": "/upsert"
+    },
+    {
+      "source": "learning_actions.py",
+      "line": 124,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": "/api/plan-actions"
+    },
+    {
+      "source": "learning_actions.py",
+      "line": 130,
+      "handler": "read",
+      "method": "GET",
+      "relative_path": "/{pid}/actions"
+    },
+    {
+      "source": "learning_actions.py",
+      "line": 134,
+      "handler": "write",
+      "method": "POST",
+      "relative_path": "/{pid}/actions"
+    },
+    {
+      "source": "migration_api.py",
+      "line": 26,
+      "handler": "status",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "migration_api.py",
+      "line": 35,
+      "handler": "preview_files",
+      "method": "POST",
+      "relative_path": "/files/preview"
+    },
+    {
+      "source": "migration_api.py",
+      "line": 38,
+      "handler": "apply_files",
+      "method": "POST",
+      "relative_path": "/files/apply"
+    },
+    {
+      "source": "migration_api.py",
+      "line": 41,
+      "handler": "recover",
+      "method": "POST",
+      "relative_path": "/recover"
+    },
+    {
+      "source": "mobile_library.py",
+      "line": 137,
+      "handler": "read",
+      "method": "GET",
+      "relative_path": "/api/mobile-learning"
+    },
+    {
+      "source": "mobile_library.py",
+      "line": 140,
+      "handler": "pairing_preview",
+      "method": "POST",
+      "relative_path": "/api/mobile-learning/preview"
+    },
+    {
+      "source": "mobile_library.py",
+      "line": 146,
+      "handler": "pairing",
+      "method": "POST",
+      "relative_path": "/api/mobile-learning/connect"
+    },
+    {
+      "source": "mobile_library.py",
+      "line": 152,
+      "handler": "write",
+      "method": "POST",
+      "relative_path": "/api/mobile-learning/consent"
+    },
+    {
+      "source": "mobile_library.py",
+      "line": 158,
+      "handler": "source",
+      "method": "GET",
+      "relative_path": "/api/mobile-learning/source/{lesson_id}"
+    },
+    {
+      "source": "mobile_private.py",
+      "line": 179,
+      "handler": "authorize",
+      "method": "POST",
+      "relative_path": "/api/mobile-learning/private-consent"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 46,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "plans/api.py",
+      "line": 70,
+      "handler": "budget",
+      "method": "POST",
+      "relative_path": "/budget"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 78,
+      "handler": "create_draft",
+      "method": "POST",
+      "relative_path": "/drafts"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 82,
+      "handler": "read_draft",
+      "method": "GET",
+      "relative_path": "/drafts/{did}"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 85,
+      "handler": "history",
+      "method": "GET",
+      "relative_path": "/drafts/{did}/history"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 90,
+      "handler": "adopt",
+      "method": "POST",
+      "relative_path": "/drafts/{did}/adopt"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 99,
+      "handler": "edit_course",
+      "method": "POST",
+      "relative_path": "/drafts/{did}/edit-course"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 106,
+      "handler": "redate",
+      "method": "POST",
+      "relative_path": "/drafts/{did}/redate"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 111,
+      "handler": "refine",
+      "method": "POST",
+      "relative_path": "/drafts/{did}/refine"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 118,
+      "handler": "publish",
+      "method": "POST",
+      "relative_path": "/drafts/{did}/publish"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 124,
+      "handler": "generate",
+      "method": "POST",
+      "relative_path": "/generate"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 130,
+      "handler": "progress",
+      "method": "GET",
+      "relative_path": "/attempts/{aid}/progress"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 134,
+      "handler": "attempt",
+      "method": "GET",
+      "relative_path": "/attempts/{aid}"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 137,
+      "handler": "cancel",
+      "method": "POST",
+      "relative_path": "/attempts/{aid}/cancel"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 140,
+      "handler": "recover",
+      "method": "POST",
+      "relative_path": "/recover"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 145,
+      "handler": "backup",
+      "method": "POST",
+      "relative_path": "/backup"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 152,
+      "handler": "detail",
+      "method": "GET",
+      "relative_path": "/{pid}"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 167,
+      "handler": "metadata",
+      "method": "POST",
+      "relative_path": "/{pid}/metadata"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 183,
+      "handler": "save_sources",
+      "method": "POST",
+      "relative_path": "/{pid}/sources"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 186,
+      "handler": "get_sources",
+      "method": "GET",
+      "relative_path": "/{pid}/sources"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 192,
+      "handler": "read_course",
+      "method": "GET",
+      "relative_path": "/{pid}/lessons/{number}"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 196,
+      "handler": "feedback",
+      "method": "POST",
+      "relative_path": "/{pid}/lessons/{number}/feedback"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 204,
+      "handler": "pause_plan",
+      "method": "POST",
+      "relative_path": "/{pid}/pause"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 241,
+      "handler": "resume_plan",
+      "method": "POST",
+      "relative_path": "/{pid}/resume"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 276,
+      "handler": "archive_plan",
+      "method": "POST",
+      "relative_path": "/{pid}/archive"
+    },
+    {
+      "source": "plans/api.py",
+      "line": 311,
+      "handler": "get_status_history",
+      "method": "GET",
+      "relative_path": "/{pid}/status-history"
+    },
+    {
+      "source": "predictions/api.py",
+      "line": 15,
+      "handler": "get_calibration",
+      "method": "GET",
+      "relative_path": "/calibration"
+    },
+    {
+      "source": "predictions/api.py",
+      "line": 19,
+      "handler": "get_accuracy_stats",
+      "method": "GET",
+      "relative_path": "/stats"
+    },
+    {
+      "source": "predictions/api.py",
+      "line": 23,
+      "handler": "investment_calibration",
+      "method": "GET",
+      "relative_path": "/investment-calibration"
+    },
+    {
+      "source": "predictions/api.py",
+      "line": 29,
+      "handler": "get_overconfident",
+      "method": "GET",
+      "relative_path": "/overconfident"
+    },
+    {
+      "source": "predictions/api.py",
+      "line": 35,
+      "handler": "get_trend",
+      "method": "GET",
+      "relative_path": "/trend"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 40,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "reading/api.py",
+      "line": 53,
+      "handler": "setup",
+      "method": "GET",
+      "relative_path": "/setup"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 55,
+      "handler": "library",
+      "method": "GET",
+      "relative_path": "/library"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 61,
+      "handler": "prefs",
+      "method": "POST",
+      "relative_path": "/preferences"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 63,
+      "handler": "add_source",
+      "method": "POST",
+      "relative_path": "/sources"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 65,
+      "handler": "remove_source",
+      "method": "DELETE",
+      "relative_path": "/sources/{sid}"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 67,
+      "handler": "collect",
+      "method": "POST",
+      "relative_path": "/collect"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 74,
+      "handler": "job",
+      "method": "GET",
+      "relative_path": "/jobs/{jid}"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 76,
+      "handler": "cancel",
+      "method": "POST",
+      "relative_path": "/jobs/{jid}/cancel"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 78,
+      "handler": "save",
+      "method": "POST",
+      "relative_path": "/jobs/{jid}/save"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 107,
+      "handler": "article",
+      "method": "GET",
+      "relative_path": "/articles/{aid}"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 129,
+      "handler": "personal",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/personal"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 135,
+      "handler": "position",
+      "method": "GET",
+      "relative_path": "/articles/{aid}/position"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 137,
+      "handler": "save_position",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/position"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 139,
+      "handler": "feedback",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/feedback"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 146,
+      "handler": "guide",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/guide"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 150,
+      "handler": "summary",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/summary"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 154,
+      "handler": "english",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/english"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 158,
+      "handler": "fetch_full",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/fetch_full"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 165,
+      "handler": "import_url",
+      "method": "POST",
+      "relative_path": "/import-url"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 181,
+      "handler": "import_paste",
+      "method": "POST",
+      "relative_path": "/import-paste"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 191,
+      "handler": "archive",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/archive"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 193,
+      "handler": "restore",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/restore"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 196,
+      "handler": "get_translation",
+      "method": "GET",
+      "relative_path": "/articles/{aid}/translation"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 198,
+      "handler": "save_translation",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/translation"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 204,
+      "handler": "adopt_translation",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/translation/adopt"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 210,
+      "handler": "save_summary_draft",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/summary-draft"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 212,
+      "handler": "adopt_summary_draft",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/summary-draft/adopt"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 214,
+      "handler": "save_english_draft",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/english-draft"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 216,
+      "handler": "adopt_english_draft",
+      "method": "POST",
+      "relative_path": "/articles/{aid}/english-draft/adopt"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 219,
+      "handler": "list_vocab",
+      "method": "GET",
+      "relative_path": "/vocabulary"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 221,
+      "handler": "due_vocab",
+      "method": "GET",
+      "relative_path": "/vocabulary/due"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 223,
+      "handler": "vocab_stats",
+      "method": "GET",
+      "relative_path": "/vocabulary/stats"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 225,
+      "handler": "add_vocab",
+      "method": "POST",
+      "relative_path": "/vocabulary"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 231,
+      "handler": "get_vocab",
+      "method": "GET",
+      "relative_path": "/vocabulary/{vid}"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 233,
+      "handler": "review_vocab",
+      "method": "POST",
+      "relative_path": "/vocabulary/{vid}/review"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 235,
+      "handler": "pause_vocab",
+      "method": "POST",
+      "relative_path": "/vocabulary/{vid}/pause"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 237,
+      "handler": "archive_vocab",
+      "method": "POST",
+      "relative_path": "/vocabulary/{vid}/archive"
+    },
+    {
+      "source": "reading/api.py",
+      "line": 239,
+      "handler": "delete_vocab",
+      "method": "DELETE",
+      "relative_path": "/vocabulary/{vid}"
+    },
+    {
+      "source": "record_handoff_api.py",
+      "line": 20,
+      "handler": "status",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "record_handoff_api.py",
+      "line": 25,
+      "handler": "propose",
+      "method": "POST",
+      "relative_path": "/preview"
+    },
+    {
+      "source": "record_handoff_api.py",
+      "line": 27,
+      "handler": "accept",
+      "method": "POST",
+      "relative_path": "/confirm"
+    },
+    {
+      "source": "record_handoff_api.py",
+      "line": 29,
+      "handler": "retry",
+      "method": "POST",
+      "relative_path": "/retry"
+    },
+    {
+      "source": "record_handoff_api.py",
+      "line": 31,
+      "handler": "abort",
+      "method": "POST",
+      "relative_path": "/cancel"
+    },
+    {
+      "source": "record_handoff_api.py",
+      "line": 33,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/export"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 87,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 93,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/export"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 98,
+      "handler": "create",
+      "method": "POST",
+      "relative_path": ""
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 102,
+      "handler": "detail",
+      "method": "GET",
+      "relative_path": "/{entry_id}"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 108,
+      "handler": "update",
+      "method": "PUT",
+      "relative_path": "/{entry_id}"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 112,
+      "handler": "versions",
+      "method": "GET",
+      "relative_path": "/{entry_id}/versions"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 116,
+      "handler": "file_status",
+      "method": "GET",
+      "relative_path": "/{entry_id}/file-status"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 120,
+      "handler": "archive",
+      "method": "POST",
+      "relative_path": "/{entry_id}/archive"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 124,
+      "handler": "restore",
+      "method": "POST",
+      "relative_path": "/{entry_id}/restore"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 128,
+      "handler": "assist",
+      "method": "POST",
+      "relative_path": "/{entry_id}/assist"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 133,
+      "handler": "attempt",
+      "method": "GET",
+      "relative_path": "/attempts/{attempt_key}"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 137,
+      "handler": "cancel",
+      "method": "POST",
+      "relative_path": "/attempts/{attempt_key}/cancel"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 141,
+      "handler": "save_answers",
+      "method": "POST",
+      "relative_path": "/attempts/{attempt_key}/answers"
+    },
+    {
+      "source": "reflections/api.py",
+      "line": 145,
+      "handler": "adopt",
+      "method": "POST",
+      "relative_path": "/{entry_id}/adopt"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 11,
+      "handler": "capabilities",
+      "method": "GET",
+      "relative_path": "/rhythm/capabilities"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 16,
+      "handler": "today",
+      "method": "GET",
+      "relative_path": "/rhythm/today"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 20,
+      "handler": "preferences",
+      "method": "POST",
+      "relative_path": "/rhythm/preferences"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 24,
+      "handler": "focus",
+      "method": "POST",
+      "relative_path": "/rhythm/focus"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 28,
+      "handler": "mode",
+      "method": "POST",
+      "relative_path": "/rhythm/focus/{focus_id}/mode"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 32,
+      "handler": "execution",
+      "method": "GET",
+      "relative_path": "/rhythm/executions/{execution_id}"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 46,
+      "handler": "recap",
+      "method": "POST",
+      "relative_path": "/rhythm/executions/{execution_id}/recap"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 51,
+      "handler": "week",
+      "method": "GET",
+      "relative_path": "/rhythm/weeks/{week_start}"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 58,
+      "handler": "confirm_week",
+      "method": "POST",
+      "relative_path": "/rhythm/weeks/{week_start}/confirm"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 63,
+      "handler": "reminder",
+      "method": "POST",
+      "relative_path": "/rhythm/reminder-claim"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 68,
+      "handler": "enrollment",
+      "method": "POST",
+      "relative_path": "/rhythm/enrollment"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 73,
+      "handler": "survey",
+      "method": "POST",
+      "relative_path": "/rhythm/survey"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 78,
+      "handler": "export",
+      "method": "GET",
+      "relative_path": "/rhythm/export"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 84,
+      "handler": "trial",
+      "method": "GET",
+      "relative_path": "/rhythm/trial"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 96,
+      "handler": "events",
+      "method": "POST",
+      "relative_path": "/rhythm/events"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 101,
+      "handler": "step",
+      "method": "POST",
+      "relative_path": "/rhythm/steps"
+    },
+    {
+      "source": "rhythm/api.py",
+      "line": 106,
+      "handler": "source_receipt",
+      "method": "GET",
+      "relative_path": "/rhythm/source-receipts/{event_id}"
+    },
+    {
+      "source": "search_api.py",
+      "line": 22,
+      "handler": "search",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "search_api.py",
+      "line": 64,
+      "handler": "get_stats",
+      "method": "GET",
+      "relative_path": "/stats"
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 68,
+      "handler": "listing",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 74,
+      "handler": "statistics",
+      "method": "GET",
+      "relative_path": "/statistics"
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 78,
+      "handler": "create",
+      "method": "POST",
+      "relative_path": ""
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 82,
+      "handler": "detail",
+      "method": "GET",
+      "relative_path": "/{record_id}"
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 86,
+      "handler": "update",
+      "method": "PUT",
+      "relative_path": "/{record_id}"
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 90,
+      "handler": "outcome",
+      "method": "POST",
+      "relative_path": "/{record_id}/outcome"
+    },
+    {
+      "source": "stocks/api.py",
+      "line": 94,
+      "handler": "delete",
+      "method": "DELETE",
+      "relative_path": "/{record_id}"
+    },
+    {
+      "source": "study_generation.py",
+      "line": 259,
+      "handler": "generate",
+      "method": "POST",
+      "relative_path": "/{module}/generations"
+    },
+    {
+      "source": "study_generation.py",
+      "line": 263,
+      "handler": "status",
+      "method": "GET",
+      "relative_path": "/{module}/generations/{key}"
+    },
+    {
+      "source": "study_generation.py",
+      "line": 267,
+      "handler": "publish",
+      "method": "POST",
+      "relative_path": "/{module}/generations/{key}/publish"
+    },
+    {
+      "source": "study_generation.py",
+      "line": 271,
+      "handler": "cancel",
+      "method": "POST",
+      "relative_path": "/{module}/generations/{key}/cancel"
+    },
+    {
+      "source": "study_materials.py",
+      "line": 182,
+      "handler": "modules",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "study_materials.py",
+      "line": 188,
+      "handler": "history",
+      "method": "GET",
+      "relative_path": "/learning-history"
+    },
+    {
+      "source": "study_materials.py",
+      "line": 200,
+      "handler": "lesson",
+      "method": "GET",
+      "relative_path": "/{module}/{filename}"
+    },
+    {
+      "source": "study_materials.py",
+      "line": 204,
+      "handler": "record",
+      "method": "GET",
+      "relative_path": "/{module}/{filename}/learning-record"
+    },
+    {
+      "source": "study_materials.py",
+      "line": 209,
+      "handler": "complete",
+      "method": "POST",
+      "relative_path": "/{module}/{filename}/learning-record"
+    },
+    {
+      "source": "study_notes.py",
+      "line": 127,
+      "handler": "notebook",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "timeline_api.py",
+      "line": 19,
+      "handler": "get_timeline",
+      "method": "GET",
+      "relative_path": ""
+    },
+    {
+      "source": "timeline_api.py",
+      "line": 49,
+      "handler": "get_stats",
+      "method": "GET",
+      "relative_path": "/stats"
+    }
+  ]
+}

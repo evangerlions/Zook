@@ -1,5 +1,9 @@
 # Grow H5 接入 Zook（2026-11-02）
 
+本文记录已有 Python 兼容部署和本地存储接入。后续目标已调整为由现有 Zook 服务
+原生承载并行 Grow Web，整体梳理见 [原生迁移方案](plans/grow-zook-native-web/README.md)。
+该方案尚未实施；不能将当前源码迁入/数据库接入视为已取消独立服务。
+
 目标入口 `https://app-dev.youwoai.net/grow`。源码位于 `services/grow`，
 沿用 Zook 的 main → release_dev.sh → webhook → 本机构建发布链路。
 `/grow` 已由管理系统 HTTP server 接管，无需为此修改域名入口的 Caddy/Nginx。
