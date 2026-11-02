@@ -2,6 +2,11 @@
 
 Grow H5 的兼容部署入口为 `/grow/`，其原 Python API 经 `/grow/api/*` 转发，
 使用独立 Grow 会话 Cookie（Path=/grow/），不接受 Zook Admin 会话作为用户登录。
+子路径部署使用 `zook_grow_session` Cookie，避免旧服务的根路径 Cookie 冲突。
+`PLAN_CONTENT_BACKEND=postgresql` 时，记录与课程正文均由 PostgreSQL 持久化，
+`/grow/api/storage-status.formal_markdown`、课程/规划响应的 `storage` 为 `postgresql`；
+数据库课程不生成 GitHub 链接，原 `github_url` 可为 null。
+`/grow/api/account/github` 兼容配置响应新增 `storage_backend`，界面据此显示当前内容存储。
 这些是迁移保留的 H5 兼容路径，不是新增的平台公共 API；原生 LightTick 接入仍以
 本文 `/api/v1/lighttick/*` canonical 合同为准。部署见 [Grow H5](docs/grow-h5-deployment.md)。
 

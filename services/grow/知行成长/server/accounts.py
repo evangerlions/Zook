@@ -76,6 +76,9 @@ def content_for(user=None, settings=None):
     from plans.github import GitHubContent
     user = user or current_user.get()
     settings = settings if settings is not None else (json.loads(user['github_config']) if user else {})
+    if os.getenv('PLAN_CONTENT_BACKEND') == 'postgresql' and settings.get('mode') != 'custom':
+        from postgres_content import PostgresContent
+        return PostgresContent()
     if settings.get('mode') == 'custom':
         try:
             token = cipher().decrypt(settings['token'].encode()).decode()
@@ -242,7 +245,8 @@ class Accounts:
     def settings(self, user):
         stored = json.loads(user['github_config'])
         custom = stored.get('mode') == 'custom'
-        return {'mode': 'custom' if custom else 'default',
+        return {'storage_backend': 'github' if custom else os.getenv('PLAN_CONTENT_BACKEND', 'github'),
+                'mode': 'custom' if custom else 'default',
                 'repository': stored.get('repository', '') if custom else os.getenv('GITHUB_CONTENT_REPO', ''),
                 'branch': stored.get('branch', 'main') if custom else os.getenv('GITHUB_CONTENT_BRANCH', 'main'),
                 'token_configured': bool(stored.get('token')) if custom else bool(os.getenv('GITHUB_CONTENT_TOKEN')),

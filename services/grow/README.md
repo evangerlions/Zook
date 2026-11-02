@@ -4,7 +4,10 @@
 导入包含当时工作区尚未提交的运行代码，来源 HEAD 和逐文件原始摘要见
 `docs/grow-h5-import-20261102.json`。原 grow 工作区未改动。
 
-这仍是原 FastAPI/PostgreSQL 服务；本次不把私人学习数据迁入 LightTick，
+这仍是 FastAPI 服务，推荐以 `PLAN_CONTENT_BACKEND=postgresql` 接入 Zook 的 PostgreSQL，
+设置独立 `GROW_DATABASE_SCHEMA=grow_h5_dev`。记录、规划、课程正文与版本均在数据库内，
+不需要 GitHub 凭证。根 schema 与各账号 schema 均显式固定，不回落到 Zook 的 public 表。
+本次不把私人学习数据迁入 LightTick，
 不连接或导入原 Render 数据库，不变更既有账户的加密密钥。
 正式教学资料仅包含原 Dockerfile 已使用的三个教材目录，不包含个人学习记录。
 
@@ -35,7 +38,9 @@ python test/support/grow_h5_smoke.py --output .artifacts/grow-h5-smoke \
 ```
 
 该测试使用全新本地数据库、合成账号、临时源码副本，不读取个人配置。
-没有配置 GitHub 时，规划和草稿相关接口的明确 503 单列记录；不能把这当作
-GitHub 内容发布或 AI 生成已验收。
+测试默认使用 PostgreSQL 内容存储，不配置 GitHub；所有模块必须 ready，首屏接口不得出现503。
+还覆盖已有旧根路径 Cookie 的登录、写入后重启回读。AI 生成仍需要单独配置。
+`test/support/test_grow_postgres_content.py` 通过 `TEST_GROW_POSTGRES_DSN` 指定本地测试库，
+仅创建和清理随机 `grow_test_*` schema，验证版本不可变、并发冲突、租户隔离和发布恢复。
 
 服务器配置及发布步骤见 `docs/grow-h5-deployment.md`。

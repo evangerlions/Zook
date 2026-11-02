@@ -85,7 +85,7 @@ class ReflectionsStore:
         self.db = Path(db)
         self.runtime = self.db / '.plans'
         self.startup_error = None
-        self.remote = os.getenv('PLAN_CONTENT_BACKEND') == 'github'
+        self.remote = os.getenv('PLAN_CONTENT_BACKEND') in ('github', 'postgresql')
 
     @contextmanager
     def conn(self):

@@ -31,5 +31,15 @@ class PlanTest(unittest.TestCase):
             base['GROW_PUBLIC_URL']='https://app-dev.youwoai.net/config';save()
             with self.assertRaisesRegex(ValueError,'HTTPS origins'):
                 p.prepare(repo,'dev',api,en)
+            base.update(GROW_PUBLIC_URL='https://app-dev.youwoai.net/grow',
+                        PLAN_CONTENT_BACKEND='postgresql', DATABASE_URL='postgresql://u:p@host/shared')
+            save()
+            with self.assertRaisesRegex(ValueError,'dedicated GROW_DATABASE_SCHEMA'):
+                p.prepare(repo,'dev',api,en)
+            base['GROW_DATABASE_SCHEMA']='public';save()
+            with self.assertRaisesRegex(ValueError,'dedicated GROW_DATABASE_SCHEMA'):
+                p.prepare(repo,'dev',api,en)
+            base['GROW_DATABASE_SCHEMA']='grow_h5_dev';save()
+            self.assertEqual(p.prepare(repo,'dev',api,en)['env']['GROW_DATABASE_SCHEMA'],'grow_h5_dev')
 
 if __name__=='__main__':unittest.main()

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "repository": "xiaohao19910303/grow",
   "commit": "a9437c89f69faa46b6a0ea51c5f7d6c27332b504",
-  "archive_sha256": "100f4c29bf34b11d4656ecee8c88986060e7e46295124b32022187a8dd827caa",
+  "archive_sha256": "94b42a4a796f84759d93b1c0b283bc7f88e8aa92798180b02653340526a7dc24",
   "dockerfile_sha256": "419ea738efc51eced6dea24a2c0ed877604b00127010bc38786d6bbf0ee67830",
   "requirements_lock_sha256": "8a4534f34b2d6c407f3b2086b9d9ef09757e7228f178af3879bf885d30c29262",
   "base_image": "python@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337",

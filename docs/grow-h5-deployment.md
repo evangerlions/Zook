@@ -23,12 +23,17 @@ GROW_HOST_PORT=8757
 
 路径以实际服务器检出目录为准。`grow-dev.env` 根据
 `deploy_configs/grow-runtime.env.example` 私下填写，权限600，不提交Git。
-`DATABASE_URL` 必须使用与 Zook 不同名的数据库；原用户数据库不能覆盖。
+推荐 `PLAN_CONTENT_BACKEND=postgresql`，`DATABASE_URL` 使用 Zook 当前槽位 PostgreSQL，
+并设置独立 `GROW_DATABASE_SCHEMA=grow_h5_dev`（online 应使用对应独立槽位及 schema）。
+记录、规划、课程正文、参考资料、不可变版本和发布恢复日志全部在数据库中，
+不再要求 GitHub。Python 服务自行在指定 schema 安装兼容表，不能使用 public，
+不能覆盖既有 Zook/LightTick 表或把用户名相同当作账号相同。
+旧 GitHub 模式仍要求不同数据库名；已有内容绑定不会被静默改写。
 `GROW_PUBLIC_URL=https://app-dev.youwoai.net/grow`，`GROW_BASE_PATH=/grow`。
 `FORWARDED_ALLOW_IPS` 填同 Compose 网络中受控 admin-web 代理的地址或隔离网段；
 不得填 `*`。TLS 原始 scheme 经管理系统转交 Uvicorn，Host 保持外部域名，
 同源写入校验才能正确工作。数据库必须完成实际连接及 CREATE SCHEMA 权限预检。
-GitHub仓库/Token用于内容功能；AI维持原有按需配置方式。
+旧 GitHub 模式的仓库/Token仅用于兼容；AI维持原有按需配置方式。
 
 Grow 的本地运行目录使用 Compose 命名卷 `grow-runtime`，dev/online
 随项目名隔离；数据库、密钥、授权和运行卷均应纳入既有受控备份。
@@ -46,7 +51,13 @@ Grow 的本地运行目录使用 Compose 命名卷 `grow-runtime`，dev/online
 
 ## 本地验证边界
 
-隔离 PostgreSQL 和 Chromium 验证了登录、静态资源与 API 留在 `/grow`、
-行动写入后重启回读、退出会话失效。未配置 GitHub 的规划/草稿503另行记录。
+隔离 PostgreSQL 和 Chromium 验证了带旧根路径 Cookie 的登录、静态资源与 API 留在 `/grow`、
+行动写入后重启回读、退出会话失效；PostgreSQL 模式所有模块 ready，首屏没有存储503。
 Docker daemon 本机未运行，容器测试没有通过记录。
 公网发布状态以本轮实际 release 回执与随后 HTTP 检查为准。
+
+本地验证库已从本轮独立 Grow PostgreSQL 迁入本机 Zook 的 `zook_local_integration`
+数据库、`grow_h5_local` schema。迁移前保留 dump，97张表、60行既有数据逐表数量和
+摘要一致，原源库保持可恢复。账号内部 schema 引用随迁移调整，避免读到 Zook public。
+详情及备份位于本机私有 `.artifacts/grow-h5-local/`。不代表旧 Render/Supabase 的真实
+历史账号和 GitHub 内容已经迁入，原服务没有被修改或关闭。

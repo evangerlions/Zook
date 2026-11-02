@@ -113,8 +113,8 @@ def register(app,root,db):
         metadata=store.documents.metadata(rel) if getattr(store,'remote',False) else None
         return {'article':a,
                 'reading_preferences':store.prefs(),
-                'storage':'github' if metadata and metadata['storage']=='github' else 'local',
-                'github_url':store.documents.content.url(rel,metadata['commit_sha']) if metadata and metadata['storage']=='github' else None,
+                'storage':metadata['storage'] if metadata and metadata['storage'] in ('github','postgresql') else 'local',
+                'github_url':store.documents.content.url(rel,metadata['commit_sha']) if metadata and metadata['storage'] in ('github','postgresql') else None,
                 'commit_sha':metadata.get('commit_sha') if metadata else None,
                 'note':store.note(aid),
                 'guide':file.read_text() if file.exists() else None,

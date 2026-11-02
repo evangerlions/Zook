@@ -36,11 +36,14 @@ def validate_config(env):
     learn=env.get('LEARN_ROOT','')
     if not learn or not Path(learn).is_absolute() or 'REPLACE_WITH' in learn:
         errors.append('LEARN_ROOT (use a prepared teaching directory)')
-    if env.get('PLAN_CONTENT_BACKEND') != 'github':
-        errors.append('PLAN_CONTENT_BACKEND (standalone requires github)')
+    backend = env.get('PLAN_CONTENT_BACKEND')
+    if backend not in ('github', 'postgresql'):
+        errors.append('PLAN_CONTENT_BACKEND (requires github or postgresql)')
+    if backend == 'postgresql' and not re.fullmatch(r'grow_[a-z0-9_]{1,58}', env.get('GROW_DATABASE_SCHEMA', '')):
+        errors.append('GROW_DATABASE_SCHEMA (use a dedicated grow_* schema)')
     if env.get('WEB_CONCURRENCY', '1') != '1':
         errors.append('WEB_CONCURRENCY (only one worker is supported)')
-    if not env.get('GITHUB_CONTENT_REPO') or not env.get('GITHUB_CONTENT_TOKEN'):
+    if backend == 'github' and (not env.get('GITHUB_CONTENT_REPO') or not env.get('GITHUB_CONTENT_TOKEN')):
         warnings.append('github_content_unconfigured')
     if env.get('GROW_SCHEDULED_READING_ENABLED', '0') not in ('0', '1'):
         errors.append('GROW_SCHEDULED_READING_ENABLED')

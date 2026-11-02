@@ -170,6 +170,15 @@
       $('githubToken').value = '';
       $('githubToken').placeholder = result.mode === 'custom' && result.token_configured ? '已保存；留空保留原 Token' : '填写仅授权该仓库的 Token';
       $('githubStatus').textContent = `当前：${result.repository || '未配置 GitHub 仓库'} · ${result.branch}。${result.prefix ? '课程目录：' + result.prefix : '使用原有课程目录。'}${result.token_configured ? '' : '尚未配置凭证。'}`;
+      const databaseStorage = result.storage_backend === 'postgresql';
+      $('githubTitle').textContent = databaseStorage ? '内容存储' : 'GitHub 内容存储';
+      if (databaseStorage) {
+        $('githubTitle').nextElementSibling.textContent = '学习规划、课程、参考资料和个人记录保存在当前账号的数据空间中。';
+        $('githubStatus').textContent = '账号数据库已连接，内容与记录由平台持久保存。';
+      }
+      $('githubMode').disabled = databaseStorage;
+      $('githubSave').hidden = databaseStorage;
+      $('githubTest').hidden = databaseStorage;
       showMode();
     } catch (error) { $('githubStatus').textContent = error.message; }
   };
