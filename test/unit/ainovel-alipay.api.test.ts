@@ -27,7 +27,7 @@ async function fixture(overrides: Record<string, unknown> = {}) {
     notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => NOW, ...overrides }, revenueCat: { now: () => NOW } });
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const headers = { "x-app-id": "ai_novel", authorization: `Bearer ${token}` };
-  const create = (body = { productKey: "plus_monthly", platform: "android", distribution: "direct_android", idempotencyKey: "test_key_0001" }) => runtime.app.handle({ method: "POST", path: ORDERS, headers, body });
+  const create = (body: Record<string, unknown> = { productKey: "plus_monthly", platform: "android", distribution: "direct_android", idempotencyKey: "test_key_0001" }) => runtime.app.handle({ method: "POST", path: ORDERS, headers, body });
   const query = async (id: string) => {
     const sync = await runtime.app.handle({ method: "POST", path: "/api/v1/ai_novel/billing/sync", headers,
       body: { provider: "alipay", purchaseReference: { kind: "alipay_order", id } } });
@@ -145,7 +145,7 @@ test("Alipay query rejects unverified/unavailable and mismatched order evidence 
 
 test("Alipay highest-tier access grants lower tier independently; late CLOSED cannot undo payment", async () => {
   const f = await fixture(); const plus = (await f.create()).body.data.order.orderId; await f.notify(plus);
-  const pro = (await f.create({ productKey: "pro_monthly", platform: "web", distribution: "web", idempotencyKey: "test_key_0002" })).body.data.order.orderId;
+  const pro = (await f.create({ productKey: "pro_monthly", platform: "web", distribution: "web", checkoutMode: "desktop_web", idempotencyKey: "test_key_0002" })).body.data.order.orderId;
   await f.notify(pro, { total_amount: "88.00", trade_no: "202610040000000002" });
   assert.equal((await f.query(plus)).body.data.membership.tier, "pro");
   assert.equal((await f.query(plus)).body.data.order.membershipApplied, true);
@@ -184,7 +184,7 @@ test("optional seller configuration allows default-merchant checkout and settlem
 test("Alipay production remains gated and wrong region/channel are rejected", async () => {
   const missingApp = await fixture({ appId: undefined }); assert.equal((await missingApp.create()).statusCode, 503);
   const unapproved = await fixture({ environment: "production" }); assert.equal((await unapproved.create()).statusCode, 503);
-  const f = await fixture(); assert.equal((await f.create({ productKey: "plus_monthly", platform: "web", distribution: "direct_android", idempotencyKey: "test_key_0001" })).statusCode, 403);
+  const f = await fixture(); assert.equal((await f.create({ productKey: "plus_monthly", platform: "web", distribution: "direct_android", checkoutMode: "desktop_web", idempotencyKey: "test_key_0001" })).statusCode, 403);
 });
 
 test("client cancellation permits a new idempotency intent while preserving old pending order", async () => {
@@ -215,11 +215,11 @@ test("failed native signing is terminal without leaking SDK errors", async () =>
   assert.ok(!JSON.stringify(f.logger.records).includes("SECRET_PROVIDER_PAYLOAD"));
 });
 
-test("QR preparation timeout stays pending and mode belongs to idempotency identity", async () => {
+test("Cashier preparation failure stays pending and mode belongs to idempotency identity", async () => {
   const gateway: AlipayGateway = { payment: async () => { throw new Error("SECRET_PROVIDER_PAYLOAD"); },
     query: async () => ({ code: "40004" }), verifyNotify: async () => false };
   const f = await fixture({ gateway });
-  const body = { productKey: "plus_monthly", platform: "web", distribution: "web", idempotencyKey: "qr_network_timeout", checkoutMode: "qr" };
+  const body = { productKey: "plus_monthly", platform: "web", distribution: "web", idempotencyKey: "cashier_prepare_failure", checkoutMode: "desktop_web" };
   const create = (input: unknown) => f.app.handle({ method: "POST", path: ORDERS, headers: f.headers, body: input });
   assert.equal((await create(body)).statusCode, 503);
   const rows = (await new AiNovelBillingAdminService(f.database).listOrders({ provider: "alipay", status: "pending" })).items;
@@ -244,7 +244,7 @@ test("expired checkout replay has no payment; only a verified expired trade-not-
 test("RC synchronization cannot erase expired Alipay or its active Plus fallback after Pro expiry", async () => {
   const f = await fixture(); const plus = (await f.create({ productKey: "plus_yearly", platform: "android", distribution: "direct_android", idempotencyKey: "plus_year_key" })).body.data.order.orderId;
   await f.notify(plus, { total_amount: "298.00" });
-  const pro = (await f.create({ productKey: "pro_monthly", platform: "web", distribution: "web", idempotencyKey: "pro_month_key" })).body.data.order.orderId;
+  const pro = (await f.create({ productKey: "pro_monthly", platform: "web", distribution: "web", checkoutMode: "desktop_web", idempotencyKey: "pro_month_key" })).body.data.order.orderId;
   await f.notify(pro, { total_amount: "88.00", trade_no: "202610040000000002" });
   let time = new Date("2026-11-05T10:00:00Z");
   const service = new AiNovelBillingService(f.database, { secretApiKey: "test", revenueCatProjectId: "proj_test", revenueCatAppId: "rc_test", now: () => time,
@@ -288,9 +288,10 @@ test("actual HTTP form Buffer acknowledgement is exactly success, bounded, and l
 });
 
 
-test("desktop cashier mode persists, replays and cannot cross platform or mode", async () => {
+for (const platform of ["web", "windows"] as const) {
+test(`${platform} desktop cashier mode persists, replays and cannot cross platform or mode`, async () => {
   const f = await fixture();
-  const body = { productKey: "plus_monthly", platform: "web", distribution: "web",
+  const body = { productKey: "plus_monthly", platform, distribution: platform,
     idempotencyKey: "desktop_cashier_01", checkoutMode: "desktop_web" };
   const create = (input: unknown) => f.app.handle({ method: "POST", path: ORDERS, headers: f.headers, body: input });
   const first = await create(body);
@@ -299,11 +300,12 @@ test("desktop cashier mode persists, replays and cannot cross platform or mode",
   assert.equal(first.body.data.payment.type, "page");
   assert.equal((await f.database.findAiNovelAlipayOrder(id))!.checkoutMode, "desktop_web");
   assert.equal((await create(body)).body.data.order.orderId, id);
-  assert.equal((await create({ ...body, checkoutMode: "qr" })).statusCode, 409);
-  for (const [platform, distribution] of [["windows", "windows"], ["android", "direct_android"]]) {
-    assert.equal((await create({ ...body, platform, distribution })).statusCode, 400);
-  }
+  assert.equal((await create({ ...body, checkoutMode: "qr" })).statusCode, 400);
+  assert.equal((await create({ ...body, platform: platform === "web" ? "windows" : "web", distribution: platform === "web" ? "windows" : "web" })).statusCode, 409);
+  assert.equal((await create({ ...body, platform: "android", distribution: "direct_android" })).statusCode, 400);
+  if (platform === "windows") assert.equal((await create({ ...body, checkoutMode: "mobile_web" })).statusCode, 400);
 });
+}
 
 test('Alipay market attribution is persisted independently, frozen on replay and retained during settlement',async()=>{
   const f=await fixture();
@@ -321,3 +323,16 @@ test('Alipay market attribution is persisted independently, frozen on replay and
   assert.equal((await admin.listOrders({checkoutId:id})).items[0].market,'xiaomi');
   await f.close();
 });
+
+for (const platform of ["web", "windows"] as const) {
+  test(`${platform} rejects removed QR mode and missing checkout mode before order creation`, async () => {
+    const f = await fixture();
+    for (const checkoutMode of ["qr", undefined]) {
+      const response = await f.app.handle({ method: "POST", path: ORDERS, headers: f.headers,
+        body: { productKey: "plus_monthly", platform, distribution: platform,
+          idempotencyKey: "removed_qr_mode_01", ...(checkoutMode ? { checkoutMode } : {}) } });
+      assert.equal(response.statusCode, 400);
+    }
+    assert.equal((await new AiNovelBillingAdminService(f.database).listOrders({ provider: "alipay" })).items.length, 0);
+  });
+}

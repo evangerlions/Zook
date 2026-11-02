@@ -31,7 +31,7 @@ export class OfficialAlipayGateway implements AlipayGateway {
     if (order.platform === "web" && order.checkoutMode === "mobile_web") {
       return { type: "page", url: sdk.pageExecute("alipay.trade.wap.pay", "GET", params) };
     }
-    if (order.platform === "web" && order.checkoutMode === "desktop_web") {
+    if ((order.platform === "web" || order.platform === "windows") && order.checkoutMode === "desktop_web") {
       // No returnUrl: the cashier must not navigate the merchant's parent page.
       // Order query/notify remains the only settlement authority.
       return { type: "page", url: sdk.pageExecute("alipay.trade.page.pay", "GET", {
@@ -39,19 +39,9 @@ export class OfficialAlipayGateway implements AlipayGateway {
         bizContent: { ...bizContent, product_code: "FAST_INSTANT_TRADE_PAY", qr_pay_mode: "4", qrcode_width: 220 },
       }) };
     }
-    try {
-      const { product_code: _unused, ...qrContent } = bizContent;
-      const result = await sdk.exec("alipay.trade.precreate", {
-        bizContent: qrContent, notifyUrl: this.options.notifyUrl,
-      }, { validateSign: true });
-      if (result.code !== "10000" || result.out_trade_no !== order.orderId || typeof result.qr_code !== "string" || !result.qr_code.trim()) {
-        throw new Error("Invalid QR evidence");
-      }
-      return { type: "qr", qrCode: result.qr_code };
-    } catch {
-      throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay QR checkout unavailable.");
-    }
+    throw new ApplicationError(400, "REQ_INVALID_BODY", "Unsupported Alipay checkout mode.");
   }
+
   async query(orderId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
     signal?.throwIfAborted();
     try {

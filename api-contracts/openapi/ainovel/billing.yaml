@@ -248,7 +248,7 @@ components:
           enum: [xiaomi, vivo, oppo, huawei, honor, direct, null]
           description: Optional distribution-market attribution frozen with the order; it never changes payment authorization or price. Generic Android store builds may omit it. Web/Windows/direct Android accept only direct.
         idempotencyKey: { type: string, pattern: "^[A-Za-z0-9_-]{8,128}$" }
-        checkoutMode: { type: string, enum: [mobile_web, desktop_web, qr], description: "Web mobile uses mobile_web; desktop Web uses desktop_web (signed page.pay URL embedded in the client). Windows and legacy clients use qr. Omit for native Android." }
+        checkoutMode: { type: string, enum: [mobile_web, desktop_web], description: "Mobile Web uses mobile_web; desktop Web and Windows use desktop_web (signed page.pay URL embedded in the client). Required for Web and Windows; Windows accepts only desktop_web. Omit for native Android." }
     AlipayOrder:
       type: object
       additionalProperties: false
@@ -280,12 +280,7 @@ components:
           properties:
             type: { type: string, const: page }
             url: { type: string, format: uri }
-        - type: object
-          additionalProperties: false
-          required: [type, qrCode]
-          properties:
-            type: { type: string, const: qr }
-            qrCode: { type: string, minLength: 1 }
+
     AlipayCreateData:
       type: object
       additionalProperties: false

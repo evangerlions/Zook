@@ -4280,10 +4280,9 @@ export const AlipayCreateRequestSchema = {
       "type": "string",
       "enum": [
         "mobile_web",
-        "desktop_web",
-        "qr"
+        "desktop_web"
       ],
-      "description": "Web mobile uses mobile_web; desktop Web uses desktop_web (signed page.pay URL embedded in the client). Windows and legacy clients use qr. Omit for native Android."
+      "description": "Mobile Web uses mobile_web; desktop Web and Windows use desktop_web (signed page.pay URL embedded in the client). Required for Web and Windows; Windows accepts only desktop_web. Omit for native Android."
     }
   }
 } as const;
@@ -4294,7 +4293,7 @@ export type AlipayCreateRequest = {
   "distribution": "china_android_store" | "direct_android" | "web" | "windows";
   "market"?: "xiaomi" | "vivo" | "oppo" | "huawei" | "honor" | "direct" | null;
   "idempotencyKey": string;
-  "checkoutMode"?: "mobile_web" | "desktop_web" | "qr";
+  "checkoutMode"?: "mobile_web" | "desktop_web";
 };
 
 export const AlipayOrderSchema = {
@@ -4441,24 +4440,6 @@ export const AlipayPaymentSchema = {
           "format": "uri"
         }
       }
-    },
-    {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "type",
-        "qrCode"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "qr"
-        },
-        "qrCode": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
     }
   ]
 } as const;
@@ -4469,9 +4450,6 @@ export type AlipayPayment = {
 } | {
   "type": string;
   "url": string;
-} | {
-  "type": string;
-  "qrCode": string;
 };
 
 export const AlipayCreateDataSchema = {
@@ -4649,24 +4627,6 @@ export const AlipayCreateDataSchema = {
                   "format": "uri"
                 }
               }
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "type",
-                "qrCode"
-              ],
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "const": "qr"
-                },
-                "qrCode": {
-                  "type": "string",
-                  "minLength": 1
-                }
-              }
             }
           ]
         },
@@ -4706,9 +4666,6 @@ export type AlipayCreateData = {
 } | {
   "type": string;
   "url": string;
-} | {
-  "type": string;
-  "qrCode": string;
 } | unknown;
 };
 

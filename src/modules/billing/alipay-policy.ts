@@ -30,9 +30,10 @@ export function parseAlipayCreate(body: unknown): AlipayCreateInput {
     !["android", "web", "windows"].includes(String(value.platform)) ||
     !["china_android_store", "direct_android", "web", "windows"].includes(String(value.distribution)) ||
     typeof value.idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(value.idempotencyKey)) invalid();
-  if (value.checkoutMode !== undefined &&
-    (!(value.checkoutMode === "qr" || value.checkoutMode === "mobile_web" || value.checkoutMode === "desktop_web") ||
-      value.platform === "android" || (value.platform === "windows" && value.checkoutMode !== "qr"))) invalid();
+  const validMode = value.platform === "android" ? value.checkoutMode === undefined
+    : value.platform === "windows" ? value.checkoutMode === "desktop_web"
+    : value.checkoutMode === "mobile_web" || value.checkoutMode === "desktop_web";
+  if (!validMode) invalid();
   validateAlipayMarket(value.market, String(value.distribution));
   return value as unknown as AlipayCreateInput;
 }
