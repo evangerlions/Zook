@@ -22,7 +22,9 @@ from copilot.core import Problem, fail
 from tenancy import current_user, reset_user
 from db_read_pool import retry_read
 
-COOKIE = 'zhixing_session'
+# Legacy root cookies are shared across ports. A separate name prevents an old
+# / cookie from overriding the more specific /grow/ cookie in Request.cookies.
+COOKIE = 'zook_grow_session' if os.getenv('GROW_BASE_PATH') else 'zhixing_session'
 SESSION_SECONDS = 7 * 86400
 INVITATION_SECONDS = 7 * 86400
 USERNAME = re.compile(r'^[a-zA-Z0-9_\-]{3,32}$')

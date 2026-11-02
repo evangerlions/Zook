@@ -85,6 +85,8 @@ def run(output, pg_bin):
             with sync_playwright() as playwright:
                 browser = playwright.chromium.launch()
                 page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+                page.context.add_cookies([{'name': 'zhixing_session', 'value': 'synthetic-stale-legacy-session',
+                                          'url': base + '/'}])
                 errors, escaped, failed = [], [], []
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('request', lambda request: escaped.append(request.url)
