@@ -21,6 +21,22 @@ def archive(files):
 
 
 class GrowSourceTest(unittest.TestCase):
+    def test_bundled_source_is_locked_and_runtime_data_never_exported(self):
+        repo = Path(__file__).resolve().parents[2]
+        lock = s.read_lock(repo/'deploy_configs/grow-source.lock.json')
+        self.assertEqual(lock['source_type'], 'bundled')
+        data = s.read_archive(repo/'services/grow', lock)
+        with tempfile.TemporaryDirectory() as d:
+            destination = Path(d)
+            s.extract_context(data, lock, destination)
+            self.assertTrue((destination/'知行成长/server/prefix_app.py').is_file())
+            self.assertFalse(list(destination.rglob('.env*')))
+            self.assertFalse(list(destination.rglob('__pycache__')))
+            self.assertIn(lock['base_image'], (destination/'Dockerfile').read_text())
+        lock['archive_sha256'] = '0'*64
+        with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+            s.read_archive(repo/'services/grow', lock)
+
     def test_exact_lock_and_no_secret_build_context(self):
         files={'Dockerfile':b'FROM python:3.12-slim-bookworm\n', 'requirements.lock':b'locked', 'requirements.txt':b'-r requirements.lock', '.dockerignore':b'**/.env', '知行成长/server/app.py':b'app', '知行成长/server/.env':b'secret', '知行成长/server/tests/test.py':b'test', '知行成长/server/.gstack/captures/private.png':b'private','知行成长/server/test_private.py':b'test','private.md':b'private'}
         data=archive(files)

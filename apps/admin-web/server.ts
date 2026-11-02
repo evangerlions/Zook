@@ -4,8 +4,10 @@ import { createReadStream, readFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { localLoginDefaults } from "./local-login-defaults.ts";
+import { proxyGrow } from "./grow-proxy.ts";
 
 interface AdminServerOptions {
+  growProxyTarget?: string;
   proxyTarget?: string;
   brandName?: string;
   defaultAppId?: string;
@@ -366,6 +368,11 @@ async function handleRequest(
 ): Promise<void> {
   const url = new URL(request.url ?? "/", "http://admin.local");
   const pathname = url.pathname;
+
+  if (pathname === "/grow" || pathname.startsWith("/grow/")) {
+    proxyGrow(request, response, options.growProxyTarget ?? process.env.ADMIN_GROW_PROXY_TARGET);
+    return;
+  }
 
   if (pathname === INTERNAL_HEALTH_PATH) {
     serveInternalHealth(response);

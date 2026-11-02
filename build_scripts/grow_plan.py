@@ -61,7 +61,8 @@ def prepare(repo, slot, api_env_file, environ=None):
         raise ValueError('Set FORWARDED_ALLOW_IPS to the controlled HTTPS proxy addresses, never wildcard trust.')
     for key in ('GROW_PUBLIC_URL', 'LIGHTTICK_BRIDGE_URL'):
         p = urlsplit(grow[key])
-        if p.scheme != 'https' or not p.hostname or p.username or p.password or p.query or p.fragment or p.path not in ('', '/'):
+        allowed_paths = ('', '/', '/grow', '/grow/') if key == 'GROW_PUBLIC_URL' else ('', '/')
+        if p.scheme != 'https' or not p.hostname or p.username or p.password or p.query or p.fragment or p.path not in allowed_paths:
             raise ValueError('Grow origins must be plain HTTPS origins: '+key)
     import secrets
     if not secrets.compare_digest(grow['GROW_ACTION_BRIDGE_SECRET'], api.get('GROW_ACTION_BRIDGE_SECRET', '')):
@@ -76,7 +77,9 @@ def prepare(repo, slot, api_env_file, environ=None):
     if not port.isdecimal() or not 1 <= int(port) <= 65535:
         raise ValueError('Invalid Grow private host port.')
     mirror = environ.get('GROW_SOURCE_MIRROR')
-    if not mirror:
+    if lock.get('source_type') == 'bundled':
+        mirror = str(repo / 'services/grow')
+    elif not mirror:
         raise ValueError('GROW_SOURCE_MIRROR must name the approved server-managed Git mirror.')
     return {'lock': lock, 'lock_sha256': hashlib.sha256(lock_path.read_bytes()).hexdigest(),
             'env_file': str(file), 'env': grow, 'api_env': api, 'mirror': mirror, 'host_port': port}

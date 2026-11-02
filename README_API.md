@@ -1,5 +1,10 @@
 # API Interface Specification
 
+Grow H5 的兼容部署入口为 `/grow/`，其原 Python API 经 `/grow/api/*` 转发，
+使用独立 Grow 会话 Cookie（Path=/grow/），不接受 Zook Admin 会话作为用户登录。
+这些是迁移保留的 H5 兼容路径，不是新增的平台公共 API；原生 LightTick 接入仍以
+本文 `/api/v1/lighttick/*` canonical 合同为准。部署见 [Grow H5](docs/grow-h5-deployment.md)。
+
 ### AINovel 试运营额度（2026-10-20）
 
 Free / Plus / Pro 的独立 7 天周期额度分别为 200 / 1000 / 4000 credits。
