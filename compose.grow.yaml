@@ -1,5 +1,8 @@
 # Optional overlay. The default compose.yaml remains the three-service deployment.
 services:
+  admin-web:
+    environment:
+      ADMIN_GROW_PROXY_TARGET: "http://grow:8756"
   grow:
     image: "${GROW_IMAGE_REF:?Grow image is required when overlay is enabled}"
     pull_policy: never
@@ -12,6 +15,9 @@ services:
       CLOUD_DEPLOY: "1"
       RENDER_GIT_COMMIT: "${GROW_SOURCE_COMMIT:?Pinned Grow revision is required}"
       GROW_REVISION: "${GROW_SOURCE_COMMIT}"
+      GROW_BASE_PATH: "/grow"
+    volumes:
+      - grow-runtime:/var/lib/grow/runtime
     ports:
       - "127.0.0.1:${GROW_HOST_PORT:-8757}:8756"
     extra_hosts:
@@ -22,3 +28,6 @@ services:
       timeout: 4s
       retries: 18
       start_period: 15s
+
+volumes:
+  grow-runtime:

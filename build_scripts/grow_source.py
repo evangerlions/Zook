@@ -25,11 +25,18 @@ def read_lock(path):
             raise ValueError('Invalid Grow lock field: ' + key)
     if not re.fullmatch(r'python@sha256:[0-9a-f]{64}', str(lock.get('base_image', ''))):
         raise ValueError('Grow base image must be an immutable official python digest.')
+    if lock.get('source_type', 'mirror') not in ('mirror', 'bundled'):
+        raise ValueError('Unsupported Grow source type.')
     return lock
 
 
 def read_archive(mirror, lock):
     """Archive a locked object; dirty worktree and moving HEAD never participate."""
+    if lock.get('source_type') == 'bundled':
+        value = bundled_archive(Path(mirror))
+        if sha(value) != lock['archive_sha256']:
+            raise ValueError('Bundled Grow source checksum mismatch; review and refresh the source lock.')
+        return value
     mirror = Path(mirror).resolve()
     def git(*args, check=True):
         return subprocess.run(['git', '--git-dir='+str(mirror), *args], check=check, capture_output=True)
@@ -44,6 +51,25 @@ def read_archive(mirror, lock):
     if len(value) > 256 * 1024 * 1024 or sha(value) != lock['archive_sha256']:
         raise ValueError('Grow source archive checksum/size mismatch.')
     return value
+
+
+def bundled_archive(directory):
+    """Deterministic, allowlisted build context owned by the Zook release tree."""
+    if not directory.is_dir() or directory.is_symlink():
+        raise ValueError('Bundled Grow source directory is missing or a symlink.')
+    output = io.BytesIO()
+    with tarfile.open(fileobj=output, mode='w', format=tarfile.PAX_FORMAT) as archive:
+        for path in sorted(directory.rglob('*')):
+            name = path.relative_to(directory).as_posix()
+            if path.is_symlink():
+                raise ValueError('Bundled Grow source must not contain symlinks.')
+            if not path.is_file() or not selected(name):
+                continue
+            data = path.read_bytes()
+            item = tarfile.TarInfo(name)
+            item.size, item.mode = len(data), 0o644
+            archive.addfile(item, io.BytesIO(data))
+    return output.getvalue()
 
 
 def selected(name):

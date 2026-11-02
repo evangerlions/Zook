@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
   "repository": "xiaohao19910303/grow",
-  "commit": "80dc2a423886479814da964f03b4aaa91f71d7fe",
-  "archive_sha256": "13bfed0c55fc7514cec9dbcb6325b74df4b1d0a2eb1e71cf73b0a91c34a6162a",
-  "dockerfile_sha256": "f02c5758b11e8136253cdb8c14c398ed87262a1c93f8bc258bd4afc8d1f4ca5a",
+  "commit": "a9437c89f69faa46b6a0ea51c5f7d6c27332b504",
+  "archive_sha256": "e2cdd48230879b3e71e2f3c42faef27f17493bf521d591df62c86d8c21a2d0d9",
+  "dockerfile_sha256": "419ea738efc51eced6dea24a2c0ed877604b00127010bc38786d6bbf0ee67830",
   "requirements_lock_sha256": "8a4534f34b2d6c407f3b2086b9d9ef09757e7228f178af3879bf885d30c29262",
   "base_image": "python@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337",
-  "protocol_version": 1
+  "protocol_version": 1,
+  "source_type": "bundled"
 }

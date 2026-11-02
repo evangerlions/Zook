@@ -25,5 +25,11 @@ class PlanTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'credentials must match'):p.prepare(repo,'dev',api,en)
             base['GROW_ACTION_BRIDGE_SECRET']='same';save()
             self.assertEqual(p.prepare(repo,'dev',api,en)['host_port'],'8757')
+            en.pop('GROW_SOURCE_MIRROR')
+            base['GROW_PUBLIC_URL']='https://app-dev.youwoai.net/grow';save()
+            self.assertEqual(p.prepare(repo,'dev',api,en)['mirror'], str(repo/'services/grow'))
+            base['GROW_PUBLIC_URL']='https://app-dev.youwoai.net/config';save()
+            with self.assertRaisesRegex(ValueError,'HTTPS origins'):
+                p.prepare(repo,'dev',api,en)
 
 if __name__=='__main__':unittest.main()

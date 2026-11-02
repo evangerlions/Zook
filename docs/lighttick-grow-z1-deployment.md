@@ -1,5 +1,9 @@
 # Grow Z0/Z1：锁版兼容部署与验收
 
+2026-11-02 补充：H5 运行源码已迁入 Zook `services/grow`，构建改用受摘要锁定的
+仓库内源码，不再需要 Grow mirror。子路径入口和当前操作见
+[Grow H5 部署](grow-h5-deployment.md)。下文 mirror 前置仅适用于历史 mirror 锁。
+
 2026-11-01。本轮只实现 legacy 权威下的部署基础设施；不执行私人数据导入、不切内容/私人学习权威、不关闭 Render。Grow Python 仍从独立源码构建，后续业务实现只在 Zook LightTick。公共 API/DDL 未新增。
 
 ## 已实现
