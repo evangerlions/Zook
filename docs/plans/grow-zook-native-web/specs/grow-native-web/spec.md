@@ -1,26 +1,22 @@
 ## ADDED Requirements
 
-### Requirement: Independent framework frontend repository
-Grow SHALL rebuild its frontend as a statically built React/TypeScript application in `/Volumes/肖豪/project/grow`. Zook MUST NOT maintain a duplicate frontend source tree, and the frontend MUST NOT require SSR or a dedicated backend process.
+### Requirement: React Web as a LightTick client
+Grow SHALL be a statically built React/TypeScript Web client in its original repository and use the existing LightTick product identity and membership. It MUST NOT create a separate Grow appId or duplicate product data/API solely for the Web surface.
 
-#### Scenario: Frontend is packaged
-- **WHEN** a fixed Grow revision is built
-- **THEN** the artifact contains only approved browser assets and a version manifest, without Python, environment files, private data or credentials
+#### Scenario: Existing LightTick user opens Grow
+- **WHEN** a member signs into Grow
+- **THEN** the applicable existing LightTick resources use the same canonical IDs and permissions without pairing a newly created Grow product
 
-### Requirement: Existing Web hosting with pinned artifact compatibility
-The existing Zook Web process SHALL host the versioned Grow artifact at `/grow/` without an additional service or port. The release SHALL bind frontend digest, source revision, backend revision and contract compatibility.
+### Requirement: Independent sessions and local state
+Web, iOS and Android SHALL use independent secure device sessions for the same product. Local drafts, queues and caches MUST be partitioned by canonical environment/appId/userId. Login MUST NOT automatically upload device-only content.
 
-#### Scenario: Artifact is absent or incompatible
-- **WHEN** Grow is enabled and the artifact is absent, altered or incompatible
-- **THEN** promotion is rejected, while the existing deployment remains available
+#### Scenario: Account changes with a pending edit
+- **WHEN** the user changes accounts during an edit or unresolved mutation
+- **THEN** prior requests stop, private state stays scoped to its owner and no paid or mutating request is replayed as the new user
 
-#### Scenario: Deep link and missing resource
-- **WHEN** a declared Grow page or missing asset is requested
-- **THEN** the page loads through the declared frontend route, the missing asset returns404 and API calls never return SPA HTML
+### Requirement: Existing static hosting and artifact compatibility
+Grow SHALL build versioned static artifacts hosted by the existing Web process at `/grow/`, without a dedicated service, Python dependency or SSR process. The release MUST bind artifact digest, source commit and compatible backend contracts.
 
-### Requirement: Product-scoped session and state
-Grow SHALL use Zook ordinary-user identity and its own registered app membership. Browser state, cached responses and drafts SHALL be partitioned by actual appId/userId and independent of Admin state.
-
-#### Scenario: Account changes during editing
-- **WHEN** the active identity changes while an editor or generation request is active
-- **THEN** old requests are cancelled, private caches are cleared or isolated, input is protected and paid or mutating operations are not automatically replayed
+#### Scenario: Missing artifact or resource
+- **WHEN** an enabled release lacks a compatible artifact or a browser requests a missing asset
+- **THEN** release preflight rejects an invalid artifact and missing assets return404 rather than API or asset requests receiving SPA HTML

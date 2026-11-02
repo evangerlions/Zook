@@ -1,29 +1,29 @@
 ## ADDED Requirements
 
-### Requirement: Grow as a product in the multi-App platform
-Grow SHALL have its own product namespace `/api/v1/grow/...` and registered app scope within existing Zook API/worker infrastructure. Authentication, membership, configuration, files, LLM and logging SHALL reuse platform services. URL namespace or browser-supplied owner fields MUST NOT override verified appId/userId.
+### Requirement: Existing LightTick domain authority
+Grow, iOS and Android SHALL submit commands to the same LightTick domain services and canonical `/api/v1/lighttick/...` contracts. Zook SHALL enforce owner membership, state, versions and idempotency. Other Apps MUST retain their isolation and behavior.
 
-#### Scenario: Cross-product request
-- **WHEN** a user authorized only for LightTick requests a Grow private resource
-- **THEN** existing platform membership and permissions determine access and no LightTick private record is automatically shared
+#### Scenario: Multiple clients edit a record
+- **WHEN** Web and mobile edit the same record from one base version
+- **THEN** the domain service accepts the valid mutation and exposes conflicts without overwriting newer data or discarding local input
 
-### Requirement: Native domain modules and stable contracts
-Grow business logic SHALL reside in `src/modules/grow` with Zook application services, route composition, repository adapters and migration runner. Public contracts SHALL originate only in `api-contracts/openapi/**`, generate committed runtime/client outputs and update API documentation in the same change. Runtime MUST NOT read the contract source directory or import another product's private repository.
+### Requirement: Explicit per-domain synchronization coverage
+Implementation SHALL verify command support, receipts, transactional change logs, pull projections and client application for each domain. Existing task-only sync push MUST NOT be represented as complete write synchronization for records, learning or other entities.
 
-#### Scenario: New Grow module
-- **WHEN** a product capability is added
-- **THEN** its contract, domain rules, owner-scoped persistence, frontend feature and tests are delivered without a new backend service
+#### Scenario: Unsupported entity is inventoried
+- **WHEN** a contract enum names an entity whose push handler is not implemented
+- **THEN** that capability remains an explicit gap and its domain API/queue is used until a validated extension exists
 
-### Requirement: Data and workflow invariants
-Writes SHALL enforce idempotency, version conflicts and owner scope. Draft publication, immutable lesson versions, private notes and explicit completion SHALL remain distinct. Monetary results SHALL preserve exact precision and documented market/time conventions.
+### Requirement: Native learning authority transition
+Course versions and private learning SHALL move from legacy source mirrors/receipts to native Zook authority only after owner-scoped freeze, import, reconciliation and an atomic authority transition. Existing IDs, versions, authorization and operation receipts MUST remain traceable.
 
-#### Scenario: Request replay and stale edit
-- **WHEN** an accepted request is replayed with the same key or a stale edit is submitted
-- **THEN** replay returns its accepted result and stale writes preserve newer data without silent overwrite
+#### Scenario: Old private command is pending during cutover
+- **WHEN** a client retries an already accepted command after authority switches
+- **THEN** the migrated receipt or compatible native handler resolves the same operation without waiting for a removed Python source or applying it twice
 
-### Requirement: Platform AI and bounded durable jobs
-Grow SHALL use product-specific AI scenes and budgets, existing logical models/provider routes and bounded worker tasks. Request/user/stream/job state MUST remain execution-local. Provider adapters and compute MUST NOT require Python, a sidecar or arbitrary user code execution.
+### Requirement: Zook conventions and platform reuse
+All backend changes SHALL follow Zook module, repository, migration, application composition, contract generation, documentation and release conventions. Platform AI/files/worker SHALL be reused with bounded resources, stable model identities and execution-local state.
 
-#### Scenario: Job restarts or owner is disabled
-- **WHEN** a worker restarts or membership is disabled during execution
-- **THEN** durable state enables recovery without duplicate formal writes and permissions are rechecked before execution and commit
+#### Scenario: New Web-only research feature
+- **WHEN** research is added to the LightTick product
+- **THEN** its domain, contract, storage and worker execution extend the existing service topology without creating a new App identity or backend process

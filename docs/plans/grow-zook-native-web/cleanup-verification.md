@@ -1,3 +1,5 @@
+> 2026-11-02 后续架构修订：下文清理及测试是已完成的历史事实；其中独立 Grow App/API 的规划已撤销。当前 Grow 为 LightTick Web端，见本目录 README 与 plan 联合架构。未新增产品身份，清理结果保留。
+
 # 旧 Grow 接入清理验证
 
 日期：2026-11-02。代码基线 Zook `13fa860`，在已有 feature/grow-native-migration-plan 分支继续当前请求；fetch 后 HEAD 与 origin/main 相同。保留上一轮规划编辑和原 Grow 工作区已有修改。

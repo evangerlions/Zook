@@ -1,36 +1,36 @@
 ## ADDED Requirements
 
-### Requirement: Existing functionality has explicit disposition
-The migration SHALL inventory current Grow routes, pages, workflow states, formulas, exports, materials and non-HTTP tasks. Each item MUST map to an accepted implementation or explicit approved replacement with behavioral evidence. Hidden menus or a login demonstration SHALL NOT qualify as completion.
+### Requirement: Same-object continuity and native independence
+The three clients SHALL preserve canonical object identity, versions, history and product semantics. Native basic planning, execution and reflection MUST remain usable without Grow Web or AI.
 
-#### Scenario: Research dependency is missing
-- **WHEN** a market provider, strategy result or export lacks an accepted replacement
-- **THEN** the item remains incomplete and the overall migration cannot be declared complete
+#### Scenario: Web is disabled
+- **WHEN** Grow Web and optional AI enhancement are unavailable
+- **THEN** native local/basic cloud workflows remain usable under their existing service and identity requirements
 
-### Requirement: Existing products remain compatible
-LightTick and other products SHALL retain existing contracts, permissions, default models and feature flags. Grow off/on regression and mixed-load tests MUST verify agreed latency, error, database and queue thresholds.
+### Requirement: Durable synchronization and visible conflicts
+Confirmed mutations, receipts and change logs SHALL have a verified consistency boundary. Clients MUST apply durable projections before advancing owner-scoped cursors, preserve unresolved input, handle expired cursors and reject unauthorized stale writes. Old clients MUST receive compatible entities or negotiated coverage.
 
-#### Scenario: Grow budget is exhausted
-- **WHEN** Grow research jobs consume their allocation
-- **THEN** work is queued or rejected within that budget and existing-product acceptance thresholds still pass
+#### Scenario: Process dies after receiving a page
+- **WHEN** a client dies while applying changes or before persisting its next cursor
+- **THEN** replay neither duplicates accepted effects nor permanently loses changes and local drafts remain recoverable
 
-### Requirement: No rejected deployment dependencies
-The new source and release topology MUST NOT include `services/grow`, Grow Python images, source locks, dedicated release groups or the legacy Python proxy. Source cleanup MUST remain distinct from historical-server and volume retirement.
+### Requirement: Explicit completion and immutable publication
+Reading position, notes, answers, explicit lesson completion, action completion and practice outcomes SHALL remain distinct. A content update MUST NOT overwrite old-version private answers or silently mark a practice complete.
 
-#### Scenario: Clean source is built
-- **WHEN** the supported release topology is built and started
-- **THEN** only existing Zook services are required and no dependency reaches the removed Grow backend
+#### Scenario: Published content changes during an offline edit
+- **WHEN** a mobile client has an old-version note and Web publishes a new lesson version
+- **THEN** both content/version references remain available within authorization and the user can resolve private edits without silent replacement
 
-### Requirement: Verified historical import and single writer
-Historical data import SHALL require verified ownership, source-to-canonical mappings, dry-run comparisons and idempotency. Unknown completion timestamps MUST remain unknown. Product or account names MUST NOT automatically merge identities. Each migrated dataset SHALL have one active writer.
+### Requirement: Preserved legacy scope and historical data
+Historical import SHALL verify identity, permissions, mappings and receipts without username-based account merging or dual writers. Authority changes MUST reject late old-source writes and preserve unknown timestamps as unknown. Removed Grow deployment code MUST NOT be restored as a new-client runtime dependency.
 
-#### Scenario: Repeated authorized import
-- **WHEN** the same historical dataset is imported twice
-- **THEN** stable mappings prevent duplication and versions, source links and private ownership remain intact
+#### Scenario: Late source event arrives
+- **WHEN** an old bridge sends a write after its module authority was switched
+- **THEN** the server rejects or reconciles it under the recorded authority boundary without overwriting canonical data
 
-### Requirement: Zook release flow and compatible rollback
-Changes SHALL enter main before release scripts. Online promotion SHALL use the same backend SHA and frontend artifact verified in dev. Rollback MUST use a verified compatible pair and preserve accepted database/file writes, without restoring the whole database or forwarding new-user writes to a historical service.
+### Requirement: Functional and release evidence
+Every inventoried capability MUST have implementation or an explicit accepted disposition with behavioral evidence. Existing Apps SHALL pass off/on regression and agreed mixed-load gates. Release SHALL follow main/dev/same-SHA online with a fixed compatible frontend artifact; native binary compatibility MUST be recorded separately.
 
-#### Scenario: Backend rollback is incompatible
-- **WHEN** the previous backend cannot serve the current frontend contract
-- **THEN** deployment selects a compatible verified pair or disables Grow while preserving saved data
+#### Scenario: New server version is promoted
+- **WHEN** a verified candidate is promoted
+- **THEN** its existing mobile contracts remain supported and neither historical database writes nor local-only data are replaced by a rollback snapshot

@@ -1,43 +1,32 @@
-# Grow 重构：React 前端 + Zook 多 App 原生后端
+# Grow：LightTick Web 端重构与统一后端规划
 
-2026-11-02 更新。用户已明确删除此前 Grow Python 部署接入，并要求以前后端分仓、Zook 多 App 框架承载后端的方式重构。
+2026-11-02 修订。用户明确 Grow 是 LightTick Web 端，本轮撤销上一版独立 Grow App、`src/modules/grow` 和 `/api/v1/grow` 的提议。完整跨端分析见[plan统一架构](../../../../plan/docs/04-planning/grow-lighttick-unified-architecture-2026-11-02.md)，产品真值仍为 plan PRD。
 
-## 当前结果与目标区别
+## 已确定边界
 
-- 已在当前工作区删除 `Zook/services/grow`、Grow 专用部署组脚本、Python 镜像/Compose overlay、源码锁、旧代理及相关专用测试/运维文档。共享部署入口恢复到接入前版本，LightTick 使用的纯 env 解析函数抽为共用工具。
-- `/Volumes/肖豪/project/grow` 的原始代码、历史资料与未提交改动保留，作为功能核对来源。
-- React 前端、独立 Grow App 注册和 `/api/v1/grow/...` 业务接口尚待实施。本轮没有远程发布或操作服务器，源码清理不代表历史容器已退役。
-- 本方案替代前版“保留原生 JS 页面、不要求框架重构、Grow 全部归属 LightTick”的规划。建议采用 React + TypeScript；Vue 作为技术可行备选，不同时建设两套框架。
-
-## 目标边界
-
-| 部分 | 唯一源码归属 | 交付方式 |
-|---|---|---|
-| Grow 前端 | `/Volumes/肖豪/project/grow` | React/TypeScript 静态 SPA，按功能模块组织 |
-| Grow 产品业务 | Zook `src/modules/grow`、`src/app/grow*` 及 PostgreSQL 基础设施 | 复用既有 API、worker 进程 |
-| 平台公共能力 | Zook 既有 auth/app registry/files/LLM/config/logs 等模块 | 服务端按 appId/userId 鉴权和配置 |
-| 对外合同 | Zook `api-contracts/openapi/grow`（待新增） | 生成固定版本客户端和运行时合同 |
-| 静态承载 | Zook 既有 Web 进程 | 固定 Grow 构建包，计划 `/grow/`；当前尚未挂载新前端 |
+- Grow React/TypeScript/Vite 静态前端源码留在 `/Volumes/肖豪/project/grow`。
+- LightTick iOS/Android 客户端留在 `plan` 对应原生仓库，保留免登录本机模式和原生自足基础闭环。
+- 三端使用同一 Zook 身份、既有 LightTick app membership、`/api/v1/lighttick/...` 和同一业务对象；不建立两产品互相复制的同步系统。
+- 后端只在 Zook `src/modules/lighttick`、`src/app/lighttick*` 和现有 PostgreSQL基础设施实现；公共能力按既有多 App框架复用。
+- 已删除的 `services/grow`、Python部署组、第四服务和旧代理不恢复；既有 Web仅接收固定 Grow静态包，不新增服务。
 
 ```text
-Grow React SPA → Zook 公共认证 + /api/v1/grow/*
-                              ├─ Grow 领域模块
-                              ├─ 平台认证 / App / 文件 / LLM / 配置
-                              ├─ PostgreSQL 仓储
-                              └─ 既有 worker 内受限任务
+Grow React ───────────┐
+LightTick iOS ────────┼─→ Zook /api/v1/lighttick/* → 共同领域服务 → 权威数据/版本/回执/变更
+LightTick Android ───┘                   └─ 平台公共能力 + 既有 worker
 ```
 
-## 文档与验收入口
+## 现状与目标
 
-- [清理与验证记录](cleanup-verification.md)。
-- [架构分析与扩展设计](design.md)：React/Vue 取舍、多 App 边界、业务模块、状态与数据、兼容迁移。
-- [范围与约束](proposal.md)、[实施任务](tasks.md)。
-- [当前 Grow 源码基线](current-grow-source-inventory.json)：当前工作区代码摘要与 AST 路由声明；不执行原服务，不含个人数据。
-- [历史 HTTP 清单](legacy-routes.json)、[待核对账本](migration-ledger.json)：原先 511 个注册操作清单保留作比对；不是当前行为完整性或接口等价证明。
-- [前端规范](specs/grow-native-web/spec.md)、[后端规范](specs/grow-platform-services/spec.md)、[兼容规范](specs/grow-compatibility-gates/spec.md)。
+记录/目标/基础计划/任务等已有 Zook主数据与合同。通用 sync push运行时当前只执行task命令，不能按枚举名推定全部实体都支持push。学习目录仍有旧来源镜像，私人笔记/答案/学完仍依赖来源回执，需要专门迁移权威和兼容旧客户端。
 
-## 发布约束
+已完成的旧接入清理见[历史验证记录](cleanup-verification.md)。本轮只调整规划和入口文档，没有修改App、后端合同/运行时、迁移数据或发布；新React页面与原生学习权威仍待实施。
 
-所有后端改动遵循 Zook `AGENTS.md`、`CLAUDE.md`：最新 main → feature → main → release_dev.sh → dev 验证 → 同一已验证 SHA release_online.sh。前后端固定产物组合，合同、生成结果、文档和测试同轮交付。
+## 阅读入口
 
-本目录为可提交规划；`openspec/changes/grow-zook-native-web` 的忽略镜像同步维护。未完成任务不得因删除菜单或移除旧服务而标为完成。
+- [后端与同步设计](design.md)、[范围](proposal.md)、[实施任务](tasks.md)。
+- [当前源码摘要](current-grow-source-inventory.json)：283个业务/前端源码文件、431个AST路由声明；不等于注册HTTP操作数。
+- [历史API清单](legacy-routes.json)、[行为迁移账本](migration-ledger.json)：历史511个操作仍待与当前源码及行为逐项核对。
+- [Web规范](specs/grow-native-web/spec.md)、[平台接入规范](specs/grow-platform-services/spec.md)、[同步兼容规范](specs/grow-compatibility-gates/spec.md)。
+
+所有后端遵循 Zook AGENTS/CLAUDE、唯一OpenAPI、文档同轮更新和 main→dev→同SHA online。前端产物与双端合同快照固定版本；原生二进制发布另行验收。本目录与本地忽略的OpenSpec镜像同步，不把规划校验当功能验收。

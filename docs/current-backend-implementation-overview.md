@@ -3,8 +3,8 @@
 ## Grow 原生重构与旧接入清理（2026-11-02，本地候选）
 
 当前工作区已移除此前导入的 Grow Python 运行副本、第四服务部署组、源码锁和 Admin Python 代理。
-Grow 前端仍在独立仓库，计划采用 React/TypeScript 重构；后端按 Zook 多 App 框架新增 Grow 产品模块，复用平台公共能力。
-新 Grow App 注册和 `/api/v1/grow/...` 合同尚未实现，现有 LightTick 业务合同保留；此变更不代表服务器已发布或历史资源已退役。
+Grow 前端仍在独立仓库，计划采用 React/TypeScript 重构；后端作为既有 LightTick 产品的 Web 端能力扩展，复用平台公共能力。
+沿用现有 LightTick appId 与 `/api/v1/lighttick/...`，不注册独立 Grow App。学习来源权威原生化及同步覆盖仍待实施；此规划修订不代表服务器已发布或历史资源已退役。
 架构、功能保持和阶段验收见 [Grow 重构规划](plans/grow-zook-native-web/README.md)。
 
 ## BodyLog 小组邀请码闭环（2026-11-01）

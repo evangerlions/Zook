@@ -1,26 +1,27 @@
 ## Why
 
-此前通过复制 Grow Python 源码、第四服务和代理实现的部署不符合目标。用户要求删除这些接入，并将 Grow 前端用 React 或 Vue 重构，后端作为 Zook 多 App 框架中的产品模块原生实现。需要保留业务功能和数据语义，同时为新增模块、数据源、AI 场景及客户端提供稳定边界。
+Grow 是 LightTick 的 Web 端。上一版独立 App/数据/API的提议会拆开既有三端主数据，应撤销；现有前端需React重构，旧Python业务在Zook按LightTick领域原生实现并完成来源权威切换。目标是保持现有功能与离线恢复，支持多端共享对象及未来模块扩展。
 
 ## What Changes
 
-- Grow 前端源码保留独立仓库，推荐 React + TypeScript + Vite 静态 SPA；分批重写页面，旧页面仅作功能对照，不作为新运行时依赖。
-- Grow 作为独立产品 namespace，新增 `/api/v1/grow/...` 与 `src/modules/grow`；具体 appId 由 Zook app registry 配置，不假定 URL namespace 就是 token 中 appId。
-- 共享认证、应用成员关系、配置、模型路由、文件、任务和日志；保留 LightTick 现有合同和权威数据，跨产品协作使用显式授权接口。
-- 已清理当前工作区的 `services/grow` 及专用源码锁、部署组、Compose/Python 构建、代理和相关测试；提取 LightTick 共用 env 解析工具。
-- 用功能/状态/数据/异常四类验收覆盖记录、计划、行动、学习、阅读、认知、知识、投资和研究；兼容的是用户可观察结果，不机械复制全部旧接口。
-- 按纵向切片实现新合同、服务/仓储、React 页面和验收，全部通过前不宣布整体重构完成。
+- Grow前端源码留原仓库，以React/TypeScript/Vite静态SPA重构；iOS/Android保留原生和本机模式。
+- 沿用LightTick appId/membership、canonical `/api/v1/lighttick/...`、领域模块及现有主数据，不新建grow App或平行合同。
+- 复用records/manual/planning/tasks/actions等已验证行为；学习内容/私人学习/知识/认知/投资/研究缺口在LightTick内新增子领域，而非另建服务。
+- 逐实体建立命令、持久回执、变更日志、pull投影、客户端缓存/冲突覆盖矩阵；现有通用push只处理task，其他领域先保留各自提交机制，不宣称全量同步已存在。
+- 课程与私人学习从旧来源镜像/命令回执切为Zook原生权威，保留同ID、版本和旧App合同；按owner+module冻结、对账、切epoch，拒绝迟到旧写。
+- 既有旧Python部署清理保留；不恢复源码副本/第四服务/代理，不新增SSR或独立后端。
+- 同步产品主文档入口、联合规划与历史标准边界，不改写历史批次验收证据。
 
 ## Capabilities
 
 ### New Capabilities
-- `grow-native-web`: 分仓 React 静态前端、路由/会话/状态隔离、版本化产物。
-- `grow-platform-services`: 独立 Grow 产品模块和 Zook 多 App 公共能力、数据及任务。
-- `grow-compatibility-gates`: 现有功能账本、黄金结果、历史数据迁移、回退与存量产品回归。
+- `grow-native-web`: 分仓React静态前端、同产品普通用户会话、固定产物与版本兼容。
+- `grow-platform-services`: LightTick多端共享领域服务、内容权威原生化和平台能力复用。
+- `grow-compatibility-gates`: 逐实体同步、离线/冲突恢复、旧来源与旧客户端兼容、全功能与发布门禁。
 
 ### Modified Capabilities
-无。既有产品合同保持兼容；共享业务提取必须单独验证，不能通过改写 LightTick 语义实现 Grow。
+无。已有合同通过加法方式扩展，既有字段、状态/完成和幂等语义保持兼容。
 
 ## Impact
 
-前端实现仅在 `/Volumes/肖豪/project/grow`。Zook 业务代码、路由、迁移、worker、合同、客户端和文档按其目录及发布规范交付；无新增 Grow 服务或 Python 后端。当前没有注册新 App、迁移历史数据或发布新前端；旧服务器资源与部署状态须单独核验。
+前端归Grow，原生归plan内客户端，业务/数据库/AI/API唯一归Zook。产品与联合验收见[统一架构](../../../../plan/docs/04-planning/grow-lighttick-unified-architecture-2026-11-02.md)。本轮只变更规划，不实现新接口、改账号或自动迁入私人历史。
