@@ -126,8 +126,9 @@ test("Sentry native crash envelopes retain large binary attachments and enforce 
   const request = { path: "/telemetry/sentry/api/42/envelope/", contentType: "application/x-sentry-envelope", sentryAuth: "Sentry sentry_key=public-key" };
   assert.equal((await gateway.handle(createRequest({ ...request, body: envelope }))).statusCode, 200);
   assert.deepEqual(forwarded, envelope);
-  assert.equal((await gateway.handle(createRequest({ ...request, body: Buffer.alloc(20 * 1024 * 1024 + 1) }))).statusCode, 413);
-  assert.equal(calls, 1);
+  assert.equal((await gateway.handle(createRequest({ ...request, body: Buffer.alloc(8 * 1024 * 1024) }))).statusCode, 200);
+  assert.equal((await gateway.handle(createRequest({ ...request, body: Buffer.alloc(8 * 1024 * 1024 + 1) }))).statusCode, 413);
+  assert.equal(calls, 2);
 });
 
 test("gateway rejects unavailable and non-allowlisted destinations before reading the body", async () => {
