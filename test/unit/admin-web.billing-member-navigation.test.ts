@@ -22,6 +22,7 @@ async function routeHarness() {
     "react/jsx-runtime": { jsx, jsxs: jsx },
     "antd": { Alert: "Alert", Select: "Select", Space: "Space", Tabs: "Tabs" },
     "../lib/billing-terms": terms,
+    "../components/billing-scope-filter": { BillingScopeFilter: "ScopeFilter" },
     "../lib/billing-preferences": { loadBillingEnvironment: () => "SANDBOX", saveBillingEnvironment: () => {} },
     "../lib/admin-session": { useAdminSession: () => ({ completeWorkspaceTransition: () => {} }) },
     "../lib/billing-admin-api": { billingAdminApi: {} },
@@ -43,7 +44,7 @@ async function routeHarness() {
 test("member drilldown selects actual app, user and orders tab while preserving sandbox", async () => {
   const view = await routeHarness();
   let tree = view.render();
-  view.find(tree, "Select").props.onChange("all");
+  view.find(tree, "ScopeFilter").props.onAppChange("all");
   tree = view.render();
   let tabs = view.find(tree, "Tabs");
   tabs.props.items.find((item: any) => item.key === "members").children.props.onOpenPayments({ appId: "another_app", userId: "user-123" });
@@ -51,7 +52,7 @@ test("member drilldown selects actual app, user and orders tab while preserving 
   tabs = view.find(tree, "Tabs");
   const orders = tabs.props.items.find((item: any) => item.key === "orders").children;
   assert.equal(tabs.props.activeKey, "orders");
-  assert.equal(view.find(tree, "Select").props.value, "another_app");
+  assert.equal(view.find(tree, "ScopeFilter").props.appId, "another_app");
   assert.equal(orders.props.appId, "another_app");
   assert.equal(orders.props.environment, "SANDBOX");
   assert.equal(orders.props.initialUserId, "user-123");

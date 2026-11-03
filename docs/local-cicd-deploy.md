@@ -62,6 +62,20 @@ cp deploy_configs/dev.env.example deploy_configs/dev.env
 1. 作为部署脚本的参数来源
 2. 作为容器运行时的 `env_file`
 
+配置支付宝时，部署脚本从同一份容器 env 文件读取已有的支付环境和两个密钥路径，
+自动为 `api`、`worker` 添加只读 bind mount；`admin-web` 不挂载密钥。
+宿主机目录按支付环境确定，不新增 env 字段：
+
+- `sandbox`：部署用户的 `~/.zook/secrets/ainovel-alipay/sandbox`
+- `production`：部署用户的 `~/.zook/secrets/ainovel-alipay/production`
+
+目录内保留 `app-private-key.pem`、`alipay-public-key.pem`，容器内路径分别为
+`/run/secrets/ainovel-alipay/app-private-key.pem` 和
+`/run/secrets/ainovel-alipay/alipay-public-key.pem`。文件必须能被容器的 `node` 用户
+（UID 1000）读取；密钥不进入仓库或镜像。部署前会检查文件存在且可读，缺失时停止，
+不会自动创建空密钥目录。挂载配置生成在槽位的 `.deploy/<slot>/alipay-keys.compose.json`，
+供正常部署、回滚和 Grow 发布快照共用。未配置支付宝的部署不增加挂载。
+
 容器网络统一使用 Docker 默认 bridge 网络。若 Redis / PostgreSQL 部署在宿主机上，
 请在 `REDIS_URL` / `DATABASE_URL` 中使用 `host.docker.internal`，并确保宿主机服务
 监听的是容器可达地址，而不是只监听 `127.0.0.1`。
@@ -101,7 +115,7 @@ npm run smoke:frogsleep-zook
 建议在服务器上只保留一个仓库目录，例如：
 
 ```bash
-/home/ubuntu/app/zook
+/home/ubuntu/app/Zook
 ```
 
 不要再为不同分支维护不同目录。分支和 commit 由部署脚本自己切换。
@@ -109,7 +123,7 @@ npm run smoke:frogsleep-zook
 先准备运行环境：
 
 ```bash
-cd /home/ubuntu/app/zook
+cd /home/ubuntu/app/Zook
 cp deploy_configs/online.env.example deploy_configs/online.env
 cp deploy_configs/dev.env.example deploy_configs/dev.env
 sudo mkdir -p /var/lib/zook/appRunData
@@ -139,6 +153,27 @@ python3
 ```
 
 ## 手工发布命令
+
+### 部署脚本有更新时的首次发布
+
+当前部署入口会先加载 Python 脚本，再在同一进程里切换 Git checkout；切换代码
+不会重新加载已经运行的部署脚本。新增密钥挂载等部署逻辑时，必须先准备服务器 checkout，
+再触发 release webhook，确保首次发布就执行新脚本。
+
+先将待发布功能合回并推送 `origin/main`，记录已验证的 main SHA。确认服务器没有进行中的
+部署且 checkout 干净，然后在服务器执行：
+
+```bash
+cd /home/ubuntu/app/Zook
+git fetch origin --tags
+git checkout --detach <已验证的_origin/main_SHA>
+```
+
+这一步更新部署脚本及其依赖模块，现有容器继续运行。随后在本地按仓库发布规范执行
+`./release_dev.sh`；webhook 或下面的手工命令必须使用它生成的 `release-dev` SHA。
+不得把功能分支直接作为 release 来源。
+
+### 执行部署
 
 发布某个分支最新代码：
 
@@ -205,7 +240,7 @@ verify webhook -> exec build_and_push_docker.py --branch <branch> --commit <sha>
 推荐的命令行应该是：
 
 ```bash
-cd /home/ubuntu/app/zook && python3 build_scripts/build_and_push_docker.py --branch release-online --commit <commit_sha> --slot online --env-file deploy_configs/online.env --app-env-file deploy_configs/online.env
+cd /home/ubuntu/app/Zook && python3 build_scripts/build_and_push_docker.py --branch release-online --commit <commit_sha> --slot online --env-file deploy_configs/online.env --app-env-file deploy_configs/online.env
 ```
 
 如果你的 CICD 服务仍然是 Node/Express，可以把执行命令收敛成这种形式：
@@ -216,7 +251,7 @@ const branch = req.body?.ref?.split('/')?.pop();
 const commitSha = req.body?.after || req.body?.head_commit?.id;
 
 const repoPathByName: Record<string, string> = {
-  zook: '/home/ubuntu/app/zook',
+  zook: '/home/ubuntu/app/Zook',
 };
 
 const supportBranchByRepo: Record<string, string[]> = {
@@ -254,7 +289,7 @@ execCommand(command, (code, out) => {
 如果服务器上的实际路径不一样，可以在 cicd 服务的环境变量里覆盖：
 
 ```bash
-LOCAL_DEPLOY_REPO_PATH_ZOOK=/home/ubuntu/app/zook
+LOCAL_DEPLOY_REPO_PATH_ZOOK=/home/ubuntu/app/Zook
 LOCAL_DEPLOY_SCRIPT_PATH_ZOOK=build_scripts/build_and_push_docker.py
 LOCAL_DEPLOY_ENV_FILE_ZOOK_ONLINE=deploy_configs/online.env
 LOCAL_DEPLOY_APP_ENV_FILE_ZOOK_ONLINE=deploy_configs/online.env

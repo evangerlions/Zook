@@ -6,8 +6,10 @@ import { readAlipayMembership } from "./ainovel-alipay-projection.ts";
 import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 import { selectStoreMembership, storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
 import type { AlipayOptions } from "../modules/billing/alipay-models.ts";
+import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
 import { syncMembership } from "./ainovel-billing-sync.ts";
 import { syncRevenueCatMembership } from "./ainovel-revenuecat-membership-sync.ts";
+import { persistRevenueCatSnapshot } from "./ainovel-revenuecat-snapshot-persistence.ts";
 import type { MembershipSyncInput, MembershipSyncResult } from "../modules/billing/membership-sync.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type {
@@ -49,6 +51,7 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 
 export interface AiNovelBillingServiceOptions {
   alipay?: AlipayOptions;
+  readAlipayPrices?: () => Promise<AlipayPrices | undefined>;
   secretApiKey?: string;
   revenueCatProjectId?: string;
   webhookAuthorization?: string;
@@ -85,7 +88,8 @@ export class AiNovelBillingService {
     this.revenueCatGoogleAppId = options.revenueCatGoogleAppId?.trim();
     this.allowSandbox = options.allowSandbox ?? false;
     this.now = options.now ?? (() => new Date());
-    this.alipay = new AiNovelAlipayService(database, options.alipay ?? {}, user => this.getMembership(user), logger);
+    this.alipay = new AiNovelAlipayService(database, options.alipay ?? {}, user => this.getMembership(user), logger,
+      options.readAlipayPrices ?? (async () => undefined));
   }
 
   private readonly webhookAuthorization: string | undefined;
@@ -110,7 +114,8 @@ export class AiNovelBillingService {
       revenuecat: () => syncRevenueCatMembership(input, {
       logger: this.logger,
       fetchSnapshot: () => this.fetchSnapshot(input.userId, input.signal, input.requestId),
-      persistSnapshot: (snapshot) => this.persistSnapshot(snapshot),
+      persistSnapshot: (snapshot, transactionId) => persistRevenueCatSnapshot(this.database, snapshot,
+        () => this.writeSnapshot(snapshot), transactionId),
       getMembership: () => this.getMembership(input.userId),
       now: this.now,
     }),
@@ -376,14 +381,6 @@ export class AiNovelBillingService {
     const payload = await this.customerApi.getSnapshot(userId, signal, requestId);
     return normalizeRevenueCatSnapshot(payload, userId, this.now(), {
       allowSandbox: this.allowSandbox,
-    });
-  }
-
-  private async persistSnapshot(snapshot: NormalizedRevenueCatSnapshot): Promise<void> {
-    await this.database.withExclusiveSession(async () => {
-      const user = await this.database.findAppUser(APP_ID, snapshot.membership.userId);
-      if (!user || user.status !== "ACTIVE") return;
-      await this.writeSnapshot(snapshot);
     });
   }
 

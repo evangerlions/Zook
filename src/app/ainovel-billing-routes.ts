@@ -62,11 +62,12 @@ export async function tryHandleAiNovelBillingRoutes(
   if (!auth && regionHeader !== undefined && !guestRegion) {
     throw new ApplicationError(400, "REQ_INVALID_QUERY", "X-App-Region must be CN or GLOBAL.");
   }
+  const alipayCatalog = await this.aiNovelBillingService.alipay.checkoutCatalog();
   const input: AiNovelBillingCatalogInput = {
     locale: this.resolveRequestLocale(request),
     benefitsConfig: (await this.database.findAppConfig("ai_novel", BILLING_BENEFITS_CONFIG_KEY))?.configValue,
-    alipayAvailable: this.aiNovelBillingService.alipay.available,
-    alipayPrices: Object.fromEntries((["plus_monthly", "plus_quarterly", "plus_yearly", "pro_monthly", "pro_quarterly", "pro_yearly"] as const).map(key => [key, this.aiNovelBillingService.alipay.price(key)])),
+    alipayAvailable: alipayCatalog.available,
+    alipayPrices: alipayCatalog.prices,
     accountRegion: auth ? await this.resolveAccountRegion(
       request,
       "ai_novel",

@@ -12,13 +12,13 @@ test("fresh HTTP settles successful calls without client confirmation; failures 
   process.env.ZOOK_LOCAL_FILE_LOGS = "1";
   process.env.ZOOK_LOG_DIR = logRoot;
   const fixture = await startCreditsHttpRuntime();
-  const headers = { authorization: `Bearer ${fixture.token}`, "X-App-Id": "ai_novel", "Content-Type": "application/json", "Accept-Language": "zh-CN" };
+  const headers = { authorization: `Bearer ${fixture.token}`, "X-App-Id": "ai_novel", "X-App-Version": "1.6.0+1060002", "Content-Type": "application/json", "Accept-Language": "zh-CN" };
   const api = async (path: string, body?: object) => {
     const response = await fetch(fixture.url + "/api/v1/ai_novel/" + path, { headers, method: body ? "POST" : "GET", ...(body ? { body: JSON.stringify(body) } : {}) });
     return { status: response.status, ...await response.json() };
   };
-  const chat = async (jobId: string, content = "write") => {
-    const response = await fetch(fixture.url + "/api/v1/ai_novel/ai/chat-completions", { headers, method: "POST", body: JSON.stringify(encryptCreditsFixture({ sceneKey: "write_turn", agentProtocol: "pi-v1", messages: [{ role: "user", content }], context: { billingJobId: jobId }, stream: true })) });
+  const chat = async (jobId: string, content = "write", version = headers["X-App-Version"], sceneKey = "write_turn") => {
+    const response = await fetch(fixture.url + "/api/v1/ai_novel/ai/chat-completions", { headers: { ...headers, "X-App-Version": version }, method: "POST", body: JSON.stringify(encryptCreditsFixture({ sceneKey, agentProtocol: "pi-v1", messages: [{ role: "user", content }], context: { billingJobId: jobId }, stream: true })) });
     const text = await response.text();
     const events = text.split("\n").filter((line) => line.startsWith("data: ")).map((line) => decodeCreditsFixture(JSON.parse(line.slice(6)))).map((event) => event.data ?? event);
     return { status: response.status, events };
@@ -63,6 +63,24 @@ test("fresh HTTP settles successful calls without client confirmation; failures 
     assert.deepEqual(denied.events.slice(-2).map((e: any) => e.type), ["client_action", "done"]);
     assert.ok(denied.events.slice(0, -2).every((e: any) => e.type === "content_delta"));
     const deniedText = denied.events.slice(0, -2).map((event: any) => event.text).join("");
+    const legacy = await chat("legacy-denied", "write", "1.5.0+1040101");
+    const legacyText = "创作点已用完。请更新至最新版本后开通或升级会员，也可以等待额度刷新。";
+    assert.equal(legacy.events.at(-1)?.type, "done");
+    assert.ok(legacy.events.slice(0, -1).every((event: any) => event.type === "content_delta"));
+    assert.equal(legacy.events.slice(0, -1).map((event: any) => event.text).join(""), legacyText);
+    const legacyImport = await chat("legacy-import", "write", "1.5.0+1040101", "import_book_agent");
+    assert.deepEqual(legacyImport.events.map((event: any) => event.type), ["tool_call_delta", "error"]);
+    assert.equal(legacyImport.events[0].text, legacyText);
+    assert.equal(legacyImport.events[1].payload.message, legacyText);
+    const modernImport = await chat("modern-import", "write", "1.6.0", "import_book_agent");
+    assert.deepEqual(modernImport.events.slice(-2).map((event: any) => event.type), ["client_action", "done"]);
+    for (const [path, body] of [
+      ["ai/chat-completions", { sceneKey: "write_turn", messages: [{ role: "user", content: "write" }], stream: false }],
+      ["ai/embeddings", { sceneKey: "memory_embedding", input: ["memory"] }],
+    ] as const) {
+      const response = await fetch(fixture.url + "/api/v1/ai_novel/" + path, { headers: { ...headers, "X-App-Version": "1.5.0+1040101" }, method: "POST", body: JSON.stringify(encryptCreditsFixture(body)) });
+      assert.equal(decodeCreditsFixture(await response.json()).message, legacyText);
+    }
     for (const [path, body] of [
       ["ai/chat-completions", { sceneKey: "write_turn", messages: [{ role: "user", content: "write" }], context: { billingJobId: "complete-denied" }, stream: false }],
       ["ai/embeddings", { sceneKey: "memory_embedding", input: ["memory"], context: { billingJobId: "embed-denied" } }],

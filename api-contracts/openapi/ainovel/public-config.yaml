@@ -351,25 +351,33 @@ components:
       properties:
         revenueCat:
           $ref: "#/components/schemas/RevenueCatPublicConfig"
+        alipay:
+          $ref: "#/components/schemas/AlipayPublicPricingConfig"
+    AlipayPublicPricingConfig:
+      type: object
+      additionalProperties: false
+      required: [prices]
+      properties:
+        prices:
+          type: object
+          description: Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.
+          additionalProperties: false
+          required: [plus_monthly, plus_quarterly, plus_yearly, pro_monthly, pro_quarterly, pro_yearly]
+          properties:
+            plus_monthly: { type: integer, minimum: 1, maximum: 999999999999 }
+            plus_quarterly: { type: integer, minimum: 1, maximum: 999999999999 }
+            plus_yearly: { type: integer, minimum: 1, maximum: 999999999999 }
+            pro_monthly: { type: integer, minimum: 1, maximum: 999999999999 }
+            pro_quarterly: { type: integer, minimum: 1, maximum: 999999999999 }
+            pro_yearly: { type: integer, minimum: 1, maximum: 999999999999 }
     RevenueCatPublicConfig:
       type: object
       additionalProperties: false
-      required: [enabled, configVersion, proxyUrl, publicSdkKeys]
       properties:
-        enabled: { type: boolean }
-        configVersion: { type: string, minLength: 1 }
         proxyUrl:
           type: [string, "null"]
           format: uri
           description: Optional RevenueCat SDK proxy URL. Must be applied before SDK setup.
-        publicSdkKeys:
-          type: object
-          additionalProperties: false
-          required: [ios, android, web]
-          properties:
-            ios: { type: [string, "null"], minLength: 1 }
-            android: { type: [string, "null"], minLength: 1 }
-            web: { type: [string, "null"], minLength: 1 }
     PublicConfigData:
       type: object
       required: [appId, config]

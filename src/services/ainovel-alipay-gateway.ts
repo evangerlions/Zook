@@ -26,32 +26,24 @@ export class OfficialAlipayGateway implements AlipayGateway {
       total_amount: (order.amountMinor / 100).toFixed(2), subject: alipayProductName(order.productKey),
       time_expire: new Date(Date.parse(order.expiresAt) + 8 * 3600000).toISOString().slice(0, 19).replace("T", " "),
       product_code: order.platform === "android" ? "QUICK_MSECURITY_PAY" : "QUICK_WAP_WAY" };
-    const params = { bizContent, notifyUrl: this.options.notifyUrl, returnUrl: this.options.returnUrl };
+    const callbacks = this.options.environment === "sandbox" ? {} :
+      { notifyUrl: this.options.notifyUrl, returnUrl: this.options.returnUrl };
+    const params = { bizContent, ...callbacks };
     if (order.platform === "android") return { type: "app", orderString: sdk.sdkExecute("alipay.trade.app.pay", params) };
     if (order.platform === "web" && order.checkoutMode === "mobile_web") {
       return { type: "page", url: sdk.pageExecute("alipay.trade.wap.pay", "GET", params) };
     }
-    if (order.platform === "web" && order.checkoutMode === "desktop_web") {
+    if ((order.platform === "web" || order.platform === "windows") && order.checkoutMode === "desktop_web") {
       // No returnUrl: the cashier must not navigate the merchant's parent page.
       // Order query/notify remains the only settlement authority.
       return { type: "page", url: sdk.pageExecute("alipay.trade.page.pay", "GET", {
-        notifyUrl: this.options.notifyUrl,
+        ...(this.options.environment === "sandbox" ? {} : { notifyUrl: this.options.notifyUrl }),
         bizContent: { ...bizContent, product_code: "FAST_INSTANT_TRADE_PAY", qr_pay_mode: "4", qrcode_width: 220 },
       }) };
     }
-    try {
-      const { product_code: _unused, ...qrContent } = bizContent;
-      const result = await sdk.exec("alipay.trade.precreate", {
-        bizContent: qrContent, notifyUrl: this.options.notifyUrl,
-      }, { validateSign: true });
-      if (result.code !== "10000" || result.out_trade_no !== order.orderId || typeof result.qr_code !== "string" || !result.qr_code.trim()) {
-        throw new Error("Invalid QR evidence");
-      }
-      return { type: "qr", qrCode: result.qr_code };
-    } catch {
-      throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay QR checkout unavailable.");
-    }
+    throw new ApplicationError(400, "REQ_INVALID_BODY", "Unsupported Alipay checkout mode.");
   }
+
   async query(orderId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
     signal?.throwIfAborted();
     try {
@@ -69,18 +61,4 @@ export class OfficialAlipayGateway implements AlipayGateway {
     if (fields.sign_type !== "RSA2" || !fields.sign) return false;
     return (await this.client()).checkNotifySignV2(fields);
   }
-}
-export function alipayEnvironmentOptions(): AlipayOptions {
-  const environment = process.env.ALIPAY_AI_NOVEL_ENVIRONMENT;
-  let prices: AlipayOptions["prices"];
-  if (process.env.ALIPAY_AI_NOVEL_PRICES_JSON) {
-    try { prices = JSON.parse(process.env.ALIPAY_AI_NOVEL_PRICES_JSON); }
-    catch { prices = {} as NonNullable<AlipayOptions["prices"]>; }
-  }
-  return { enabled: process.env.ALIPAY_AI_NOVEL_ENABLED === "true",
-    prices, pricesApproved: process.env.ALIPAY_AI_NOVEL_PRICES_APPROVED === "true",
-    appId: process.env.ALIPAY_AI_NOVEL_APP_ID, sellerId: process.env.ALIPAY_AI_NOVEL_SELLER_ID?.trim() || undefined,
-    notifyUrl: process.env.ALIPAY_AI_NOVEL_NOTIFY_URL, returnUrl: process.env.ALIPAY_AI_NOVEL_RETURN_URL,
-    privateKeyPath: process.env.ALIPAY_AI_NOVEL_PRIVATE_KEY_PATH, publicKeyPath: process.env.ALIPAY_AI_NOVEL_PUBLIC_KEY_PATH,
-    environment: environment === "production" || environment === "sandbox" ? environment : undefined };
 }

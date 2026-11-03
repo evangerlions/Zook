@@ -62,7 +62,10 @@ test("missed weeks never accumulate and gifts survive; stale snapshots cannot re
   const next = refreshCreditsAccount(account, { tier: "pro", anchorAt: anchor, observedAt: "2027-01-01T00:00:00Z" }, new Date("2027-01-01T00:00:00Z"));
   assert.equal(next.periodicMicros, "4000000000");
   assert.equal(next.giftMicros, "7000000");
-  assert.throws(() => refreshCreditsAccount(next, { tier: "plus", observedAt: anchor }, new Date("2027-01-01T00:00:00Z")));
+  assert.throws(() => refreshCreditsAccount(next, { tier: "plus", observedAt: anchor }, new Date("2027-01-01T00:00:00Z")), {
+    statusCode: 409,
+    code: "AINOVEL_CREDITS_ENTITLEMENT_STALE",
+  });
 });
 
 test("each account has an independent anchor; exact week boundary advances once", () => {

@@ -3,6 +3,7 @@ import test from "node:test";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
+import { applyBillingEnvironmentFixture } from "./support/ainovel-billing-fixture.ts";
 import { PostgresAiNovelBillingStore } from "../../src/infrastructure/database/postgres/postgres-ainovel-billing.ts";
 import type { AiNovelBillingMembershipRecord } from "../../src/shared/types/ainovel-billing.ts";
 
@@ -19,6 +20,7 @@ test("billing credit anchor migration is idempotent and persists across connecti
     await client.query(base);
     await client.query(migration);
     await client.query(migration);
+    await applyBillingEnvironmentFixture(client);
     const store = new PostgresAiNovelBillingStore((sql, values) => client.query(sql, values));
     const record: AiNovelBillingMembershipRecord = { appId: "ai_novel", userId: "u", active: true, state: "active",
       tier: "plus", planKey: "plus_monthly", expiresAt: "2026-11-06T15:00:00Z", autoRenew: true, source: "app_store",

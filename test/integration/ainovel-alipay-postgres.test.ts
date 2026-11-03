@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { Client } from "pg";
+import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
+import { applyBillingEnvironmentFixture } from "./support/ainovel-billing-fixture.ts";
 import { PostgresAlipayOrders } from "../../src/infrastructure/database/postgres/postgres-alipay-orders.ts";
 import { PostgresAiNovelBillingStore } from "../../src/infrastructure/database/postgres/postgres-ainovel-billing.ts";
 import { queryBillingRevenue } from "../../src/infrastructure/database/postgres/postgres-billing-admin.ts";
@@ -32,6 +34,7 @@ test("Alipay migrations and repositories preserve checkout identity, access and 
     for (const name of migrations) {
       await client.query(await readFile(new URL(`../../src/infrastructure/database/postgres/migrations/${name}.sql`, import.meta.url), "utf8"));
     }
+    await applyBillingEnvironmentFixture(client);
     const query = (sql: string, values?: unknown[]) => client.query(sql, values);
     const orders = new PostgresAlipayOrders(query);
     const financial = new PostgresAiNovelBillingStore(query);
@@ -60,26 +63,31 @@ test("Alipay migrations and repositories preserve checkout identity, access and 
     order.paidAt = "2026-10-04T01:01:00.000Z";
     order.providerTransactionId = "202610040000000001";
     order.membershipApplied = true;
+    order.membershipStartsAt = order.paidAt;
     order.membershipExpiresAt = "2026-11-04T01:01:00.000Z";
     await orders.save(order);
     await orders.save(order);
     await financial.upsertTransaction(alipayTransaction(order, order.paidAt));
     await financial.upsertTransaction(alipayTransaction(order, order.paidAt));
-    assert.equal((await orders.listAccess(order.userId, order.paidAt)).length, 1);
+    assert.equal((await inBillingEnvironment("sandbox", () => orders.listAccess(order.userId, order.paidAt!))).length, 1);
     const transactions = await financial.listTransactions("ai_novel", order.userId);
     assert.equal(transactions.length, 1);
     assert.equal(transactions[0].createdAt, order.createdAt);
     assert.equal(transactions[0].providerOrderId, order.providerTransactionId);
     assert.deepEqual(await queryBillingRevenue(query, filter), [{ date: "2026-10-04", appId: "ai_novel",
-      source: "alipay", currency: "CNY", purchaseCount: 1, grossMinor: 3800, refundMinor: 0 }]);
+      source: null, market: null, productKey: null, currency: "CNY", purchaseCount: 1, grossMinor: 3800, refundMinor: 0 }]);
     await assert.rejects(orders.save({ ...order, userId: "other_user", idempotencyKey: "other_checkout",
       orderId: `alp_${"c".repeat(32)}` }), (error: unknown) => (error as { code?: string }).code === "23505");
     order.accountDeletedAt = "2026-10-04T02:00:00.000Z";
     await orders.save(order);
     await financial.upsertTransaction(alipayTransaction(order, order.accountDeletedAt));
-    assert.equal((await orders.listAccess(order.userId, order.paidAt)).length, 0);
+    assert.equal((await inBillingEnvironment("sandbox", () => orders.listAccess(order.userId, order.paidAt!))).length, 0);
     assert.equal((await orders.findOrder(order.orderId))?.status, "paid");
     assert.equal((await queryBillingRevenue(query, filter))[0].grossMinor, 3800);
+    // Identical provider transaction IDs in the other environment are separate.
+    await financial.upsertTransaction({ ...alipayTransaction(order, order.accountDeletedAt), isSandbox: false, amountMinor: 4900 });
+    assert.equal((await queryBillingRevenue(query, filter))[0].grossMinor, 3800);
+    assert.equal((await queryBillingRevenue(query, { ...filter, sandbox: false }))[0].grossMinor, 4900);
   } finally {
     // Only the generated schema inside the explicitly isolated test database.
     await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
