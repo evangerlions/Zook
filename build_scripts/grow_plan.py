@@ -51,12 +51,16 @@ def prepare(repo, slot, api_env_file, environ=None):
     for key in ('DATABASE_URL', 'ACCOUNT_ENCRYPTION_KEY', 'APP_PASSWORD', 'GROW_PUBLIC_URL', 'LIGHTTICK_BRIDGE_URL', 'GROW_ACTION_BRIDGE_SECRET'):
         if not grow.get(key):
             raise ValueError('Missing Grow runtime variable: '+key)
-    if database_name(grow['DATABASE_URL']) == database_name(api.get('DATABASE_URL', '')):
+    backend = grow.get('PLAN_CONTENT_BACKEND')
+    dedicated_schema = bool(re.fullmatch(r'grow_[a-z0-9_]{1,58}', grow.get('GROW_DATABASE_SCHEMA', '')))
+    if backend == 'postgresql' and not dedicated_schema:
+        raise ValueError('PostgreSQL content requires a dedicated GROW_DATABASE_SCHEMA (grow_*).')
+    if database_name(grow['DATABASE_URL']) == database_name(api.get('DATABASE_URL', '')) and not (backend == 'postgresql' and dedicated_schema):
         raise ValueError('Grow and Zook must use distinct database names.')
     if len(grow['APP_PASSWORD']) < 24:
         raise ValueError('Grow initial APP_PASSWORD must have at least 24 characters.')
-    if grow.get('PLAN_CONTENT_BACKEND') != 'github' or grow.get('WEB_CONCURRENCY', '1') != '1' or grow.get('CLOUD_DEPLOY') != '1':
-        raise ValueError('Grow requires github storage, one worker and HTTPS-proxy mode.')
+    if backend not in ('github', 'postgresql') or grow.get('WEB_CONCURRENCY', '1') != '1' or grow.get('CLOUD_DEPLOY') != '1':
+        raise ValueError('Grow requires github/postgresql storage, one worker and HTTPS-proxy mode.')
     if not grow.get('FORWARDED_ALLOW_IPS') or '*' in grow['FORWARDED_ALLOW_IPS']:
         raise ValueError('Set FORWARDED_ALLOW_IPS to the controlled HTTPS proxy addresses, never wildcard trust.')
     for key in ('GROW_PUBLIC_URL', 'LIGHTTICK_BRIDGE_URL'):

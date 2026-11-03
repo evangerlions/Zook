@@ -130,14 +130,14 @@ class GitHubPlans(Plans):
             if row:
                 for rel in json.loads(row[0]).get('hashes', {}): guards[rel] = self.hash(rel)
         journal = {'state': 'pending', 'request': digest(encoded(request)), 'files': changes,
-                   'sql': sql, 'result': result, 'backend': 'github', 'created_at': now(),
+                   'sql': sql, 'result': result, 'backend': getattr(self.content, 'backend', 'github'), 'created_at': now(),
                    'repository': self.content.repository, 'branch': self.content.branch, 'guards': guards}
         self.put('learning_publications', key, journal)
         self.finish(key, journal)
         return journal['result']
 
     def finish(self, key, journal):
-        if journal.get('backend') != 'github':
+        if journal.get('backend') != getattr(self.content, 'backend', 'github'):
             fail('conflict', '发现旧本地发布任务，请先在原存储模式完成恢复。')
         if (journal['repository'], journal['branch']) != (self.content.repository, self.content.branch):
             fail('conflict', '发布任务属于其他内容仓库，不能自动重放。')
@@ -170,7 +170,7 @@ class GitHubPlans(Plans):
                     fail('conflict', 'GitHub 提交校验失败，请人工核对。')
             self.local.head = None
             result = journal['result']
-            result.update(storage='github', commit_sha=candidate)
+            result.update(storage=getattr(self.content, 'backend', 'github'), commit_sha=candidate)
             if result.get('path'): result['github_url'] = self.content.url(result['path'], candidate)
             elif result.get('plan_id'):
                 result['github_url'] = self.content.url(self.base(result['plan_id'])+'/学习规划.md', candidate)
@@ -180,7 +180,7 @@ class GitHubPlans(Plans):
                 values = list(parameters)
                 if statement.startswith('INSERT INTO learning_lessons '):
                     lesson = json.loads(values[2])
-                    lesson.update(storage='github', commit_sha=journal['commit_sha'])
+                    lesson.update(storage=getattr(self.content, 'backend', 'github'), commit_sha=journal['commit_sha'])
                     values[2] = encoded(lesson)
                 c.execute(statement, values)
             journal['state'] = 'done'
@@ -229,7 +229,7 @@ def make_store(root, db):
     backend = os.getenv('PLAN_CONTENT_BACKEND', 'local')
     from tenancy import current_user
     user = current_user.get()
-    if backend == 'github' or (user and json.loads(user['github_config']).get('mode') == 'custom'):
+    if backend in ('github', 'postgresql') or (user and json.loads(user['github_config']).get('mode') == 'custom'):
         from accounts import content_for
         try:
             return GitHubPlans(root, db, content_for(user))

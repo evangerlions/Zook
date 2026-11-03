@@ -58,7 +58,7 @@ def register(app, root, db):
         attempts=[{k:v for k,v in a.items() if k not in ('raw','context','request')} for a in store.rows('learning_ai_attempts')]
         pending=[{'id':r['id'],'state':json.loads(r['data'])['state']} for r in publication_rows() if json.loads(r['data'])['state']!='done']
         return {'plans':plans,'legacy':[dict(x,kind='legacy') for x in LEGACY], 'budget':store.budget(),
-                'storage':'github' if getattr(store,'remote',False) else 'local', 'pending_publications':pending,
+                'storage':getattr(getattr(store,'content',None),'backend','github') if getattr(store,'remote',False) else 'local', 'pending_publications':pending,
                 'generation_unavailable':availability(store),'requires_own_config':True, 'attempts':attempts[-20:],
                 'drafts':[{'id':d['id'],'kind':d['kind'],'state':d['state'],'created_at':d.get('created_at','')}
                           for d in store.rows('learning_drafts') if d['state']!='published'][-30:]}

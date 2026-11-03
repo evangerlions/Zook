@@ -109,6 +109,7 @@ interface AiNovelRequestOptions {
   userId?: string;
   routingIdentity?: LlmRoutingIdentity;
   locale?: string;
+  appVersion?: string;
   accountRegion?: AccountRegion;
   signal?: AbortSignal;
 }
@@ -118,22 +119,20 @@ export class AiNovelLlmService {
   private static readonly EMBEDDING_MODEL_KEY = "text-embedding-v4";
 
   constructor(
+    readonly creditsFlow: AiNovelCreditsRequestFlow,
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly modelSelectionConfigService: AiNovelModelSelectionConfigService,
     private readonly logger?: StructuredLogger,
     private readonly contentSafetyService?: ContentSafetyService,
     private readonly conversationRecordService?: AiNovelConversationRecordService,
-    readonly creditsFlow?: AiNovelCreditsRequestFlow,
   ) {}
 
   async createChatCompletion(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): Promise<AiNovelChatResponse> {
-    return this.creditsFlow
-      ? this.creditsFlow.complete(body, options, (measured) => this.executeChatCompletion(body, measured))
-      : this.executeChatCompletion(body, options);
+    return this.creditsFlow.complete(body, options, (measured) => this.executeChatCompletion(body, measured));
   }
 
   async getPublicModels() {
@@ -319,9 +318,7 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): AsyncIterable<AiNovelChatStreamChunk> {
-    yield* this.creditsFlow
-      ? this.creditsFlow.stream(body, options, (measured) => this.executeChatCompletionStream(body, measured))
-      : this.executeChatCompletionStream(body, options);
+    yield* this.creditsFlow.stream(body, options, (measured) => this.executeChatCompletionStream(body, measured));
   }
 
   private async *executeChatCompletionStream(
@@ -546,9 +543,7 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): Promise<AiNovelEmbeddingsResponse> {
-    return this.creditsFlow
-      ? this.creditsFlow.embeddings(body, options, (measured) => this.executeEmbeddings(body, measured))
-      : this.executeEmbeddings(body, options);
+    return this.creditsFlow.embeddings(body, options, (measured) => this.executeEmbeddings(body, measured));
   }
 
   private async executeEmbeddings(

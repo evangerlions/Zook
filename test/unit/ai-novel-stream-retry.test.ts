@@ -1,3 +1,4 @@
+import { unmeteredTestCreditsFlow } from "../support/unmetered-test-credits-flow.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -22,6 +23,7 @@ test("manual chat preference reaches LLM and never retries a different logical m
   const calls: string[] = [];
   const preferences: unknown[] = [];
   const service = new AiNovelLlmService(
+    unmeteredTestCreditsFlow,
     { stream: async function* ({ modelKey }: { modelKey: string }) {
       calls.push(modelKey);
       throw new ApplicationError(503, "LLM_PROVIDER_REQUEST_FAILED", "timeout", { reason: "timeout" });
@@ -203,6 +205,7 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
     new InMemoryDatabase(),
   );
   const service = new AiNovelLlmService(
+    unmeteredTestCreditsFlow,
     {
       stream: async function* ({ modelKey }: { modelKey: string }) {
         modelCalls.push(modelKey);
@@ -281,6 +284,7 @@ test("AINovel internal compaction completion is not recorded as a user conversat
     new InMemoryDatabase(),
   );
   const service = new AiNovelLlmService(
+    unmeteredTestCreditsFlow,
     {
       async complete() {
         return {

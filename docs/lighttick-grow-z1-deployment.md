@@ -22,7 +22,10 @@ Z1只允许 `authority=legacy` 且迁移包摘要不变的自动整组回退；G
 
 dev和online当前须在同一服务器Docker镜像存储中；跨主机部署需先实现受控镜像仓库传输和digest校验。此处验收凭据是受信任服务器上的操作员文件，并非远程签名证明。服务器所有者仍可改变文件或容器；需沿用服务器访问控制。
 
-数据库名必须不同，即使主机/角色不同也拒绝同名，以便保守防误连。dev/online Grow还要求不同数据库名、Fernet密钥及origin。Grow DB与Zook DB中的同名账号不自动合并，旧密码不迁入Zook。所有配置使用单行 `KEY=value`（值可包引号），不支持shell命令或插值。
+历史 GitHub 模式的 Grow/Zook 数据库名必须不同；新增 PostgreSQL 内容模式允许共用同槽位数据库，
+但强制独立 `GROW_DATABASE_SCHEMA=grow_*`，不回落到 public。dev/online Grow仍要求不同数据库名、
+Fernet密钥及origin。Grow与Zook中的同名账号不自动合并，旧密码不迁入Zook。所有配置使用单行
+`KEY=value`（值可包引号），不支持shell命令或插值。
 
 ## 运维前置
 

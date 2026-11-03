@@ -16,7 +16,7 @@ info:
     Use the same header for users/me, billing, credits and AI requests. Cache and
     recovery state must be scoped by environment. Signed provider callbacks use
     verified provider evidence rather than the caller's header.
-    Development CNY prices are placeholders, not approved production catalog prices.
+    Alipay CNY prices come from the versioned Admin billing.alipay.prices configuration; no env or code price fallback exists.
 
     This contract intentionally excludes personal AI usage balances and
     provider-specific receipt payloads from the client API. AI usage is enforced
@@ -38,7 +38,7 @@ paths:
         Persisted idempotency binds user, product, platform, distribution and merchant environment.
         Only server prices apply. Active RevenueCat access returns 409. A new intent may coexist
         with older pending checkouts after client cancellation; idempotency prevents retry duplicates.
-        Production requires explicit enablement, approved prices and complete merchant configuration.
+        New orders require a complete Admin price catalog and merchant configuration, without a separate enablement or price-approval flag. Existing orders retain their frozen amount after price edits/removal and remain replayable and confirmable.
         payment is null for terminal or expired orders; clients must not relaunch checkout on recovery.
       tags: [ainovel-billing]
       parameters:
@@ -248,7 +248,7 @@ components:
           enum: [xiaomi, vivo, oppo, huawei, honor, direct, null]
           description: Optional distribution-market attribution frozen with the order; it never changes payment authorization or price. Generic Android store builds may omit it. Web/Windows/direct Android accept only direct.
         idempotencyKey: { type: string, pattern: "^[A-Za-z0-9_-]{8,128}$" }
-        checkoutMode: { type: string, enum: [mobile_web, desktop_web, qr], description: "Web mobile uses mobile_web; desktop Web uses desktop_web (signed page.pay URL embedded in the client). Windows and legacy clients use qr. Omit for native Android." }
+        checkoutMode: { type: string, enum: [mobile_web, desktop_web], description: "Mobile Web uses mobile_web; desktop Web and Windows use desktop_web (signed page.pay URL embedded in the client). Required for Web and Windows; Windows accepts only desktop_web. Omit for native Android." }
     AlipayOrder:
       type: object
       additionalProperties: false
@@ -280,12 +280,7 @@ components:
           properties:
             type: { type: string, const: page }
             url: { type: string, format: uri }
-        - type: object
-          additionalProperties: false
-          required: [type, qrCode]
-          properties:
-            type: { type: string, const: qr }
-            qrCode: { type: string, minLength: 1 }
+
     AlipayCreateData:
       type: object
       additionalProperties: false

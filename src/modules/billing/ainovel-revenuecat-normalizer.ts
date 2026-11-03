@@ -1,4 +1,5 @@
 import { billingEnvironment } from "./billing-environment.ts";
+import { revenueCatPurchaseEntitlements, type RevenueCatPurchaseEntitlement } from "./revenuecat-purchase-confirmation.ts";
 import type { AiNovelBillingMembershipInfo, AiNovelBillingMembershipRecord, AiNovelBillingTransactionRecord } from "../../shared/types.ts";
 import { isObject, type RevenueCatSnapshot, type RevenueCatSubscriptionEvidence } from "../../services/ainovel-revenuecat-types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
@@ -10,6 +11,7 @@ export interface NormalizedRevenueCatSnapshot {
   observedMemberships?: AiNovelBillingMembershipInfo[];
   membership: AiNovelBillingMembershipRecord;
   transactions: AiNovelBillingTransactionRecord[];
+  purchaseEntitlements: RevenueCatPurchaseEntitlement[];
   ignoredEntitlementCount: number;
   ignoredProductCount: number;
   hasActiveUnverifiedEnvironmentEntitlement: boolean;
@@ -26,6 +28,7 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
   const candidates: Array<{ rank: number; info: AiNovelBillingMembershipInfo }> = [];
   const summaries: AiNovelBillingMembershipInfo[] = [];
   const transactions: AiNovelBillingTransactionRecord[] = [];
+  const purchaseEntitlements: RevenueCatPurchaseEntitlement[] = [];
   let ignoredEntitlementCount = 0;
   let ignoredProductCount = 0;
   let hasActiveUnverifiedEnvironmentEntitlement = false;
@@ -72,7 +75,10 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
       candidates.push({ rank: definition.rank, info });
     } else ignoredEntitlementCount++;
     summaries.push(info);
-    transactions.push(...normalizeTransactions(evidence, userId, payload.observedAt));
+    const subscriptionTransactions = normalizeTransactions(evidence, userId, payload.observedAt);
+    transactions.push(...subscriptionTransactions);
+    purchaseEntitlements.push(...revenueCatPurchaseEntitlements(subscriptionTransactions,
+      info.active ? productKey : undefined, now));
   }
   candidates.sort((a,b) => b.rank-a.rank ||
     (b.info.expiresAt ? Date.parse(b.info.expiresAt) : Infinity) -
@@ -87,7 +93,7 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
       expiresAt: current?.expiresAt ?? null, autoRenew: current?.autoRenew ?? null,
       source: current?.source ?? null, managementUrl: current?.managementUrl ?? null,
       lastSyncedAt: payload.observedAt, accountDeletedAt: null },
-    transactions, ignoredEntitlementCount, ignoredProductCount,
+    transactions, purchaseEntitlements, ignoredEntitlementCount, ignoredProductCount,
     hasActiveUnverifiedEnvironmentEntitlement: hasActiveUnverifiedEnvironmentEntitlement || (hasActiveOtherEnvironment && candidates.length === 0),
   };
 }

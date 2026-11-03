@@ -1,3 +1,4 @@
+import { seedAlipayPrices } from "../support/alipay-pricing-fixture.ts";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApplication } from '../support/create-test-application.ts';
@@ -13,10 +14,11 @@ async function fixture() {
   const responses = new Map<string, Record<string, unknown> | (() => Promise<Record<string, unknown>>) >();
   const calls: string[] = [];
   const seed = buildDefaultSeed();
+  seedAlipayPrices(seed);
   seed.appUsers!.push({id:'sync_alice',appId:'ai_novel',userId:'user_alice',status:'ACTIVE',accountRegion:'CN',joinedAt:now.toISOString()});
   const gateway: AlipayGateway = {payment:async()=>({type:'app',orderString:'signed'}),verifyNotify:async()=>true,
     query:async id=>{calls.push(id);const response=responses.get(id);return typeof response==='function'?response(): response??{code:'40004'};}};
-  const runtime=await createApplication({seed,alipay:{enabled:true,appId:'merchant',sellerId:'seller',environment:'sandbox',
+  const runtime=await createApplication({seed,alipay:{appId:'merchant',sellerId:'seller',environment:'sandbox',
     notifyUrl:'https://example.test/notify',returnUrl:'https://example.test/return',gateway,queryTimeoutMs:10,now:()=>now},revenueCat:{now:()=>now}});
   const service=runtime.services.aiNovelBillingService;
   const create=async(productKey='plus_monthly')=>(await service.alipay.create('user_alice','CN',{

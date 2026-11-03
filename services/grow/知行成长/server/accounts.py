@@ -22,7 +22,9 @@ from copilot.core import Problem, fail
 from tenancy import current_user, reset_user
 from db_read_pool import retry_read
 
-COOKIE = 'zhixing_session'
+# Legacy root cookies are shared across ports. A separate name prevents an old
+# / cookie from overriding the more specific /grow/ cookie in Request.cookies.
+COOKIE = 'zook_grow_session' if os.getenv('GROW_BASE_PATH') else 'zhixing_session'
 SESSION_SECONDS = 7 * 86400
 INVITATION_SECONDS = 7 * 86400
 USERNAME = re.compile(r'^[a-zA-Z0-9_\-]{3,32}$')
@@ -74,6 +76,9 @@ def content_for(user=None, settings=None):
     from plans.github import GitHubContent
     user = user or current_user.get()
     settings = settings if settings is not None else (json.loads(user['github_config']) if user else {})
+    if os.getenv('PLAN_CONTENT_BACKEND') == 'postgresql' and settings.get('mode') != 'custom':
+        from postgres_content import PostgresContent
+        return PostgresContent()
     if settings.get('mode') == 'custom':
         try:
             token = cipher().decrypt(settings['token'].encode()).decode()
@@ -240,7 +245,8 @@ class Accounts:
     def settings(self, user):
         stored = json.loads(user['github_config'])
         custom = stored.get('mode') == 'custom'
-        return {'mode': 'custom' if custom else 'default',
+        return {'storage_backend': 'github' if custom else os.getenv('PLAN_CONTENT_BACKEND', 'github'),
+                'mode': 'custom' if custom else 'default',
                 'repository': stored.get('repository', '') if custom else os.getenv('GITHUB_CONTENT_REPO', ''),
                 'branch': stored.get('branch', 'main') if custom else os.getenv('GITHUB_CONTENT_BRANCH', 'main'),
                 'token_configured': bool(stored.get('token')) if custom else bool(os.getenv('GITHUB_CONTENT_TOKEN')),

@@ -140,7 +140,7 @@ def migrate_if_empty():
     conn.close()
     if n > 0:
         return
-    if os.getenv('PLAN_CONTENT_BACKEND') == 'github':
+    if os.getenv('PLAN_CONTENT_BACKEND') in ('github', 'postgresql'):
         # Bootstrap the cloud pilot without the legacy SQLite full-state writer.
         # Existing cloud records are never replaced or imported from local files.
         with get_conn() as conn:
@@ -286,6 +286,7 @@ def build_report(days: int):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    db.ensure_schema()
     if not getattr(plans_store,'remote',False) and (plans_store.runtime / 'restore-pending.json').exists():
         raise RuntimeError('存在未完成的学习计划恢复，请先核对恢复日志。')
     accounts.initialize()
@@ -541,7 +542,7 @@ def prepare_user(user):
                 for module in DEFAULT_MODULES:
                     conn.execute('INSERT INTO modules VALUES (?,?,?,?) ON CONFLICT(id) DO NOTHING',
                                  (module['id'], module['name'], module['color'], module['order']))
-            if os.getenv('PLAN_CONTENT_BACKEND', 'local') != 'github':
+            if os.getenv('PLAN_CONTENT_BACKEND', 'local') not in ('github', 'postgresql'):
                 learning_root(LEARN_ROOT).mkdir(parents=True, exist_ok=True)
         _prepared_users.add(user['id'])
     # Initialize in the request's worker thread, before synchronous module

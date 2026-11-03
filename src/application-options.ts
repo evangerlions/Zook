@@ -14,8 +14,6 @@ import type { LightTickRepository } from "./modules/lighttick/lighttick.reposito
 
 export interface CreateApplicationOptions {
   alipay?: import("./modules/billing/alipay-models.ts").AlipayOptions;
-  /** Rollout gate: enable after pricing, migrations and server settlement validation. */
-  aiNovelCreditsEnabled?: boolean;
   /** Independent Yaohezi account routes; health/cloud capabilities remain gated. */
   yaoheziEnabled?: boolean;
   /** M2 trust API rollout, independent from account-only access. Defaults off. */

@@ -1,10 +1,10 @@
 import { PublicApiMessages, type PublicApiMessageLocale } from "../../../generated/i18n/public-api-messages.generated.ts";
 import type { AiNovelChatStreamChunk } from "../ai-novel-llm-types.ts";
 
-export function quotaReply(locale: string | undefined, actionId: string) {
+export function quotaReply(locale: string | undefined, actionId: string, legacy = false) {
   const language = locale && Object.hasOwn(PublicApiMessages, locale) ? locale as PublicApiMessageLocale : "en-US";
   return {
-    text: PublicApiMessages[language]["ai_novel.credits.exhausted"],
+    text: PublicApiMessages[language][legacy ? "ai_novel.credits.exhausted_legacy" : "ai_novel.credits.exhausted"],
     action: { id: actionId, name: "open_membership", arguments: { reason: "quota_insufficient" }, trigger: "after_response_rendered" } as const,
   };
 }
@@ -15,8 +15,9 @@ export async function* syntheticAiNovelReply(input: {
   sceneKey: string;
   actionId: string;
   signal?: AbortSignal;
+  legacy?: boolean;
 }): AsyncIterable<AiNovelChatStreamChunk> {
-  const reply = quotaReply(input.locale, input.actionId);
+  const reply = quotaReply(input.locale, input.actionId, input.legacy);
   yield* syntheticBusinessReply({ ...input, ...reply, finishReason: "quota_insufficient" });
 }
 

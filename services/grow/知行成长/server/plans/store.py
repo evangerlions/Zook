@@ -200,7 +200,7 @@ class Plans:
         self.plan(pid)
         lesson = next((x for x in self.lessons(pid) if x['lesson_no'] == number), None)
         if not lesson: fail('not_found', '课程不存在。', 404)
-        if lesson.get('storage') == 'github':
+        if lesson.get('storage') in ('github', 'postgresql'):
             fail('content_backend', '这节课程保存在 GitHub，请启用 GitHub 内容存储后重试。', 503)
         base = self.base(pid)
         return {'lesson': lesson, 'content': self.read_text(base+'/'+lesson['path']),

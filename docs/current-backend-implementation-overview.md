@@ -1,12 +1,20 @@
 # 当前后端实现概览
 
+## Grow H5 存储补充（2026-11-02）
+
+Zook 内的 `services/grow` 支持 PostgreSQL 内容后端：账号记录、规划、课程正文和不可变版本
+使用同槽位数据库的独立 `grow_*` schema；每个 Grow 账号继续隔离数据空间。
+这是现有 Python H5 的兼容承载，并未合并 Grow/Zook 账号或改变原生 LightTick 的数据权威。
+旧服务的历史账号、数据和配置保留不动；本次只接通本地新版供验证。
+操作及验收见 [Grow H5 部署](grow-h5-deployment.md)。
+
 ## BodyLog 小组邀请码闭环（2026-11-01）
 
 定向邀请返回账号绑定的六位短码与七天有效期；预览不披露成员/打卡，兑换校验预览身份并保持重复请求幂等。PostgreSQL 在同一事务中串行化用户配额和小组最后名额，内存实现对应同样规则。复用既有邀请记录，无新 migration；实现不代表已经部署。接口见 `README_API.md`，并发门禁可用 `test/support/run_bodylog_group_postgres.py` 在全新临时 cluster 复跑。
 
 ## AINovel Alipay backend MVP
 
-CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Production is disabled by default and additionally gated by complete merchant configuration and approved explicit prices. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
+CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Public payment identities and callback rules are code-owned; env retains credentials and the Alipay sandbox/production selector. Alipay prices use the existing versioned Admin delivery config; catalog and new orders read current prices, while existing orders retain frozen amounts and can settle after new sales stop. No enablement/price-approval flag or env/code price fallback exists. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
 
 ## FrogSleep 搭子 PostgreSQL 并发门禁
 

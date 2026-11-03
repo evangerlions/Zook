@@ -20,7 +20,7 @@ interface KVManagerOptions {
 
 class RedisKVBackend implements KVBackend {
   private readonly client: RedisClientType;
-  private connectPromise?: Promise<void>;
+  private connectPromise?: ReturnType<RedisClientType["connect"]>;
 
   constructor(redisUrl: string) {
     this.client = createClient({

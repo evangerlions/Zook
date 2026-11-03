@@ -1,3 +1,4 @@
+import { TEST_ALIPAY_PRICES } from "../support/alipay-pricing-fixture.ts";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
@@ -19,7 +20,7 @@ test('real PostgreSQL concurrent instances share canonical grants, rollback and 
  const gateway:AlipayGateway={payment:async()=>({type:'app',orderString:'signed'}),verifyNotify:async()=>true,query:async id=>{
   calls++;return{code:'10000',out_trade_no:id,app_id:'merchant',seller_id:'seller',trade_no:tradeId,total_amount:'38.00',trade_status:'TRADE_SUCCESS',gmt_payment:'2026-10-26 18:00:00'};
  }};
- const options={now:()=>now,alipay:{allowSandbox:true,enabled:true,appId:'merchant',sellerId:'seller',environment:'sandbox' as const,
+ const options={now:()=>now,readAlipayPrices:async()=>TEST_ALIPAY_PRICES,alipay:{allowSandbox:true,appId:'merchant',sellerId:'seller',environment:'sandbox' as const,
   notifyUrl:'https://example.test/notify',returnUrl:'https://example.test/return',gateway,now:()=>now}};
  const logger=new StructuredLogger('test');const a=new AiNovelBillingService(first,options,logger);const b=new AiNovelBillingService(second,options,logger);
  try{await inBillingEnvironment('sandbox',async()=>{

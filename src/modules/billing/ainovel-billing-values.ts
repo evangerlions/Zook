@@ -51,10 +51,11 @@ export function validCurrency(value: unknown): string | null {
 export function toMinorUnits(value: unknown, currency: string | null): number | null {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || !currency) return null;
   try {
+    // Currency formatting with default fraction rounding always resolves this field.
     const digits = new Intl.NumberFormat("en", {
       style: "currency",
       currency,
-    }).resolvedOptions().maximumFractionDigits;
+    }).resolvedOptions().maximumFractionDigits!;
     const amount = Math.round(value * (10 ** digits));
     return Number.isSafeInteger(amount) ? amount : null;
   } catch {

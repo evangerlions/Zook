@@ -94,7 +94,7 @@ class CloudStore(Store):
     def lesson(self,number):
         lesson=super().lesson(number)
         item=self.documents.metadata(MODULE+'/'+lesson['path'])
-        if item and item['storage']=='github':
+        if item and item['storage'] in ('github','postgresql'):
             lesson.update(commit_sha=item['commit_sha'],github_url=self.documents.content.url(MODULE+'/'+lesson['path'],item['commit_sha']))
         return lesson
 

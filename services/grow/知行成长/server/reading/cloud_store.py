@@ -93,7 +93,7 @@ class CloudReadingStore(ReadingStore):
             item=documents.get(path)
             if item is None:return None
             if cached is not None and digest(cached)==item['hash']:return cached
-            text=self.documents.content.read_text(path,item['commit_sha']) if item['storage']=='github' else item['text']
+            text=self.documents.content.read_text(path,item['commit_sha']) if item['storage'] in ('github','postgresql') else item['text']
             if digest(text)!=item['hash']:fail('content_hash','内容校验失败，已停止读写。',409)
             return text
         full_text=a.get('full_content')
@@ -102,8 +102,8 @@ class CloudReadingStore(ReadingStore):
         if latest:latest={k:v for k,v in latest.items() if k not in ('context','request')}
         metadata=documents.get(guide)
         return {'article':a,'reading_preferences':preferences(settings),
-                'storage':'github' if metadata and metadata['storage']=='github' else 'local',
-                'github_url':self.documents.content.url(guide,metadata['commit_sha']) if metadata and metadata['storage']=='github' else None,
+                'storage':metadata['storage'] if metadata and metadata['storage'] in ('github','postgresql') else 'local',
+                'github_url':self.documents.content.url(guide,metadata['commit_sha']) if metadata and metadata['storage'] in ('github','postgresql') else None,
                 'commit_sha':metadata.get('commit_sha') if metadata else None,
                 'note':{'text':read_document(note) or '', 'hash':documents[note]['hash'] if note in documents else None},
                 'guide':read_document(guide,a.get('guide')),

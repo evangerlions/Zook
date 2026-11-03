@@ -18,6 +18,24 @@ import psycopg2.extras
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 
+def default_schema():
+    schema = os.environ.get('GROW_DATABASE_SCHEMA') or None
+    if os.environ.get('PLAN_CONTENT_BACKEND') == 'postgresql' and not schema:
+        raise ValueError('PostgreSQL content requires GROW_DATABASE_SCHEMA; public fallback is forbidden.')
+    if schema and not re.fullmatch(r'grow_[a-z0-9_]{1,58}', schema):
+        raise ValueError('GROW_DATABASE_SCHEMA must be a dedicated grow_* schema.')
+    return schema
+
+
+def ensure_schema():
+    schema = default_schema()
+    if schema:
+        from psycopg2 import sql
+        with psycopg2.connect(DATABASE_URL) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(sql.SQL('CREATE SCHEMA IF NOT EXISTS {}').format(sql.Identifier(schema)))
+
+
 def _translate_sql(sql):
     """将 sqlite3 风格 SQL 转换为 PostgreSQL 风格。
     - ? 占位符 → %s
@@ -248,6 +266,7 @@ def connect(database=None, *, tenant=True, readonly=False, schema=None, **kwargs
     url = database or DATABASE_URL
     if not url:
         raise OperationalError('请在服务端配置 DATABASE_URL。')
+    schema = schema or default_schema()
     if readonly:
         from db_read_pool import read_pool
         if tenant:
@@ -264,9 +283,11 @@ def connect(database=None, *, tenant=True, readonly=False, schema=None, **kwargs
         user = current_user.get()
         if user:
             # No public fallback: a missing tenant table must never expose old data.
-            from psycopg2 import sql
-            with conn.cursor() as cursor:
-                cursor.execute(sql.SQL('SET search_path TO {}').format(sql.Identifier(user['schema_name'])))
+            schema = user['schema_name']
+    if schema:
+        from psycopg2 import sql
+        with conn.cursor() as cursor:
+            cursor.execute(sql.SQL('SET search_path TO {}').format(sql.Identifier(schema)))
     return CompatConnection(conn)
 
 

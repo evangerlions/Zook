@@ -74,12 +74,15 @@ def configured_content():
     if user:
         from accounts import content_for
         base=content_for(user)
-    else:base=GitHubContent.from_env()
+    else:
+        from accounts import content_for
+        base=content_for()
+    if getattr(base, 'backend', 'github') == 'postgresql':return base
     return ModuleContent(base.repository,base.branch,base.token,transport=base.transport,prefix=getattr(base,'prefix',''))
 
 
 def enabled():
-    if os.getenv('PLAN_CONTENT_BACKEND')=='github':return True
+    if os.getenv('PLAN_CONTENT_BACKEND') in ('github','postgresql'):return True
     try:
         from tenancy import current_user
         user=current_user.get()
@@ -141,7 +144,7 @@ class Documents:
         with self.lock():
             old=self.get('cloud_content_settings','binding')
             if old and old!=binding:
-                published=any(item['storage']=='github' for _,item in self.rows('cloud_documents'))
+                published=any(item['storage'] in ('github','postgresql') for _,item in self.rows('cloud_documents'))
                 pending=any(item['state']!='done' for _,item in self.rows('cloud_publications'))
                 if published or pending:fail('content_binding','资料已绑定其他仓库或分支，请先迁移，不能直接替换。',503)
                 # Browser/account setup may choose a repository before the first publication.
@@ -163,7 +166,7 @@ class Documents:
     def read(self,path):
         item=self.metadata(path)
         if item is None:raise FileNotFoundError(path)
-        text=self.content.read_text(path,item['commit_sha']) if item['storage']=='github' else item['text']
+        text=self.content.read_text(path,item['commit_sha']) if item['storage'] in ('github','postgresql') else item['text']
         if digest(text)!=item['hash']:fail('content_hash','内容校验失败，已停止读写。',409)
         return text
 
@@ -235,13 +238,13 @@ class Documents:
                 row=c.execute('SELECT data FROM cloud_documents WHERE path=? FOR UPDATE',(path,)).fetchone()
                 before=json.loads(row[0]) if row else None
                 if (before['hash'] if before else None) not in (change['before'],change['after']):fail('conflict','发布期间数据库资料已变化。')
-                item={'hash':change['after'],'storage':'github' if change['formal'] else 'database','updated_at':now()}
+                item={'hash':change['after'],'storage':getattr(self.content,'backend','github') if change['formal'] else 'database','updated_at':now()}
                 if change['formal']:item['commit_sha']=journal['commit_sha']
                 else:item['text']=change['text']
                 self.put('cloud_documents',path,item,'path',c)
             for statement,params in journal['sql']:c.execute(statement,params)
             journal['state']='done';journal['finished_at']=now()
-            journal['result'].update(storage='github' if public else 'database')
+            journal['result'].update(storage=getattr(self.content,'backend','github') if public else 'database')
             if public:journal['result']['commit_sha']=journal['commit_sha']
             self.put('cloud_publications',key,journal,connection=c)
         self.local.documents=None

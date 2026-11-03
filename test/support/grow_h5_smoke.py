@@ -59,7 +59,7 @@ def run(output, pg_bin):
                    'DATABASE_URL': f'postgresql://smoke@127.0.0.1:{pg_port}/postgres',
                    'ACCOUNT_ENCRYPTION_KEY': Fernet.generate_key().decode(),
                    'APP_USERNAME': 'synthetic_owner', 'APP_PASSWORD': 'SYNTHETIC-H5-SMOKE-PASSWORD-ONLY',
-                   'PLAN_CONTENT_BACKEND': 'github', 'CLOUD_DEPLOY': '0', 'WEB_CONCURRENCY': '1',
+                   'PLAN_CONTENT_BACKEND': 'postgresql', 'GROW_DATABASE_SCHEMA': 'grow_smoke', 'CLOUD_DEPLOY': '0', 'WEB_CONCURRENCY': '1',
                    'GROW_BASE_PATH': '/grow', 'GROW_PUBLIC_URL': 'https://app-dev.youwoai.net/grow',
                    'GROW_SCHEDULED_READING_ENABLED': '0', 'RUNTIME_ROOT': str(temp/'runtime'),
                    'LEARN_ROOT': str(materials)}
@@ -85,6 +85,8 @@ def run(output, pg_bin):
             with sync_playwright() as playwright:
                 browser = playwright.chromium.launch()
                 page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+                page.context.add_cookies([{'name': 'zhixing_session', 'value': 'synthetic-stale-legacy-session',
+                                          'url': base + '/'}])
                 errors, escaped, failed = [], [], []
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('request', lambda request: escaped.append(request.url)
@@ -103,11 +105,14 @@ def run(output, pg_bin):
                 page.screenshot(path=str(output/'home.png'), full_page=True)
                 assert not errors, errors
                 assert not escaped, escaped
-                optional = {'/grow/api/plans', '/grow/api/copilot/drafts', '/grow/api/copilot/background-jobs', '/grow/api/copilot/today-task'}
+                optional = set()  # PostgreSQL mode must work without GitHub credentials.
                 from urllib.parse import urlsplit
                 initial_failures = list(failed)
                 unexpected = [item for item in initial_failures if item['status'] != 503 or urlsplit(item['url']).path not in optional]
                 assert not unexpected, unexpected
+                storage = page.request.get(base+'/grow/api/storage-status').json()
+                assert storage['formal_markdown'] == 'postgresql'
+                assert all(value['ready'] for value in storage['modules'].values()), storage
                 headers = {'X-Copilot-Request': '1', 'X-Grow-Action-Schema': '2'}
                 created = page.request.post(base+'/grow/api/action-plans', headers=headers, data={
                     'title': 'Synthetic H5 persistence proof', 'period': 'day', 'completion_mode': 'check',
@@ -122,7 +127,7 @@ def run(output, pg_bin):
                 assert page.request.get(base+'/grow/api/auth/me').status == 401
                 browser.close()
                 result = {'login': True, 'assets_and_api_under_grow': True, 'browser_errors': errors,
-                          'expected_unconfigured_github_responses': initial_failures, 'unexpected_responses': unexpected, 'write_and_restart_readback': True, 'logout': True,
+                          'initial_failed_responses': initial_failures, 'storage_status': storage, 'unexpected_responses': unexpected, 'write_and_restart_readback': True, 'logout': True,
                           'database': 'fresh disposable local PostgreSQL', 'https_verified': False,
                           'docker_verified': False, 'public_deployed': False}
                 (output/'result.json').write_text(json.dumps(result, indent=2)+'\n')
