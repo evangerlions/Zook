@@ -1,11 +1,12 @@
 import { billingMarket } from "../modules/billing/billing-market.ts";
-import { billingEnvironment, billingSandboxAllowed, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { billingEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { ALIPAY_ORDER_ID_PATTERN, createAlipayOrderId } from "../modules/billing/alipay-order-id.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import type { AiNovelBillingMembershipInfo } from "../shared/types.ts";
 import type { AlipayCreateInput, AlipayOptions, AlipayOrder } from "../modules/billing/alipay-models.ts";
-import { ALIPAY_PRICES, alipayConfigured, assertAlipayChannel, membershipConflict, publicAlipayOrder } from "../modules/billing/alipay-policy.ts";
+import { alipayConfigured, assertAlipayChannel, membershipConflict, publicAlipayOrder } from "../modules/billing/alipay-policy.ts";
+import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
 import { parseAlipayNotify } from "../modules/billing/alipay-notify.ts";
 import { OfficialAlipayGateway } from "./ainovel-alipay-gateway.ts";
 import { confirmAlipayOrder } from "./ainovel-alipay-confirmation.ts";
@@ -18,14 +19,17 @@ export class AiNovelAlipayService {
   private readonly gateway;
   private readonly now;
   constructor(private readonly database: ApplicationDatabase, private readonly options: AlipayOptions,
-    private readonly getMembership: (user: string) => Promise<AiNovelBillingMembershipInfo>, private readonly logger: StructuredLogger) {
+    private readonly getMembership: (user: string) => Promise<AiNovelBillingMembershipInfo>, private readonly logger: StructuredLogger,
+    private readonly readPrices: () => Promise<AlipayPrices | undefined>) {
     this.gateway = options.gateway ?? new OfficialAlipayGateway(options);
     this.now = options.now ?? (() => new Date());
   }
-  get available() { return alipayConfigured(this.options) && this.options.environment === billingEnvironment() &&
-    (this.options.environment === "production" || (this.options.allowSandbox ?? billingSandboxAllowed())); }
-  price(product: AlipayCreateInput["productKey"]) { return this.options.prices?.[product] ?? ALIPAY_PRICES[product]; }
-  private configured() { if (!this.available) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay is not enabled and fully configured."); }
+  get available() { return alipayConfigured(this.options) && this.options.environment === billingEnvironment(); }
+  async checkoutCatalog() {
+    const prices = this.available ? await this.readPrices() : undefined;
+    return { available: !!prices, prices };
+  }
+  private configured() { if (!this.available) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay is not fully configured."); }
   async create(userId: string, region: string, input: AlipayCreateInput, requestId?: string) {
     const log = (status: string, order?: AlipayOrder) => this.log(status, order, userId, undefined, requestId);
     log("create_start");
@@ -38,15 +42,16 @@ export class AiNovelAlipayService {
       if (existing) {
         log("create_replay", existing);
         if (billingMarket(existing) !== billingMarket(input) || existing.productKey !== input.productKey || existing.platform !== input.platform || existing.distribution !== input.distribution ||
-          (existing.checkoutMode ?? "qr") !== (input.checkoutMode ?? "qr") ||
+          existing.checkoutMode !== input.checkoutMode ||
           existing.merchantAppId !== this.options.appId || existing.sellerId !== (this.options.sellerId?.trim() || "") || existing.environment !== this.options.environment)
           throw new ApplicationError(409, "BILLING_IDEMPOTENCY_CONFLICT", "Idempotency key belongs to different order inputs.");
         return existing;
       }
       if (membershipConflict(await this.database.findAiNovelBillingMembership("ai_novel", userId), input.productKey, now))
         throw new ApplicationError(409, "BILLING_PROVIDER_CONFLICT", "An active store membership prevents Alipay checkout.");
-      const amountMinor = this.price(input.productKey);
-      if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay price is not configured.");
+      const prices = await this.readPrices();
+      if (!prices) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay price is not configured.");
+      const amountMinor = prices[input.productKey];
       const created: AlipayOrder = { ...input, market: billingMarket(input), orderId: createAlipayOrderId(input.platform, input.productKey, userId), appId: "ai_novel", userId,
         provider: "alipay", merchantAppId: this.options.appId!, sellerId: this.options.sellerId?.trim() || "", environment: this.options.environment!,
         status: "pending", amountMinor, currency: "CNY", createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + 30 * 60_000).toISOString(),
@@ -60,7 +65,7 @@ export class AiNovelAlipayService {
     try { const payment = await this.gateway.payment(order); log("checkout_prepared", order); return { order: publicAlipayOrder(order), payment }; }
     catch {
       log("checkout_preparation_failed", order);
-      // Network precreation can time out after the provider created the order.
+      // Checkout preparation failure is not evidence of provider cancellation.
       // Retain identity and pending state for idempotent recovery and queries.
       if (order.platform !== "android") throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay checkout could not be prepared.");
       await this.database.withExclusiveSession(async () => {

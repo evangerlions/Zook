@@ -1,4 +1,5 @@
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
+import { getHeader } from "../shared/utils.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { PublicContractValidator } from "../generated/openapi/public-contract-validator.ts";
 import { resolveAiNovelRoutingIdentity } from "../modules/ai-novel/ai-novel-routing-identity.ts";
@@ -157,6 +158,7 @@ export async function handleAiNovelChatCompletions(
           userId: auth.userId,
           routingIdentity,
           locale: this.resolveRequestLocale(request),
+          appVersion: getHeader(request.headers, "x-app-version"),
           accountRegion,
           signal: request.signal,
         }),
@@ -171,6 +173,7 @@ export async function handleAiNovelChatCompletions(
       userId: auth.userId,
       routingIdentity,
       locale: this.resolveRequestLocale(request),
+      appVersion: getHeader(request.headers, "x-app-version"),
       accountRegion,
     });
     const localDebugResponseText = extractLocalAiDebugResponseText.call(
@@ -230,6 +233,7 @@ export async function handleAiNovelEmbeddings(
     return await this.aiNovelLlmService.createEmbeddings(body, {
       signal: request.signal,
       locale: this.resolveRequestLocale(request),
+      appVersion: getHeader(request.headers, "x-app-version"),
       requestId: request.requestId as string,
       userId: auth.userId,
       routingIdentity: resolveAiNovelRoutingIdentity(

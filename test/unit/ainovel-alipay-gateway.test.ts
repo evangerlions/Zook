@@ -15,6 +15,36 @@ const notifyUrl = "https://zook.example.test/api/v1/ai_novel/billing/webhooks/al
 const returnUrl = "https://client.example.test/#/membership";
 const gateway = new OfficialAlipayGateway({ notifyUrl, returnUrl }, async () => sdk);
 
+test("local production SDK checkout signs normally without a public notify URL", async () => {
+  const local = new OfficialAlipayGateway({ environment: "production", returnUrl }, async () => sdk);
+  for (const [platform, checkoutMode] of [
+    ["android", undefined], ["web", "mobile_web"], ["web", "desktop_web"], ["windows", "desktop_web"],
+  ] as const) {
+    const payment = await local.payment({ ...order(platform), environment: "production", checkoutMode });
+    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.url).searchParams;
+    assert.equal(params.has("notify_url"), false);
+    assert.ok(params.get("sign"));
+    assert.equal(params.get("return_url"), checkoutMode === "desktop_web" ? null : returnUrl);
+  }
+});
+
+test("sandbox checkout omits callback URLs even when placeholders are configured", async () => {
+  const sandboxGateway = new OfficialAlipayGateway({ environment: "sandbox", notifyUrl: "http://localhost/notify", returnUrl: "invalid" }, async () => sdk);
+  for (const platform of ["android", "web"] as const) {
+    const payment = await sandboxGateway.payment({ ...order(platform), checkoutMode: platform === "web" ? "mobile_web" : undefined });
+    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.type === "page" ? payment.url : "").searchParams;
+    assert.equal(params.has("notify_url"), false);
+    assert.equal(params.has("return_url"), false);
+  }
+  for (const platform of ["web", "windows"] as const) {
+    const desktop = await sandboxGateway.payment({ ...order(platform), checkoutMode: "desktop_web" });
+    assert.equal(desktop.type, "page");
+    if (desktop.type !== "page") throw new Error("Expected page payment");
+    assert.equal(new URL(desktop.url).searchParams.has("notify_url"), false);
+    assert.equal(new URL(desktop.url).searchParams.has("return_url"), false);
+  }
+});
+
 function order(platform: AlipayOrder["platform"]): AlipayOrder {
   return { platform, distribution: platform === "android" ? "direct_android" : platform,
     productKey: "plus_monthly", idempotencyKey: "test_intent", orderId: "alp_test", appId: "ai_novel",
@@ -28,7 +58,7 @@ function order(platform: AlipayOrder["platform"]): AlipayOrder {
 for (const platform of ["android", "web"] as const) {
   test(`official SDK includes configured callback URLs in ${platform} checkout`, async () => {
     const payment = await gateway.payment({ ...order(platform), checkoutMode: platform === "web" ? "mobile_web" : undefined });
-    assert.notEqual(payment.type, "qr");
+    assert.equal(payment.type, platform === "android" ? "app" : "page");
     const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.type === "page" ? payment.url : "").searchParams;
     assert.equal(params.get("method"), platform === "android" ? "alipay.trade.app.pay" : "alipay.trade.wap.pay");
     assert.equal(params.get("notify_url"), notifyUrl);
@@ -64,33 +94,17 @@ test("default signing merchant omits seller_id from every checkout platform", as
   }
 });
 
-test("desktop Web and Windows precreate a verified QR without an external page", async () => {
+test("desktop checkout never falls back to provider precreation", async () => {
+  const client = { exec: async () => { throw new Error("Must not call provider precreation"); } } as unknown as AlipaySdk;
+  const unsupported = new OfficialAlipayGateway({}, async () => client);
   for (const platform of ["web", "windows"] as const) {
-    const client = { exec: async (method: string, params: any, options: any) => {
-      assert.equal(method, "alipay.trade.precreate");
-      assert.equal(options.validateSign, true);
-      assert.equal(params.notifyUrl, notifyUrl);
-      assert.equal(params.bizContent.total_amount, "38.00");
-      assert.equal(params.bizContent.out_trade_no, "alp_test");
-      assert.equal(params.bizContent.product_code, undefined);
-      return { code: "10000", out_trade_no: "alp_test", qr_code: "https://qr.alipay.com/test" };
-    }} as unknown as AlipaySdk;
-    const qrGateway = new OfficialAlipayGateway({ notifyUrl, returnUrl }, async () => client);
-    assert.deepEqual(await qrGateway.payment(order(platform)), { type: "qr", qrCode: "https://qr.alipay.com/test" });
+    await assert.rejects(unsupported.payment(order(platform)), /Unsupported Alipay checkout mode/);
   }
 });
 
-test("precreate rejects wrong order identity and sanitizes provider exceptions", async () => {
-  for (const result of [{ code: "10000", out_trade_no: "other", qr_code: "opaque" }, { code: "40004" }]) {
-    const client = { exec: async () => result } as unknown as AlipaySdk;
-    const qrGateway = new OfficialAlipayGateway({}, async () => client);
-    await assert.rejects(qrGateway.payment(order("web")), /Alipay QR checkout unavailable/);
-  }
-});
-
-
-test("desktop embedded cashier is signed with frozen order facts and no parent return", async () => {
-  const payment = await gateway.payment({ ...order("web"), checkoutMode: "desktop_web" });
+for (const platform of ["web", "windows"] as const) {
+test(`${platform} embedded cashier is signed with frozen order facts and no parent return`, async () => {
+  const payment = await gateway.payment({ ...order(platform), checkoutMode: "desktop_web" });
   assert.equal(payment.type, "page");
   if (payment.type !== "page") throw new Error("Expected page payment");
   const url = new URL(payment.url);
@@ -111,6 +125,7 @@ test("desktop embedded cashier is signed with frozen order facts and no parent r
   assert.equal(biz.seller_id, "test_seller");
   assert.equal(biz.time_expire, "2026-10-04 08:30:00");
 });
+}
 
 
 for (const [productKey, name] of [
@@ -123,7 +138,7 @@ for (const [productKey, name] of [
 ] as const) {
   test(`${productKey} sends a customer-facing subject in every Alipay cashier`, async () => {
     for (const [platform, checkoutMode] of [
-      ["android", undefined], ["web", "mobile_web"], ["web", "desktop_web"],
+      ["android", undefined], ["web", "mobile_web"], ["web", "desktop_web"], ["windows", "desktop_web"],
     ] as const) {
       const payment = await gateway.payment({ ...order(platform), productKey, checkoutMode });
       const params = payment.type === "app" ? new URLSearchParams(payment.orderString)
@@ -134,13 +149,6 @@ for (const [productKey, name] of [
       assert.equal(biz.out_trade_no, "alp_test");
       assert.equal(biz.total_amount, "38.00");
     }
-    for (const platform of ["web", "windows"] as const) {
-      const client = { exec: async (_method: string, params: any) => {
-        assert.equal(params.bizContent.subject, name);
-        return { code: "10000", out_trade_no: "alp_test", qr_code: "https://qr.alipay.com/test" };
-      }} as unknown as AlipaySdk;
-      await new OfficialAlipayGateway({}, async () => client)
-        .payment({ ...order(platform), productKey, checkoutMode: "qr" });
-    }
+
   });
 }

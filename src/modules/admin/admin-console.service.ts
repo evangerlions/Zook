@@ -61,6 +61,8 @@ import {
 import { createDefaultRoles } from "./admin-console-roles.ts";
 import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
 import { AiNovelConversationRecordService } from "../ai-novel/ai-novel-conversation-record.service.ts";
+import { cleanAiNovelRevenueCatConfig } from "./ainovel-revenuecat-config.ts";
+import { validateAiNovelAlipayPricing } from "../billing/ainovel-alipay-pricing.ts";
 
 export class AdminConsoleService extends AdminConsoleCommonFacade {
   constructor(
@@ -130,7 +132,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     if (revision && !record) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    const rawJson = record ? normalizeConfig(record.content) : await this.readNormalizedConfig(app.id);
+    const rawJson = cleanAiNovelRevenueCatConfig(app.id, record ? normalizeConfig(record.content) : await this.readNormalizedConfig(app.id));
 
     return {
       app: await this.toSummary(app),
@@ -174,7 +176,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     }
 
     const rawJson = await this.readNormalizedConfig(app.id);
-    const appConfig = JSON.parse(rawJson) as Record<string, unknown>;
+    const appConfig = JSON.parse(cleanAiNovelRevenueCatConfig(app.id, rawJson)) as Record<string, unknown>;
     const releaseUpdate = app.id === "ai_novel"
       ? await this.commonReleaseUpdateConfigService.getPublicConfig(app.id)
       : undefined;
@@ -228,7 +230,8 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
 
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
     const app = await this.requireConfigApp(appId);
-    const normalized = normalizeConfig(rawJson);
+    const normalized = cleanAiNovelRevenueCatConfig(app.id, normalizeConfig(rawJson));
+    validateAiNovelAlipayPricing(app.id, normalized);
 
     await this.appConfigService.setValue(
       app.id,
@@ -247,6 +250,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
+    validateAiNovelAlipayPricing(app.id, existing.content);
     await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);

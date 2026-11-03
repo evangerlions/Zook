@@ -131,6 +131,15 @@ Admin Web 的 `/_admin/runtime-config.js` 仅在显式 `APP_ENV=local` 且
 admin.delivery_config
 ```
 
+`ai_novel` 的支付宝价格使用此配置中的 `billing.alipay.prices`，在现有“配置管理”
+JSON 编辑器维护。六个必填商品为 `plus_monthly`、`plus_quarterly`、`plus_yearly`、
+`pro_monthly`、`pro_quarterly`、`pro_yearly`，值为 1 至 999999999999 的整数，单位为人民币分，与结算金额格式一致。
+保存与历史恢复均校验完整目录；非法价格返回 `400 ADMIN_CONFIG_INVALID_JSON`，不创建新版本。
+保存或恢复后，同一部署的正式与沙箱商品目录及新订单读取同一份最新价格，无需重启或重新部署。
+local/dev/online 的后台配置独立，不跨部署同步价格。
+删除 `billing.alipay` 停止新销售；旧订单、幂等重放和支付确认仍使用冻结金额。
+这些低敏价格随公开配置返回，App Store/Google Play 的价格仍由商店决定。
+
 ### 3.4.1 全局应用升级目录
 
 升级目录位于 `common` 工作区，使用版本化配置键 `common.release_updates`。它可以
@@ -307,7 +316,7 @@ configKey = ai_novel.model_point_pricing
 
 默认费率采用产品确认的三倍率表，参考 OpenRouter 精确型号价格与厂商信息，不代表厂商实际账单。`availableModels[].reference` 标明参考来源和可用性。基础输入/输出同时配置或留空；缓存为空按普通输入费率计，显式 0 表示免费。`contextTiers` 保存长上下文阶梯，Admin 可展开编辑且保存不丢失。
 
-Zook 按可信 provider usage（缺失时复用本地估算）及此配置计算精确整数微点并保存价格快照。该配置仅作用于 ai_novel；Admin 与账户结算消费同一结果。余额见 Writing Credits API；每次成功 provider 调用由 Zook 立即结算；真实额度准入/扣费默认关闭，客户端、迁移和联调完成前不能启用。
+Zook 按可信 provider usage（缺失时复用本地估算）及此配置计算精确整数微点并保存价格快照。该配置仅作用于 ai_novel；Admin 与账户结算消费同一结果。余额见 Writing Credits API；每次成功 provider 调用由 Zook 立即结算；额度准入和扣费始终生效；Auto 对话免扣由 Auto 免费活动配置控制。
 
 ### 3.6 AINovel Feedback
 

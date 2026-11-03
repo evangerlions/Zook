@@ -5223,20 +5223,7 @@ export const AINovelPublicConfigSchema = {
         "revenueCat": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "enabled",
-            "configVersion",
-            "proxyUrl",
-            "publicSdkKeys"
-          ],
           "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "configVersion": {
-              "type": "string",
-              "minLength": 1
-            },
             "proxyUrl": {
               "type": [
                 "string",
@@ -5244,36 +5231,58 @@ export const AINovelPublicConfigSchema = {
               ],
               "format": "uri",
               "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-            },
-            "publicSdkKeys": {
+            }
+          }
+        },
+        "alipay": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prices"
+          ],
+          "properties": {
+            "prices": {
               "type": "object",
+              "description": "Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.",
               "additionalProperties": false,
               "required": [
-                "ios",
-                "android",
-                "web"
+                "plus_monthly",
+                "plus_quarterly",
+                "plus_yearly",
+                "pro_monthly",
+                "pro_quarterly",
+                "pro_yearly"
               ],
               "properties": {
-                "ios": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "minLength": 1
+                "plus_monthly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
                 },
-                "android": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "minLength": 1
+                "plus_quarterly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
                 },
-                "web": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "minLength": 1
+                "plus_yearly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "pro_monthly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "pro_quarterly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "pro_yearly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
                 }
               }
             }
@@ -5377,13 +5386,16 @@ export type AINovelPublicConfig = {
 };
   "billing"?: {
   "revenueCat"?: {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
+  "proxyUrl"?: string | null;
+};
+  "alipay"?: {
+  "prices": {
+  "plus_monthly": number;
+  "plus_quarterly": number;
+  "plus_yearly": number;
+  "pro_monthly": number;
+  "pro_quarterly": number;
+  "pro_yearly": number;
 };
 };
 };
@@ -5858,20 +5870,7 @@ export const PublicConfigDataSchema = {
             "revenueCat": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "enabled",
-                "configVersion",
-                "proxyUrl",
-                "publicSdkKeys"
-              ],
               "properties": {
-                "enabled": {
-                  "type": "boolean"
-                },
-                "configVersion": {
-                  "type": "string",
-                  "minLength": 1
-                },
                 "proxyUrl": {
                   "type": [
                     "string",
@@ -5879,36 +5878,58 @@ export const PublicConfigDataSchema = {
                   ],
                   "format": "uri",
                   "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-                },
-                "publicSdkKeys": {
+                }
+              }
+            },
+            "alipay": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "prices"
+              ],
+              "properties": {
+                "prices": {
                   "type": "object",
+                  "description": "Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.",
                   "additionalProperties": false,
                   "required": [
-                    "ios",
-                    "android",
-                    "web"
+                    "plus_monthly",
+                    "plus_quarterly",
+                    "plus_yearly",
+                    "pro_monthly",
+                    "pro_quarterly",
+                    "pro_yearly"
                   ],
                   "properties": {
-                    "ios": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "minLength": 1
+                    "plus_monthly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
                     },
-                    "android": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "minLength": 1
+                    "plus_quarterly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
                     },
-                    "web": {
-                      "type": [
-                        "string",
-                        "null"
-                      ],
-                      "minLength": 1
+                    "plus_yearly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "pro_monthly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "pro_quarterly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "pro_yearly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
                     }
                   }
                 }
@@ -6021,13 +6042,16 @@ export type PublicConfigData = {
 };
   "billing"?: {
   "revenueCat"?: {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
+  "proxyUrl"?: string | null;
+};
+  "alipay"?: {
+  "prices": {
+  "plus_monthly": number;
+  "plus_quarterly": number;
+  "plus_yearly": number;
+  "pro_monthly": number;
+  "pro_quarterly": number;
+  "pro_yearly": number;
 };
 };
 };
@@ -7116,20 +7140,7 @@ export const BillingPublicConfigSchema = {
     "revenueCat": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "enabled",
-        "configVersion",
-        "proxyUrl",
-        "publicSdkKeys"
-      ],
       "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "configVersion": {
-          "type": "string",
-          "minLength": 1
-        },
         "proxyUrl": {
           "type": [
             "string",
@@ -7137,36 +7148,58 @@ export const BillingPublicConfigSchema = {
           ],
           "format": "uri",
           "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-        },
-        "publicSdkKeys": {
+        }
+      }
+    },
+    "alipay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prices"
+      ],
+      "properties": {
+        "prices": {
           "type": "object",
+          "description": "Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.",
           "additionalProperties": false,
           "required": [
-            "ios",
-            "android",
-            "web"
+            "plus_monthly",
+            "plus_quarterly",
+            "plus_yearly",
+            "pro_monthly",
+            "pro_quarterly",
+            "pro_yearly"
           ],
           "properties": {
-            "ios": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
+            "plus_monthly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
             },
-            "android": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
+            "plus_quarterly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
             },
-            "web": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
+            "plus_yearly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "pro_monthly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "pro_quarterly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "pro_yearly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
             }
           }
         }
@@ -7177,13 +7210,16 @@ export const BillingPublicConfigSchema = {
 
 export type BillingPublicConfig = {
   "revenueCat"?: {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
+  "proxyUrl"?: string | null;
+};
+  "alipay"?: {
+  "prices": {
+  "plus_monthly": number;
+  "plus_quarterly": number;
+  "plus_yearly": number;
+  "pro_monthly": number;
+  "pro_quarterly": number;
+  "pro_yearly": number;
 };
 };
 };
@@ -7191,20 +7227,7 @@ export type BillingPublicConfig = {
 export const RevenueCatPublicConfigSchema = {
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "enabled",
-    "configVersion",
-    "proxyUrl",
-    "publicSdkKeys"
-  ],
   "properties": {
-    "enabled": {
-      "type": "boolean"
-    },
-    "configVersion": {
-      "type": "string",
-      "minLength": 1
-    },
     "proxyUrl": {
       "type": [
         "string",
@@ -7212,51 +7235,12 @@ export const RevenueCatPublicConfigSchema = {
       ],
       "format": "uri",
       "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
-    },
-    "publicSdkKeys": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "ios",
-        "android",
-        "web"
-      ],
-      "properties": {
-        "ios": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        },
-        "android": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        },
-        "web": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        }
-      }
     }
   }
 } as const;
 
 export type RevenueCatPublicConfig = {
-  "enabled": boolean;
-  "configVersion": string;
-  "proxyUrl": string | null;
-  "publicSdkKeys": {
-  "ios": string | null;
-  "android": string | null;
-  "web": string | null;
-};
+  "proxyUrl"?: string | null;
 };
 
 export const AlipayCreateRequestSchema = {
@@ -7321,10 +7305,9 @@ export const AlipayCreateRequestSchema = {
       "type": "string",
       "enum": [
         "mobile_web",
-        "desktop_web",
-        "qr"
+        "desktop_web"
       ],
-      "description": "Web mobile uses mobile_web; desktop Web uses desktop_web (signed page.pay URL embedded in the client). Windows and legacy clients use qr. Omit for native Android."
+      "description": "Mobile Web uses mobile_web; desktop Web and Windows use desktop_web (signed page.pay URL embedded in the client). Required for Web and Windows; Windows accepts only desktop_web. Omit for native Android."
     }
   }
 } as const;
@@ -7335,7 +7318,7 @@ export type AlipayCreateRequest = {
   "distribution": "china_android_store" | "direct_android" | "web" | "windows";
   "market"?: "xiaomi" | "vivo" | "oppo" | "huawei" | "honor" | "direct" | null;
   "idempotencyKey": string;
-  "checkoutMode"?: "mobile_web" | "desktop_web" | "qr";
+  "checkoutMode"?: "mobile_web" | "desktop_web";
 };
 
 export const AlipayOrderSchema = {
@@ -7482,24 +7465,6 @@ export const AlipayPaymentSchema = {
           "format": "uri"
         }
       }
-    },
-    {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "type",
-        "qrCode"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "qr"
-        },
-        "qrCode": {
-          "type": "string",
-          "minLength": 1
-        }
-      }
     }
   ]
 } as const;
@@ -7510,9 +7475,6 @@ export type AlipayPayment = {
 } | {
   "type": string;
   "url": string;
-} | {
-  "type": string;
-  "qrCode": string;
 };
 
 export const AlipayCreateDataSchema = {
@@ -7690,24 +7652,6 @@ export const AlipayCreateDataSchema = {
                   "format": "uri"
                 }
               }
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "type",
-                "qrCode"
-              ],
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "const": "qr"
-                },
-                "qrCode": {
-                  "type": "string",
-                  "minLength": 1
-                }
-              }
             }
           ]
         },
@@ -7747,9 +7691,6 @@ export type AlipayCreateData = {
 } | {
   "type": string;
   "url": string;
-} | {
-  "type": string;
-  "qrCode": string;
 } | unknown;
 };
 
@@ -9220,7 +9161,6 @@ export type CreditMicros = number;
 export const CreditsBalanceDataSchema = {
   "type": "object",
   "required": [
-    "enabled",
     "tier",
     "refreshAt",
     "periodicMicros",
@@ -9229,9 +9169,6 @@ export const CreditsBalanceDataSchema = {
     "remainingMicros"
   ],
   "properties": {
-    "enabled": {
-      "type": "boolean"
-    },
     "tier": {
       "type": "string",
       "enum": [
@@ -9289,7 +9226,6 @@ export const CreditsBalanceDataSchema = {
 } as const;
 
 export type CreditsBalanceData = {
-  "enabled": boolean;
   "tier": "free" | "plus" | "pro";
   "refreshAt": string;
   "periodicMicros": number;

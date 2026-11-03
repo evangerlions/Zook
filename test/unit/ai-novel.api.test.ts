@@ -479,6 +479,7 @@ test("ai_novel model selection config controls the upstream model without changi
     chat: {
       default: [{ modelKey: "configured-chat", weight: 100 }],
     },
+    autoFree: { enabled: true },
   });
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",

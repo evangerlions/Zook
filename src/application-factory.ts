@@ -1,7 +1,7 @@
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
-import { billingSandboxAllowed } from "./modules/billing/billing-environment.ts";
+import { billingDeploymentEnvironment } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -81,8 +81,7 @@ import { SmsVerificationCleanupService } from "./services/sms-verification-clean
 import { SmsVerificationRecordService } from "./services/sms-verification-record.service.ts";
 import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-callback.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
-import { AiNovelBillingService } from "./services/ainovel-billing.service.ts";
-import { alipayEnvironmentOptions } from "./services/ainovel-alipay-gateway.ts";
+import { createApplicationBillingService } from "./application-billing-runtime.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
@@ -110,19 +109,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     emitToConsole: options.emitLogs ?? false,
     sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
-  const aiNovelBillingService = new AiNovelBillingService(database, {
-    alipay: { ...(options.alipay ?? alipayEnvironmentOptions()), allowSandbox: options.billingEnvironment?.allowSandbox ?? billingSandboxAllowed() },
-    secretApiKey: options.revenueCat?.secretApiKey ?? process.env.REVENUECAT_AI_NOVEL_SECRET_API_KEY,
-    revenueCatProjectId: options.revenueCat?.projectId ?? process.env.REVENUECAT_AI_NOVEL_PROJECT_ID,
-    webhookAuthorization: options.revenueCat?.webhookAuthorization ?? process.env.REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION,
-    revenueCatAppId: options.revenueCat?.appId ?? process.env.REVENUECAT_AI_NOVEL_APP_ID,
-    revenueCatGoogleAppId: options.revenueCat?.googleAppId ?? process.env.REVENUECAT_AI_NOVEL_GOOGLE_APP_ID,
-    allowSandbox: (options.billingEnvironment?.allowSandbox ?? billingSandboxAllowed()) &&
-      (options.revenueCat?.allowSandbox ?? process.env.REVENUECAT_AI_NOVEL_ALLOW_SANDBOX === "true"),
-    fetcher: options.revenueCat?.fetcher,
-    timeoutMs: options.revenueCat?.timeoutMs,
-    now: options.revenueCat?.now,
-  }, logger);
   const telemetryGateway = createApplicationTelemetryGateway(options, logger);
   if (localRunFileLogSink) {
     logger.info("local run file logging enabled", {
@@ -136,6 +122,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     cache,
     kvManager,
   );
+  const aiNovelBillingService = createApplicationBillingService(database, appConfigService, options, logger);
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const appAiRoutingConfigService = new AppAiRoutingConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
@@ -345,7 +332,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     createCreditsMembershipReader(aiNovelBillingService), logger);
   const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
     aiNovelCreditsService,
-    options.aiNovelCreditsEnabled ?? process.env.AINOVEL_CREDITS_ENABLED === "true",
     aiNovelConversationRecordService,
     async () => (await aiNovelModelSelectionConfigService.getAutoFree()).active,
   );
@@ -392,13 +378,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     })),
   );
   const aiNovelLlmService = new AiNovelLlmService(
+    aiNovelCreditsFlow,
     llmManager,
     embeddingManager,
     aiNovelModelSelectionConfigService,
     logger,
     contentSafetyService,
     aiNovelConversationRecordService,
-    aiNovelCreditsFlow,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
@@ -500,7 +486,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     kvManager,
     aiNovelBillingService,
     frogsleepEnabled,
-    lighttickEnabled, lighttickRuntime, options.billingEnvironment ?? { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" },
+    lighttickEnabled, lighttickRuntime, options.appEnvironment ?? billingDeploymentEnvironment(),
     yaoheziEnabled,
     options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );

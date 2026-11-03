@@ -3,7 +3,7 @@ import type { AlipayOrder } from "../modules/billing/alipay-models.ts";
 export class InMemoryAlipayOrders {
   readonly orders = new Map<string, AlipayOrder>();
   findOrder(id: string) { const order = this.orders.get(id); return order && structuredClone(order); }
-  findIdempotency(user: string, key: string) { return [...this.orders.values()].find(order => order.userId === user && order.idempotencyKey === key); }
+  findIdempotency(user: string, key: string) { return [...this.orders.values()].find(order => order.userId === user && order.idempotencyKey === key && order.environment === billingEnvironment()); }
   listRecovery(environment: string, merchant: string, seller: string, limit: number) {
     return structuredClone([...this.orders.values()].filter(order =>
       order.environment === environment && order.merchantAppId === merchant && order.sellerId === seller &&
@@ -30,7 +30,7 @@ export class InMemoryAlipayOrders {
   }
   save(order: AlipayOrder) {
     for (const other of this.orders.values()) {
-      if (other.orderId !== order.orderId && ((other.userId === order.userId && other.idempotencyKey === order.idempotencyKey) ||
+      if (other.orderId !== order.orderId && ((other.userId === order.userId && other.environment === order.environment && other.idempotencyKey === order.idempotencyKey) ||
         (order.providerTransactionId && order.environment === other.environment && order.providerTransactionId === other.providerTransactionId))) throw new Error("Duplicate Alipay identity");
     }
     this.orders.set(order.orderId, structuredClone(order));

@@ -3,17 +3,13 @@ import { ApplicationError } from "../../shared/errors.ts";
 import type { AiNovelBillingMembershipRecord } from "../../shared/types.ts";
 import type { AlipayCreateInput, AlipayOptions, AlipayOrder, AlipayPublicOrder } from "./alipay-models.ts";
 import { billingChannelsConflict } from "./billing-channel-policy.ts";
-
-export const ALIPAY_PRICES = { plus_monthly: 3800, plus_quarterly: 9800, plus_yearly: 29800,
-  pro_monthly: 8800, pro_quarterly: 22800, pro_yearly: 59800 } as const;
+import { ALIPAY_PRODUCT_KEYS } from "./ainovel-alipay-pricing.ts";
 
 export function alipayConfigured(options: AlipayOptions): boolean {
   const https = (url?: string) => { try { return new URL(url!).protocol === "https:"; } catch { return false; } };
-  return options.enabled === true && !!options.appId?.trim() &&
+  return !!options.appId?.trim() &&
     (options.environment === "sandbox" || options.environment === "production") &&
-    (options.environment !== "production" || (options.pricesApproved === true && !!options.prices)) &&
-    (!options.prices || Object.keys(ALIPAY_PRICES).every(key => Number.isSafeInteger(options.prices![key as keyof typeof ALIPAY_PRICES]) && options.prices![key as keyof typeof ALIPAY_PRICES] > 0)) &&
-    https(options.notifyUrl) && https(options.returnUrl) &&
+    (options.environment === "sandbox" || ((!options.notifyUrl || https(options.notifyUrl)) && (!options.returnUrl || https(options.returnUrl)))) &&
     (!!options.gateway || (!!options.privateKeyPath && !!options.publicKeyPath));
 }
 export function assertAlipayChannel(region: string, platform: string, distribution: string): void {
@@ -26,13 +22,14 @@ export function parseAlipayCreate(body: unknown): AlipayCreateInput {
   if (!body || typeof body !== "object" || Array.isArray(body)) invalid();
   const value = body as Record<string, unknown>;
   if (Object.keys(value).some(key => !["productKey", "platform", "distribution", "idempotencyKey", "checkoutMode", "market"].includes(key)) ||
-    typeof value.productKey !== "string" || !Object.hasOwn(ALIPAY_PRICES, value.productKey) ||
+    typeof value.productKey !== "string" || !ALIPAY_PRODUCT_KEYS.includes(value.productKey as AlipayCreateInput["productKey"]) ||
     !["android", "web", "windows"].includes(String(value.platform)) ||
     !["china_android_store", "direct_android", "web", "windows"].includes(String(value.distribution)) ||
     typeof value.idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(value.idempotencyKey)) invalid();
-  if (value.checkoutMode !== undefined &&
-    (!(value.checkoutMode === "qr" || value.checkoutMode === "mobile_web" || value.checkoutMode === "desktop_web") ||
-      value.platform === "android" || (value.platform === "windows" && value.checkoutMode !== "qr"))) invalid();
+  const validMode = value.platform === "android" ? value.checkoutMode === undefined
+    : value.platform === "windows" ? value.checkoutMode === "desktop_web"
+    : value.checkoutMode === "mobile_web" || value.checkoutMode === "desktop_web";
+  if (!validMode) invalid();
   validateAlipayMarket(value.market, String(value.distribution));
   return value as unknown as AlipayCreateInput;
 }

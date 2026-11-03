@@ -3,7 +3,7 @@ import test from "node:test";
 import { AiNovelCreditsService } from "../../src/modules/ai-novel/credits/ai-novel-credits.service.ts";
 import { AiNovelCreditsRequestFlow } from "../../src/modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { InMemoryAiNovelCreditsStore } from "../../src/testing/in-memory-ai-novel-credits-store.ts";
-import { syntheticAiNovelReply } from "../../src/modules/ai-novel/credits/synthetic-ai-novel-reply.ts";
+import { quotaReply, syntheticAiNovelReply } from "../../src/modules/ai-novel/credits/synthetic-ai-novel-reply.ts";
 import { PublicApiMessages } from "../../src/generated/i18n/public-api-messages.generated.ts";
 import { LLMManager } from "../../src/services/llm-manager.ts";
 import { EmbeddingManager } from "../../src/services/embedding-manager.ts";
@@ -16,9 +16,9 @@ const usage = { promptTokens: 30000, cachedInputTokens: 24000, completionTokens:
 const request = { sceneKey: "write_turn", messages: [{ role: "user", content: "write" }], context: { billingJobId: "job" } };
 const opts = { userId: "u", requestId: "r", locale: "zh-CN" };
 const response = { sceneKey: "write_turn", completion: { sceneRouteKey: "write_turn", provider: "test", providerModel: "m", content: "text", finishReason: "stop" } };
-function fixture(enabled = true) {
+function fixture() {
   const credits = new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => "free");
-  return { credits, flow: new AiNovelCreditsRequestFlow(credits, enabled) };
+  return { credits, flow: new AiNovelCreditsRequestFlow(credits) };
 }
 async function collect<T>(stream: AsyncIterable<T>) { const result: T[] = []; for await (const value of stream) result.push(value); return result; }
 
@@ -49,10 +49,17 @@ test("quota reply emphasizes membership without removing the refresh option", as
   }
 });
 
-test("enabled flow accepts old callers without any client billing protocol", async () => {
+test("legacy quota copy is localized and distinct from the modern copy", () => {
+  for (const locale of Object.keys(PublicApiMessages)) {
+    assert.notEqual(quotaReply(locale, "r", true).text, quotaReply(locale, "r").text, locale);
+  }
+  assert.match(quotaReply("zh-CN", "r", true).text, /更新至最新版本/);
+  assert.match(quotaReply("en-US", "r", true).text, /latest version/);
+});
+
+test("credit flow accepts old callers without any client billing protocol", async () => {
   const { flow } = fixture();
   assert.equal(await flow.complete({ ...request, context: {} }, opts, async () => response), response);
-  assert.equal(await fixture(false).flow.complete({ ...request, context: {} }, {}, async () => response), response);
 });
 
 test("zero balance blocks before execute/provider and returns business SSE without usage", async () => {

@@ -8,7 +8,7 @@ export interface AlipayCreateInput {
   platform: AlipayPlatform;
   distribution: AlipayDistribution;
   idempotencyKey: string;
-  checkoutMode?: "mobile_web" | "desktop_web" | "qr";
+  checkoutMode?: "mobile_web" | "desktop_web";
 }
 export interface AlipayOrder extends AlipayCreateInput {
   orderId: string;
@@ -35,7 +35,7 @@ export interface AlipayOrder extends AlipayCreateInput {
   lastRecoveryAt?: string;
 }
 export type AlipayPublicOrder = Pick<AlipayOrder, "orderId" | "provider" | "environment" | "productKey" | "status" | "amountMinor" | "currency" | "createdAt" | "expiresAt" | "paidAt" | "membershipApplied" | "conflict">;
-export type AlipayPayment = { type: "app"; orderString: string } | { type: "page"; url: string } | { type: "qr"; qrCode: string };
+export type AlipayPayment = { type: "app"; orderString: string } | { type: "page"; url: string };
 export interface AlipayGateway {
   payment(order: AlipayOrder): Promise<AlipayPayment>;
   /** Must reject unverified responses. Normalized keys retain Alipay snake_case. */
@@ -43,10 +43,8 @@ export interface AlipayGateway {
   verifyNotify(fields: Record<string, string>): Promise<boolean>;
 }
 export interface AlipayOptions {
-  enabled?: boolean;
   /** Testable per-query deadline; production defaults to 20 seconds. */
   queryTimeoutMs?: number;
-  allowSandbox?: boolean;
   appId?: string;
   /** Optional merchant override and additional settlement check. */
   sellerId?: string;
@@ -57,7 +55,5 @@ export interface AlipayOptions {
   publicKeyPath?: string;
   gateway?: AlipayGateway;
   now?: () => Date;
-  /** Explicit minor-unit price catalog. Defaults are development placeholders only. */
-  prices?: Record<AlipayProductKey, number>;
-  pricesApproved?: boolean;
 }
+export type AlipayEnvironmentOptions = Partial<Record<import("./billing-environment.ts").BillingEnvironment, Omit<AlipayOptions, "environment">>>;

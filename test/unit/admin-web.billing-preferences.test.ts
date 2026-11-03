@@ -53,6 +53,7 @@ test("billing page owns one top-level environment selector and restores it on re
     "../components/billing-orders-section": { BillingOrdersSection: "Orders" },
     "../components/billing-overview-section": { BillingOverviewSection: "Overview" },
     "../components/billing-memberships-section": { BillingMembershipsSection: "Members" },
+    "../components/billing-scope-filter": { BillingScopeFilter: "ScopeFilter" },
     "../lib/billing-admin-api": { billingAdminApi: { apps: () => undefined } },
     "../lib/use-billing-query": { useBillingQuery: () => ({ data: [] }) },
     "../lib/admin-session": { useAdminSession: () => ({ completeWorkspaceTransition: () => undefined }) },
@@ -68,12 +69,10 @@ test("billing page owns one top-level environment selector and restores it on re
   const render = () => { index = 0; return exports.default!(); };
   let tree = render();
   const filters = tree.props.children[1];
-  const application = filters.props.children.find((node: any) => node?.props?.["aria-label"] === "支付应用筛选");
-  const environment = filters.props.children.find((node: any) => node?.props?.["aria-label"] === "支付环境");
-  assert.ok(application && environment, "both selectors must share the top filter row");
-  environment.props.onChange("SANDBOX");
+  assert.equal(filters.type, "ScopeFilter");
+  filters.props.onEnvironmentChange("SANDBOX");
   assert.equal(saved, "SANDBOX");
-  application.props.onChange("ai_novel");
+  filters.props.onAppChange("ai_novel");
   tree = render();
   const tabs = tree.props.children[3].props.children[1];
   assert.equal(tabs.props.items[0].children.props.environment, "SANDBOX");
@@ -81,7 +80,7 @@ test("billing page owns one top-level environment selector and restores it on re
   assert.equal(tabs.props.items[1].children.props.environment, "SANDBOX");
   cells = []; // A browser refresh remounts the page.
   tree = render();
-  assert.equal(tree.props.children[1].props.children.find((node: any) => node?.props?.["aria-label"] === "支付环境").props.value, "SANDBOX");
+  assert.equal(tree.props.children[1].props.environment, "SANDBOX");
   const overview = await readFile(new URL("../../apps/admin-web/app/components/billing-overview-section.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(overview, /setEnvironment/);
   assert.match(overview, /const query = \{ appId, environment,/);

@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+import alipay_key_mounts
 
 
 DEFAULT_TAG_SUFFIX = "localdeploy"
@@ -1010,6 +1011,10 @@ def main() -> int:
                 "_admin/health": DEFAULT_ADMIN_HEALTH_PATH,
             },
         )
+
+        alipay_overlay = alipay_key_mounts.prepare(state_dir, app_env_file, slot=slot_name)
+        if alipay_overlay:
+            compose_files.append(alipay_overlay)
 
         print(f"use repo root: {repo_root}")
         print(f"use slot: {slot_name}")

@@ -5,6 +5,8 @@ import type {
   HttpResponse,
 } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
+import { supportsLegacyAiStreamEvent, supportsModernAiStream } from "../modules/ai-novel/ai-novel-stream-compatibility.ts";
+import { quotaReply } from "../modules/ai-novel/credits/synthetic-ai-novel-reply.ts";
 import {
   AesGcmPayloadCryptoError,
   type AesGcmJsonEnvelope,
@@ -157,7 +159,9 @@ async function *createEncryptedAiSseStream(
   shouldExposeLocalDebug: boolean,
 ): AsyncIterable<string> {
   try {
+    const modernStream = supportsModernAiStream(getHeader(request.headers, "x-app-version"));
     for await (const item of stream) {
+      if (!modernStream && !supportsLegacyAiStreamEvent(item)) continue;
       const payload = {
         code: "OK",
         message: "success",
@@ -274,7 +278,9 @@ export function buildEncryptedAiErrorPayload(this: BackendRouteContext,
     ? { clientAction: action } : undefined;
   return {
     code: error.code,
-    message: localizePublicErrorMessage.call(this, error, request),
+    message: error.code === "AINOVEL_QUOTA_INSUFFICIENT"
+      ? quotaReply(this.resolveRequestLocale(request), requestId, !supportsModernAiStream(getHeader(request.headers, "x-app-version"))).text
+      : localizePublicErrorMessage.call(this, error, request),
     data: shouldExposeLocalAiDebugFields.call(this, request)
       ? { ...buildLocalAiErrorDebugDetails.call(this, error), ...publicAction }
       : publicAction ?? null,

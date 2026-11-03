@@ -1,3 +1,4 @@
+import { seedAlipayPrices } from "../support/alipay-pricing-fixture.ts";
 import assert from "node:assert/strict";
 import baseTest from "node:test";
 import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
@@ -7,11 +8,11 @@ import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/defau
 
 test("catalog exposes public prices without membership reads; UserInfo owns personal restrictions", async () => {
   const seed = buildDefaultSeed();
+  seedAlipayPrices(seed);
   seed.appUsers!.push({ id: "catalog_alice", appId: "ai_novel", userId: "user_alice",
     status: "ACTIVE", accountRegion: "CN", joinedAt: new Date().toISOString() });
-  const runtime = await createApplication({ seed, alipay: { enabled: true, environment: "sandbox",
-    appId: "test_merchant", notifyUrl: "https://test.example/notify", returnUrl: "https://test.example/return",
-    gateway: { payment: async () => { throw new Error("Not a checkout"); }, query: async () => ({}), verifyNotify: async () => false } } });
+  const runtime = await createApplication({ seed, alipay: { sandbox: { appId: "test_merchant", notifyUrl: "https://test.example/notify", returnUrl: "https://test.example/return",
+    gateway: { payment: async () => { throw new Error("Not a checkout"); }, query: async () => ({}), verifyNotify: async () => false } } } });
   await runtime.database.upsertAiNovelBillingMembership({ appId: "ai_novel", userId: "user_alice",
     active: true, state: "active", tier: "plus", source: "app_store", planKey: "plus_monthly",
     expiresAt: "2099-01-01T00:00:00Z", autoRenew: true, managementUrl: null, accountDeletedAt: null,

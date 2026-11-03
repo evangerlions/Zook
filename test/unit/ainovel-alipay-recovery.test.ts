@@ -1,3 +1,4 @@
+import { seedAlipayPrices } from "../support/alipay-pricing-fixture.ts";
 import assert from "node:assert/strict";
 import baseTest from "node:test";
 import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
@@ -11,6 +12,7 @@ import type { AlipayGateway } from "../../src/modules/billing/alipay-models.ts";
 const NOW = new Date("2026-10-18T10:00:00Z");
 async function fixture() {
   const seed = buildDefaultSeed();
+  seedAlipayPrices(seed);
   seed.appUsers!.push({ id: "recovery_alice", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion: "CN", joinedAt: NOW.toISOString() });
   const queried: string[] = [];
   let paid = true;
@@ -18,13 +20,13 @@ async function fixture() {
   const evidence = (id: string) => ({ code: "10000", out_trade_no: id, app_id: "merchant", seller_id: "seller",
     trade_no: `202610180000${id.slice(-6).replace(/[a-f]/g, '1')}`, total_amount: "38.00", trade_status: paid ? "TRADE_SUCCESS" : "WAIT_BUYER_PAY",
     gmt_payment: "2026-10-18 18:00:00", sign_type: "RSA2", sign: "valid" });
-  const gateway: AlipayGateway = { payment: async () => ({ type: "qr", qrCode: "test" }),
+  const gateway: AlipayGateway = { payment: async () => ({ type: "page", url: "https://openapi.alipay.com/gateway.do?method=alipay.trade.page.pay" }),
     query: async id => { queried.push(id); return evidence(id); }, verifyNotify: async () => true };
-  const runtime = await createApplication({ seed, alipay: { enabled: true, appId: "merchant", sellerId: "seller",
-    environment: "sandbox", notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => new Date(clock++) }, revenueCat: { now: () => NOW } });
+  const runtime = await createApplication({ seed, alipay: { sandbox: { appId: "merchant", sellerId: "seller",
+    notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => new Date(clock++) } }, revenueCat: { now: () => NOW } });
   const service = runtime.services.aiNovelBillingService.alipay;
   const create = async (key: string) => (await service.create("user_alice", "CN", {
-    productKey: "plus_monthly", platform: "web", distribution: "web", idempotencyKey: key,
+    productKey: "plus_monthly", platform: "web", distribution: "web", checkoutMode: "desktop_web", idempotencyKey: key,
   })).order.orderId;
   return { ...runtime, service, create, queried, evidence, unpaid: () => { paid = false; } };
 }
