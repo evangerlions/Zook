@@ -6,6 +6,61 @@ import { LearningMigrationService } from "../../src/modules/lighttick/learning/l
 import { learningMigrationFixture } from "../support/native-learning-migration-fixture.ts";
 import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 const owner = { appId: "lighttick" as const, userId: "migration-alice" };
+test("source completion without private consent remains anchored to its original publication across republishing", async () => {
+  const f = await setup(),
+    bundle = structuredClone(f.bundle);
+  bundle.consent.private = false;
+  bundle.private_states = [];
+  bundle.private_history = [];
+  bundle.receipts = [];
+  bundle.lessons[0].learning_state = "completed";
+  f.bundle = bundle;
+  f.digest = digest(bundle);
+  await f.repo.saveLearningPrivate(owner, {
+    binding_id: "synthetic-binding",
+    source_revision: 7,
+    enabled: false,
+    lessons: [],
+    requests: [],
+  });
+  for (const action of ["freeze", "import", "verify", "activate"] as const)
+    await step(f, action);
+  const original = await f.native.publication(owner, f.lesson),
+    body = {
+      base_revision: 1,
+      collection_id: original.lesson.collectionId,
+      number: original.lesson.number,
+      title: original.lesson.title,
+      content: original.publication.content,
+      references: original.publication.references,
+      source_url: original.publication.sourceUrl,
+    };
+  await f.native.publish(owner, f.lesson, body, "same-source-body-new-title");
+  assert.equal(
+    (await f.native.legacy(owner, f.lesson))?.lesson.learning_state,
+    "completed",
+  );
+  await f.native.publish(
+    owner,
+    f.lesson,
+    { ...body, base_revision: 2, content: "New curriculum body" },
+    "new-source-body-version",
+  );
+  assert.equal(
+    (await f.native.legacy(owner, f.lesson))?.lesson.learning_state,
+    "unknown",
+  );
+  assert.equal(
+    (await f.repo.getNativeLesson(owner, f.lesson))?.sourceCompletedVersion,
+    f.current,
+  );
+  assert.equal(
+    (await f.native.publication(owner, f.lesson, f.current)).publication
+      .content,
+    body.content,
+  );
+  assert.equal((await f.native.legacyPrivate(owner, f.lesson)).enabled, false);
+});
 async function setup() {
   const repo = new InMemoryLightTickRepository();
   await repo.saveLearningLibrary(owner, {

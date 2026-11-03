@@ -115,7 +115,12 @@ export class NativeLearningCompatibility {
       references: p.references,
       source_url: p.sourceUrl,
       learning_state:
-        state?.completed || row.sourceCompleted ? "completed" : "unknown",
+        state?.completed ||
+        (row.sourceCompleted &&
+          (row.sourceCompletedVersion ?? row.publishedVersion) ===
+            p.contentVersion)
+          ? "completed"
+          : "unknown",
     };
   }
   async legacyPrivate(owner: LightTickOwner, id: string) {

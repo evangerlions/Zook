@@ -34,6 +34,7 @@ export interface NativeLesson extends LightTickOwner {
   revision: number;
   publishedVersion: string | null;
   sourceCompleted?: boolean;
+  sourceCompletedVersion?: string | null;
   archived: boolean;
   updatedAt: string;
 }

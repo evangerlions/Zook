@@ -409,6 +409,10 @@ export class NativeLearningService {
           title,
           revision: base + 1,
           publishedVersion: contentVersion,
+          sourceCompleted: old?.sourceCompleted ?? false,
+          sourceCompletedVersion:
+            old?.sourceCompletedVersion ??
+            (old?.sourceCompleted ? old.publishedVersion : null),
           archived: false,
           updatedAt: now,
         };

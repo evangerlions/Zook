@@ -181,6 +181,8 @@ export function readLearningManifest(
       revision: 1,
       publishedVersion,
       sourceCompleted: x.learning_state === "completed",
+      sourceCompletedVersion:
+        x.learning_state === "completed" ? publishedVersion : null,
       archived: false,
       updatedAt: source.frozen_at,
     });

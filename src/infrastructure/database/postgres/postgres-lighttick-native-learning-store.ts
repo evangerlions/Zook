@@ -156,7 +156,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
   async saveNativeLesson(r: NativeLesson, base: number) {
     try {
       await this.put(
-        `INSERT INTO zook_lighttick_native_lessons(app_id,user_id,id,collection_id,number,title,revision,published_version,archived,updated_at,source_completed) SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$12 WHERE $11=0 OR EXISTS(SELECT 1 FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$11) ON CONFLICT(app_id,user_id,id) DO UPDATE SET title=$6,revision=$7,published_version=$8,archived=$9,updated_at=$10,source_completed=$12 WHERE zook_lighttick_native_lessons.revision=$11`,
+        `INSERT INTO zook_lighttick_native_lessons(app_id,user_id,id,collection_id,number,title,revision,published_version,archived,updated_at,source_completed,source_completed_version) SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$12,$13 WHERE $11=0 OR EXISTS(SELECT 1 FROM zook_lighttick_native_lessons WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$11) ON CONFLICT(app_id,user_id,id) DO UPDATE SET title=$6,revision=$7,published_version=$8,archived=$9,updated_at=$10,source_completed=$12,source_completed_version=$13 WHERE zook_lighttick_native_lessons.revision=$11`,
         [
           r.appId,
           r.userId,
@@ -170,6 +170,7 @@ export class PostgresNativeLearningStore implements NativeLearningRepository {
           r.updatedAt,
           base,
           r.sourceCompleted ?? false,
+          r.sourceCompletedVersion??(r.sourceCompleted?r.publishedVersion:null),
         ],
       );
     } catch (error) {
