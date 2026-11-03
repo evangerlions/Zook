@@ -115,7 +115,7 @@ npm run smoke:frogsleep-zook
 建议在服务器上只保留一个仓库目录，例如：
 
 ```bash
-/home/ubuntu/app/zook
+/home/ubuntu/app/Zook
 ```
 
 不要再为不同分支维护不同目录。分支和 commit 由部署脚本自己切换。
@@ -123,7 +123,7 @@ npm run smoke:frogsleep-zook
 先准备运行环境：
 
 ```bash
-cd /home/ubuntu/app/zook
+cd /home/ubuntu/app/Zook
 cp deploy_configs/online.env.example deploy_configs/online.env
 cp deploy_configs/dev.env.example deploy_configs/dev.env
 sudo mkdir -p /var/lib/zook/appRunData
@@ -153,6 +153,27 @@ python3
 ```
 
 ## 手工发布命令
+
+### 部署脚本有更新时的首次发布
+
+当前部署入口会先加载 Python 脚本，再在同一进程里切换 Git checkout；切换代码
+不会重新加载已经运行的部署脚本。新增密钥挂载等部署逻辑时，必须先准备服务器 checkout，
+再触发 release webhook，确保首次发布就执行新脚本。
+
+先将待发布功能合回并推送 `origin/main`，记录已验证的 main SHA。确认服务器没有进行中的
+部署且 checkout 干净，然后在服务器执行：
+
+```bash
+cd /home/ubuntu/app/Zook
+git fetch origin --tags
+git checkout --detach <已验证的_origin/main_SHA>
+```
+
+这一步更新部署脚本及其依赖模块，现有容器继续运行。随后在本地按仓库发布规范执行
+`./release_dev.sh`；webhook 或下面的手工命令必须使用它生成的 `release-dev` SHA。
+不得把功能分支直接作为 release 来源。
+
+### 执行部署
 
 发布某个分支最新代码：
 
@@ -219,7 +240,7 @@ verify webhook -> exec build_and_push_docker.py --branch <branch> --commit <sha>
 推荐的命令行应该是：
 
 ```bash
-cd /home/ubuntu/app/zook && python3 build_scripts/build_and_push_docker.py --branch release-online --commit <commit_sha> --slot online --env-file deploy_configs/online.env --app-env-file deploy_configs/online.env
+cd /home/ubuntu/app/Zook && python3 build_scripts/build_and_push_docker.py --branch release-online --commit <commit_sha> --slot online --env-file deploy_configs/online.env --app-env-file deploy_configs/online.env
 ```
 
 如果你的 CICD 服务仍然是 Node/Express，可以把执行命令收敛成这种形式：
@@ -230,7 +251,7 @@ const branch = req.body?.ref?.split('/')?.pop();
 const commitSha = req.body?.after || req.body?.head_commit?.id;
 
 const repoPathByName: Record<string, string> = {
-  zook: '/home/ubuntu/app/zook',
+  zook: '/home/ubuntu/app/Zook',
 };
 
 const supportBranchByRepo: Record<string, string[]> = {
@@ -268,7 +289,7 @@ execCommand(command, (code, out) => {
 如果服务器上的实际路径不一样，可以在 cicd 服务的环境变量里覆盖：
 
 ```bash
-LOCAL_DEPLOY_REPO_PATH_ZOOK=/home/ubuntu/app/zook
+LOCAL_DEPLOY_REPO_PATH_ZOOK=/home/ubuntu/app/Zook
 LOCAL_DEPLOY_SCRIPT_PATH_ZOOK=build_scripts/build_and_push_docker.py
 LOCAL_DEPLOY_ENV_FILE_ZOOK_ONLINE=deploy_configs/online.env
 LOCAL_DEPLOY_APP_ENV_FILE_ZOOK_ONLINE=deploy_configs/online.env
