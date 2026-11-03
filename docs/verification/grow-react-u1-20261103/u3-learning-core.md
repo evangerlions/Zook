@@ -18,4 +18,8 @@
 
 ## 尚未验收
 
-React 课程 UI 与浏览器另补证据；原生旧接口兼容不等于双端完整分页新入口。课程 AI/采集/文件 worker、全领域导出/撤权处理、U4 知识回看和 U5 投资研究仍待实现。导入上限 6 MiB/200 课节，未实现分块增量协议，不能用于超限迁移。真实模型、真机/读屏、长期窗口、真实迁移及发布独立待执行。原 14/27 大任务暂不因核心切片通过而提前勾选。
+React Web 固定干净产物 `4c9e86d7e6a989cc7f26b0b1be8a046f1fda4be2`，合同/后端核心 `2e30a7b`，source_dirty=false。Chrome 学习、records、manual/Today、actions、U2 AI/目标/复盘的原故事回归通过；375px 无横向溢出，pageerror 为零。行动回归 fixture 需要开启既有 LIGHTTICK_ACTIONS_ENABLED/LIGHTTICK_ACTIONS_V2_ENABLED；首次漏开开关的失败已归因并重跑，没有修改默认关闭行为。
+
+iOS `856205b` 与 Android `4e7fc9d` 私人学习专项各 8 项通过，直接消费原生终态、读取/撤权失败保留未决命令、改版不覆盖旧版输入；分别为 Simulator/JVM 证据。详见 Grow 的 docs/verification/native-learning-20261103.md。
+
+U3 前三项工程任务完成，当前 17/27。原生旧接口兼容不等于双端完整分页/发布新入口。课程 AI/采集/文件 worker、全领域导出/撤权处理、U4 知识回看和 U5 投资研究仍待实现。导入上限 6 MiB/200 课节，未实现分块增量协议，不能用于超限迁移。真实模型、真机/读屏、长期窗口、真实迁移及发布独立待执行。
