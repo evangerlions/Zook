@@ -338,8 +338,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number) {
     return await this.saveAggregate(this.tasks, row, write, expectedVersion);
   }
-  async listTaskSteps(owner: LightTickOwner, taskId: string) {
-    return clone([...this.taskSteps.values()].filter(row => ownerKey(row) === ownerKey(owner) && row.taskId === taskId)
+  async listTaskSteps(owner: LightTickOwner, taskId?: string) {
+    return clone([...this.taskSteps.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!taskId || row.taskId === taskId))
       .sort((left, right) => left.position - right.position));
   }
   async getTaskStep(owner: LightTickOwner, taskId: string, id: string) {

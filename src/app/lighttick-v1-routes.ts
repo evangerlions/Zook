@@ -389,7 +389,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}today` && request.method === "GET") {
     const today = await runtime.today.get(owner);
-    const renderTask = async (task: any) => taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+    const renderTask = (task: any) => taskData(task, today.taskSteps.filter(step => step.taskId === task.id));
     await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
       { business_date: today.businessDate, result: "browsed" });
     return response(context, request, { business_date: today.businessDate,

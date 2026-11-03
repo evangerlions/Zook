@@ -47,7 +47,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   listTasks(owner: LightTickOwner, planId?: string): Promise<LightTickTaskRow[]>;
   getTask(owner: LightTickOwner, id: string): Promise<LightTickTaskRow | undefined>;
   saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickTaskRow>;
-  listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]>;
+  listTaskSteps(owner: LightTickOwner, taskId?: string): Promise<LightTickTaskStepRow[]>;
   getTaskStep(owner: LightTickOwner, taskId: string, id: string): Promise<LightTickTaskStepRow | undefined>;
   saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number): Promise<LightTickTaskStepRow>;
   listExecutionEvents(owner: LightTickOwner, from?: string, to?: string, goalId?: string): Promise<LightTickExecutionEventRow[]>;

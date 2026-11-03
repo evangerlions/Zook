@@ -1,11 +1,12 @@
 import type { LightTickRepository } from "./lighttick.repository.ts";
-import type { LightTickOwner, LightTickTaskRow } from "./lighttick.types.ts";
+import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow } from "./lighttick.types.ts";
 
 export interface LightTickTodaySnapshot {
   businessDate: string; timezone: string; planId?: string; primaryTask?: LightTickTaskRow;
   executableTasks: LightTickTaskRow[]; completedTasks: LightTickTaskRow[];
   remainingEstimatedMinutes: number; planBAvailable: boolean; snapshotVersion: number;
   emptyState?: "no_active_plan" | "no_tasks_today" | "goal_paused";
+  taskSteps: LightTickTaskStepRow[];
 }
 
 export function businessDateAt(instant: Date, timezone: string): string {
@@ -19,21 +20,29 @@ export class LightTickTodayService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
   async get(owner: LightTickOwner): Promise<LightTickTodaySnapshot> {
-    const profile = await this.repository.getProfile(owner); const timezone = profile?.timezone ?? "UTC";
-    const businessDate = businessDateAt(this.clock(), timezone);
-    const allPlans = await this.repository.listPlans(owner);
+    // The owner gate covers the entire read, including task details. A continuation
+    // must not commit between reading the old plan and reading its replacement tasks.
+    const { profile, allPlans, goals, allTasks, taskSteps, instant } = await this.repository.transaction(owner, async () => ({
+      instant: this.clock(),
+      profile: await this.repository.getProfile(owner),
+      allPlans: await this.repository.listPlans(owner),
+      goals: await this.repository.listGoals(owner),
+      allTasks: await this.repository.listTasks(owner),
+      taskSteps: await this.repository.listTaskSteps(owner),
+    }));
+    const timezone = profile?.timezone ?? "UTC";
+    const businessDate = businessDateAt(instant, timezone);
     const plans = allPlans.filter(plan => plan.status === "active");
-    if (!plans.length) return { businessDate, timezone, executableTasks: [], completedTasks: [],
+    if (!plans.length) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: 0, emptyState: "no_active_plan" };
-    const goals = await this.repository.listGoals(owner);
     const goalById = new Map(goals.map(goal => [goal.id, goal]));
     const availablePlans = plans.filter(plan => ["active", "recovering"].includes(goalById.get(plan.goalId)?.status ?? ""));
-    if (!availablePlans.length) return { businessDate, timezone, executableTasks: [], completedTasks: [],
+    if (!availablePlans.length) return { businessDate, timezone, taskSteps: [], executableTasks: [], completedTasks: [],
       remainingEstimatedMinutes: 0, planBAvailable: false, snapshotVersion: Math.max(...plans.map(plan => plan.version)),
       emptyState: plans.some(plan => goalById.get(plan.goalId)?.status === "paused") ? "goal_paused" : "no_active_plan" };
     const planById = new Map(availablePlans.map(plan => [plan.id, plan]));
     const historicalPlans=new Map(allPlans.filter(p=>["active","superseded"].includes(p.status)&&["active","recovering"].includes(goalById.get(p.goalId)?.status??"")).map(p=>[p.id,p]));
-    const tasks = (await this.repository.listTasks(owner)).filter(task => planById.has(task.planId)||task.status==="completed"&&historicalPlans.has(task.planId));
+    const tasks = allTasks.filter(task => planById.has(task.planId)||task.status==="completed"&&historicalPlans.has(task.planId));
     const scheduledToday = tasks.filter(task => {
       const plan = planById.get(task.planId)??historicalPlans.get(task.planId)!;
       if (task.status !== "completed" && goalById.get(task.goalId)?.status === "recovering" && (task.selectedVariant ?? "standard") === "standard") return false;
@@ -47,7 +56,7 @@ export class LightTickTodayService {
         right.priority - left.priority || (left.scheduledFor ?? "").localeCompare(right.scheduledFor ?? ""));
     const completedTasks = scheduledToday.filter(task => task.status === "completed");
     const remainingEstimatedMinutes = executableTasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0);
-    return { businessDate, timezone, planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0].id, primaryTask: executableTasks[0], executableTasks,
+    return { businessDate, timezone, taskSteps: taskSteps.filter(step => scheduledToday.some(task => task.id === step.taskId)), planId: executableTasks[0]?.planId ?? scheduledToday[0]?.planId ?? availablePlans[0].id, primaryTask: executableTasks[0], executableTasks,
       completedTasks, remainingEstimatedMinutes, planBAvailable: executableTasks.length > 1 && remainingEstimatedMinutes > 60,
       snapshotVersion: Math.max(...availablePlans.map(plan => plan.version), ...tasks.map(task => task.version), ...goals.map(goal => goal.version), 0),
       emptyState: scheduledToday.length ? undefined : "no_tasks_today" };

@@ -330,9 +330,9 @@ export class PostgresLightTickRepository implements LightTickRepository {
         row.actualMinutes ?? null, row.commitmentSatisfied ?? null, JSON.stringify(row.guidance ?? {}),
         /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null]);
   }
-  async listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]> {
+  async listTaskSteps(owner: LightTickOwner, taskId?: string): Promise<LightTickTaskStepRow[]> {
     const result = await this.query(`SELECT * FROM zook_lighttick_task_steps
-      WHERE app_id=$1 AND user_id=$2 AND task_id=$3 ORDER BY position,id`, [owner.appId, owner.userId, taskId]);
+      WHERE app_id=$1 AND user_id=$2 AND ($3::text IS NULL OR task_id=$3) ORDER BY task_id,position,id`, [owner.appId, owner.userId, taskId ?? null]);
     return result.rows.map(mapRow<LightTickTaskStepRow>);
   }
   async getTaskStep(owner: LightTickOwner, taskId: string, id: string): Promise<LightTickTaskStepRow | undefined> {
