@@ -1,7 +1,7 @@
 import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
-import { billingSandboxAllowed } from "./modules/billing/billing-environment.ts";
+import { billingDeploymentEnvironment } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -486,7 +486,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     kvManager,
     aiNovelBillingService,
     frogsleepEnabled,
-    lighttickEnabled, lighttickRuntime, options.billingEnvironment ?? { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" },
+    lighttickEnabled, lighttickRuntime, options.appEnvironment ?? billingDeploymentEnvironment(),
     yaoheziEnabled,
     options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );

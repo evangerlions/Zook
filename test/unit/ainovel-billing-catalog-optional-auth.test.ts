@@ -11,9 +11,8 @@ test("catalog exposes public prices without membership reads; UserInfo owns pers
   seedAlipayPrices(seed);
   seed.appUsers!.push({ id: "catalog_alice", appId: "ai_novel", userId: "user_alice",
     status: "ACTIVE", accountRegion: "CN", joinedAt: new Date().toISOString() });
-  const runtime = await createApplication({ seed, alipay: { environment: "sandbox",
-    appId: "test_merchant", notifyUrl: "https://test.example/notify", returnUrl: "https://test.example/return",
-    gateway: { payment: async () => { throw new Error("Not a checkout"); }, query: async () => ({}), verifyNotify: async () => false } } });
+  const runtime = await createApplication({ seed, alipay: { sandbox: { appId: "test_merchant", notifyUrl: "https://test.example/notify", returnUrl: "https://test.example/return",
+    gateway: { payment: async () => { throw new Error("Not a checkout"); }, query: async () => ({}), verifyNotify: async () => false } } } });
   await runtime.database.upsertAiNovelBillingMembership({ appId: "ai_novel", userId: "user_alice",
     active: true, state: "active", tier: "plus", source: "app_store", planKey: "plus_monthly",
     expiresAt: "2099-01-01T00:00:00Z", autoRenew: true, managementUrl: null, accountDeletedAt: null,

@@ -15,6 +15,19 @@ const notifyUrl = "https://zook.example.test/api/v1/ai_novel/billing/webhooks/al
 const returnUrl = "https://client.example.test/#/membership";
 const gateway = new OfficialAlipayGateway({ notifyUrl, returnUrl }, async () => sdk);
 
+test("local production SDK checkout signs normally without a public notify URL", async () => {
+  const local = new OfficialAlipayGateway({ environment: "production", returnUrl }, async () => sdk);
+  for (const [platform, checkoutMode] of [
+    ["android", undefined], ["web", "mobile_web"], ["web", "desktop_web"], ["windows", "desktop_web"],
+  ] as const) {
+    const payment = await local.payment({ ...order(platform), environment: "production", checkoutMode });
+    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.url).searchParams;
+    assert.equal(params.has("notify_url"), false);
+    assert.ok(params.get("sign"));
+    assert.equal(params.get("return_url"), checkoutMode === "desktop_web" ? null : returnUrl);
+  }
+});
+
 test("sandbox checkout omits callback URLs even when placeholders are configured", async () => {
   const sandboxGateway = new OfficialAlipayGateway({ environment: "sandbox", notifyUrl: "http://localhost/notify", returnUrl: "invalid" }, async () => sdk);
   for (const platform of ["android", "web"] as const) {

@@ -25,8 +25,7 @@ async function fixture(overrides: Record<string, unknown> = {}) {
   let response: Record<string, unknown> = { code: "40004" };
   const gateway: AlipayGateway = { payment: async order => order.platform === "android" ? { type: "app", orderString: "secret_checkout_payload" } : { type: "page", url: "https://openapi-sandbox.dl.alipaydev.com/gateway.do?secret" },
     query: async () => response, verifyNotify: async fields => fields.sign === "test_valid" };
-  const runtime = await createApplication({ seed, alipay: { appId: "merchant", sellerId: "seller", environment: "sandbox",
-    notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => NOW, ...overrides }, revenueCat: { now: () => NOW } });
+  const runtime = await createApplication({ seed, alipay: { sandbox: { appId: "merchant", sellerId: "seller", notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => NOW, ...overrides } }, revenueCat: { now: () => NOW } });
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const headers = { "x-app-id": "ai_novel", authorization: `Bearer ${token}` };
   const create = (body: Record<string, unknown> = { productKey: "plus_monthly", platform: "android", distribution: "direct_android", idempotencyKey: "test_key_0001" }) => runtime.app.handle({ method: "POST", path: ORDERS, headers, body });
@@ -183,9 +182,9 @@ test("optional seller configuration allows default-merchant checkout and settlem
   assert.equal((await f.query(id)).body.data.order.membershipApplied, true);
 });
 
-test("Alipay production remains gated and wrong region/channel are rejected", async () => {
+test("Alipay missing merchant keys and wrong region/channel are rejected", async () => {
   const missingApp = await fixture({ appId: undefined }); assert.equal((await missingApp.create()).statusCode, 503);
-  const unapproved = await fixture({ environment: "production" }); assert.equal((await unapproved.create()).statusCode, 503);
+  const unconfigured = await fixture({ gateway: undefined, privateKeyPath: undefined, publicKeyPath: undefined }); assert.equal((await unconfigured.create()).statusCode, 503);
   const f = await fixture(); assert.equal((await f.create({ productKey: "plus_monthly", platform: "web", distribution: "direct_android", checkoutMode: "desktop_web", idempotencyKey: "test_key_0001" })).statusCode, 403);
 });
 

@@ -19,11 +19,7 @@ class AlipayKeyMountsTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name)
         self.state = self.home / "deployment"
-        self.values = {
-            "ALIPAY_AI_NOVEL_ENVIRONMENT": "sandbox",
-            "ALIPAY_AI_NOVEL_PRIVATE_KEY_PATH": "/run/secrets/ainovel-alipay/app-private-key.pem",
-            "ALIPAY_AI_NOVEL_PUBLIC_KEY_PATH": "/run/secrets/ainovel-alipay/alipay-public-key.pem",
-        }
+        self.values = {"APP_ENV": "dev", "DEPLOY_SLOT": "dev"}
 
     def keys(self, mode):
         directory = self.home / ".zook/secrets/ainovel-alipay" / mode
@@ -41,45 +37,54 @@ class AlipayKeyMountsTest(unittest.TestCase):
         self.assertIsNone(self.prepare({}))
         self.assertFalse(self.state.exists())
 
-    def test_modes_mount_only_their_keys_readonly_for_api_and_worker(self):
-        for mode in ("sandbox", "production"):
-            with self.subTest(mode=mode):
-                directory = self.keys(mode)
-                path = self.prepare({**self.values, "ALIPAY_AI_NOVEL_ENVIRONMENT": mode})
-                config = json.loads(path.read_text())
-                self.assertEqual(set(config["services"]), {"api", "worker"})
-                for service in config["services"].values():
-                    self.assertEqual(service["volumes"], [{
-                        "type": "bind", "source": str(directory),
-                        "target": "/run/secrets/ainovel-alipay", "read_only": True,
-                        "bind": {"create_host_path": False},
-                    }])
-                self.assertNotIn("test-key-content", path.read_text())
+    def test_dev_mounts_both_complete_keysets_readonly_only_for_api_and_worker(self):
+        for mode in ("production", "sandbox"):
+            self.keys(mode)
+        path = self.prepare(self.values)
+        config = json.loads(path.read_text())
+        self.assertEqual(set(config["services"]), {"api", "worker"})
+        for service in config["services"].values():
+            self.assertEqual(service["volumes"], [{
+                "type": "bind", "source": str(self.home / ".zook/secrets/ainovel-alipay" / mode),
+                "target": f"/run/secrets/ainovel-alipay/{mode}", "read_only": True,
+                "bind": {"create_host_path": False},
+            } for mode in ("production", "sandbox")])
+        self.assertNotIn("test-key-content", path.read_text())
 
-    def test_missing_key_fails_before_writing_or_creating_host_directories(self):
-        with self.assertRaisesRegex(ValueError, "key file"):
-            self.prepare(self.values)
-        self.assertFalse(self.state.exists())
-        self.assertFalse((self.home / ".zook").exists())
+    def test_online_and_unknown_never_mount_sandbox_even_when_its_keys_exist(self):
+        self.keys("production")
+        self.keys("sandbox")
+        for deployment in ("online", "production", "unknown", ""):
+            with self.subTest(deployment=deployment):
+                path = self.prepare({"APP_ENV": deployment})
+                for service in json.loads(path.read_text())["services"].values():
+                    self.assertEqual(len(service["volumes"]), 1)
+                    self.assertTrue(service["volumes"][0]["target"].endswith("/production"))
 
-    def test_missing_public_key_fails_before_writing_overlay(self):
+    def test_slot_is_authoritative_over_app_environment(self):
+        self.keys("production")
+        self.keys("sandbox")
+        path = self.prepare({"APP_ENV": "local", "DEPLOY_SLOT": "online"})
+        self.assertNotIn("sandbox", path.read_text())
+        app_env = self.home / "app.env"
+        app_env.write_text("APP_ENV=local\nDEPLOY_SLOT=dev\n")
+        path = mounts.prepare(self.state, app_env, slot="online", home=self.home)
+        self.assertNotIn("sandbox", path.read_text())
+
+    def test_missing_key_in_provisioned_directory_fails_before_writing_overlay(self):
         directory = self.keys("sandbox")
         (directory / "alipay-public-key.pem").unlink()
         with self.assertRaisesRegex(ValueError, "key file"):
             self.prepare(self.values)
         self.assertFalse(self.state.exists())
 
-    def test_partial_or_unknown_environment_is_rejected(self):
-        for mode in ("", "../production", "prod"):
-            with self.subTest(mode=mode), self.assertRaisesRegex(ValueError, "environment"):
-                self.prepare({**self.values, "ALIPAY_AI_NOVEL_ENVIRONMENT": mode})
+    def test_one_missing_environment_stays_unavailable_without_empty_bind_mounts(self):
+        self.keys("production")
+        path = self.prepare(self.values)
+        self.assertNotIn("sandbox", path.read_text())
+        self.assertFalse((self.home / ".zook/secrets/ainovel-alipay/sandbox").exists())
 
-    def test_container_paths_must_match_the_mounted_directory(self):
-        for key in ("ALIPAY_AI_NOVEL_PRIVATE_KEY_PATH", "ALIPAY_AI_NOVEL_PUBLIC_KEY_PATH"):
-            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "container key paths"):
-                self.prepare({**self.values, key: "/host/key.pem"})
-
-    def test_export_and_quoted_paths_do_not_parse_unrelated_credentials(self):
+    def test_export_and_quotes_do_not_parse_unrelated_credentials(self):
         self.keys("sandbox")
         app_env = self.home / "app.env"
         app_env.write_text('UNRELATED_TOKEN="not-json\\sequence$UNSET"\n' + "\n".join(

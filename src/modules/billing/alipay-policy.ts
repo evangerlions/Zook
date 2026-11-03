@@ -9,7 +9,7 @@ export function alipayConfigured(options: AlipayOptions): boolean {
   const https = (url?: string) => { try { return new URL(url!).protocol === "https:"; } catch { return false; } };
   return !!options.appId?.trim() &&
     (options.environment === "sandbox" || options.environment === "production") &&
-    (options.environment === "sandbox" || (https(options.notifyUrl) && https(options.returnUrl))) &&
+    (options.environment === "sandbox" || ((!options.notifyUrl || https(options.notifyUrl)) && (!options.returnUrl || https(options.returnUrl)))) &&
     (!!options.gateway || (!!options.privateKeyPath && !!options.publicKeyPath));
 }
 export function assertAlipayChannel(region: string, platform: string, distribution: string): void {
