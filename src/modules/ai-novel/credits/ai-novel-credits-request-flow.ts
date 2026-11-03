@@ -23,13 +23,11 @@ export interface CreditsRequestOptions {
 export class AiNovelCreditsRequestFlow {
   constructor(
     readonly credits: AiNovelCreditsService,
-    readonly enabled: boolean,
     private readonly conversations?: AiNovelConversationRecordService,
     private readonly autoFreeActive: () => Promise<boolean> = async () => false,
   ) {}
 
   async embeddings<T extends CreditsRequestOptions>(body: Record<string, unknown>, options: T, execute: (options: T) => Promise<AiNovelEmbeddingsResponse>): Promise<AiNovelEmbeddingsResponse> {
-    if (!this.enabled) return execute(options);
     const context = await this.admit(body, options, true);
     if (!context.allowed) throw this.denial(options);
     const lease = this.lease(options, context.jobId);
@@ -43,7 +41,6 @@ export class AiNovelCreditsRequestFlow {
   }
 
   async complete<T extends CreditsRequestOptions>(body: Record<string, unknown>, options: T, execute: (options: T) => Promise<AiNovelChatResponse>): Promise<AiNovelChatResponse> {
-    if (!this.enabled) return execute(options);
     const free = await this.freeAuto(body);
     const context = await this.admit(body, options, false, free);
     if (!context.allowed) {
@@ -64,7 +61,6 @@ export class AiNovelCreditsRequestFlow {
   }
 
   async *stream<T extends CreditsRequestOptions>(body: Record<string, unknown>, options: T, execute: (options: T) => AsyncIterable<AiNovelChatStreamChunk>): AsyncIterable<AiNovelChatStreamChunk> {
-    if (!this.enabled) { yield* execute(options); return; }
     const free = await this.freeAuto(body);
     const context = await this.admit(body, options, false, free);
     if (!context.allowed) {

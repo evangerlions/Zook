@@ -8,7 +8,7 @@ import { creditMicrosInteger } from "../../src/modules/ai-novel/credits/ai-novel
 test("credits APIs expose integer micros, not rounded or floating point balances", async () => {
   const context = {
     authenticateProductRequest: async () => ({ userId: "u" }),
-    aiNovelLlmService: { creditsFlow: { enabled: true, credits: {
+    aiNovelLlmService: { creditsFlow: { credits: {
       balanceMicros: async () => ({ tier: "free", refreshAt: "2026-10-05T00:00:00.000Z", periodicMicros: "19999000", periodicLimitMicros: "20000000", giftMicros: "0", remainingMicros: "19999000" }),
     } } },
     validationPipe: { asObject: (body: unknown) => body },
@@ -18,7 +18,7 @@ test("credits APIs expose integer micros, not rounded or floating point balances
     method: "GET", path: "/api/v1/ai_novel/credits", requestId: "r",
   } as HttpRequest);
   assert.deepEqual((balance?.body as { data: unknown }).data, {
-    enabled: true, tier: "free", refreshAt: "2026-10-05T00:00:00.000Z",
+    tier: "free", refreshAt: "2026-10-05T00:00:00.000Z",
     periodicMicros: 19999000, periodicLimitMicros: 20000000, giftMicros: 0, remainingMicros: 19999000,
   });
   const result = await tryHandleAiNovelCreditsRoutes.call(context, {

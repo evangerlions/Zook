@@ -6136,7 +6136,6 @@ export type CreditMicros = number;
 export const CreditsBalanceDataSchema = {
   "type": "object",
   "required": [
-    "enabled",
     "tier",
     "refreshAt",
     "periodicMicros",
@@ -6145,9 +6144,6 @@ export const CreditsBalanceDataSchema = {
     "remainingMicros"
   ],
   "properties": {
-    "enabled": {
-      "type": "boolean"
-    },
     "tier": {
       "type": "string",
       "enum": [
@@ -6205,7 +6201,6 @@ export const CreditsBalanceDataSchema = {
 } as const;
 
 export type CreditsBalanceData = {
-  "enabled": boolean;
   "tier": "free" | "plus" | "pro";
   "refreshAt": string;
   "periodicMicros": number;

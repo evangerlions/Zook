@@ -38,7 +38,7 @@ test("Auto bypasses zero balance, manual/embedding cannot; new requests honor ma
     pricing: { inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 },
     usage: { promptTokens: 2_000_000, completionTokens: 0, totalTokens: 2_000_000 } });
   await credits.releaseRequest("u", "exhaust", "r0");
-  const flow = new AiNovelCreditsRequestFlow(credits, true, undefined, async () => active);
+  const flow = new AiNovelCreditsRequestFlow(credits, undefined, async () => active);
   const body = { sceneKey: "write_turn", messages: [{ role: "user", content: "hello" }] };
   const opts = { userId: "u", requestId: "r1" };
   const response = { sceneKey: "write_turn", completion: { sceneRouteKey: "write_turn", provider: "test", providerModel: "m", content: "ok", finishReason: "stop" } };
@@ -81,7 +81,7 @@ test("HTTP admin save/restore persists the campaign through the existing revisio
 test("free admission retains request validation, concurrency lease and in-flight policy snapshot", async () => {
   let active = true;
   const credits = new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => "free");
-  const flow = new AiNovelCreditsRequestFlow(credits, true, undefined, async () => active);
+  const flow = new AiNovelCreditsRequestFlow(credits, undefined, async () => active);
   const body = { sceneKey: "write_turn", messages: [{ role: "user", content: "hello" }] };
   const opts = { userId: "u", requestId: "free" };
   const response = { sceneKey: "write_turn", completion: { sceneRouteKey: "write_turn", provider: "test", providerModel: "m", content: "ok", finishReason: "stop" } };
@@ -125,7 +125,9 @@ test("real encrypted HTTP: admin policy changes catalog and both explicit/legacy
     assert.ok(events.some(event => (event.data ?? event).type === "done"));
   };
   try {
-    const before = await balance();
+    const initial = await fetch(fixture.url + "/api/v1/ai_novel/credits", { headers }).then(r => r.json());
+    assert.equal(Object.hasOwn(initial.data, "enabled"), false);
+    const before = initial.data.remainingMicros;
     await policy(true);
     const catalog = await fetch(fixture.url + "/api/v1/ai_novel/models", { headers });
     assert.equal(catalog.headers.get("cache-control"), "no-store");

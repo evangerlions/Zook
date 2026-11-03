@@ -30,10 +30,10 @@ paths:
         is present in the decrypted inner body, the same endpoint switches to
         `text/event-stream` SSE output instead of a single JSON response.
 
-        With Writing Credits enforcement enabled, Zook settles each successful
+        Zook settles each successful
         actual provider call using authoritative provider usage or the server
         estimator. No client billing job id or finish acknowledgement is needed.
-        Enforcement defaults to off.
+
 
         An optional decrypted top-level `agentProtocol: "pi-v1"` selects the
         context-on-demand Agent contract. In that contract Zook does not embed
