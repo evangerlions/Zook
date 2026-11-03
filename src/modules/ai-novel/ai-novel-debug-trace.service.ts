@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { resolveAiNovelDebugTraceRoot } from "./ai-novel-debug-trace-path.ts";
 
 export const AI_NOVEL_TRACE_KINDS = [
   "kickoff",
@@ -68,7 +69,6 @@ export interface AiNovelDebugTraceFilter {
   query?: string;
 }
 
-const DEFAULT_TRACE_ROOT = join(process.cwd(), ".zook", "ai-novel-traces");
 const MAX_TRACE_BYTES = 12 * 1024 * 1024;
 
 /** Local-development trace store. One session retains every uploaded turn. */
@@ -76,7 +76,7 @@ export class AiNovelDebugTraceService {
   private readonly writes = new Map<string, Promise<void>>();
 
   constructor(
-    private readonly rootPath = DEFAULT_TRACE_ROOT,
+    private readonly rootPath = resolveAiNovelDebugTraceRoot(),
     private readonly now: () => Date = () => new Date(),
   ) {}
 

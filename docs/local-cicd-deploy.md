@@ -160,6 +160,13 @@ Docker Desktop 或其他无法写入 `/var/lib` 的开发机，可在槽位环�
 
 `api` / `worker` 会通过 bind mount 共享这一目录。启动前会先执行文件系统冒烟测试：覆盖写入 `/app/appRunData/hello_world.txt` 并立即读回；如果失败，容器会直接启动失败，部署脚本按现有健康检查失败链路处理。
 
+AINovel 内部调试 Trace 在 dev 容器中保存到既有持久化根目录下的
+`ai-novel-traces/`（默认 `/app/appRunData/ai-novel-traces`），复用
+`ZOOK_APP_RUN_DATA_ROOT`，不增加 Trace 专用 env。宿主机直接启动以及明确标记为
+local 的环境保留原来的 `<工作目录>/.zook/ai-novel-traces`；部署身份按
+`DEPLOY_SLOT` 优先于 `APP_ENV` 判定。显式注入 `aiNovelDebugTraceRoot` 的测试仍使用
+指定目录。online 的 Trace 接口继续关闭。Trace 文件目前没有自动过期清理。
+
 确保服务器上已经安装并可直接执行：
 
 ```bash
