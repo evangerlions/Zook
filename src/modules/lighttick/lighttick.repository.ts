@@ -1,3 +1,4 @@
+import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
 import type { LocalAdoptionRepository } from './manual/local-adoption.types.ts';
 import type { RecordTransferRepository } from "./records/record-transfer.types.ts";
 import type { LightTickRecord, LightTickRecordRow, RecordQuery } from "./lighttick-record.service.ts";
@@ -19,7 +20,7 @@ export interface LightTickAtomicWrite {
 }
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
-export interface LightTickRepository extends ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
   listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;

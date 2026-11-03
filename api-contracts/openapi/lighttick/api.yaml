@@ -11,6 +11,8 @@ servers:
 security:
 - bearerAuth: []
 tags:
+- name: lighttick-learning
+  description: Native versioned learning and compatible private-state receipts.
 - name: lighttick-records
   description: Independent records and versioned owner data.
 - name: lighttick-actions
@@ -3841,6 +3843,450 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickPlanningDraftEditRequest'
+  /api/v1/lighttick/learning/authority:
+    get:
+      operationId: nativeLearningAuthority
+      tags:
+      - lighttick-learning
+      summary: Authority
+      description: Read native learning authority and write availability. New owners
+        start in zook authority only when enabled; existing mirrors remain legacy until
+        verified migration.
+      parameters: []
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningAuthorityEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/consent:
+    post:
+      operationId: nativeLearningConsent
+      tags:
+      - lighttick-learning
+      summary: Consent
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningConsentEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningConsentWrite'
+  /api/v1/lighttick/learning/collections:
+    get:
+      operationId: nativeLearningCollections
+      tags:
+      - lighttick-learning
+      summary: Collections
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCollectionsEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/collections/{collectionId}:
+    put:
+      operationId: nativeLearningSaveCollection
+      tags:
+      - lighttick-learning
+      summary: SaveCollection
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: collectionId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningCollectionEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningCollectionWrite'
+  /api/v1/lighttick/learning/lessons:
+    get:
+      operationId: nativeLearningLessons
+      tags:
+      - lighttick-learning
+      summary: Lessons
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: collection_id
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningLessonsEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/lessons/{lessonId}/publications:
+    put:
+      operationId: nativeLearningPublish
+      tags:
+      - lighttick-learning
+      summary: Publish
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningPublishEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningPublishWrite'
+  /api/v1/lighttick/learning/lessons/{lessonId}/versions/{contentVersion}:
+    get:
+      operationId: nativeLearningPublication
+      tags:
+      - lighttick-learning
+      summary: Publication
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - name: contentVersion
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningPublicationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/lessons/{lessonId}/private:
+    get:
+      operationId: nativeLearningPrivate
+      tags:
+      - lighttick-learning
+      summary: Private
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningPrivateEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: nativeLearningSavePrivate
+      tags:
+      - lighttick-learning
+      summary: SavePrivate
+      description: Separate CAS for notes, position and explicit completion. Position
+        may move backwards. Content versions retain independent private history. An
+        unchanged receipt replays the original result; a new request is rejected while
+        writes are disabled.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningPrivateEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningPrivateWrite'
+  /api/v1/lighttick/learning/lessons/{lessonId}/private-history:
+    get:
+      operationId: nativeLearningHistory
+      tags:
+      - lighttick-learning
+      summary: History
+      description: Registered LightTick owner only. Native authority is required. Writes
+        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - name: content_version
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 20
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningHistoryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -11459,3 +11905,744 @@ components:
           maxItems: 50
           items:
             $ref: '#/components/schemas/LightTickPlanningTaskEdit'
+    LightTickNativeLearningAuthority:
+      type: object
+      additionalProperties: false
+      required:
+      - phase
+      - epoch
+      - revision
+      - write_enabled
+      - reading_enabled
+      - private_enabled
+      properties:
+        phase:
+          type: string
+          enum:
+          - legacy
+          - frozen
+          - imported
+          - verified
+          - zook
+          - unavailable
+        epoch:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        write_enabled:
+          type: boolean
+        reading_enabled:
+          type: boolean
+        private_enabled:
+          type: boolean
+    LightTickNativeLearningCollection:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - title
+      - revision
+      - archived
+      - updated_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        title:
+          type: string
+          maxLength: 500
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningLesson:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - collection_id
+      - number
+      - title
+      - revision
+      - published_version
+      - archived
+      - updated_at
+      properties:
+        id:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+        collection_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        number:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        title:
+          type: string
+          maxLength: 500
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        published_version:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-f0-9]{64}$
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningPrivate:
+      type: object
+      additionalProperties: false
+      required:
+      - lesson_id
+      - content_version
+      - revision
+      - draft_version
+      - notes_revision
+      - position_revision
+      - completion_revision
+      - notes
+      - answers
+      - position
+      - completed
+      - completed_at
+      - updated_at
+      properties:
+        lesson_id:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        draft_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        notes_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        position_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        completion_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        notes:
+          type: string
+          maxLength: 10000
+        answers:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - prompt
+            - answer
+            properties:
+              id:
+                type: string
+                maxLength: 500
+              prompt:
+                type: string
+                maxLength: 1000
+              answer:
+                type: string
+                maxLength: 10000
+        position:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        completed:
+          type: boolean
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningConsentWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - reading_enabled
+      - private_enabled
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        reading_enabled:
+          type: boolean
+        private_enabled:
+          type: boolean
+    LightTickNativeLearningConsent:
+      type: object
+      additionalProperties: false
+      required:
+      - reading_enabled
+      - private_enabled
+      - revision
+      properties:
+        reading_enabled:
+          type: boolean
+        private_enabled:
+          type: boolean
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickNativeLearningCollectionWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - title
+      - archived
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        title:
+          type: string
+          maxLength: 500
+          minLength: 1
+        archived:
+          type: boolean
+    LightTickNativeLearningPublishWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - collection_id
+      - number
+      - title
+      - content
+      - references
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        collection_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        number:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        title:
+          type: string
+          maxLength: 500
+          minLength: 1
+        content:
+          type: string
+          maxLength: 100000
+          minLength: 1
+        references:
+          type: string
+          maxLength: 100000
+        source_url:
+          type: string
+          maxLength: 1500
+    LightTickNativeLearningPublish:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - collection_id
+      - number
+      - title
+      - revision
+      - published_version
+      - archived
+      - updated_at
+      - content_version
+      properties:
+        id:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+        collection_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        number:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        title:
+          type: string
+          maxLength: 500
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        published_version:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-f0-9]{64}$
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickNativeLearningPublication:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - collection_id
+      - number
+      - title
+      - revision
+      - published_version
+      - archived
+      - updated_at
+      - content_version
+      - content
+      - references
+      - source_url
+      - created_at
+      - questions
+      properties:
+        id:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+        collection_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        number:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        title:
+          type: string
+          maxLength: 500
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        published_version:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-f0-9]{64}$
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        content:
+          type: string
+          maxLength: 100000
+        references:
+          type: string
+          maxLength: 100000
+        source_url:
+          type: string
+          maxLength: 1500
+        created_at:
+          type: string
+          format: date-time
+        questions:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - prompt
+            - answer
+            properties:
+              id:
+                type: string
+                maxLength: 500
+              prompt:
+                type: string
+                maxLength: 1000
+              answer:
+                type: string
+                maxLength: 10000
+    LightTickNativeLearningPrivateWrite:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - content_version
+        - base_revision
+        - action
+        - notes
+        - answers
+        properties:
+          content_version:
+            type: string
+            pattern: ^[a-f0-9]{64}$
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          action:
+            type: string
+            const: save
+          notes:
+            type: string
+            maxLength: 10000
+          answers:
+            type: array
+            maxItems: 100
+            items:
+              type: object
+              additionalProperties: false
+              required:
+              - id
+              - prompt
+              - answer
+              properties:
+                id:
+                  type: string
+                  maxLength: 500
+                prompt:
+                  type: string
+                  maxLength: 1000
+                answer:
+                  type: string
+                  maxLength: 10000
+          draft_version:
+            type: string
+            pattern: ^[a-f0-9]{64}$
+      - type: object
+        additionalProperties: false
+        required:
+        - content_version
+        - base_revision
+        - action
+        - position
+        properties:
+          content_version:
+            type: string
+            pattern: ^[a-f0-9]{64}$
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          action:
+            type: string
+            const: position
+          position:
+            type: integer
+            minimum: 0
+            maximum: 100000
+      - type: object
+        additionalProperties: false
+        required:
+        - content_version
+        - base_revision
+        - action
+        properties:
+          content_version:
+            type: string
+            pattern: ^[a-f0-9]{64}$
+          base_revision:
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          action:
+            type: string
+            const: complete
+    LightTickNativeLearningCollections:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningCollection'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    LightTickNativeLearningLessons:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningLesson'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    LightTickNativeLearningHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - component
+            - revision
+            - state
+            - created_at
+            properties:
+              id:
+                type: string
+                minLength: 8
+                maxLength: 128
+                pattern: ^[a-zA-Z0-9_-]+$
+              component:
+                type: string
+                enum:
+                - initial
+                - notes
+                - position
+                - completion
+                - import
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              state:
+                $ref: '#/components/schemas/LightTickNativeLearningPrivate'
+              created_at:
+                type: string
+                format: date-time
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+    LightTickNativeLearningAuthorityEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningAuthority'
+        requestId:
+          type: string
+    LightTickNativeLearningConsentEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningConsent'
+        requestId:
+          type: string
+    LightTickNativeLearningCollectionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningCollection'
+        requestId:
+          type: string
+    LightTickNativeLearningCollectionsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningCollections'
+        requestId:
+          type: string
+    LightTickNativeLearningLessonsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningLessons'
+        requestId:
+          type: string
+    LightTickNativeLearningPublishEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningPublish'
+        requestId:
+          type: string
+    LightTickNativeLearningPublicationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningPublication'
+        requestId:
+          type: string
+    LightTickNativeLearningPrivateEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningPrivate'
+        requestId:
+          type: string
+    LightTickNativeLearningHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningHistory'
+        requestId:
+          type: string

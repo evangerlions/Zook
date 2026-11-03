@@ -30674,6 +30674,2234 @@ export type LightTickActionWorkspace = {
 };
 };
 
+export const LightTickNativeLearningAuthoritySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "phase",
+    "epoch",
+    "revision",
+    "write_enabled",
+    "reading_enabled",
+    "private_enabled"
+  ],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "enum": [
+        "legacy",
+        "frozen",
+        "imported",
+        "verified",
+        "zook",
+        "unavailable"
+      ]
+    },
+    "epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "write_enabled": {
+      "type": "boolean"
+    },
+    "reading_enabled": {
+      "type": "boolean"
+    },
+    "private_enabled": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningAuthority = {
+  "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
+  "epoch": number;
+  "revision": number;
+  "write_enabled": boolean;
+  "reading_enabled": boolean;
+  "private_enabled": boolean;
+};
+
+export const LightTickNativeLearningAuthorityEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "epoch",
+        "revision",
+        "write_enabled",
+        "reading_enabled",
+        "private_enabled"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string",
+          "enum": [
+            "legacy",
+            "frozen",
+            "imported",
+            "verified",
+            "zook",
+            "unavailable"
+          ]
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "write_enabled": {
+          "type": "boolean"
+        },
+        "reading_enabled": {
+          "type": "boolean"
+        },
+        "private_enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningAuthorityEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "phase": "legacy" | "frozen" | "imported" | "verified" | "zook" | "unavailable";
+  "epoch": number;
+  "revision": number;
+  "write_enabled": boolean;
+  "reading_enabled": boolean;
+  "private_enabled": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningCollectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "revision",
+    "archived",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCollection = {
+  "id": string;
+  "title": string;
+  "revision": number;
+  "archived": boolean;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningCollectionEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "revision",
+        "archived",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCollectionEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "title": string;
+  "revision": number;
+  "archived": boolean;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningCollectionWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "title",
+    "archived"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 1
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCollectionWrite = {
+  "base_revision": number;
+  "title": string;
+  "archived": boolean;
+};
+
+export const LightTickNativeLearningCollectionsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "archived",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCollections = {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "archived": boolean;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+
+export const LightTickNativeLearningCollectionsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "revision",
+              "archived",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningCollectionsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "title": string;
+  "revision": number;
+  "archived": boolean;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "component",
+          "revision",
+          "state",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "component": {
+            "type": "string",
+            "enum": [
+              "initial",
+              "notes",
+              "position",
+              "completion",
+              "import"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "state": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lesson_id",
+              "content_version",
+              "revision",
+              "draft_version",
+              "notes_revision",
+              "position_revision",
+              "completion_revision",
+              "notes",
+              "answers",
+              "position",
+              "completed",
+              "completed_at",
+              "updated_at"
+            ],
+            "properties": {
+              "lesson_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "content_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "draft_version": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "notes_revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "position_revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "completion_revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 10000
+              },
+              "answers": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "prompt",
+                    "answer"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "answer": {
+                      "type": "string",
+                      "maxLength": 10000
+                    }
+                  }
+                }
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningHistory = {
+  "items": (
+{
+  "id": string;
+  "component": "initial" | "notes" | "position" | "completion" | "import";
+  "revision": number;
+  "state": {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "draft_version": string;
+  "notes_revision": number;
+  "position_revision": number;
+  "completion_revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "position": number;
+  "completed": boolean;
+  "completed_at": string | null;
+  "updated_at": string;
+};
+  "created_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+
+export const LightTickNativeLearningHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "component",
+              "revision",
+              "state",
+              "created_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "component": {
+                "type": "string",
+                "enum": [
+                  "initial",
+                  "notes",
+                  "position",
+                  "completion",
+                  "import"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "state": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lesson_id",
+                  "content_version",
+                  "revision",
+                  "draft_version",
+                  "notes_revision",
+                  "position_revision",
+                  "completion_revision",
+                  "notes",
+                  "answers",
+                  "position",
+                  "completed",
+                  "completed_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "lesson_id": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128,
+                    "pattern": "^[a-zA-Z0-9_-]+$"
+                  },
+                  "content_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "draft_version": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "notes_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "position_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "completion_revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "answers": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "prompt",
+                        "answer"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "prompt": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "answer": {
+                          "type": "string",
+                          "maxLength": 10000
+                        }
+                      }
+                    }
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "completed": {
+                    "type": "boolean"
+                  },
+                  "completed_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "component": "initial" | "notes" | "position" | "completion" | "import";
+  "revision": number;
+  "state": {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "draft_version": string;
+  "notes_revision": number;
+  "position_revision": number;
+  "completion_revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "position": number;
+  "completed": boolean;
+  "completed_at": string | null;
+  "updated_at": string;
+};
+  "created_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningLessonSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "collection_id",
+    "number",
+    "title",
+    "revision",
+    "published_version",
+    "archived",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "collection_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "published_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningLesson = {
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningLessonsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "collection_id",
+          "number",
+          "title",
+          "revision",
+          "published_version",
+          "archived",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "collection_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "published_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningLessons = {
+  "items": (
+{
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+
+export const LightTickNativeLearningLessonsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "collection_id",
+              "number",
+              "title",
+              "revision",
+              "published_version",
+              "archived",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9_-]+$"
+              },
+              "collection_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "published_version": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningLessonsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningPrivateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lesson_id",
+    "content_version",
+    "revision",
+    "draft_version",
+    "notes_revision",
+    "position_revision",
+    "completion_revision",
+    "notes",
+    "answers",
+    "position",
+    "completed",
+    "completed_at",
+    "updated_at"
+  ],
+  "properties": {
+    "lesson_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "draft_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "notes_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "position_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "completion_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "answers": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "prompt",
+          "answer"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPrivate = {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "draft_version": string;
+  "notes_revision": number;
+  "position_revision": number;
+  "completion_revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "position": number;
+  "completed": boolean;
+  "completed_at": string | null;
+  "updated_at": string;
+};
+
+export const LightTickNativeLearningPrivateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lesson_id",
+        "content_version",
+        "revision",
+        "draft_version",
+        "notes_revision",
+        "position_revision",
+        "completion_revision",
+        "notes",
+        "answers",
+        "position",
+        "completed",
+        "completed_at",
+        "updated_at"
+      ],
+      "properties": {
+        "lesson_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "draft_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "notes_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "position_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "completion_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "answers": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "prompt",
+              "answer"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "prompt": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "answer": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            }
+          }
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "completed": {
+          "type": "boolean"
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPrivateEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "lesson_id": string;
+  "content_version": string;
+  "revision": number;
+  "draft_version": string;
+  "notes_revision": number;
+  "position_revision": number;
+  "completion_revision": number;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "position": number;
+  "completed": boolean;
+  "completed_at": string | null;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningPrivateWriteSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_version",
+        "base_revision",
+        "action",
+        "notes",
+        "answers"
+      ],
+      "properties": {
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "action": {
+          "type": "string",
+          "const": "save"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "answers": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "prompt",
+              "answer"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "prompt": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "answer": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            }
+          }
+        },
+        "draft_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_version",
+        "base_revision",
+        "action",
+        "position"
+      ],
+      "properties": {
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "action": {
+          "type": "string",
+          "const": "position"
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_version",
+        "base_revision",
+        "action"
+      ],
+      "properties": {
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "action": {
+          "type": "string",
+          "const": "complete"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickNativeLearningPrivateWrite = {
+  "content_version": string;
+  "base_revision": number;
+  "action": string;
+  "notes": string;
+  "answers": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+  "draft_version"?: string;
+} | {
+  "content_version": string;
+  "base_revision": number;
+  "action": string;
+  "position": number;
+} | {
+  "content_version": string;
+  "base_revision": number;
+  "action": string;
+};
+
+export const LightTickNativeLearningPublicationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "collection_id",
+    "number",
+    "title",
+    "revision",
+    "published_version",
+    "archived",
+    "updated_at",
+    "content_version",
+    "content",
+    "references",
+    "source_url",
+    "created_at",
+    "questions"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "collection_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "published_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "references": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "source_url": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "questions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "prompt",
+          "answer"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPublication = {
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "content": string;
+  "references": string;
+  "source_url": string;
+  "created_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+};
+
+export const LightTickNativeLearningPublicationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "collection_id",
+        "number",
+        "title",
+        "revision",
+        "published_version",
+        "archived",
+        "updated_at",
+        "content_version",
+        "content",
+        "references",
+        "source_url",
+        "created_at",
+        "questions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "collection_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "published_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "references": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "source_url": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "questions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "prompt",
+              "answer"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "prompt": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "answer": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPublicationEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+  "content": string;
+  "references": string;
+  "source_url": string;
+  "created_at": string;
+  "questions": (
+{
+  "id": string;
+  "prompt": string;
+  "answer": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningPublishSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "collection_id",
+    "number",
+    "title",
+    "revision",
+    "published_version",
+    "archived",
+    "updated_at",
+    "content_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "collection_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "published_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPublish = {
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+};
+
+export const LightTickNativeLearningPublishEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "collection_id",
+        "number",
+        "title",
+        "revision",
+        "published_version",
+        "archived",
+        "updated_at",
+        "content_version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "collection_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "published_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPublishEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "revision": number;
+  "published_version": string | null;
+  "archived": boolean;
+  "updated_at": string;
+  "content_version": string;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningPublishWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "collection_id",
+    "number",
+    "title",
+    "content",
+    "references"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "collection_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "number": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 1
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 100000,
+      "minLength": 1
+    },
+    "references": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "source_url": {
+      "type": "string",
+      "maxLength": 1500
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningPublishWrite = {
+  "base_revision": number;
+  "collection_id": string;
+  "number": number;
+  "title": string;
+  "content": string;
+  "references": string;
+  "source_url"?: string;
+};
+
+export const LightTickNativeLearningConsentSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reading_enabled",
+    "private_enabled",
+    "revision"
+  ],
+  "properties": {
+    "reading_enabled": {
+      "type": "boolean"
+    },
+    "private_enabled": {
+      "type": "boolean"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningConsent = {
+  "reading_enabled": boolean;
+  "private_enabled": boolean;
+  "revision": number;
+};
+
+export const LightTickNativeLearningConsentEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reading_enabled",
+        "private_enabled",
+        "revision"
+      ],
+      "properties": {
+        "reading_enabled": {
+          "type": "boolean"
+        },
+        "private_enabled": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningConsentEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "reading_enabled": boolean;
+  "private_enabled": boolean;
+  "revision": number;
+};
+  "requestId": string;
+};
+
+export const LightTickNativeLearningConsentWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "reading_enabled",
+    "private_enabled"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "reading_enabled": {
+      "type": "boolean"
+    },
+    "private_enabled": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickNativeLearningConsentWrite = {
+  "base_revision": number;
+  "reading_enabled": boolean;
+  "private_enabled": boolean;
+};
+
 export const LightTickLearningPrivateEnvelopeSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -59524,6 +61752,29 @@ export const GeneratedPublicContractNames = [
   "LightTickManualTask",
   "LightTickManualTaskReference",
   "LightTickMinimumClientVersions",
+  "LightTickNativeLearningAuthority",
+  "LightTickNativeLearningAuthorityEnvelope",
+  "LightTickNativeLearningCollection",
+  "LightTickNativeLearningCollectionEnvelope",
+  "LightTickNativeLearningCollectionWrite",
+  "LightTickNativeLearningCollections",
+  "LightTickNativeLearningCollectionsEnvelope",
+  "LightTickNativeLearningConsent",
+  "LightTickNativeLearningConsentEnvelope",
+  "LightTickNativeLearningConsentWrite",
+  "LightTickNativeLearningHistory",
+  "LightTickNativeLearningHistoryEnvelope",
+  "LightTickNativeLearningLesson",
+  "LightTickNativeLearningLessons",
+  "LightTickNativeLearningLessonsEnvelope",
+  "LightTickNativeLearningPrivate",
+  "LightTickNativeLearningPrivateEnvelope",
+  "LightTickNativeLearningPrivateWrite",
+  "LightTickNativeLearningPublication",
+  "LightTickNativeLearningPublicationEnvelope",
+  "LightTickNativeLearningPublish",
+  "LightTickNativeLearningPublishEnvelope",
+  "LightTickNativeLearningPublishWrite",
   "LightTickNotificationPreferences",
   "LightTickOnboardingRequest",
   "LightTickPace",

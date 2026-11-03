@@ -1548,7 +1548,7 @@ App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/ap
 iOS 持续本地联调使用独立的 `npm run dev:yaohezi-local`，默认只监听 `127.0.0.1:18763`，创建独立 PG/Redis，短信为正常验证码校验加本地 capture transport。该 fixture 的控制路径不属于公共 API、不会注册到部署入口。iOS 使用固定版本的轻量合同快照，账号登录/刷新/退出/切换不触发档案关联或上传。启动与 XCTest 步骤见 [本地开发说明](docs/yaohezi-local-development.md)。
 
 ### I4 private learning (2026-10-25, local implementation)
-`GET /api/v1/lighttick/learning-library/{lessonId}/private` reads separately consented Grow notes, exercise answers, completion and saved position. `POST` accepts `LightTickLearningPrivateCommand` with immutable id, current content version/revision, action `save|complete|position`, notes/answers and position; requires formal LightTick bearer membership and schema header2. Acceptance queues a command, never fabricates source completion; GET operations expose pending/applied/conflict/unavailable receipts. Source CAS conflicts preserve phone input for comparison. Notes and completion are independent commands. Unknown legacy completion timestamps remain null.
+`GET /api/v1/lighttick/learning-library/{lessonId}/private` reads separately consented Grow notes, exercise answers, completion and saved position. `POST` accepts `LightTickLearningPrivateCommand` with immutable id, current content version/revision, action `save|complete|position`, notes/answers and position; requires formal LightTick bearer membership and schema header2. Legacy authority queues commands; activated native authority returns durable terminal results directly. GET operations expose pending/applied/conflict/unavailable receipts. Source CAS conflicts preserve phone input for comparison. Notes and completion are independent commands. Unknown legacy completion timestamps remain null.
 
 Signed bridge `learning-private` exchanges monotonic source snapshots and bounded command receipts against the current claimed binding; reading-only consent never authorizes private data. Grow remains sole writer and H5 uses the same source stores. Reading revocation and account deletion clear the private mirror/queues. Offline local drafts require device cleanup. Default action/v2 gates stay unchanged; no production scope is enabled by this code.
 
@@ -1692,3 +1692,22 @@ No database migration is required. Existing group-member invitation tokens are r
 ### LightTick owner 提交顺序（2026-11-03）
 
 PostgreSQL 仓储事务在领域锁及 change sequence 分配前取得统一 owner 事务锁，较晚的同 owner 写入不能越过未提交的较早变更。跨 owner 序号允许有空隙，cursor wire 格式不变。多 owner 的 guest upgrade 预先按固定顺序取全体 owner 锁；嵌套事务只能复用已声明 owner，不能在领域写入后临时扩大锁范围。外部请求和计算不应放入持锁事务。
+
+
+### Native versioned learning (2026-11-03, local candidate)
+
+Paths below are under `/api/v1/lighttick/learning`, require ACTIVE registered LightTick membership and return the standard no-store envelope. Commands require immutable `Idempotency-Key`; retries retain method/resource/body/key. These entities do not enter generic task-only sync/push or old-client pull.
+
+| Method/path | Semantics |
+| --- | --- |
+| GET `/authority` | phase, monotonic epoch, authority revision, write_enabled, separate reading_enabled/private_enabled. Existing source bindings or mirrors remain legacy until reviewed activation. |
+| GET `/collections`, GET `/lessons` | Owner/query-bound cursor pages, limit 1–100 (default 50); optional collection_id lesson filter. Catalog revision changes return 409: rebuild projection retaining drafts and pending requests. |
+| PUT `/collections/{collectionId}` | base_revision (0 creates), title, archived. Original UTF-8 IDs are URL encoded, including embedded `/`. |
+| PUT `/lessons/{lessonId}/publications` | base_revision, collection_id, number, title, content, references, optional HTTPS source_url. Stable lesson ID/collection/ordinal; immutable SHA-256 content+references versions. |
+| GET `/lessons/{lessonId}/versions/{contentVersion}` | Authorized immutable content, references, source and legacy-compatible derived exercise IDs/questions. |
+| GET `/lessons/{lessonId}/private?content_version=…` | Version-specific notes, answers, draft_version, position, explicit completion and component revisions. Virtual empty aggregate revision 1, component revisions 0. |
+| POST `/lessons/{lessonId}/private` | action save uses notes_revision as base_revision, notes/answers, optional explicitly reviewed draft_version. Position uses position_revision + position; complete uses completion_revision. No completion inferred from scrolling. |
+| GET `/lessons/{lessonId}/private-history?content_version=…` | Descending immutable private revisions, owner/lesson/version-bound cursor pages 1–20. |
+| POST `/consent` | Authority base_revision, explicit reading_enabled/private_enabled. Private requires reading. Revocation blocks private receipt replay too. Re-enabling does not invent consent or missing history. |
+
+Rollout uses deployment switch `LIGHTTICK_NATIVE_LEARNING_ENABLED=1` (default off). Turning it off prevents new commands while native content and accepted receipts remain readable under current consent/membership; it does not reactivate the old writer. Native authority projects the same data through legacy learning-library/private routes and returns terminal receipts directly. The compatibility list retains its 200-lesson cap; larger catalogs fail explicitly and require the paginated interface. Original draft anchors remain alongside changed questions. Conflicts retain both copies. Frozen/imported/verified authorities reject old source exchange writes inside the owner transaction gate; no dual write.

@@ -718,3 +718,22 @@ Market取值为app_store/google_play/xiaomi/vivo/oppo/huawei/honor/direct；未�
 ### 后台 Web server 的公开邀请转发
 
 `apps/admin-web/server.ts` 的三个精确 GET handoff 路径转发到已配置同槽位 API：`/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。这些是公开预览接力，不授予管理权限、不会自动接受邀请；其他方法405。保留 query、手动302跳转，强制 no-store/no-referrer，公开错误隐藏上游和令牌。请求的 absolute-form URL 不得替换 ADMIN_API_PROXY_TARGET 的 origin。现有 `/api/*` 流式代理保持原行为。外层 Nginx 的日志与 Universal/App Links 仍独立验收。
+
+
+## LightTick learning migration control (2026-11-03 local candidate)
+
+`POST /api/v1/admin/apps/lighttick/learning-migrations/{ownerId}/{preflight|freeze|import|verify|activate|abort}` uses the existing adminSession. Product bearer/Basic alone is insufficient. Target must be an ACTIVE registered member. Preflight is read-only with metadata audit; every mutation requires the existing sensitive-operation grant `lighttick.learning.migrate`, checked again inside the owner transaction, including replay. Bodies: bundle, expected_digest; mutations also base_revision and immutable Idempotency-Key. No private bodies, notes or credentials enter audit payloads.
+
+Manifest format 1/module learning contains explicit verified source instance/account→target user mapping, sealed frozen_at and library/private watermarks, independent original reading/private consent, original collection/lesson identities and all immutable publications, private states/history with draft anchors, original receipt keys/hashes/bodies. Pending receipts require original bodies and become applied or conflict before activation. Missing proof, stale watermarks, nonempty target, digest/relationship/count differences fail without overwrite. The current bounded tool accepts at most 6 MiB/200 lessons/2000 private states/10000 history entries/1000 receipts; larger migrations must wait for a reviewed chunk protocol, never truncate.
+
+State: legacy → frozen → imported → verified → zook. Freeze and activate/abort increase epoch; every transition uses authority CAS. Existing old bridge writes recheck this gate inside the owner transaction. **The source frozen flag is an operator attestation, not remote control of the historical service**: operators must actually stop the old writer and seal/reconcile its final export before freeze/activation. Native activation never enables dual write. Abort is supported before activation, removes only staging/imported receipts and preserves old mirrors; after activation (including any new write) return 409 and use reviewed export/compensation, never restore an old database over new writes.
+
+Tool (no DB access, no secret env additions):
+
+```
+node --experimental-transform-types scripts/lighttick-learning-migration.ts --bundle /absolute/path/reviewed-synthetic.json
+```
+
+Default is offline dry-run: validates the manifest and prints digest/counts, without checking server watermarks. Add `--endpoint https://reviewed-origin --cookie-file /private/admin.cookie` for remote read-only preflight. Cookie file must have mode 600 and contain only adminSession=value. Use the existing admin sensitive verification flow beforehand; the CLI does not bypass it. To execute a reviewed transition, add `--apply --action freeze --expected-digest <reviewed SHA256> --base-revision <current revision> --request-id <original command ID>`. Reuse the exact manifest/base/request ID on lost-response retry. Repeat import/verify/activate with their own reviewed current revision and command identity. No script auto-activates or publishes.
+
+Local synthetic tests: `test/unit/lighttick-learning-migration*.test.ts` and `test/integration/lighttick-native-learning-postgres.test.ts`; the PG test requires a disposable localhost grow_web_u1_* database through LIGHTTICK_TEST_DATABASE_URL. Real historical data, production sessions, deployment and actual source shutdown were not exercised.
