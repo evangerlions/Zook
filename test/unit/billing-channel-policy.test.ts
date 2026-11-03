@@ -21,7 +21,7 @@ function membership(source: AiNovelBillingSource): AiNovelBillingMembershipRecor
 }
 function snapshot(source: AiNovelBillingSource): NormalizedRevenueCatSnapshot {
   const current = membership(source);
-  return { membership: current, activeMemberships: [current], transactions: [],
+  return { membership: current, activeMemberships: [current], transactions: [], purchaseEntitlements: [],
     ignoredEntitlementCount: 0, ignoredProductCount: 0, hasActiveUnverifiedEnvironmentEntitlement: false };
 }
 
@@ -68,7 +68,7 @@ test("a higher tier in another store never steals the established store; same-st
 test("confirmation of the same plan in another store is pending, not successful", async () => {
   const result = await syncRevenueCatMembership({ provider: "revenuecat", userId: "user_alice", requestId: "channel_test", reason: "purchase" }, {
     now: () => now, logger: new StructuredLogger("test", { emitToConsole: false }), fetchSnapshot: async () => snapshot("app_store"),
-    persistSnapshot: async () => {}, getMembership: async () => membership("play_store"),
+    persistSnapshot: async () => undefined, getMembership: async () => membership("play_store"),
   });
   assert.equal(result.syncStatus, "pending"); assert.equal(result.membership.source, "play_store");
 });
