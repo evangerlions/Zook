@@ -1,0 +1,63 @@
+{
+  "status": "engineering-slice-only-not-release-ready",
+  "completed_tasks": "17/27",
+  "zook_candidate_sha": "066102efb7a846940a82841a4743c822e43f72f1",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "d6bf677f134de8f87ab8609abca4eff4e196fb5a",
+    "contract_revision": "071c0015fe4cb426285e6ab0fea5901b2ce5bf06",
+    "source_dirty": false,
+    "files": {
+      "index.html": "43f84066074b50b75882afbd3d5006b78091dab2c2dbe9fe103951a62c367644",
+      "assets/ActionsPage-DsuvdkBe.js": "b5b8117906e7ae0c6d9d448c908e3c9f3f012b66d54fddf6e16a1ed4e59cde55",
+      "assets/GoalsPage-vptB7pW7.js": "2d79043eacd2d36376a7fe59a2062d41ac0d8b969f8a6f40cabbdc7f9a11dccf",
+      "assets/LearningPage-BrF4DBiz.js": "80de5c0d9b4357b5cebd2cf7b60cf79459ab13ac0218048c2bdc70fff7d5ddf0",
+      "assets/PendingNotice-BhlakzTk.js": "45fab9ef596a212a9516e83fc8db8fc17d351819da7e1526b5a53447fee9198b",
+      "assets/PlanningPage-DaNu2eD5.js": "a25aa72f0dff10ccc74f6e6d406e00f704672dee47ed05f4685d8750146fb8a8",
+      "assets/PlansPage-CPD5he0d.js": "28dd9d48812f944e396da4fc2b13200fa0da51f77972be242bbd3a0131ff6a08",
+      "assets/PracticePage-Cyy4Xcek.js": "841ddbc9d795b4b847582070d6e0a4f12198a8a5711a373780b748867a96910d",
+      "assets/RecordsPage-BVFYTqR2.js": "bc0668be50c42719838533f4cfecca4447a40bfd96618f3e66beb40af0a641e5",
+      "assets/TodayPage-DzTCC2G9.js": "3bebe049c8a5ff75b16a95adbb9b0463ca39d3a975d55414030474f21af6e61f",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index--08vjXGf.css": "229933c47f88d2d9c163f03333ecdb15a19d5254b7f9da6962d571e2951fbe60",
+      "assets/index-ChsRK5vZ.js": "c8556a86a129adfb4c939679470f098e22e2cf474831ad26c4c44f61ad00c35c",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "ios_candidate_sha": "570494ed478186607dc08e3c850329f9b84b4c08",
+  "android_candidate_sha": "e77d4594414e9a98164cca36425e51eeb3c16b22",
+  "database_migrations": [
+    {
+      "file": "src/infrastructure/database/postgres/migrations/085_lighttick_native_learning.sql",
+      "sha256": "b1941730578fcfc9e353a93dde15716c17132f01c28421d6769d057ea63594a2"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/086_lighttick_learning_consent_and_draft_anchor.sql",
+      "sha256": "f55a89fafdfc6fdcc63fffe38fa29d2890c2d26a1fef2d8b6b131bd2dcbb939c"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/087_lighttick_source_completion_version.sql",
+      "sha256": "a00826caff8e28e04917061e66fdbe91a17d01364ca39e588827ebd46acac5f7"
+    }
+  ],
+  "enabled_only_in_synthetic_fixture": [
+    "LIGHTTICK_NATIVE_LEARNING_ENABLED",
+    "LIGHTTICK_ACTIONS_ENABLED",
+    "LIGHTTICK_ACTIONS_V2_ENABLED"
+  ],
+  "release_gates": {
+    "legacy_operation_parity": "blocked:516 operations need reviewed parity evidence",
+    "formal_course_routes_stages_progress": "pending",
+    "learning_worker_budget_cancel_lease_restart_publish": "pending",
+    "knowledge_growth_export_cleanup": "pending",
+    "investment_research_node_adapters_decimal_calendar_backtests": "pending",
+    "all_module_incremental_migration_compensation": "pending",
+    "other_apps_toggle_mixed_load_p95_increase_max_10_percent": "pending",
+    "real_model_quality": "independent-not-executed",
+    "physical_devices_accessibility": "independent-not-executed",
+    "long_observation": "independent-not-executed",
+    "real_private_migration": "independent-not-authorized-this-round",
+    "dev_online_release": "not-authorized-this-round"
+  }
+}
