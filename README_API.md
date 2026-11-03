@@ -1631,7 +1631,9 @@ Source identity and version are checked against a currently consented lesson or 
 
 `public/config.features.conversational_planning` 只有运行时 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 与 delivery `featureFlags.conversationalPlanning=true` 同时开启才为 true；旧响应缺失视为 false，原生据此隐藏增强入口。规划开关关闭时拒绝新的写入；既有会话可读取，已接受的相同 key/body 回执可恢复，恢复不重新启动生成任务。未接受的请求仍拒绝。App 本机/手动基础链不依赖规划开关或 Grow 会话。
 
-Grow 的可选网页入口经 C05 同源受限代理调用现有 `goals`、`manual-plans` 和 continuation 读取路由，只允许基础草稿创建、逐项修改与显式确认；浏览器不接触 Zook token，不将基本计划复制到 Grow 计划库。该入口的 `GROW_NATIVE_BASIC_PLANS_ENABLED` 默认关闭；原生基础能力独立。真实 provider 质量、真机及用户观察证据与工程替身测试分开记录。
+Grow React 网页由既有 Web 进程在 `/grow/` 承载，使用同 LightTick 普通用户会话（内存 access token、HttpOnly refresh cookie），直接调用现有规划、行动、目标和续排合同。历史 C05 Python 代理及 `GROW_NATIVE_BASIC_PLANS_ENABLED` 不属于当前 React 运行链路。AI 澄清/生成经既有队列执行，草案编辑不创建 task；确认核对 session/context/plan 版本。目标续排仍校验复盘版本、全部待替换任务和当前投入约束，只有显式确认才原子替换和恢复。Web 持久化原请求后显式重试，不自动覆盖本机长文本。原生基础能力独立；真实 provider 质量、真机及用户观察证据与工程替身测试分开记录。
+
+LightTick 通用领域 REST 回执必须匹配 owner、资源类型/ID、动作和请求体。即使请求体相同，把同一 `Idempotency-Key` 用于另一个目标或任务仍返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`，不会返回原资源回执作为新资源的成功结果。
 
 ### Billing environment isolation
 

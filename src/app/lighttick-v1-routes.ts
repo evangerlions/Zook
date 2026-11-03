@@ -96,7 +96,7 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
     await runtime.repository.lockPlanningOwner(owner);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
-      if (existing.payloadHash !== payloadHash || existing.action !== action)
+      if (existing.payloadHash !== payloadHash || existing.action !== action || existing.entityType !== entityType || existing.entityId !== entityId)
         throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key was reused with a different request.");
       return structuredClone(existing.resultPayload) as T;
     }
@@ -104,7 +104,8 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
     const saved = await runtime.repository.saveOperation({ ...owner, operationId: key, deviceId: "http",
       payloadHash, entityType, entityId, action, requestPayload: payload,
       resultPayload: structuredClone(result) as Json, status: "accepted", createdAt: now, updatedAt: now });
-    if (saved.payloadHash !== payloadHash) throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key collision.");
+    if (saved.payloadHash !== payloadHash || saved.action !== action || saved.entityType !== entityType || saved.entityId !== entityId)
+      throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key collision.");
     return structuredClone(saved.resultPayload) as T;
   });
 }

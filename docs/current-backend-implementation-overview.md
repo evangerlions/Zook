@@ -2,9 +2,9 @@
 
 ## Grow React Web 首批实现（2026-11-03，本地候选）
 
-Grow沿用LightTick appId/公共认证与`/api/v1/lighttick/...`，现有Web进程可默认关闭地承载固定SHA/digest静态包，无独立Grow服务。React源码保留Grow仓库，已接记录、手动基础计划及今日任务；其余领域仍按任务推进，旧Python部署不恢复。
+Grow沿用LightTick appId/公共认证与`/api/v1/lighttick/...`，现有Web进程可默认关闭地承载固定SHA/digest静态包，无独立Grow服务。React源码保留Grow仓库，已接记录、手动基础计划、今日任务、AI 规划会话、共享行动完整字段/层级/复盘和目标审阅续排；学习与专题仍按任务推进，旧Python部署不恢复。
 
-本轮修复task sync状态/变更/回执的事务边界，并保持冲突/拒绝原结果重放；不把task-only push扩大为全实体同步。共享Web代理使用可重放请求体，保留POST认证401及二进制语义。字段合同和原生版本不改变。
+本轮修复task sync状态/变更/回执的事务边界，并保持冲突/拒绝原结果重放；不把task-only push扩大为全实体同步。共享Web代理使用可重放请求体，保留POST认证401及二进制语义。通用 LightTick REST 回执补齐资源类型/ID 匹配，跨目标/任务复用同 key 不再误回另一资源的成功回执。字段合同和原生版本不改变。
 
 实际测试与未完成范围见[首批报告](verification/grow-react-u1-20261103/README.md)及[同步覆盖表](verification/grow-react-u1-20261103/sync-coverage.md)。未发布、未迁移真实数据；学习来源权威及全专题尚未原生化。
 

@@ -3851,7 +3851,7 @@ components:
       name: Idempotency-Key
       in: header
       required: true
-      description: Client-generated stable operation key. Reuse with a different canonical payload is rejected.
+      description: Client-generated stable operation key. Receipts are bound to the authenticated owner, resource type and ID, action, and canonical payload. Reuse for a different resource, action, or payload is rejected with LIGHTTICK_IDEMPOTENCY_MISMATCH.
       schema:
         type: string
         minLength: 8
