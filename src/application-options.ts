@@ -13,7 +13,7 @@ import type { DatabaseSeed } from "./shared/types.ts";
 import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
-  alipay?: import("./modules/billing/alipay-models.ts").AlipayOptions;
+  alipay?: import("./modules/billing/alipay-models.ts").AlipayEnvironmentOptions;
   /** Independent Yaohezi account routes; health/cloud capabilities remain gated. */
   yaoheziEnabled?: boolean;
   /** M2 trust API rollout, independent from account-only access. Defaults off. */
@@ -50,7 +50,8 @@ export interface CreateApplicationOptions {
   publicSmsTestBypassEnabled?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
-  billingEnvironment?: { allowSandbox: boolean; defaultEnvironment?: import("./modules/billing/billing-environment.ts").BillingEnvironment };
+  /** Deployment identity injection for deterministic application tests. */
+  appEnvironment?: string;
   databaseUrl?: string;
   migrationDatabaseUrl?: string;
   /**
@@ -91,7 +92,6 @@ export interface CreateApplicationOptions {
     webhookAuthorization?: string;
     appId?: string;
     googleAppId?: string;
-    allowSandbox?: boolean;
     fetcher?: typeof fetch;
     timeoutMs?: number;
     now?: () => Date;

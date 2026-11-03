@@ -19,7 +19,9 @@ test("Alipay availability follows required configuration, without an enable flag
   assert.equal(alipayConfigured({ ...sandbox, notifyUrl: undefined, returnUrl: undefined }), true);
   assert.equal(alipayConfigured({ ...sandbox, notifyUrl: "http://example.test", returnUrl: "invalid" }), true);
   assert.equal(alipayConfigured({ ...sandbox, environment: "production" }), true);
-  assert.equal(alipayConfigured({ ...sandbox, environment: "production", notifyUrl: undefined }), false);
+  assert.equal(alipayConfigured({ ...sandbox, environment: "production", notifyUrl: undefined }), true);
+  assert.equal(alipayConfigured({ ...sandbox, environment: "production", notifyUrl: undefined, returnUrl: undefined }), true);
+  assert.equal(alipayConfigured({ ...sandbox, environment: "production", notifyUrl: "http://example.test" }), false);
   assert.equal(alipayConfigured({ ...sandbox, environment: "production", returnUrl: "http://example.test" }), false);
 });
 

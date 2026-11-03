@@ -1,4 +1,8 @@
-import type { AlipayOptions } from "./alipay-models.ts";
+import { accessSync, constants, statSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import type { AlipayEnvironmentOptions } from "./alipay-models.ts";
+import { billingDeploymentEnvironment, billingEnvironments } from "./billing-environment.ts";
 
 /** Public provider identities belong to this product, not deployment secrets. */
 export const AINOVEL_PAYMENT_IDENTITIES = {
@@ -12,16 +16,24 @@ const NOTIFY_ORIGINS: Record<string, string> = {
 };
 const RETURN_URL = "https://orangewrite.cn/app/#/membership";
 
-export function aiNovelAlipayRuntimeOptions(env: NodeJS.ProcessEnv = process.env): AlipayOptions {
-  const mode = env.ALIPAY_AI_NOVEL_ENVIRONMENT;
-  const environment = mode === "production" || mode === "sandbox" ? mode : undefined;
-  const origin = NOTIFY_ORIGINS[env.DEPLOY_SLOT ?? env.APP_ENV ?? ""];
-  return {
-    environment,
-    appId: environment ? AINOVEL_PAYMENT_IDENTITIES.alipay[environment] : undefined,
-    privateKeyPath: env.ALIPAY_AI_NOVEL_PRIVATE_KEY_PATH,
-    publicKeyPath: env.ALIPAY_AI_NOVEL_PUBLIC_KEY_PATH,
-    notifyUrl: origin ? `${origin}/api/v1/ai_novel/billing/webhooks/alipay` : undefined,
-    returnUrl: RETURN_URL,
-  };
+/** Fixed Secret layout; no merchant selector or key-path env variables. */
+export function aiNovelAlipayRuntimeOptions(env: NodeJS.ProcessEnv = process.env, secretsRoot?: string): AlipayEnvironmentOptions {
+  const deployment = billingDeploymentEnvironment(env);
+  const root = secretsRoot ?? (["local", "test"].includes(deployment)
+    ? join(homedir(), ".zook/secrets/ainovel-alipay") : "/run/secrets/ainovel-alipay");
+  const origin = NOTIFY_ORIGINS[deployment];
+  return Object.fromEntries(billingEnvironments(deployment).map(environment => {
+    const privateKeyPath = join(root, environment, "app-private-key.pem");
+    const publicKeyPath = join(root, environment, "alipay-public-key.pem");
+    try {
+      if (!statSync(privateKeyPath).isFile() || !statSync(publicKeyPath).isFile()) return [environment, {}];
+      accessSync(privateKeyPath, constants.R_OK);
+      accessSync(publicKeyPath, constants.R_OK);
+    } catch { return [environment, {}]; }
+    return [environment, {
+      appId: AINOVEL_PAYMENT_IDENTITIES.alipay[environment], privateKeyPath, publicKeyPath,
+      notifyUrl: origin ? `${origin}/api/v1/ai_novel/billing/webhooks/alipay` : undefined,
+      returnUrl: RETURN_URL,
+    }];
+  }));
 }

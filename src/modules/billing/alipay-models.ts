@@ -45,7 +45,6 @@ export interface AlipayGateway {
 export interface AlipayOptions {
   /** Testable per-query deadline; production defaults to 20 seconds. */
   queryTimeoutMs?: number;
-  allowSandbox?: boolean;
   appId?: string;
   /** Optional merchant override and additional settlement check. */
   sellerId?: string;
@@ -57,3 +56,4 @@ export interface AlipayOptions {
   gateway?: AlipayGateway;
   now?: () => Date;
 }
+export type AlipayEnvironmentOptions = Partial<Record<import("./billing-environment.ts").BillingEnvironment, Omit<AlipayOptions, "environment">>>;

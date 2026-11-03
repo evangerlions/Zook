@@ -122,7 +122,7 @@ test("real sync persists cross-store financial evidence, protects membership and
   const seed = buildDefaultSeed();
   seed.appUsers!.push({ id: "channel_alice", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion: "GLOBAL", joinedAt: now.toISOString() });
   const runtime = await createApplication({ seed, revenueCat: { secretApiKey: "mock", projectId: "mock", appId: "apple_app",
-    googleAppId: "google_app", allowSandbox: true, now: () => now,
+    googleAppId: "google_app", now: () => now,
     fetcher: fixtureFetcher(async () => Response.json(providerFixture()), "apple_app") } });
   await runtime.database.upsertAiNovelBillingMembership(membership("play_store"));
   const result = await runtime.services.aiNovelBillingService.syncMembership({ provider: "revenuecat", userId: "user_alice", requestId: "channel_real_sync", reason: "purchase" });

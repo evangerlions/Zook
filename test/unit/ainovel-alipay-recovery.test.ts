@@ -22,8 +22,8 @@ async function fixture() {
     gmt_payment: "2026-10-18 18:00:00", sign_type: "RSA2", sign: "valid" });
   const gateway: AlipayGateway = { payment: async () => ({ type: "page", url: "https://openapi.alipay.com/gateway.do?method=alipay.trade.page.pay" }),
     query: async id => { queried.push(id); return evidence(id); }, verifyNotify: async () => true };
-  const runtime = await createApplication({ seed, alipay: { appId: "merchant", sellerId: "seller",
-    environment: "sandbox", notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => new Date(clock++) }, revenueCat: { now: () => NOW } });
+  const runtime = await createApplication({ seed, alipay: { sandbox: { appId: "merchant", sellerId: "seller",
+    notifyUrl: "https://example.test/notify", returnUrl: "https://example.test/return", gateway, now: () => new Date(clock++) } }, revenueCat: { now: () => NOW } });
   const service = runtime.services.aiNovelBillingService.alipay;
   const create = async (key: string) => (await service.create("user_alice", "CN", {
     productKey: "plus_monthly", platform: "web", distribution: "web", checkoutMode: "desktop_web", idempotencyKey: key,

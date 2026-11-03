@@ -1,5 +1,5 @@
 import { billingMarket } from "../modules/billing/billing-market.ts";
-import { billingEnvironment, billingSandboxAllowed, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { billingEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { ALIPAY_ORDER_ID_PATTERN, createAlipayOrderId } from "../modules/billing/alipay-order-id.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
@@ -24,8 +24,7 @@ export class AiNovelAlipayService {
     this.gateway = options.gateway ?? new OfficialAlipayGateway(options);
     this.now = options.now ?? (() => new Date());
   }
-  get available() { return alipayConfigured(this.options) && this.options.environment === billingEnvironment() &&
-    (this.options.environment === "production" || (this.options.allowSandbox ?? billingSandboxAllowed())); }
+  get available() { return alipayConfigured(this.options) && this.options.environment === billingEnvironment(); }
   async checkoutCatalog() {
     const prices = this.available ? await this.readPrices() : undefined;
     return { available: !!prices, prices };

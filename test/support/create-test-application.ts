@@ -8,9 +8,16 @@ import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 export type { CreateApplicationOptions } from "../../src/app.module.ts";
 
 export async function createApplication(options: CreateApplicationOptions = {}) {
-  return await createRuntimeApplication({
-    billingEnvironment: { allowSandbox: true, defaultEnvironment: billingEnvironment() },
+  const runtime = await createRuntimeApplication({
+    appEnvironment: "test",
     ...options,
     databaseFactory: options.databaseFactory ?? ((seed) => new InMemoryDatabase(seed)),
   });
+  const handle = runtime.app.handle.bind(runtime.app);
+  // Older scoped fixtures inherit context only when the caller omitted the header.
+  runtime.app.handle = request => handle({ ...request, headers:
+    Object.keys(request.headers).some(key => key.toLowerCase() === "x-billing-environment") ? request.headers :
+      { ...request.headers, "x-billing-environment": billingEnvironment() },
+  });
+  return runtime;
 }

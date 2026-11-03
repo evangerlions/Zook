@@ -36,7 +36,7 @@ async function fixture(state = providerState(), options: {
   const provider = fixtureFetcher(async () => Response.json(state), "rc-app");
   let failProvider = false;
   const runtime = await createApplication({ seed, revenueCat: {
-    secretApiKey: "unit-test", projectId: "project", appId: "rc-app", allowSandbox: true, now: options.now ?? (() => NOW),
+    secretApiKey: "unit-test", projectId: "project", appId: "rc-app", now: options.now ?? (() => NOW),
     fetcher: async (input, init) => {
       if (failProvider) return new Response(null, { status: 503 });
       const response = await provider(input, init);

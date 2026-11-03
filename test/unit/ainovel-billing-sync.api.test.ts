@@ -51,12 +51,12 @@ function revenueCatOptions(
 ) {
   return {
     seed: buildAiNovelSeed(),
+    appEnvironment: allowSandbox ? "test" : "online",
     revenueCat: {
       secretApiKey: API_KEY,
       webhookAuthorization: WEBHOOK_AUTH,
       appId: RC_APP_ID,
       googleAppId: google ? RC_APP_ID : undefined,
-      allowSandbox,
       fetcher: fixtureFetcher(fetcher, RC_APP_ID),
       projectId: "proj_test",
       // Keep receipt fixtures independent of the real calendar date.

@@ -1,11 +1,11 @@
 import { readWebhookEvent, toWebhookRecord, type ParsedWebhookEvent } from "../modules/billing/revenuecat-webhook-event.ts";
-import { billingEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { billingEnvironment, billingDeploymentEnvironment, billingSandboxAllowed, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { timingSafeEqual } from "node:crypto";
-import { AiNovelAlipayService } from "./ainovel-alipay.service.ts";
+import { AiNovelAlipayEnvironments } from "./ainovel-alipay-environments.ts";
 import { readAlipayMembership } from "./ainovel-alipay-projection.ts";
 import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 import { selectStoreMembership, storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
-import type { AlipayOptions } from "../modules/billing/alipay-models.ts";
+import type { AlipayEnvironmentOptions } from "../modules/billing/alipay-models.ts";
 import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
 import { syncMembership } from "./ainovel-billing-sync.ts";
 import { syncRevenueCatMembership } from "./ainovel-revenuecat-membership-sync.ts";
@@ -50,21 +50,21 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 ]);
 
 export interface AiNovelBillingServiceOptions {
-  alipay?: AlipayOptions;
+  alipay?: AlipayEnvironmentOptions;
   readAlipayPrices?: () => Promise<AlipayPrices | undefined>;
   secretApiKey?: string;
   revenueCatProjectId?: string;
   webhookAuthorization?: string;
   revenueCatAppId?: string;
   revenueCatGoogleAppId?: string;
-  allowSandbox?: boolean;
+  appEnvironment?: string;
   fetcher?: typeof fetch;
   timeoutMs?: number;
   now?: () => Date;
 }
 
 export class AiNovelBillingService {
-  readonly alipay: AiNovelAlipayService;
+  readonly alipay: AiNovelAlipayEnvironments;
   private readonly customerApi: RevenueCatCustomerApi;
   private readonly now: () => Date;
 
@@ -86,9 +86,10 @@ export class AiNovelBillingService {
     this.webhookAuthorization = options.webhookAuthorization?.trim();
     this.revenueCatAppId = options.revenueCatAppId?.trim();
     this.revenueCatGoogleAppId = options.revenueCatGoogleAppId?.trim();
-    this.allowSandbox = options.allowSandbox ?? false;
+    const deployment = options.appEnvironment ?? billingDeploymentEnvironment();
+    this.allowSandbox = billingSandboxAllowed(deployment);
     this.now = options.now ?? (() => new Date());
-    this.alipay = new AiNovelAlipayService(database, options.alipay ?? {}, user => this.getMembership(user), logger,
+    this.alipay = new AiNovelAlipayEnvironments(database, options.alipay ?? {}, deployment, user => this.getMembership(user), logger,
       options.readAlipayPrices ?? (async () => undefined));
   }
 

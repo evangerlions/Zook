@@ -20,9 +20,9 @@ async function fixture(t: TestContext, configured = true) {
   const evidence = (id: string) => ({ code: "10000", out_trade_no: id, app_id: "merchant", seller_id: "seller",
     trade_no: "202611030000000001", trade_status: "TRADE_SUCCESS", total_amount: (orders.get(id)!.amountMinor / 100).toFixed(2),
     send_pay_date: "2026-11-03 18:00:00", sign_type: "RSA2", sign: "fixture" });
-  const runtime = await createApplication({ seed, alipay: { appId: "merchant", sellerId: "seller", environment: "sandbox", now: () => NOW,
+  const runtime = await createApplication({ seed, alipay: { sandbox: { appId: "merchant", sellerId: "seller", now: () => NOW,
     gateway: { payment: async order => { orders.set(order.orderId, order); return { type: "page", url: "https://cashier.example.test" }; },
-      query: async id => evidence(id), verifyNotify: async () => true } } });
+      query: async id => evidence(id), verifyNotify: async () => true } } } });
   t.after(() => runtime.close());
   const admin = runtime.services.adminConsoleService;
   const headers = { "x-app-id": "ai_novel", authorization: `Bearer ${runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel")}` };
