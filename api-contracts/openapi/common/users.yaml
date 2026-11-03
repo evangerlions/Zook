@@ -81,7 +81,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   schemas:
     CurrentUserResponse:
       type: object

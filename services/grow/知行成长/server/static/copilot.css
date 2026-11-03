@@ -1,0 +1,237 @@
+.cp-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.cp-summary{font-size:17px;font-weight:600;margin:16px 0}
+.cp-status{color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.cp-blockers{color:var(--warning-text);line-height:1.9;padding-left:22px}
+.cp-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.cp-reader{line-height:1.9;overflow-wrap:anywhere}
+.cp-reader h2,.cp-reader h3{margin-top:24px}
+.cp-reader td{border:1px solid var(--border);padding:8px;white-space:normal}
+.cp-reader table{display:block;overflow-x:auto;width:100%}
+.cp-reader blockquote{border-left:3px solid var(--primary);margin:10px 0;padding-left:14px;color:var(--muted)}
+.cp-reader details{border:1px solid var(--border);border-radius:8px;padding:12px;margin:18px 0}
+.cp-reader summary{cursor:pointer;font-weight:600}
+.cp-reader pre,.cp-stream{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);padding:var(--spacing-md);border-radius:var(--radius-sm)}
+#view-copilot textarea{display:block;width:100%;box-sizing:border-box;font:14px/1.7 monospace;margin:8px 0 18px;resize:vertical}
+#view-copilot [hidden]{display:none}
+@media(max-width:680px){.cp-row{align-items:flex-start}.cp-actions button{flex-grow:1}.cp-summary{font-size:15px}}
+
+/* 课程完成记录样式 */
+.cp-reflection-dialog, .cp-reflection-view {
+  background: var(--card);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+}
+
+.cp-reflection-dialog::backdrop, .cp-reflection-view::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.cp-reflection-content, .cp-reflection-view {
+  padding: 24px;
+}
+
+.cp-reflection-content h2 {
+  margin-top: 0;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.cp-reflection-content .desc {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.cp-reflection-content .plan-field {
+  margin-bottom: 16px;
+}
+
+.cp-reflection-content .plan-field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.cp-reflection-content input,
+.cp-reflection-content textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.cp-reflection-content textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.cp-reflection-content input:focus,
+.cp-reflection-content textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.reflection-info {
+  background: var(--bg);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-xl);
+}
+
+.reflection-info p {
+  margin: 8px 0;
+  color: var(--text);
+}
+
+.reflection-section {
+  margin-bottom: 20px;
+}
+
+.reflection-section h3 {
+  font-size: 16px;
+  color: var(--primary);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.reflection-section p {
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.reflection-badge {
+  display: inline-block;
+  background: var(--success-light);
+  color: var(--success);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: var(--spacing-sm);
+}
+
+.reflection-badge::before {
+  content: '✓ ';
+}
+
+.course-reflection-btn {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* 课程详情页面样式 */
+.lesson-detail-section {
+  margin: var(--spacing-xl) 0;
+  padding: var(--spacing-lg);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary);
+}
+
+.lesson-detail-section h4 {
+  margin: 0 0 12px 0;
+  color: var(--text, #333);
+  font-size: 16px;
+}
+
+.lesson-progress-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.progress-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.progress-stat span {
+  font-size: 13px;
+  color: var(--muted, #666);
+}
+
+.progress-stat strong {
+  font-size: 18px;
+  color: var(--text, #333);
+}
+
+.lesson-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--border, #e0e0e0);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.lesson-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary, #4a90e2), var(--success, #28a745));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.lesson-info, .lesson-record, .lesson-plan-info {
+  background: var(--card);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  margin: var(--spacing-sm) 0;
+}
+
+.lesson-info p, .lesson-record p, .lesson-plan-info p {
+  margin: var(--spacing-sm) 0;
+  line-height: 1.6;
+}
+
+.lesson-info h5, .lesson-record h5, .lesson-plan-info h5 {
+  margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+  font-size: 14px;
+  color: var(--primary);
+}
+
+.lesson-record ul {
+  margin: var(--spacing-sm) 0;
+  padding-left: 20px;
+}
+
+.lesson-record li {
+  margin: var(--spacing-sm) 0;
+  line-height: 1.6;
+}
+
+.lesson-record li strong {
+  color: var(--primary);
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .lesson-detail-section {
+    background: var(--bg-subtle, #2a2a2a);
+  }
+
+  .lesson-info, .lesson-record, .lesson-plan-info {
+    background: var(--bg-elevated, #1e1e1e);
+  }
+}

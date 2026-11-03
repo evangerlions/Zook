@@ -14,3 +14,10 @@ npm-debug.log*
 
 # Historical LightTick Go reference is never a runtime build input.
 archive/
+
+# Deployment snapshots contain private resolved configuration, never build inputs.
+.deploy/
+.artifacts/
+.worktrees/
+.storage/
+deploy_configs/*.env

@@ -19,6 +19,7 @@ for(const flag of ["accountSocial","friends","growth","competition"] as const)aw
 for(const [userId,nickname] of [["user_alice","QA Alice"],["user_bob","QA Bob"]])await database.upsertBodyLogProfile({appId:"bodylog",userId,nickname,avatarKey:"mint_runner",profileCompleted:true,createdAt:now,updatedAt:now});
 await database.insertBodyLogFriendship({appId:"bodylog",userId:"user_alice",friendUserId:"user_bob",createdAt:now});
 const counters:Record<string,number>={};
+let failFirstGroupInvite = process.env.BODYLOG_QA_FAIL_FIRST_GROUP_INVITE === "1";
 const server=createServer(async(req,res)=>{
  try {
   const url=new URL(req.url!,"http://127.0.0.1");
@@ -26,6 +27,12 @@ const server=createServer(async(req,res)=>{
   const body=Buffer.concat(chunks).toString();
   counters[`${req.method} ${url.pathname.replace(/\/(i|invite|b|g|invitations)\/.*/,"/$1/[redacted]")}`]=(counters[`${req.method} ${url.pathname.replace(/\/(i|invite|b|g|invitations)\/.*/,"/$1/[redacted]")}`]??0)+1;
   if(url.pathname==="/__qa/counts") {res.writeHead(200,{"Content-Type":"application/json"});res.end(JSON.stringify(counters));return;}
+  if (failFirstGroupInvite && req.method === "POST" && /^\/api\/v1\/bodylog\/groups\/[^/]+\/invite$/.test(url.pathname)) {
+    failFirstGroupInvite = false;
+    res.writeHead(503, {"Content-Type":"application/json"});
+    res.end('{"code":"QA_TEMPORARY_FAILURE","message":"Retry the invitation."}');
+    return;
+  }
   const handled=await runtime.app.handle({method:req.method as any,path:url.pathname,headers:req.headers as Record<string,string>,query:Object.fromEntries(url.searchParams),body:body?JSON.parse(body):undefined});
   res.writeHead(handled.statusCode,{"Content-Type":handled.contentType??"application/json",...handled.headers});
   if(handled.streamBody){for await(const chunk of handled.streamBody)res.write(chunk);res.end();}

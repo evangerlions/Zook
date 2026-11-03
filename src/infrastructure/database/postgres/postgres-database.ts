@@ -1,5 +1,7 @@
 import {PostgresUserStore} from "./postgres-users.ts";
 import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
+import { PostgresYaoheziHealthStore } from "./postgres-yaohezi-health-store.ts";
+import { PostgresYaoheziProfileStore } from "./postgres-yaohezi-profile-store.ts";
 import { PostgresRbacStore } from './postgres-rbac.ts';
 import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
 import { PostgresPersonalSyncRepository } from "./postgres-personal-sync.ts";
@@ -67,7 +69,6 @@ import type {
 } from "../../../shared/types.ts";
 import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-database.ts";
 import { runPostgresMigrations } from "./migrate.ts";
-import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
 import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
 import { PostgresAiNovelBillingStore } from "./postgres-ainovel-billing.ts";
@@ -99,10 +100,7 @@ import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
 import { PostgresAiNovelCreditsStore } from "./postgres-ai-novel-credits.ts";
 import { PostgresBodyLogCheckinStore } from "./postgres-bodylog-checkin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
-import {
-  parseApp,
-  parseAppConfig,
-} from "./postgres-row-parsers.ts";
+import { PostgresAppRegistryStore } from "./postgres-app-registry.ts";
 export class PostgresDatabase extends ApplicationDatabase {
   private get alipayOrders() { return new PostgresAlipayOrders((sql, values) => this.query(sql, values)); }
   override findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
@@ -160,9 +158,12 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
     this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
+  private readonly appRegistry = new PostgresAppRegistryStore((sql, values) => this.query(sql, values));
   private readonly users = new PostgresUserStore((sql,values) => this.query(sql,values));
   private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
   getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
+  override getYaoheziHealthStore(): PostgresYaoheziHealthStore { return new PostgresYaoheziHealthStore(this.pool); }
+  override getYaoheziProfileStore(): PostgresYaoheziProfileStore { return new PostgresYaoheziProfileStore(this.pool); }
   getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
   getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect(), () => this.sessionContext.getStore()); }
   getFrogSleepAdminStore() { return new PostgresFrogSleepAdminStore((sql, values) => this.query(sql, values)); }
@@ -239,53 +240,13 @@ export class PostgresDatabase extends ApplicationDatabase {
       appConfigs: await this.listAppConfigs(),
     };
   }
-  override async listApps(): Promise<AppRecord[]> {
-    const result = await this.query("SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps ORDER BY id ASC");
-    return result.rows.map(parseApp);
-  }
-  override async listAppIds(): Promise<string[]> {
-    const result = await this.query("SELECT id FROM zook_apps ORDER BY id ASC");
-    return result.rows.map((row) => String(row.id));
-  }
-  override async findApp(appId: string): Promise<AppRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps WHERE id = $1 OR code = $1 LIMIT 1",
-      [appId],
-    );
-    return result.rows[0] ? parseApp(result.rows[0]) : undefined;
-  }
-  override async findAppByApiDomain(hostname: string): Promise<AppRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps WHERE lower(api_domain) = lower($1) LIMIT 1",
-      [hostname],
-    );
-    return result.rows[0] ? parseApp(result.rows[0]) : undefined;
-  }
-  override async insertApp(record: AppRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_apps (id, code, name, name_i18n, status, api_domain, join_mode, created_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8::timestamptz)
-       ON CONFLICT (id) DO UPDATE SET
-         code = EXCLUDED.code,
-         name = EXCLUDED.name,
-         name_i18n = EXCLUDED.name_i18n,
-         status = EXCLUDED.status,
-         api_domain = EXCLUDED.api_domain,
-         join_mode = EXCLUDED.join_mode,
-         created_at = EXCLUDED.created_at,
-         updated_at = NOW()`,
-      [record.id, record.code, record.name, JSON.stringify(record.nameI18n), record.status, record.apiDomain ?? null, record.joinMode, record.createdAt],
-    );
-  }
-  override async updateAppNames(appId: string, name: string, nameI18n: AppNameI18n): Promise<void> {
-    await this.query(
-      "UPDATE zook_apps SET name = $2, name_i18n = $3::jsonb, updated_at = NOW() WHERE id = $1",
-      [appId, name, JSON.stringify(nameI18n)],
-    );
-  }
-  override async deleteApp(appId: string): Promise<void> {
-    await deletePostgresApp(async (sql, values) => await this.query(sql, values), appId);
-  }
+  override async listApps(): Promise<AppRecord[]> { return await this.appRegistry.listApps(); }
+  override async listAppIds(): Promise<string[]> { return await this.appRegistry.listAppIds(); }
+  override async findApp(appId: string): Promise<AppRecord | undefined> { return await this.appRegistry.findApp(appId); }
+  override async findAppByApiDomain(hostname: string): Promise<AppRecord | undefined> { return await this.appRegistry.findAppByApiDomain(hostname); }
+  override async insertApp(record: AppRecord): Promise<void> { await this.appRegistry.insertApp(record); }
+  override async updateAppNames(appId: string, name: string, nameI18n: AppNameI18n): Promise<void> { await this.appRegistry.updateAppNames(appId, name, nameI18n); }
+  override async deleteApp(appId: string): Promise<void> { await this.appRegistry.deleteApp(appId); }
   override async listAppUsers(appId?: string): Promise<AppUserRecord[]> {
     return await this.appUsers.list(appId);
   }
@@ -394,39 +355,10 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
   }
 
-  override async listAppConfigs(appId?: string): Promise<AppConfigRecord[]> {
-    const result = appId
-      ? await this.query("SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs WHERE app_id = $1 ORDER BY config_key ASC", [appId])
-      : await this.query("SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs ORDER BY app_id ASC, config_key ASC");
-    return result.rows.map(parseAppConfig);
-  }
-
-  override async findAppConfig(appId: string, configKey: string): Promise<AppConfigRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs WHERE app_id = $1 AND config_key = $2 LIMIT 1",
-      [appId, configKey],
-    );
-    return result.rows[0] ? parseAppConfig(result.rows[0]) : undefined;
-  }
-
-  override async upsertAppConfig(record: AppConfigRecord): Promise<AppConfigRecord> {
-    const result = await this.query(
-      `INSERT INTO zook_app_configs (id, app_id, config_key, config_value, updated_at)
-       VALUES ($1, $2, $3, $4, $5::timestamptz)
-       ON CONFLICT (app_id, config_key)
-       DO UPDATE SET
-         id = EXCLUDED.id,
-         config_value = EXCLUDED.config_value,
-         updated_at = EXCLUDED.updated_at
-       RETURNING id, app_id, config_key, config_value, updated_at`,
-      [record.id, record.appId, record.configKey, record.configValue, record.updatedAt],
-    );
-    return parseAppConfig(result.rows[0]);
-  }
-
-  override async deleteAppConfigsByApp(appId: string): Promise<void> {
-    await this.query("DELETE FROM zook_app_configs WHERE app_id = $1", [appId]);
-  }
+  override async listAppConfigs(appId?: string): Promise<AppConfigRecord[]> { return await this.appRegistry.listAppConfigs(appId); }
+  override async findAppConfig(appId: string, configKey: string): Promise<AppConfigRecord | undefined> { return await this.appRegistry.findAppConfig(appId, configKey); }
+  override async upsertAppConfig(record: AppConfigRecord): Promise<AppConfigRecord> { return await this.appRegistry.upsertAppConfig(record); }
+  override async deleteAppConfigsByApp(appId: string): Promise<void> { await this.appRegistry.deleteAppConfigsByApp(appId); }
 
   override async insertAnalyticsEvents(records: AnalyticsEventRecord[]): Promise<void> {
     await this.operationalRecords.insertAnalyticsEvents(records);
@@ -626,7 +558,6 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   private async initialize(): Promise<void> {
     if (this.initialized) return;
-
     await this.withExclusiveSession(async () => {
       await seedPostgresDefaults(this.seed, {
         query: async (sql, values = []) => await this.query(sql, values),

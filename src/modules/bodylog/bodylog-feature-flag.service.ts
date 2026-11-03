@@ -13,7 +13,7 @@ export class BodyLogFeatureFlagService {
     for (const flag of flags) {
       config[flag.key] = flag.enabled;
     }
-    return { ...config, buddyDeliveryV2: true, invitationManagement: true, retentionLedger: true };
+    return { ...config, buddyDeliveryV2: true, invitationManagement: true, retentionLedger: true, groupInvitationCodes: true };
   }
 
   /**

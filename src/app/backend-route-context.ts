@@ -190,6 +190,7 @@ export class BackendRouteContext {
   }
 
   public getFrogSleepAdminStore() { return this.database.getFrogSleepAdminStore(); }
+  public getYaoheziHealthStore() { return this.database.getYaoheziHealthStore(); }
   public getPersonalSyncRepository() { return this.database.getPersonalSyncRepository(); }
   public retryFrogSleepAdminNotification(command: FrogSleepAdminRetryCommand) {
     return retryFrogSleepAdminNotification(this.database, this.notificationService, command);

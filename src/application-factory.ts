@@ -1,3 +1,4 @@
+import { createApplicationVerificationServices } from "./application-verification-services.ts";
 import { createApplicationInfrastructure } from './application-infrastructure.ts';
 
 import { billingSandboxAllowed } from "./modules/billing/billing-environment.ts";
@@ -59,7 +60,6 @@ import { JevContentSafetyClient } from "./services/jev-content-safety-client.ts"
 import { createOpenRouterTransparentProxyFetch } from "./services/openrouter-transparent-proxy.ts";
 import { ContentSafetyCounters } from "./services/content-safety-counters.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
-import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
@@ -79,10 +79,7 @@ import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
 import { SmsVerificationRecordService } from "./services/sms-verification-record.service.ts";
-import { NoopCaptchaVerificationService, TencentCaptchaVerificationService } from "./services/tencent-captcha-verification.service.ts";
 import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-callback.service.ts";
-import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
-import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { createApplicationBillingService } from "./application-billing-runtime.ts";
 import { BackendApplication } from "./app/backend-application.ts";
@@ -97,12 +94,12 @@ import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics,
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
-import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
+  const yaoheziEnabled = options.yaoheziEnabled ?? process.env.YAOHEZI_ENABLED?.trim().toLowerCase() === "true";
   const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
   const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled, includeYaohezi: yaoheziEnabled });
   const {kvManager,managedStateStore,seed,database,lighttickRepository,cache,queue}=await createApplicationInfrastructure(options,baseSeed);
   const lighttickRuntime = createApplicationLightTickRuntime(lighttickRepository, queue);
   const localRunFileLogSink = createLocalRunFileLogSink({
@@ -235,46 +232,14 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const tokenService = new TokenService(accessTokenSecrets.current, {
     previousSecrets: accessTokenSecrets.previous,
   });
-  const tencentCloudCommonCredentials =
-    await resolveTencentCloudCommonCredentials(commonPasswordConfigService);
-  const baseTencentSmsVerificationConfig = resolveTencentSmsVerificationConfig(
-    options,
-    tencentCloudCommonCredentials,
-  );
-  const registrationEmailSender =
-    options.registrationEmailSender ??
-    (options.serviceName === "api" || options.serviceName === "worker"
-      ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
-      : new NoopRegistrationEmailSender());
-  const smsVerificationSender =
-    options.smsVerificationSender ??
-    (options.serviceName === "api"
-      ? ({
-          async sendVerificationCode(command) {
-            const config = await commonSmsConfigService.getRuntimeConfig(
-              baseTencentSmsVerificationConfig,
-            );
-            return new TencentSmsVerificationSender(
-              config,
-            ).sendVerificationCode(command);
-          },
-        } satisfies SmsVerificationSender)
-      : new NoopSmsVerificationSender());
-  const captchaVerificationService =
-    options.captchaVerificationService ??
-    (options.serviceName === "api"
-      ? new TencentCaptchaVerificationService(
-          resolveTencentCaptchaVerificationConfig(
-            options,
-            tencentCloudCommonCredentials,
-          ),
-        )
-      : new NoopCaptchaVerificationService());
-  const emailTestSendService = new EmailTestSendService(
-    commonEmailConfigService,
-    kvManager,
-    registrationEmailSender,
-  );
+  const { registrationEmailSender, smsVerificationSender, captchaVerificationService, emailTestSendService } =
+    await createApplicationVerificationServices({
+      options,
+      kvManager,
+      commonPasswordConfigService,
+      commonEmailConfigService,
+      commonSmsConfigService,
+    });
   const llmEmailAlertService = new LlmEmailAlertService(
     database.llmObservabilityStore,
     kvManager,
@@ -522,6 +487,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     aiNovelBillingService,
     frogsleepEnabled,
     lighttickEnabled, lighttickRuntime, options.billingEnvironment ?? { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" },
+    yaoheziEnabled,
+    options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
   app.analyticsService = analyticsService;
   return {

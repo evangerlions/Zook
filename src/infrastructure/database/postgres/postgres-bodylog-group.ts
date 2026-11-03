@@ -45,6 +45,14 @@ export async function findCheckInGroup(pool: Pool, groupId: string): Promise<Che
   return parseCheckInGroupRow(result.rows[0]);
 }
 
+export async function listGroupInvitations(pool: Pool, appId: string, userId: string): Promise<GroupMemberRecord[]> {
+  const result = await pool.query(`SELECT m.* FROM zook_bodylog_group_members m
+    JOIN zook_bodylog_groups g ON g.id=m.group_id WHERE g.app_id=$1 AND m.user_id=$2
+    AND m.status IN ('pending','active') AND m.invitation_token IS NOT NULL
+    ORDER BY m.joined_at DESC LIMIT 1001`, [appId, userId]);
+  return result.rows.map(parseGroupMemberRow);
+}
+
 export async function updateCheckInGroup(pool: Pool, record: CheckInGroupRecord): Promise<void> {
   await pool.query(
     `UPDATE zook_bodylog_groups SET
@@ -127,7 +135,7 @@ export async function updateGroupMember(pool: Pool, record: GroupMemberRecord): 
   await pool.query(
     `UPDATE zook_bodylog_group_members SET
       role = $2, invitation_token = $3, status = $4, joined_at = $5
-    WHERE id = $1`,
+    WHERE id = $1 AND ($4 <> 'pending' OR status <> 'active')`,
     [
       record.id,
       record.role,

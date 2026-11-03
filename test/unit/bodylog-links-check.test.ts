@@ -24,3 +24,27 @@ test('live acceptance stops before credentials or mutation on a mismatched relea
   assert.equal(code,1);assert.equal(JSON.parse(output).passed,false);assert.deepEqual(paths,['/api/health']);
  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });
+
+test('release acceptance requires group-code capability before attempting account login', async () => {
+ const paths: string[] = [];
+ const server = createServer((req, res) => {
+  paths.push(req.url!);
+  const isHealth = req.url === '/api/health', isConfig = req.url === '/api/v1/bodylog/public/config';
+  res.writeHead(isHealth || isConfig ? 200 : 401, {'Content-Type': 'application/json'});
+  res.end(JSON.stringify({data: isHealth ? {version: 'expected'} : isConfig ?
+   {buddyDeliveryV2: true, invitationManagement: true, retentionLedger: true} : null}));
+ });
+ await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+ try {
+  const child = spawn(process.execPath, ['scripts/bodylog-dev-acceptance.mjs'], {env: {...process.env,
+   BODYLOG_QA_BASE_URL: `http://127.0.0.1:${(server.address() as any).port}`,
+   BODYLOG_EXPECTED_VERSION: 'expected', QA_A_EMAIL: 'synthetic@example.invalid', QA_A_PASSWORD: 'synthetic'},
+   stdio: ['ignore', 'pipe', 'pipe']});
+  let output = ''; child.stdout.on('data', chunk => {output += chunk;});
+  const code = await new Promise<number | null>((resolve, reject) => {child.on('close', resolve); child.on('error', reject);});
+  assert.equal(code, 1);
+  assert.deepEqual(JSON.parse(output).checks.find((row: any) => row.name === 'capability groupInvitationCodes'),
+   {name: 'capability groupInvitationCodes', passed: false});
+  assert.ok(!paths.some(path => path.startsWith('/api/v1/auth/')), 'missing capability must stop before credentials');
+ } finally {await new Promise<void>(resolve => server.close(() => resolve()));}
+});

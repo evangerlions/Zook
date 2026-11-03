@@ -568,6 +568,53 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/GroupList" }
         "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/preview:
+    get:
+      operationId: previewBodyLogGroupCode
+      tags: [bodylog-group]
+      summary: Preview the signed-in recipient's group invitation
+      description: Recipient-bound six-character code; seven-day expiry. Does not expose members or habits or activate membership.
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string, pattern: '^[A-HJ-NP-Za-hj-np-z2-9]{6}$' }
+      responses:
+        "200":
+          description: Minimal invitation preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BodyLogGroupCodePreviewResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "410": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/join-by-code:
+    post:
+      operationId: joinBodyLogGroupByCode
+      tags: [bodylog-group]
+      summary: Accept an invitation code for the signed-in recipient
+      description: Same-account replay returns the existing group without a second joined activity. Capacity and account quotas are checked atomically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^[A-HJ-NP-Za-hj-np-z2-9]{6}$' }
+                expectedGroupId: { type: string, minLength: 1, description: Preview identity; a mismatch returns 409 without joining. }
+      responses:
+        "200": { $ref: "#/components/responses/Group" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "410": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/groups/{groupId}:
     parameters:
       - $ref: "#/components/parameters/GroupId"
@@ -1410,7 +1457,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     FriendRequestId:
       name: requestId
@@ -2655,8 +2702,13 @@ components:
         message: { type: string }
         data:
           type: object
-          required: [invited]
-          properties: { invited: { type: boolean, const: true } }
+          required: [invited, code, expiresAt, invitationUrl, invitationToken]
+          properties:
+            invited: { type: boolean, const: true }
+            code: { type: string, pattern: '^[A-HJ-NP-Z2-9]{6}$' }
+            expiresAt: { type: string, format: date-time }
+            invitationUrl: { type: string, format: uri }
+            invitationToken: { type: string, description: Addressed recipient grant; the same token is embedded in invitationUrl. }
         requestId: { type: string }
     BodyLogGroupResponse:
       type: object
@@ -3425,3 +3477,21 @@ components:
           enum:
           - control
           - treatment
+
+    BodyLogGroupCodePreviewResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [id, name, currentMembers, maxMembers, expiresAt]
+          additionalProperties: false
+          properties:
+            id: { type: string }
+            name: { type: string }
+            currentMembers: { type: integer, minimum: 0 }
+            maxMembers: { type: integer, minimum: 2, maximum: 5 }
+            expiresAt: { type: string, format: date-time }
+        requestId: { type: string }

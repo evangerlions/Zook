@@ -11,7 +11,7 @@ try {
  const health=await request('/api/health');check('expected deployed version',health.status===200&&health.value?.data?.version===expected);
  if(!checks.at(-1).passed)throw new Error('Expected release version was not confirmed; acceptance stopped before login or mutation.');
  const flags=await request('/api/v1/bodylog/public/config');
- for(const name of ['buddyDeliveryV2','invitationManagement','retentionLedger'])check(`capability ${name}`,flags.status===200&&flags.value?.data?.[name]===true);
+ for(const name of ['buddyDeliveryV2','invitationManagement','retentionLedger','groupInvitationCodes'])check(`capability ${name}`,flags.status===200&&flags.value?.data?.[name]===true);
  for(const path of ['/entitlements','/missions','/rewards','/retention/assignment'])check(`Bearer required ${path}`,(await request('/api/v1/bodylog'+path)).status===401);
  if(!checks.every(row=>row.passed))throw new Error('Public capability or authentication preflight failed.');
  const tokens=[];

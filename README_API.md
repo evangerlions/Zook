@@ -1,5 +1,15 @@
 # API Interface Specification
 
+Grow H5 的兼容部署入口为 `/grow/`，其原 Python API 经 `/grow/api/*` 转发，
+使用独立 Grow 会话 Cookie（Path=/grow/），不接受 Zook Admin 会话作为用户登录。
+子路径部署使用 `zook_grow_session` Cookie，避免旧服务的根路径 Cookie 冲突。
+`PLAN_CONTENT_BACKEND=postgresql` 时，记录与课程正文均由 PostgreSQL 持久化，
+`/grow/api/storage-status.formal_markdown`、课程/规划响应的 `storage` 为 `postgresql`；
+数据库课程不生成 GitHub 链接，原 `github_url` 可为 null。
+`/grow/api/account/github` 兼容配置响应新增 `storage_backend`，界面据此显示当前内容存储。
+这些是迁移保留的 H5 兼容路径，不是新增的平台公共 API；原生 LightTick 接入仍以
+本文 `/api/v1/lighttick/*` canonical 合同为准。部署见 [Grow H5](docs/grow-h5-deployment.md)。
+
 ### AINovel 试运营额度（2026-10-20）
 
 Free / Plus / Pro 的独立 7 天周期额度分别为 200 / 1000 / 4000 credits。
@@ -485,6 +495,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 当 `hasPassword = false` 的账号尝试 `POST /api/v1/auth/login` 密码登录时，服务端返回 `401 AUTH_PASSWORD_NOT_SET`，`message` 会按请求语言本地化，提示用户先使用验证码登录并在账号设置中设置密码。
 如果账号不存在，密码登录返回 `401 AUTH_ACCOUNT_NOT_FOUND`，`message` 会按请求语言本地化提示账号不存在；如果账号存在但密码错误，仍返回 `401 AUTH_INVALID_CREDENTIAL`。
 
+登录和刷新响应中的 accessToken、refreshToken 均作为 opaque credential 使用；当前 access token 实现不是标准 JWT，客户端不得拆解 token 推断身份或权限。App 的 `scope=current` 登出须在 JSON body 提供当前 refreshToken，Web 可使用 HttpOnly refresh cookie；`scope=all` 无需 refreshToken。单设备登出撤销 refresh 凭证，不承诺立即使已发 access token 失效；健康产品另需可撤销的设备会话。
+
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
 19a. AINovel Billing 使用 `/api/v1/ai_novel/billing/...` 产品命名空间。`GET /api/v1/users/me` 的 `data.membership` 只表示当前 Bearer Token app scope 下的权益；同一用户在不同 app 的权益互不通用。App Store 与 Google Play 使用 RevenueCat；CN 中国 Android 应用商店、官网直装 Android、Web、Windows 在显式配置启用后支持一次性支付宝会员。全球 Web / Windows 用户引导至 iOS 或 Android 订阅。
@@ -852,7 +864,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 同一对用户已有 active/paused 的睡眠或专注关系时，重复组合邀请的对应领域只读显示已连接，复用原关系 ID；此规则同时覆盖旧聚合 `/accept` 与新逐域接受产生的关系。不会新建关系、占用新 slot 或扩大任一方授权；canonical 撤销记录仍覆盖旧关系事实。
 
-睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 可传 `joint_activity_id`（兼容别名 `jointActivityId`），将已接受并开始的 `tonight_together` 活动固定到同一个共享会话；双方跨午夜、跨时区加入、并发重试以及活动完成后的恢复均返回原会话，不再按各自 `date_anchor` 新建。活动必须属于该关系及当前参与者；错误关系/活动返回 `403`，未接受、未开始或已过期且尚无绑定会话返回 `409`。共同活动仅使用绑定会话的真实完成事实。未传活动 ID 时保留 `relationship_id + date_anchor` 的 pending/active 会话复用规则；日期键接受有效日历日期及旧 ISO 时间戳并归一为其日期部分，非法日期返回 `400`。
+睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 可传 `joint_activity_id`（兼容别名 `jointActivityId`），将已接受并开始的 `tonight_together` 活动固定到同一个共享会话；双方跨午夜、跨时区加入、并发重试以及活动完成后的恢复均返回原会话，不再按各自 `date_anchor` 新建。活动必须属于该关系及当前参与者；错误关系/活动返回 `403`，未接受、未开始或已过期且尚无绑定会话返回 `409`。共同活动仅使用绑定会话的真实完成事实。未传活动 ID 时保留 `relationship_id + date_anchor` 的 pending/active 会话复用规则；日期键接受有效日历日期及旧 ISO 时间戳并归一为其书写日期部分（不转换为 UTC 日期），非法日期返回 `400`。
 
 `PATCH /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences` 成功响应包含 `preferences` 和当前 `relationship`，用于 iOS 在保存守护偏好后直接刷新关系状态。请求只接受 `guard_level`、`visibility_scope`、`mute_for_tonight`、`allow_morning_summary_push`、`allow_recovery_nudges`；未知字段或类型不匹配返回 `400 REQ_INVALID_BODY`。共同守护 session 响应包含 Zook canonical 字段 `session_id`、`relationship_id`、`status`、`participant_states`、`starts_at`、`ends_at`，并额外保留 iOS 兼容字段 `shared_session_id`、`initiator_user_id`、`invite_status`、`date_anchor`、`initiator_state`、`partner_state`、`started_at`、`ended_at`；其中 `initiator_state` / `partner_state` 会把后端内部 `pending` 映射为 iOS 已有枚举 `invited`。
 
@@ -1048,6 +1060,8 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 `POST /api/v1/frogsleep/account/guest-sessions` 接收安全随机 `device_secret`、`device_id`、`platform`，必填 `Idempotency-Key`；返回受限 Bearer/refresh 和独立升级凭据，身份有效期30天。正式账号以自己的 Bearer、当前 `X-Sync-Epoch`、`Idempotency-Key`、来源 `guest_user_id/guest_upgrade_token/device_id` 及 `confirmed:true` 原子升级私人原始睡眠、报告和偏好。目标相同数据去重，不同正文或墓碑冲突整次回滚；成功撤销来源访问，原请求可重放确认。游客只能访问私人同步和本人会话，不能使用公共平台、搭子、专注或设备管理。旧 `guest_device_id` 单字段请求仍409 `FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，设备ID不证明归属。完整请求、错误、限额与重试见 [游客升级专题](docs/public-frogsleep-guest-upgrade.md)。
 
 ### 9.5 FrogSleep 邀请链接与推送
+
+后台 Web server 对 `/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite` 三个精确 GET 路径转发到同槽位 `ADMIN_API_PROXY_TARGET`，保留 query 与深链跳转，强制 no-store/no-referrer，避免 Admin SPA fallback 吞掉邀请页；其他方法返回405。可用 `python3 build_scripts/frogsleep_domain_acceptance.py --base-url https://app-dev.youwoai.net --expected-version <发布版本>` 验证实际页面内容。外层代理日志仍需运维核定，直接代理示例见 `deploy_configs/nginx/frogsleep-links.conf.example`。这不自动启用 Universal Links/App Links，也不能复用 HabitTap 的 AASA 身份；真实设备唤起与无安装场景仍须单独验收。
 
 FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
 
@@ -1518,6 +1532,27 @@ The AASA document includes `/i/*`, `/invite/*`, `/b/*`, `/g/*` and `/invite-code
 
 
 Buddy pair responses now include optional-compatible `canAcceptInvitation:boolean`, computed for the authenticated viewer: false for the inviter, active/dissolved/expired pairs and legacy pairs without an addressed inviter; true only for the pending recipient. It is a UI affordance, not permission to bypass the accept endpoint. Existing acceptance authorization remains authoritative.
+
+## 药盒子（Yaohezi）账号接入
+
+公共账号校验仅接受服务端签发的完整 opaque credential；追加分段、非 URL-safe 签名、缺失或类型错误的内部声明均返回 `401 AUTH_INVALID_TOKEN`，不应触发客户端无限刷新。客户端不读取这些内部声明，沿用响应中的有效期和 user 信息。
+
+药盒子使用独立 `appId/productKey=yaohezi` 和 `/api/v1/yaohezi/*`。服务端仅在显式设置 `YAOHEZI_ENABLED=true` 时注册默认产品角色/配置并启用账号路由；未设置时保持关闭，不随部署 slot 自动开启。已有部署须确认产品元数据已通过标准 seed 注册。
+
+App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/api/v1/auth/refresh` 与 `/api/v1/auth/logout` 建立账号会话，预登录请求提供 `appId=yaohezi`；不得使用开发验证码绕过。
+
+`GET /api/v1/yaohezi/me` 要求匹配的有效 token、启用的 app 和 ACTIVE membership，返回 `{code,message,data,requestId}`，其中 data 为 `{appId,userId,healthAccessEstablished:false,capabilities:{cloudSync:false,familySharing:false,reportAI:false,subscriptionSales:false}}`。登录不关联、上传或认领本地档案；成员角色不授予健康资料权限，其他产品 token 返回 403。该端点只确认账号接入，当前返回的云端/共享/AI/销售能力均关闭。
+
+唯一合同为 `api-contracts/openapi/yaohezi/api.yaml`；运行时使用生成后的 `YaoheziMeData`。服务地区、供应商、付费 SKU 与实际部署另行验证后配置，不在本账号入口隐式开启。
+
+本地接入验证：在 Zook 工作区运行 `npm run verify:yaohezi-local`。需要 Node、正在运行的本机 PostgreSQL（当前 OS 用户具备建库权限）及 PATH 中的 `redis-server`；可用 `YAOHEZI_LOCAL_PG_PORT` 指定本机数据库端口。脚本只连 `127.0.0.1`，为每次运行创建独立 `yaohezi_local_*` 数据库，并启动独占端口、随机密码的临时 Redis，不读取生产 `DATABASE_URL/REDIS_URL`，不清空现有数据库或 Redis。结束后关闭该 Redis，保留测试数据库和 `.artifacts/yaohezi/<数据库名>/` 证据供检查。
+
+该验证经过真实 PostgreSQL 迁移、真实 Redis、loopback HTTP、服务端验证码校验、账号/产品成员关系、跨产品拒绝、并发 refresh 单一成功、登出后 refresh 失效及新应用实例的会话/成员关系读取。短信发送器与任务队列是明确的本地 fixture，无外发短信或推送；不代表家庭授权、可信设备、密文同步、支付或视觉模型已验收。禁止把 fixture 配置用于部署。
+
+同一命令还验证内部主体关联端口的真实 PG 并发/回执与账号隔离。该端口尚未开放为公共 API，`me.healthAccessEstablished` 仍为 `false`；本人声明关联不等于已验证本人、受信设备、共享授权或密钥领取。当前没有健康内容上传接口。
+
+iOS 持续本地联调使用独立的 `npm run dev:yaohezi-local`，默认只监听 `127.0.0.1:18763`，创建独立 PG/Redis，短信为正常验证码校验加本地 capture transport。该 fixture 的控制路径不属于公共 API、不会注册到部署入口。iOS 使用固定版本的轻量合同快照，账号登录/刷新/退出/切换不触发档案关联或上传。启动与 XCTest 步骤见 [本地开发说明](docs/yaohezi-local-development.md)。
+
 ### I4 private learning (2026-10-25, local implementation)
 `GET /api/v1/lighttick/learning-library/{lessonId}/private` reads separately consented Grow notes, exercise answers, completion and saved position. `POST` accepts `LightTickLearningPrivateCommand` with immutable id, current content version/revision, action `save|complete|position`, notes/answers and position; requires formal LightTick bearer membership and schema header2. Acceptance queues a command, never fabricates source completion; GET operations expose pending/applied/conflict/unavailable receipts. Source CAS conflicts preserve phone input for comparison. Notes and completion are independent commands. Unknown legacy completion timestamps remain null.
 
@@ -1542,6 +1577,36 @@ Source identity and version are checked against a currently consented lesson or 
 `GET /api/v1/lighttick/action-plans/practices/{planId}/follow-up?feedback_id=...`只读返回选中反馈、原行动revision、当前来源版本／可用性及本人当前有效的上级计划。`POST`同一路径提交`key,revision,feedback_id,source_version,title,date`，可选`timezone,parent_id,parent_revision`；所选上级必须携带当前revision。沿用schema头2、注册会员、独立写入开关与原请求幂等。原行动／来源／上级变化返回冲突供本人重新核对；来源撤回拒绝新建，但已提交同key先重放。
 
 新实践附带只读`practice_origin:{plan_id,feedback_id}`，来源仍为当前授权材料；原反馈、完成事实、上级日期与目标分钟不变。不自动复制整期预算，不自动生成计划或调用模型。旧端忽略可选字段，按`capabilities.practice_follow_up`识别能力；课程与整体Goal Coach约束仍遵循各自原任务。
+
+### 药盒子 M2：可信健康设备（2026-10-31，本地验证）
+
+账号入口和健康设备入口分别受 `YAOHEZI_ENABLED=true`、`YAOHEZI_HEALTH_DEVICES_ENABLED=true` 控制，二者默认关闭。只开启账号不会开放设备接口。M2 路径均为 `POST /api/v1/yaohezi/health/{action}`，要求有效药盒子 Bearer、活动账号/app/membership 和真实 PostgreSQL；无持久化存储返回 `503 YAOHEZI_HEALTH_STORAGE_REQUIRED`，无内存授权降级。普通 `X-Device-Id` 不提供设备证明。
+
+| action | 额外证明 | 行为 |
+| --- | --- | --- |
+| `challenges` | `subjectId + purpose + device` | 生成绑定账号/主体/不可变签名和封装公钥的五分钟单次挑战；每账号五分钟最多 20 次 |
+| `bootstrap` | 首次设备签名、明确本人确认、独立恢复 verifier/密文包 | 仅无历史健康 authority 时建立首个本人设备；self_asserted 不是患者身份验证 |
+| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话及 `creationOperationId`；数据库只存 token hash；创建操作号不可重建会话 |
+| `close-sessions` | 本设备 `close-sessions` 签名及普通账号 Bearer；无需健康 bearer | 将本设备指定创建操作号永久关闭并撤销已创建的会话；可先于或后于创建提交，不受设备撤销影响；仅限本账号/主体/设备 |
+| `recovery` | 同一 owner 账号 | 返回 verifier/加密恢复包；账号本身不能解密或恢复设备信任 |
+| `recover` | 新设备挑战签名 + 当前恢复 verifier 的恢复签名 | 新恢复材料、epoch/version 必须接续；原子撤销所有旧设备授权/会话，移除所有中继能力包，仅信任新设备 |
+| `enroll` | owner 健康会话及签名、新设备自身挑战签名 | 同账号设备批准，必须核对完整指纹；可给 owner 或限定资源的 reader；不是家人邀请 |
+| `inspect` | 当前健康会话及设备签名 | 返回绑定请求 nonce、账号/主体/epoch 的 30 秒信任快照和本设备能力包；reader 只获取自身、合法 writer 及必需证书链 |
+| `key-capsules` | owner 健康会话及签名 | 只存按资源 UUID、资源版本 UUID、epoch、接收设备/授权版本绑定的签名 HPKE 密文；不得上传库钥/整档案钥 |
+| `revoke-device` | owner 健康会话及签名、新恢复材料 | 撤销目标设备，推进 epoch/恢复版本，清除旧能力包并使旧 epoch 会话失效 |
+| `rotate-keys` | owner 健康会话及签名、新恢复材料 | 推进 epoch/恢复版本；未来内容须用新的资源版本和随机 DEK，旧明文/钥不能远程收回 |
+| `logout` | 当前健康会话及设备签名 | 立即撤销当前健康会话；不删除本人本地健康库或把其私钥交给服务器 |
+| `verify-operation` | 当前健康会话、外层命令签名、内层 revision 签名 | 校验当前主体/资源/动作/设备授权、版本/epoch/摘要/到期；返回 `healthContentAccepted:false`，不写临床事实、不代替 M3 修订接收 |
+
+后七类受保护调用（`enroll/inspect/key-capsules/revoke-device/rotate-keys/logout/verify-operation`）同时要求 `X-Yaohezi-Health-Session`，完整请求形状以 canonical OpenAPI 为准。管理命令包含 `version:1/subjectId/operationId/actorAccountId/actorDeviceId/grantVersion/keyEpoch/expiresAt`；签名输入为 UTF-8 canonical JSON `['yaohezi-health-v1', action, command]`，对象键排序，只接受整数及规范字段，base64url 不带 padding。设备签名为 Ed25519，公钥 32 字节、签名 64 字节。新设备 `enroll-proof` 和恢复 `recover-authority` 使用独立 domain。不能把验签成功当成改药授权。
+
+健康会话、设备和授权状态每次在相同账号→主体 advisory lock、authority 行锁、membership/share lock 的事务中重新核验，副作用与审计/回执在该事务提交。M2 路由不持有旧应用全局锁；同主体撤销先提交后，后续健康操作必须拒绝，即使普通账号 access token 仍有效。旧回执也先验当前授权，不复活已撤设备。`400` 非法结构；`403` 会话/信任/动作/签名拒绝；`409` 旧 epoch/version、已用挑战或操作冲突；`429` 挑战额度；`404` 开关关闭。权限拒绝不应触发账号无限刷新。
+
+设备信任、健康会话与普通账号会话不同。公共 `/auth/logout` 保持原 refresh-token 契约，不等于设备撤销；未来启用健康会话的原生退出流程须先调用健康 `logout`，再执行公共退出。再次建立健康会话需要可信私钥与新挑战；已撤销设备连新挑战入会也会被拒绝，必须通过有效批准/恢复路径。
+
+密码组合为 RFC 9180 X25519/HKDF-SHA256/AES-256-GCM 资源密钥封装，以及独立 256 位离线恢复材料派生的签名 verifier 和 AES-GCM 恢复 vault。服务器不执行解密、不持恢复 secret、设备私钥、SQLCipher key 或明文 DEK。不能检查恶意发送方放入密文的字节；客户端资源类型与核验边界仍是必要条件。实现与互操作参考在 `clients/yaohezi-security`，该目录和 HPKE 开发依赖不会被服务端运行时导入。详细威胁边界、AAD/framing 和评审见 `docs/security/yaohezi-m2-protocol.md`、`docs/security/yaohezi-m2-review.md`。
+
+本轮没有部署上述接口，没有完成原生可信设备 UI/Keychain、真机互操作、远程家庭授权、密文修订持久化、私有附件或 AI。不能用本地两个 Node 参考设备代替正式两台 iOS 设备验收。健康开关上线前还须处理已记录的依赖安全告警及产品删除编排；原件/共享/订阅功能开关仍为 false。
 
 ### LightTick 原生手动计划与本机转属（N2）
 
@@ -1609,3 +1674,20 @@ request on transport failures. Alipay QR polling invokes the same POST sync and
 never overlaps. Closing a wait does not cancel payment or erase committed facts.
 RevenueCat SDK purchase transaction identifiers are matched to verified REST V2
 subscription transaction `id`, as specified in the [official transaction reference](https://www.revenuecat.com/docs/api-v2/subscription-transactions). Old active access alone cannot confirm a new purchase.
+
+
+### BodyLog addressed group invitation codes (2026-11-01)
+
+`GET /api/v1/bodylog/public/config` advertises `groupInvitationCodes=true` when these contracts are implemented. Absent capability means the client must hide manual code joining. The `accountSocial` permission gate remains authoritative; capability does not enable production features.
+
+- `POST /api/v1/bodylog/groups/{groupId}/invite` accepts `{userId}` for a leader/admin and returns `{invited:true,code,expiresAt,invitationUrl,invitationToken}`. The six-character uppercase code is bound to the invited account and reuses the persisted addressed invitation grant, with a seven-day expiry. Renewing a pending invitation rotates its grant and invalidates the old code. The URL/token are not log or analytics data.
+- `GET /api/v1/bodylog/groups/preview?code=ABC234` requires the invited account and returns only `{id,name,currentMembers,maxMembers,expiresAt}`. It does not reveal habit/member data or join automatically. Wrong account, removed invitation or unknown code returns404; expired returns410; malformed returns400. Ambiguous codes fail closed. The bounded account lookup rejects excessive invitation records with429.
+- `POST /api/v1/bodylog/groups/join-by-code` accepts `{code,expectedGroupId?}`. A preview identity mismatch returns409 without writing. Success returns the direct group document. Repeated redemption by the same account returns the existing group, with no repeated joined activity. A fresh admission enforces the group capacity and per-account quota atomically in PostgreSQL. Capacity/quota rejection is determined inside admission, so a delayed same-account duplicate also recovers the existing group after its peer consumes the last slot or quota. Removed/archived groups cannot be reopened by replay.
+
+No database migration is required. Existing group-member invitation tokens are retained after acceptance to recover same-account code retries during their original validity period; they are not returned in member lists, and removed/left records are ineligible. Concurrent renewal cannot turn an active member back into pending. Free/Premium limits remain 2/5 groups and 3/5 members. This source change does not certify deployment, signed device acceptance or real push delivery.
+
+### 药盒子原生退出的创建操作号屏障（2026-10-31）
+
+客户端须在 `sessions` HTTP 前将命令 `operationId` 安全驻留。响应丢失时不可重发创建以索取 token。`close-sessions` 请求为 `{command,signature}`，Ed25519 domain 为 `close-sessions`；command 严格字段为 `version:1, subjectId, operationId, actorAccountId, actorDeviceId, expiresAt, creationOperationIds:[UUID]`（1–100 个不重复值，expiresAt 当前后 5 分钟内）。响应 `{closed:true,creationOperationIds}`。设备公钥必须与该主体下永久绑定记录完全一致；已撤设备仅能提交此负向关闭操作，不能恢复授权。
+
+迁移 `083_yaohezi_session_creation_cleanup.sql` 为现有会话增加可空创建操作号（不猜测历史操作号）及永久关闭表。新创建在相同账号→主体事务锁内检查关闭表，命中返回 `YAOHEZI_SESSION_CREATION_CLOSED`；重复创建返回操作冲突或挑战已消费，绝不再次返回 token。客户端确认全部创建操作号关闭后才删除对应本机清理条目。旧 `logout` 单会话接口仍保留；普通账号退出应在其 refresh 被撤销前完成健康清理，失败保留原账号清理条目并停止本机连接。

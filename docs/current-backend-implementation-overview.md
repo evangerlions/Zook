@@ -1,5 +1,17 @@
 # 当前后端实现概览
 
+## Grow H5 存储补充（2026-11-02）
+
+Zook 内的 `services/grow` 支持 PostgreSQL 内容后端：账号记录、规划、课程正文和不可变版本
+使用同槽位数据库的独立 `grow_*` schema；每个 Grow 账号继续隔离数据空间。
+这是现有 Python H5 的兼容承载，并未合并 Grow/Zook 账号或改变原生 LightTick 的数据权威。
+旧服务的历史账号、数据和配置保留不动；本次只接通本地新版供验证。
+操作及验收见 [Grow H5 部署](grow-h5-deployment.md)。
+
+## BodyLog 小组邀请码闭环（2026-11-01）
+
+定向邀请返回账号绑定的六位短码与七天有效期；预览不披露成员/打卡，兑换校验预览身份并保持重复请求幂等。PostgreSQL 在同一事务中串行化用户配额和小组最后名额，内存实现对应同样规则。复用既有邀请记录，无新 migration；实现不代表已经部署。接口见 `README_API.md`，并发门禁可用 `test/support/run_bodylog_group_postgres.py` 在全新临时 cluster 复跑。
+
 ## AINovel Alipay backend MVP
 
 CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Public payment identities and callback rules are code-owned; env retains credentials and the Alipay sandbox/production selector. Alipay prices use the existing versioned Admin delivery config; catalog and new orders read current prices, while existing orders retain frozen amounts and can settle after new sales stop. No enablement/price-approval flag or env/code price fallback exists. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
@@ -834,6 +846,17 @@ The `feature/bodylog-retention-completion` worktree adds persistent encouragemen
 ### Authentication recovery hardening
 
 Migration `080_auth_credential_version.sql` adds the durable account-wide credential version. Shared password changes use this version to invalidate old cross-app sessions. App logout and deletion remain app-scoped. Redis atomically commits refresh-token replacement and session indexes. Failed new-user registration rolls back its identity and retains the unconsumed code. Email/SMS provider waits run outside the short verification-preparation transaction. Fixed email test codes require an explicit local environment.
+
+## Yaohezi 账号基础接入（默认关闭）
+
+`npm run verify:yaohezi-local` 提供独立本地验收入口：真实 PostgreSQL、独占临时 Redis、loopback HTTP；覆盖验证码登录、产品隔离、刷新竞态、退出与应用实例重开。数据库与日志保留在本机，临时 Redis 自动关闭。短信 transport 和队列使用本地 fixture；该入口不宣称云健康能力或外部供应商验收完成，运行要求见 README_API。
+
+药盒子独立 `YaoheziProfileStore` 内部端口已增加 PostgreSQL 主体、本人声明关联及幂等回执（迁移 081）。只有显式确认的命令可写入；数据库事务/账号与主体锁及唯一约束防止重复、操作 ID 换主体和跨账号领取。subjectId 保留本地稳定 UUID，不存 profileId、姓名、病史或付款关系；`self_asserted` 仅是账号路由声明，始终不建立健康访问权限。登录/me 不调用该端口，不自动上传。当前无公开主体路由、无按姓名/手机号关联、无代建远程授权；可信设备和恢复协议完成前不能开放健康域。关系表的 RESTRICT 约束要求未来删除编排显式处理，不能直接上线产品删除。
+
+新增独立 `yaohezi` 产品注册、member 角色和全关闭的健康功能配置；通过 `YAOHEZI_ENABLED=true` 显式启用 `/api/v1/yaohezi/me`，复用公共身份和活动 membership 校验。默认 seed/其他产品路由行为不变。账号入口不建立健康主体关系、不上传资料，也不授予家人权限。
+
+公共登出合同补齐 App 当前设备 logout 的 refreshToken；所有平台 bearer 文档改为 opaque 凭证，与当前 token 实现一致。合同源、生成类型、外部 README_API 与负向测试同步维护。健康设备会话、密文同步、授权共享、真实对象存储和付费 AI 仍须按后续门禁实现，不能用该 me 接口宣称这些能力已经上线。
+
 2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；全仓行数门禁仍失败，未发布。
 
 2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.
@@ -843,6 +866,14 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
 
 2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
+
+### Yaohezi M2 trusted-device backend（2026-10-31，本地）
+
+本节更新上文“健康设备会话待实现”的历史状态。新增迁移 082、独立 YaoheziHealthStore、默认关闭的设备 API 开关及同账号 self-subject 信任协议。PG 事务保护挑战、不可变设备公钥、资源版本只读授权、健康会话 hash、opaque key capsules、epoch 和最小审计/回执。撤销不依赖普通 access token 到期；恢复整体撤旧设备、清能力包并推进 epoch/verifier，不复活旧授权。M2 受保护操作自行持有账号/主体事务，不使用旧应用全局锁。
+
+Node 参考实现 HPKE 资源版本钥、离线恢复 vault、HTTPS/nonce/30 秒当前信任快照和有根证书链验权。读者不能签发 owner 授权，恢复后只需新恢复根，历史批准设备撤销不误撤合法存活设备。恢复包不是 iOS 可移植备份码，不含 token、SQLCipher key 或 current grants。
+
+本地验证和实现状态见 docs/security/yaohezi-m2-review.md。原生 UI/Keychain、真机互操作、外部密码审计、依赖告警处理仍是发布门槛。密文同步、家庭授权和付费 AI 未完成。接口及配置以 README_API 和 canonical OpenAPI 为准。未推送或部署。
 
 #### LightTick N2 原生手动计划候选（2026-10-31）
 
@@ -859,3 +890,8 @@ Migration `080_auth_credential_version.sql` adds the durable account-wide creden
 
 #### 原生可选规划增强 N4
 PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会话/计划版本、已确认总投入与当前每日容量校验；显式确认再校验持久提案。开关关闭仍支持已有会话读取和已接受请求回执恢复，不重新调度生成。原生手动链与网页 C05 可选增强独立，网页复用 canonical manual-plans，不新增第二份计划主数据。工程回归不代替真实 provider 或上线外部门禁。
+### 药盒子原生 M2 本地退出补充（2026-10-31）
+
+新增 `health/close-sessions` 和迁移 083，使用本设备签名关闭持久化创建 UUID；支持创建前取消及响应丢失后的撤销，已撤设备仍可关闭自己的会话。会话/关闭同账号→主体事务锁串行化，普通账号 Bearer 和不可变公钥绑定仍必需。协议变更详见 README_API；不新增医疗内容同步。iOS 已用原生 CryptoKit、Keychain 和真实本地 HTTP 联调，不等同于真机或发布批准。
+
+BodyLog group admission follow-up: deterministic stale-pending interleavings now recover the same-account membership after a peer reaches capacity/quota. The release gate invokes the isolated group PostgreSQL runner as its own step (requires initdb/pg_ctl/createdb), rather than passing the retention database connection into that suite.

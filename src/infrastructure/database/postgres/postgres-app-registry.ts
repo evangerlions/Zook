@@ -1,8 +1,13 @@
-import type {AppRecord,AppNameI18n,RolePermissionRecord} from "../../../shared/types.ts";
-import {parseApp,parseRolePermission} from "./postgres-row-parsers.ts";
-type Query=(sql:string,values?:unknown[])=>Promise<{rows:Record<string,unknown>[]}>
+import type { QueryResultRow } from "pg";
+import type { AppConfigRecord, AppNameI18n, AppRecord, RolePermissionRecord } from "../../../shared/types.ts";
+import { deletePostgresApp } from "./postgres-app-delete.ts";
+import { parseApp, parseAppConfig, parseRolePermission } from "./postgres-row-parsers.ts";
+
+type PostgresQuery = (sql: string, values?: unknown[]) => Promise<{ rows: QueryResultRow[] }>;
+
 export class PostgresAppRegistryStore {
- constructor(private readonly query:Query){}
+  constructor(private readonly query: PostgresQuery) {}
+
   async listApps(): Promise<AppRecord[]> {
     const result = await this.query("SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps ORDER BY id ASC");
     return result.rows.map(parseApp);
@@ -47,8 +52,45 @@ export class PostgresAppRegistryStore {
       [appId, name, JSON.stringify(nameI18n)],
     );
   }
- async listRolePermissions():Promise<RolePermissionRecord[]> {
-  const result=await this.query("SELECT id, role_id, permission_id FROM zook_role_permissions ORDER BY id ASC");
-  return result.rows.map(parseRolePermission);
- }
+  async deleteApp(appId: string): Promise<void> {
+    await deletePostgresApp(async (sql, values) => await this.query(sql, values), appId);
+  }
+  async listAppConfigs(appId?: string): Promise<AppConfigRecord[]> {
+    const result = appId
+      ? await this.query("SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs WHERE app_id = $1 ORDER BY config_key ASC", [appId])
+      : await this.query("SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs ORDER BY app_id ASC, config_key ASC");
+    return result.rows.map(parseAppConfig);
+  }
+
+  async findAppConfig(appId: string, configKey: string): Promise<AppConfigRecord | undefined> {
+    const result = await this.query(
+      "SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs WHERE app_id = $1 AND config_key = $2 LIMIT 1",
+      [appId, configKey],
+    );
+    return result.rows[0] ? parseAppConfig(result.rows[0]) : undefined;
+  }
+
+  async upsertAppConfig(record: AppConfigRecord): Promise<AppConfigRecord> {
+    const result = await this.query(
+      `INSERT INTO zook_app_configs (id, app_id, config_key, config_value, updated_at)
+       VALUES ($1, $2, $3, $4, $5::timestamptz)
+       ON CONFLICT (app_id, config_key)
+       DO UPDATE SET
+         id = EXCLUDED.id,
+         config_value = EXCLUDED.config_value,
+         updated_at = EXCLUDED.updated_at
+       RETURNING id, app_id, config_key, config_value, updated_at`,
+      [record.id, record.appId, record.configKey, record.configValue, record.updatedAt],
+    );
+    return parseAppConfig(result.rows[0]);
+  }
+
+  async deleteAppConfigsByApp(appId: string): Promise<void> {
+    await this.query("DELETE FROM zook_app_configs WHERE app_id = $1", [appId]);
+  }
+
+  async listRolePermissions(): Promise<RolePermissionRecord[]> {
+    const result = await this.query("SELECT id, role_id, permission_id FROM zook_role_permissions ORDER BY id ASC");
+    return result.rows.map(parseRolePermission);
+  }
 }

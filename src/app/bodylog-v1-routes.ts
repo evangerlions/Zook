@@ -371,6 +371,15 @@ export async function tryHandleBodyLogV1Routes(
     const groups = await groupService.getMyGroups(auth.userId);
     return context.ok({ groups, total: groups.length }, request.requestId as string);
   }
+  if (request.path === "/api/v1/bodylog/groups/preview" && request.method === "GET") {
+    const preview = await groupService.previewGroupByCode(auth.userId, String(request.query?.code ?? ""));
+    return context.ok(preview, request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/groups/join-by-code" && request.method === "POST") {
+    const body = requestBody(request);
+    const group = await groupService.joinGroupByCode(auth.userId, validation.requireString(body, "code"), validation.optionalString(body, "expectedGroupId"));
+    return context.ok(group, request.requestId as string);
+  }
   const groupMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)$/);
   if (groupMatch && request.method === "GET") {
     const detail = await groupService.getGroupDetail(auth.userId, groupMatch[1] as string);
@@ -379,8 +388,8 @@ export async function tryHandleBodyLogV1Routes(
   const groupInviteMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/invite$/);
   if (groupInviteMatch && request.method === "POST") {
     const body = requestBody(request);
-    await groupService.inviteMember(auth.userId, groupInviteMatch[1] as string, body.userId as string);
-    return context.ok({ invited: true }, request.requestId as string);
+    const receipt = await groupService.inviteMember(auth.userId, groupInviteMatch[1] as string, validation.requireString(body, "userId"));
+    return context.ok({ invited: true, ...receipt }, request.requestId as string);
   }
   const groupAcceptMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/accept$/);
   if (groupAcceptMatch && request.method === "POST") {
