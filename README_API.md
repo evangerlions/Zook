@@ -1654,6 +1654,10 @@ their verified environment. Migration 076 separates existing sandbox projections
 credits and financial receipt identities; legacy active membership without matching
 verified environment evidence requires resynchronization. Billing, users/me, credits
 and AI callers must use the same header and environment-scoped cache.
+For streaming AI requests, the selected environment is retained throughout lazy
+stream iteration, usage settlement and cancellation/error cleanup. Consuming an
+HTTP stream after dispatch or concurrently with another environment must never
+change the membership or credits pool used by that request.
 
 ### Billing market attribution
 
