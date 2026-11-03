@@ -11291,6 +11291,10 @@ components:
         current_version:
           type: string
           maxLength: 80
+        source_version:
+          type: string
+          maxLength: 80
+          description: For native lessons, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up.
       required:
       - available
       additionalProperties: false

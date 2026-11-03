@@ -20077,6 +20077,108 @@ export type LightTickPracticeFollowUpContextEnvelope = {
   "requestId": string;
 };
 
+export const LightTickPracticeSourceDataSchema = {
+  "type": "object",
+  "properties": {
+    "available": {
+      "type": "boolean"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "current_version": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "source_version": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "For native lessons, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
+    }
+  },
+  "required": [
+    "available"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickPracticeSourceData = {
+  "available": boolean;
+  "title"?: string;
+  "text"?: string;
+  "current_version"?: string;
+  "source_version"?: string;
+};
+
+export const LightTickPracticeSourceEnvelopeSchema = {
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "current_version": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "source_version": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "For native lessons, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
+        }
+      },
+      "required": [
+        "available"
+      ],
+      "additionalProperties": false
+    },
+    "requestId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "additionalProperties": false
+} as const;
+
+export type LightTickPracticeSourceEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "available": boolean;
+  "title"?: string;
+  "text"?: string;
+  "current_version"?: string;
+  "source_version"?: string;
+};
+  "requestId": string;
+};
+
 export const LightTickActionCapabilitiesSchema = {
   "type": "object",
   "properties": {
@@ -61798,6 +61900,8 @@ export const GeneratedPublicContractNames = [
   "LightTickPlanningValue",
   "LightTickPracticeFollowUpContextEnvelope",
   "LightTickPracticeFollowUpRequest",
+  "LightTickPracticeSourceData",
+  "LightTickPracticeSourceEnvelope",
   "LightTickProfileData",
   "LightTickProfileUpdateRequest",
   "LightTickProposalImpact",

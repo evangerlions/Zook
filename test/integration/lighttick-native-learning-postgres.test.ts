@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Pool } from "pg";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { ActionService } from "../../src/modules/lighttick/actions/action.service.ts";
 import { runPostgresMigrations } from "../../src/infrastructure/database/postgres/migrate.ts";
 import { LearningMigrationService } from "../../src/modules/lighttick/learning/learning-migration.service.ts";
 import { learningMigrationFixture } from "../support/native-learning-migration-fixture.ts";
@@ -95,6 +96,20 @@ test("native learning CAS, immutable publications, private history and original 
       await fresh.privateCommand(owner, p.id, command, "native-private-pg-one"),
       saved,
     );
+    const actions = new ActionService(
+      repo,
+      () => new Date("2026-11-03T12:00:00Z"),
+      undefined,
+      true,
+    );
+    const practice = (await actions.request(owner, "POST", "/practices", {
+      key: "pg-native-practice-create",
+      source_kind: "lesson",
+      source_id: p.id,
+      source_version: p.content_version,
+      title: "Apply original lesson",
+      date: null,
+    })) as any;
     const next = await fresh.publish(
       owner,
       p.id,
@@ -102,6 +117,14 @@ test("native learning CAS, immutable publications, private history and original 
       "publish-native-pg-next",
     );
     assert.notEqual(next.content_version, p.content_version);
+    const practiceSource = (await actions.request(
+      owner,
+      "GET",
+      "/practices/" + practice.plan.id + "/source",
+    )) as any;
+    assert.equal(practiceSource.text, "Original body");
+    assert.equal(practiceSource.source_version, p.content_version);
+    assert.equal(practiceSource.current_version, next.content_version);
     assert.equal(
       (await fresh.privateState(owner, p.id, next.content_version)).notes,
       "",
