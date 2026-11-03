@@ -109,6 +109,7 @@ interface AiNovelRequestOptions {
   userId?: string;
   routingIdentity?: LlmRoutingIdentity;
   locale?: string;
+  appVersion?: string;
   accountRegion?: AccountRegion;
   signal?: AbortSignal;
 }

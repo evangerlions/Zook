@@ -10,11 +10,14 @@ import { quotaReply, syntheticAiNovelReply } from "./synthetic-ai-novel-reply.ts
 import { startCreditsRequestLease } from "./credits-request-lease.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { parseAiNovelClientModelSelection } from "../ai-novel-client-model-selection.ts";
+import { supportsModernAiStream } from "../ai-novel-stream-compatibility.ts";
+import { legacyImportQuotaReply } from "./legacy-import-quota-reply.ts";
 
 export interface CreditsRequestOptions {
   requestId?: string;
   userId?: string;
   locale?: string;
+  appVersion?: string;
   signal?: AbortSignal;
   onUsageFinalized?: (record: LlmCallObservationRecord) => Promise<void>;
 }
@@ -65,7 +68,12 @@ export class AiNovelCreditsRequestFlow {
     const context = await this.admit(body, options, false, free);
     if (!context.allowed) {
       await this.recordDenied(body, options);
-      yield* syntheticAiNovelReply({ locale: options.locale, sceneKey: requireSceneKey(body), actionId: options.requestId!, signal: options.signal });
+      const sceneKey = requireSceneKey(body);
+      if (sceneKey === "import_book_agent" && !supportsModernAiStream(options.appVersion)) {
+        yield* legacyImportQuotaReply({ locale: options.locale, actionId: options.requestId!, signal: options.signal });
+      } else {
+        yield* syntheticAiNovelReply({ locale: options.locale, sceneKey, actionId: options.requestId!, signal: options.signal, legacy: !supportsModernAiStream(options.appVersion) });
+      }
       return;
     }
     const lease = this.lease(options, context.jobId);
@@ -138,7 +146,7 @@ export class AiNovelCreditsRequestFlow {
   }
 
   private denial(options: CreditsRequestOptions) {
-    const reply = quotaReply(options.locale, options.requestId!);
+    const reply = quotaReply(options.locale, options.requestId!, !supportsModernAiStream(options.appVersion));
     return new ApplicationError(402, "AINOVEL_QUOTA_INSUFFICIENT", reply.text, { clientAction: reply.action });
   }
 
