@@ -46,7 +46,8 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
    }else {
    if(link.phase!=='active')reject(409,'Handoff is pending.');
    if(data.action==='learning-progress'){
-    rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLearningProgress(runtime.actions,link,data);
+    await runtime.nativeLearning.assertLegacyWrite(link);
+    rejectConnectionWrite(runtime.actions.p0WriteEnabled);result=await receiveLearningProgress(runtime.actions,link,data,async()=>{await requireMember(context,link.userId);await runtime.nativeLearning.assertLegacyWrite(link);});
    }else if(['source-context','source-confirmation','source-receipt','source-reconcile'].includes(data.action)){
     if(Buffer.byteLength(JSON.stringify(data))>16000)reject(413,'Source event capacity exceeded.');
     const sources=new ActionSourceService(runtime.actions,runtime.actionLinks.secret,runtime.actions.clock);

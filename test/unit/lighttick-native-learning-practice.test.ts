@@ -7,6 +7,7 @@ import { LearningMigrationService } from "../../src/modules/lighttick/learning/l
 import { learningMigrationFixture } from "../support/native-learning-migration-fixture.ts";
 import Ajv2020 from "ajv/dist/2020.js";
 import { LightTickPracticeSourceDataSchema } from "../../src/generated/openapi/public-contracts.generated.ts";
+import { receiveLearningProgress } from "../../src/modules/lighttick/actions/action-learning-progress.ts";
 const owner = { appId: "lighttick" as const, userId: "native-practice-alice" };
 test("native lessons create reviewed practice without a legacy binding; source versions and completion facts stay independent", async () => {
   const repo = new InMemoryLightTickRepository(),
@@ -174,6 +175,17 @@ test("legacy practice source binding and exact publication survive reviewed migr
     binding_id: "synthetic-binding",
     phase: "active",
   });
+  const link = (await repo.getOwnerActionLink(owner))!;
+  const progress = {
+    action: "learning-progress",
+    action_schema_version: 2,
+    binding_id: link.binding_id,
+    source_revision: 1,
+    observed_at: "2026-11-03T12:00:00Z",
+    web_url: "https://synthetic.invalid/grow/",
+    plans: [],
+  };
+  await receiveLearningProgress(actions, link, progress);
   await repo.saveLearningLibrary(owner, {
     binding_id: "synthetic-binding",
     source_revision: 9,
@@ -211,6 +223,16 @@ test("legacy practice source binding and exact publication survive reviewed migr
       a?.revision ?? 0,
       "practice-migration-" + action,
     );
+    if (action === "freeze")
+      await assert.rejects(
+        receiveLearningProgress(
+          actions,
+          link,
+          { ...progress, source_revision: 2 },
+          () => native.assertLegacyWrite(owner),
+        ),
+        { statusCode: 409 },
+      );
     if (action !== "activate")
       assert.equal(
         (
@@ -232,4 +254,14 @@ test("legacy practice source binding and exact publication survive reviewed migr
   assert.equal(source.text, publication.content);
   assert.equal(source.source_version, f.current);
   assert.equal((await actions.readWorkspace(owner)).data.plans.length, 1);
+  assert.equal(
+    ((await actions.request(owner, "GET", "/learning-progress")) as any)
+      .progress,
+    null,
+  );
+  assert.equal(
+    (await actions.readWorkspace(owner)).data.learning_progress
+      ?.source_revision,
+    1,
+  );
 });
