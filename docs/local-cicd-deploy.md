@@ -62,6 +62,20 @@ cp deploy_configs/dev.env.example deploy_configs/dev.env
 1. 作为部署脚本的参数来源
 2. 作为容器运行时的 `env_file`
 
+配置支付宝时，部署脚本从同一份容器 env 文件读取已有的支付环境和两个密钥路径，
+自动为 `api`、`worker` 添加只读 bind mount；`admin-web` 不挂载密钥。
+宿主机目录按支付环境确定，不新增 env 字段：
+
+- `sandbox`：部署用户的 `~/.zook/secrets/ainovel-alipay/sandbox`
+- `production`：部署用户的 `~/.zook/secrets/ainovel-alipay/production`
+
+目录内保留 `app-private-key.pem`、`alipay-public-key.pem`，容器内路径分别为
+`/run/secrets/ainovel-alipay/app-private-key.pem` 和
+`/run/secrets/ainovel-alipay/alipay-public-key.pem`。文件必须能被容器的 `node` 用户
+（UID 1000）读取；密钥不进入仓库或镜像。部署前会检查文件存在且可读，缺失时停止，
+不会自动创建空密钥目录。挂载配置生成在槽位的 `.deploy/<slot>/alipay-keys.compose.json`，
+供正常部署、回滚和 Grow 发布快照共用。未配置支付宝的部署不增加挂载。
+
 容器网络统一使用 Docker 默认 bridge 网络。若 Redis / PostgreSQL 部署在宿主机上，
 请在 `REDIS_URL` / `DATABASE_URL` 中使用 `host.docker.internal`，并确保宿主机服务
 监听的是容器可达地址，而不是只监听 `127.0.0.1`。
