@@ -562,7 +562,8 @@ Alipay recovery: the API process runs a startup pass and a one-minute bounded pa
     project/public key/origin，不接受客户端指定上游。请求体、GA4 secret、Sentry
     public key 均不写日志；详细配置与边界见
     `deploy_configs/*.env.example` 和 `src/modules/telemetry/`。Sentry event ID
-    响应与限流 header 会透传；`X-Forwarded-For` 只在直接连接来自 loopback 或
+    响应与限流 header 会透传；Sentry Envelope 支持原生 minidump 附件，最大
+    20 MiB，接收与上游期限各 30 秒；GA4 的体积与超时限制保持不变。`X-Forwarded-For` 只在直接连接来自 loopback 或
     `ZOOK_TRUSTED_PROXY_IPS` 明确列出的代理时参与每 IP 限流。
 
 ### 7.1 Registration and session recovery guarantees
