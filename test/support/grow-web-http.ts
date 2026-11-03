@@ -19,6 +19,7 @@ for (const userId of ['user_alice', 'user_bob']) seed.appUsers.push({ id: 'grow-
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
  const config=seed.appConfigs.find(c=>c.appId==='lighttick'&&c.configKey==='admin.delivery_config')!;
  const value=JSON.parse(config.configValue);value.enabled=true;value.featureFlags.conversationalPlanning=true;config.configValue=JSON.stringify(value);
+ if(process.env.GROW_WEB_TEST_PORT){value.settings={...value.settings,growWebUrl:'http://127.0.0.1:'+process.env.GROW_WEB_TEST_PORT+'/grow/'};config.configValue=JSON.stringify(value);}
 }
 const app = await createApplication({ seed, lighttickEnabled: true, lighttickRepository: repository, secureRefreshCookie: false, refreshCookieSameSite: 'Lax', fileStorageRoot: '.artifacts/grow-unified-20261103/fixture-files' });
 let queueTimer: ReturnType<typeof setInterval> | undefined;

@@ -8,7 +8,75 @@ import { learningMigrationFixture } from "../support/native-learning-migration-f
 import Ajv2020 from "ajv/dist/2020.js";
 import { LightTickPracticeSourceDataSchema } from "../../src/generated/openapi/public-contracts.generated.ts";
 import { receiveLearningProgress } from "../../src/modules/lighttick/actions/action-learning-progress.ts";
+import { LightTickRecordService } from "../../src/modules/lighttick/lighttick-record.service.ts";
 const owner = { appId: "lighttick" as const, userId: "native-practice-alice" };
+test("record practice reads its original immutable version after editing and never substitutes a missing source revision", async () => {
+  const repo = new InMemoryLightTickRepository(),
+    clock = () => new Date("2026-11-03T12:00:00Z"),
+    records = new LightTickRecordService(repo, clock),
+    actions = new ActionService(repo, clock, undefined, true);
+  const record = await records.mutate(
+    owner,
+    "record-native-practice",
+    "save",
+    {
+      base_version: 0,
+      raw_text: "Original record to apply",
+      record_date: "2026-11-03",
+    },
+    "record-native-source-key",
+  );
+  const { plan } = (await actions.request(owner, "POST", "/practices", {
+    key: "record-reviewed-practice-key",
+    source_kind: "record",
+    source_id: record.id,
+    source_version: "1",
+    title: "Apply record evidence",
+    date: null,
+  })) as any;
+  await records.mutate(
+    owner,
+    record.id,
+    "save",
+    {
+      base_version: 1,
+      raw_text: "Edited later record",
+      record_date: "2026-11-03",
+    },
+    "record-edited-later-key",
+  );
+  const source = (await actions.request(
+    owner,
+    "GET",
+    "/practices/" + plan.id + "/source",
+  )) as any;
+  assert.equal(source.text, "Original record to apply");
+  assert.equal(source.source_version, "1");
+  assert.equal(source.current_version, "2");
+  assert.equal(
+    await repo.getRecordVersion(
+      { ...owner, userId: "other-owner" },
+      record.id,
+      1,
+    ),
+    undefined,
+  );
+  const lookup = repo.getRecordVersion.bind(repo);
+  repo.getRecordVersion = async () => undefined;
+  assert.equal(
+    (
+      (await actions.request(
+        owner,
+        "GET",
+        "/practices/" + plan.id + "/source",
+      )) as any
+    ).available,
+    false,
+  );
+  repo.getRecordVersion = lookup;
+  await repo.deleteOwnerData(owner);
+  assert.equal(await repo.getRecordVersion(owner, record.id, 1), undefined);
+});
 test("native lessons create reviewed practice without a legacy binding; source versions and completion facts stay independent", async () => {
   const repo = new InMemoryLightTickRepository(),
     learning = new NativeLearningService(repo, true),

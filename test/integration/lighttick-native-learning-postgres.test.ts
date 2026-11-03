@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
 import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { ActionService } from "../../src/modules/lighttick/actions/action.service.ts";
+import { LightTickRecordService } from "../../src/modules/lighttick/lighttick-record.service.ts";
 import { runPostgresMigrations } from "../../src/infrastructure/database/postgres/migrate.ts";
 import { LearningMigrationService } from "../../src/modules/lighttick/learning/learning-migration.service.ts";
 import { learningMigrationFixture } from "../support/native-learning-migration-fixture.ts";
@@ -166,6 +167,45 @@ test("native learning CAS, immutable publications, private history and original 
       undefined,
     );
     repo.saveOperation = original;
+    const records = new LightTickRecordService(repo),
+      record = await records.mutate(
+        owner,
+        "record-native-source-pg",
+        "save",
+        {
+          base_version: 0,
+          raw_text: "Original PostgreSQL record",
+          record_date: "2026-11-03",
+        },
+        "record-native-source-pg-key",
+      );
+    const recordPractice = (await actions.request(owner, "POST", "/practices", {
+      key: "record-native-practice-pg",
+      source_kind: "record",
+      source_id: record.id,
+      source_version: "1",
+      title: "Apply a record",
+      date: null,
+    })) as any;
+    await records.mutate(
+      owner,
+      record.id,
+      "save",
+      {
+        base_version: 1,
+        raw_text: "New PostgreSQL record",
+        record_date: "2026-11-03",
+      },
+      "record-native-source-pg-new",
+    );
+    const recordSource = (await actions.request(
+      owner,
+      "GET",
+      "/practices/" + recordPractice.plan.id + "/source",
+    )) as any;
+    assert.equal(recordSource.text, "Original PostgreSQL record");
+    assert.equal(recordSource.current_version, "2");
+    assert.equal(recordSource.source_version, "1");
   } finally {
     await repo.deleteOwnerData(owner);
     await pool.end();

@@ -8124,6 +8124,11 @@ components:
         support_url:
           type: string
           format: uri
+        grow_web_url:
+          type: [string, 'null']
+          format: uri
+          maxLength: 2000
+          description: Reviewed native Grow static Web base from the existing versioned delivery settings, ending in /grow/. Null disables native Web links; never inferred from legacy source content.
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
       additionalProperties: false
@@ -11294,7 +11299,7 @@ components:
         source_version:
           type: string
           maxLength: 80
-          description: For native lessons, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up.
+          description: For native lessons and records, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up.
       required:
       - available
       additionalProperties: false

@@ -20098,7 +20098,7 @@ export const LightTickPracticeSourceDataSchema = {
     "source_version": {
       "type": "string",
       "maxLength": 80,
-      "description": "For native lessons, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
+      "description": "For native lessons and records, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
     }
   },
   "required": [
@@ -20145,7 +20145,7 @@ export const LightTickPracticeSourceEnvelopeSchema = {
         "source_version": {
           "type": "string",
           "maxLength": 80,
-          "description": "For native lessons, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
+          "description": "For native lessons and records, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up."
         }
       },
       "required": [
@@ -54831,6 +54831,15 @@ export const LightTickPublicConfigDataSchema = {
       "type": "string",
       "format": "uri"
     },
+    "grow_web_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "maxLength": 2000,
+      "description": "Reviewed native Grow static Web base from the existing versioned delivery settings, ending in /grow/. Null disables native Web links; never inferred from legacy source content."
+    },
     "updated_at": {
       "type": "string",
       "format": "date-time"
@@ -54860,6 +54869,7 @@ export type LightTickPublicConfigData = {
   "privacy_policy_url": string;
   "terms_of_service_url": string;
   "support_url": string;
+  "grow_web_url"?: string | null;
   "updated_at": string;
 };
 
@@ -54985,6 +54995,15 @@ export const LightTickPublicConfigEnvelopeSchema = {
           "type": "string",
           "format": "uri"
         },
+        "grow_web_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "maxLength": 2000,
+          "description": "Reviewed native Grow static Web base from the existing versioned delivery settings, ending in /grow/. Null disables native Web links; never inferred from legacy source content."
+        },
         "updated_at": {
           "type": "string",
           "format": "date-time"
@@ -55022,6 +55041,7 @@ export type LightTickPublicConfigEnvelope = {
   "privacy_policy_url": string;
   "terms_of_service_url": string;
   "support_url": string;
+  "grow_web_url"?: string | null;
   "updated_at": string;
 };
   "requestId": string;

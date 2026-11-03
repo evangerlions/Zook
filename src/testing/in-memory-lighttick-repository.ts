@@ -171,6 +171,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async getRecord(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.records.get(rowKey({...owner,id}))); }
   async listRecords(owner: LightTickOwner, query?: RecordQuery) { this.assertOwner(owner); const rows=[...this.records.values()].filter(r => ownerKey(r) === ownerKey(owner)); return clone(query?selectRecordRows(rows,query):rows); }
   async recordVersions(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.recordHistory.get(rowKey({...owner,id})) ?? []).reverse(); }
+  async getRecordVersion(owner:LightTickOwner,id:string,version:number){this.assertOwner(owner);return clone(this.recordHistory.get(rowKey({...owner,id}))?.find(record=>record.version===version));}
   async saveRecord(row: LightTickRecordRow, baseVersion: number) {
     const key=rowKey(row),current=this.records.get(key);
     if ((current?.version ?? 0) !== baseVersion) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Record version changed.");

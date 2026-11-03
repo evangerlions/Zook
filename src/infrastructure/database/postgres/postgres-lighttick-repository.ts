@@ -82,6 +82,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   async getRecord(owner: LightTickOwner, id: string) { return this.recordStore().getRecord(owner, id); }
   async listRecords(owner: LightTickOwner, query?: RecordQuery) { return this.recordStore().listRecords(owner, query); }
   async recordVersions(owner: LightTickOwner, id: string) { return this.recordStore().recordVersions(owner, id); }
+  async getRecordVersion(owner:LightTickOwner,id:string,version:number){return this.recordStore().getRecordVersion(owner,id,version);}
   async saveRecord(row: LightTickRecordRow, baseVersion: number) {
     return this.transaction(row, () => this.recordStore().saveRecord(row, baseVersion));
   }

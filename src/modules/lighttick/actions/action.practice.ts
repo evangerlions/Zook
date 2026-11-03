@@ -41,7 +41,8 @@ export async function practiceSource(repo:LightTickRepository,owner:LightTickOwn
  const p=getPlan(w.plans,id),source=p.practice_source;if(!source)reject(404,'Practice source is unavailable.');
  if(source!.kind==='record'){
   const row=await repo.getRecord(owner,source!.id);
-  return row?{available:true,title:'记录原文',text:row.payload.raw_text,current_version:String(row.version)}:{available:false};
+  const original=row&&/^[1-9][0-9]{0,9}$/.test(source!.version)&&Number(source!.version)<=2147483647?await repo.getRecordVersion(owner,source!.id,Number(source!.version)):undefined;
+  return row&&original?{available:true,title:'记录原文',text:original.raw_text,source_version:String(original.version),current_version:String(row.version)}:{available:false};
  }
  const native=await nativeLessonSource(repo,owner,source!.id,source!.version);
  if(native.native)return native.lesson&&native.publication&&native.binding===source!.binding_id?{available:true,title:native.lesson.title,text:native.publication.content,source_version:native.publication.contentVersion,current_version:native.lesson.publishedVersion}:{available:false};

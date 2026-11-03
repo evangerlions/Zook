@@ -20,6 +20,7 @@ export interface LightTickPublicConfiguration {
   privacy_policy_url: string;
   terms_of_service_url: string;
   support_url: string;
+  grow_web_url:string|null;
   updated_at: string;
 }
 
@@ -53,6 +54,11 @@ function httpsUrl(value: unknown, fallback: string): string {
   }
 }
 
+export function growWebUrl(value:unknown,environment:LightTickRuntimeEnvironment):string|null{
+ if(typeof value!=='string'||value.length>2000)return null;
+ try{const url=new URL(value);if(url.username||url.password||url.search||url.hash||url.pathname!=='/grow/'||url.protocol!=='https:'&&!(environment!=='online'&&url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname)))return null;return url.toString();}catch{return null;}
+}
+
 export function resolveLightTickEnvironment(
   env: Pick<NodeJS.ProcessEnv, "APP_ENV" | "NODE_ENV"> = process.env,
 ): LightTickRuntimeEnvironment {
@@ -77,6 +83,7 @@ export function buildLightTickPublicConfiguration(
   const versions = objectOf(raw.minimumClientVersions);
   const flags = objectOf(raw.featureFlags);
   const legal = objectOf(raw.legal);
+  const settings=objectOf(raw.settings);
   const ttl = raw.guestSessionTtlSeconds;
 
   return {
@@ -102,6 +109,7 @@ export function buildLightTickPublicConfiguration(
     privacy_policy_url: httpsUrl(legal.privacyPolicyUrl, DEFAULT_URLS.privacyPolicyUrl),
     terms_of_service_url: httpsUrl(legal.termsOfServiceUrl, DEFAULT_URLS.termsOfServiceUrl),
     support_url: httpsUrl(legal.supportUrl, DEFAULT_URLS.supportUrl),
+    grow_web_url: enabled?growWebUrl(settings.growWebUrl,environment):null,
     updated_at: record?.updatedAt ?? BUILTIN_UPDATED_AT,
   };
 }

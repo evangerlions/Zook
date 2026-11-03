@@ -25,6 +25,7 @@ export interface LightTickRepository extends NativeLearningRepository, ActionRep
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
   listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;
   recordVersions(owner: LightTickOwner, id: string): Promise<LightTickRecord[]>;
+  getRecordVersion(owner:LightTickOwner,id:string,version:number):Promise<LightTickRecord|undefined>;
   saveRecord(row: LightTickRecordRow, baseVersion: number): Promise<void>;
   lockPlanningOwner(owner: LightTickOwner): Promise<void>;
   getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined>;
