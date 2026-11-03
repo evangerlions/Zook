@@ -29,36 +29,36 @@ export class PostgresLightTickRepository implements LightTickRepository {
   lockLocalSource=this.localAdoptionStore.lockLocalSource.bind(this.localAdoptionStore);
   getLocalClaim=this.localAdoptionStore.getLocalClaim.bind(this.localAdoptionStore);
   saveLocalClaim=this.localAdoptionStore.saveLocalClaim.bind(this.localAdoptionStore);
-  private readonly session = new AsyncLocalStorage<QueryClient>();
+  private readonly session = new AsyncLocalStorage<{ client: QueryClient; owners: Set<string> }>();
   constructor(private readonly connector: Connector,
     private readonly transactionRunner?: <T>(operation: () => Promise<T>) => Promise<T>) {}
 
   private async query(sql: string, values: unknown[] = []): Promise<QueryResult> {
-    return await (this.session.getStore() ?? this.connector).query(sql, values);
+    return await (this.session.getStore()?.client ?? this.connector).query(sql, values);
   }
 
   private readonly recordTransferStore=new PostgresRecordTransferStore((sql,values)=>this.query(sql,values));
   lockRecordSource=this.recordTransferStore.lockRecordSource.bind(this.recordTransferStore);
   getRecordTransfer=this.recordTransferStore.getRecordTransfer.bind(this.recordTransferStore);
   getOwnerRecordTransfer=this.recordTransferStore.getOwnerRecordTransfer.bind(this.recordTransferStore);
-  saveRecordTransfer=this.recordTransferStore.saveRecordTransfer.bind(this.recordTransferStore);
+  saveRecordTransfer=(...args:Parameters<PostgresRecordTransferStore["saveRecordTransfer"]>)=>this.transaction(args[0],()=>this.recordTransferStore.saveRecordTransfer(...args));
   getRecordTransferTicket=this.recordTransferStore.getRecordTransferTicket.bind(this.recordTransferStore);
-  saveRecordTransferTicket=this.recordTransferStore.saveRecordTransferTicket.bind(this.recordTransferStore);
-  importRecord=this.recordTransferStore.importRecord.bind(this.recordTransferStore);
+  saveRecordTransferTicket=(...args:Parameters<PostgresRecordTransferStore["saveRecordTransferTicket"]>)=>this.transaction(args[0],()=>this.recordTransferStore.saveRecordTransferTicket(...args));
+  importRecord=(...args:Parameters<PostgresRecordTransferStore["importRecord"]>)=>this.transaction(args[0],()=>this.recordTransferStore.importRecord(...args));
   recordSourceHistory=this.recordTransferStore.recordSourceHistory.bind(this.recordTransferStore);
   private readonly actionStore=new PostgresActionStore((sql,values)=>this.query(sql,values));
   getLearningPrivate=this.actionStore.getLearningPrivate.bind(this.actionStore);
-  saveLearningPrivate=this.actionStore.saveLearningPrivate.bind(this.actionStore);
+  saveLearningPrivate=(...args:Parameters<PostgresActionStore["saveLearningPrivate"]>)=>this.transaction(args[0],()=>this.actionStore.saveLearningPrivate(...args));
   getLearningLibrary=this.actionStore.getLearningLibrary.bind(this.actionStore);
-  saveLearningLibrary=this.actionStore.saveLearningLibrary.bind(this.actionStore);
+  saveLearningLibrary=(...args:Parameters<PostgresActionStore["saveLearningLibrary"]>)=>this.transaction(args[0],()=>this.actionStore.saveLearningLibrary(...args));
   lockActionOwner=this.actionStore.lockActionOwner.bind(this.actionStore);
   getActionWorkspace=this.actionStore.getActionWorkspace.bind(this.actionStore);
-  saveActionWorkspace=this.actionStore.saveActionWorkspace.bind(this.actionStore);
+  saveActionWorkspace=(...args:Parameters<PostgresActionStore["saveActionWorkspace"]>)=>this.transaction(args[0],()=>this.actionStore.saveActionWorkspace(...args));
   getActionTicket=this.actionStore.getActionTicket.bind(this.actionStore);
-  saveActionTicket=this.actionStore.saveActionTicket.bind(this.actionStore);
+  saveActionTicket=(...args:Parameters<PostgresActionStore["saveActionTicket"]>)=>this.transaction(args[0],()=>this.actionStore.saveActionTicket(...args));
   getActionLink=this.actionStore.getActionLink.bind(this.actionStore);
   getOwnerActionLink=this.actionStore.getOwnerActionLink.bind(this.actionStore);
-  saveActionLink=this.actionStore.saveActionLink.bind(this.actionStore);
+  saveActionLink=(...args:Parameters<PostgresActionStore["saveActionLink"]>)=>this.transaction(args[0],()=>this.actionStore.saveActionLink(...args));
   async lockRecordOwner(owner: LightTickOwner) {
     await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`records:${owner.appId}:${owner.userId}`]);
   }
@@ -77,7 +77,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   private readonly planningStore=new PostgresPlanningStore((sql,values)=>this.query(sql,values));
   getPlanningSession=this.planningStore.getPlanningSession.bind(this.planningStore);
-  savePlanningSession=this.planningStore.savePlanningSession.bind(this.planningStore);
+  savePlanningSession=(...args:Parameters<PostgresPlanningStore["savePlanningSession"]>)=>this.transaction(args[0],()=>this.planningStore.savePlanningSession(...args));
   async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
     return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
@@ -87,6 +87,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
   }
   async saveGuestIdentity(row: LightTickGuestIdentityRow): Promise<LightTickGuestIdentityRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveGuestIdentity(row));
     const result = await this.query(`INSERT INTO zook_lighttick_guest_identities
       (app_id,user_id,device_id,device_secret_hash,platform,timezone,locale,app_version,upgrade_token_hash,expires_at,revoked_at,upgraded_to_user_id,created_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
@@ -100,7 +101,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
 
   async upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult> {
-    return await this.transaction({ appId: command.appId, userId: command.guestUserId }, async () => {
+    return await this.transactionOwners([{ appId: command.appId, userId: command.guestUserId },{ appId: command.appId, userId: command.targetUserId }], async () => {
       await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${command.appId}:${command.operationId}`]);
       const prior = await this.query(`SELECT request_hash,result_payload FROM zook_lighttick_account_upgrades
         WHERE app_id=$1 AND operation_id=$2 FOR UPDATE`, [command.appId, command.operationId]);
@@ -229,21 +230,28 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
 
   async transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T> {
-    if (owner.appId !== "lighttick") throw new Error("LightTick repository requires appId=lighttick");
-    if (this.session.getStore()) return await operation();
-    if (this.transactionRunner) return await this.transactionRunner(operation);
-    const client = await this.connector.connect();
-    try {
-      await client.query("BEGIN");
-      const result = await this.session.run(client, operation);
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release?.();
+    return this.transactionOwners([owner], operation);
+  }
+
+  /** Acquire every owner before domain locks or sequence allocation. Nested calls may not widen scope. */
+  private async transactionOwners<T>(owners: LightTickOwner[], operation: () => Promise<T>): Promise<T> {
+    if (!owners.length || owners.some(owner => owner.appId !== 'lighttick' || !owner.userId)) throw new Error('Valid LightTick owners required');
+    const keys = [...new Set(owners.map(owner => `lighttick-owner:${owner.appId}:${owner.userId}`))].sort();
+    const active = this.session.getStore();
+    if (active) {
+      if (keys.some(key => !active.owners.has(key))) throw new Error('Nested transaction cannot acquire an undeclared owner');
+      return operation();
     }
+    const run = async (client: QueryClient) => {
+      for (const key of keys) await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[key]);
+      return this.session.run({client, owners:new Set(keys)},operation);
+    };
+    // An injected runner owns the transaction on the supplied, bound connector.
+    if (this.transactionRunner) return this.transactionRunner(() => run(this.connector));
+    const client = await this.connector.connect();
+    try { await client.query('BEGIN'); const result = await run(client); await client.query('COMMIT'); return result; }
+    catch (error) { await client.query('ROLLBACK'); throw error; }
+    finally { client.release?.(); }
   }
 
   async getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined> {
@@ -252,6 +260,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
 
   async saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveProfile(row, expectedVersion));
     const values = [row.timezone, row.locale, row.pace, row.onboardingState,
       JSON.stringify(row.notificationPreferences), JSON.stringify(row.onboardingDraft), row.appId, row.userId];
     if (expectedVersion !== undefined) {
@@ -333,6 +342,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows[0] ? mapRow<LightTickTaskStepRow>(result.rows[0]) : undefined;
   }
   async saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number): Promise<LightTickTaskStepRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveTaskStep(row, expectedVersion));
     if (expectedVersion !== undefined) {
       const result = await this.query(`UPDATE zook_lighttick_task_steps SET title=$1,position=$2,completed=$3,
         version=version+1,updated_at=$4 WHERE app_id=$5 AND user_id=$6 AND task_id=$7 AND id=$8 AND version=$9 RETURNING *`,
@@ -361,6 +371,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<import("../../../modules/lighttick/lighttick.types.ts").LightTickExecutionEventRow>);
   }
   async appendInsightAudit(row: LightTickInsightAuditRow): Promise<LightTickInsightAuditRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.appendInsightAudit(row));
     const result = await this.query(`INSERT INTO zook_lighttick_insight_audits
       (id,app_id,user_id,rule_id,kind,evidence_count,evidence_window,output,created_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9) RETURNING *`,
@@ -375,6 +386,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<LightTickInsightAuditRow>);
   }
   async saveChatMessage(row: LightTickChatMessageRow): Promise<LightTickChatMessageRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveChatMessage(row));
     const result = await this.query(`INSERT INTO zook_lighttick_chat_messages
       (id,app_id,user_id,thread_id,goal_id,role,content,run_id,created_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
@@ -400,6 +412,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<LightTickDnaInsightRow>);
   }
   async saveDnaInsight(row: LightTickDnaInsightRow, expectedVersion?: number): Promise<LightTickDnaInsightRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveDnaInsight(row, expectedVersion));
     if (expectedVersion !== undefined) {
       const result = await this.query(`UPDATE zook_lighttick_dna_insights SET
         statement=$1,kind=$2,status=$3,evidence_count=$4,data_range=$5::jsonb,confidence=$6,scope=$7,
@@ -463,6 +476,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return new PostgresReflectionStore(this.query.bind(this), mapRow).listReflections(owner);
   }
   async saveReflection(row: LightTickReflectionRow, expectedVersion?: number): Promise<LightTickReflectionRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveReflection(row, expectedVersion));
     return new PostgresReflectionStore(this.query.bind(this), mapRow).saveReflection(row, expectedVersion);
   }
   async listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]> {
@@ -470,6 +484,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<LightTickReviewRow>);
   }
   async saveReview(row: LightTickReviewRow, expectedVersion?: number): Promise<LightTickReviewRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveReview(row, expectedVersion));
     if (expectedVersion !== undefined) {
       const result = await this.query(`UPDATE zook_lighttick_reviews SET
         status=$1,facts=$2::jsonb,output=$3::jsonb,data_sufficiency=$4,version=version+1,updated_at=$5
@@ -503,6 +518,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<LightTickChangeProposalRow>);
   }
   async saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number): Promise<LightTickChangeProposalRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveProposal(row, expectedVersion));
     if (expectedVersion !== undefined) {
       const result = await this.query(`UPDATE zook_lighttick_change_proposals SET status=$1,decided_at=$2,version=version+1,updated_at=NOW()
         WHERE app_id=$3 AND user_id=$4 AND id=$5 AND version=$6 RETURNING *`, [row.status,row.decidedAt ?? null,row.appId,row.userId,row.id,expectedVersion]);
@@ -522,6 +538,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows[0] ? mapRow<LightTickAiRunRow>(result.rows[0]) : undefined;
   }
   async saveAiRun(row: LightTickAiRunRow): Promise<LightTickAiRunRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveAiRun(row));
     const result = await this.query(`INSERT INTO zook_lighttick_ai_runs
       (id,app_id,user_id,kind,status,resource_id,scene_key,prompt_version,schema_version,provider,model,attempt_count,input_context,output,error_code,usage,latency_ms,created_at,started_at,completed_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14::jsonb,$15,$16::jsonb,$17,$18,$19,$20,$21)
@@ -539,6 +556,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows[0] ? mapRow<LightTickOperationRow>(result.rows[0]) : undefined;
   }
   async saveOperation(row: LightTickOperationRow): Promise<LightTickOperationRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.saveOperation(row));
     const result = await this.query(`INSERT INTO zook_lighttick_operations
       (app_id,user_id,operation_id,device_id,payload_hash,entity_type,entity_id,action,request_payload,result_payload,status,created_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13)
@@ -554,6 +572,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
 
   async upsertDevice(row: LightTickDeviceRow): Promise<LightTickDeviceRow> {
+    if (!this.session.getStore()) return this.transaction(row, () => this.upsertDevice(row));
     const result = await this.query(`INSERT INTO zook_lighttick_devices
       (id,app_id,user_id,platform,push_provider,push_token,timezone,locale,app_version,notifications_enabled,active,deleted_at,created_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
@@ -570,6 +589,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<LightTickDeviceRow>);
   }
   async deleteDevice(owner: LightTickOwner, id: string, deletedAt: string): Promise<boolean> {
+    if (!this.session.getStore()) return this.transaction(owner, () => this.deleteDevice(owner, id, deletedAt));
     const result = await this.query(`UPDATE zook_lighttick_devices SET active=FALSE,deleted_at=$1,updated_at=$1
       WHERE app_id=$2 AND user_id=$3 AND id=$4 AND active=TRUE`, [deletedAt,owner.appId,owner.userId,id]);
     return Boolean(result.rowCount);

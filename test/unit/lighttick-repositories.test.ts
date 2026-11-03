@@ -55,11 +55,13 @@ test("PostgreSQL LightTick aggregate write uses one transaction and owner-scoped
 
   await repository.saveGoal(goal(), atomic(1));
   assert.equal(calls[0]?.sql, "BEGIN");
-  assert.match(calls[1]?.sql ?? "", /INSERT INTO zook_lighttick_goals/);
-  assert.deepEqual(calls[1]?.values.slice(0, 3), ["goal_a", "lighttick", "user_a"]);
-  assert.match(calls[2]?.sql ?? "", /zook_lighttick_execution_events/);
-  assert.match(calls[3]?.sql ?? "", /zook_lighttick_change_log/);
-  assert.equal(calls[4]?.sql, "COMMIT");
+  assert.match(calls[1]?.sql ?? "", /pg_advisory_xact_lock/);
+  assert.deepEqual(calls[1]?.values,["lighttick-owner:lighttick:user_a"]);
+  assert.match(calls[2]?.sql ?? "", /INSERT INTO zook_lighttick_goals/);
+  assert.deepEqual(calls[2]?.values.slice(0, 3), ["goal_a", "lighttick", "user_a"]);
+  assert.match(calls[3]?.sql ?? "", /zook_lighttick_execution_events/);
+  assert.match(calls[4]?.sql ?? "", /zook_lighttick_change_log/);
+  assert.equal(calls[5]?.sql, "COMMIT");
 
   calls.length = 0; returnUpdatedRow = false;
   await assert.rejects(repository.saveGoal(goal(), atomic(2), 99), (error: any) => {
@@ -70,4 +72,23 @@ test("PostgreSQL LightTick aggregate write uses one transaction and owner-scoped
   assert.deepEqual(update?.values.slice(-4), ["lighttick", "user_a", "goal_a", 99]);
   assert.equal(calls.at(-1)?.sql, "ROLLBACK");
   assert.equal(calls.some(call => call.sql.includes("execution_events")), false);
+});
+
+test('nested owner transactions reuse the acquired gate and reject widening after domain work',async()=>{
+ const sql:string[]=[];const client={query:async(query:string)=>{sql.push(query);return {rows:[]};},release(){}};
+ const repo=new PostgresLightTickRepository({...client,connect:async()=>client});
+ const a={appId:'lighttick' as const,userId:'owner-a'},b={...a,userId:'owner-b'};
+ await repo.transaction(a,()=>repo.transaction(a,async()=>undefined));
+ assert.equal(sql.filter(q=>q.includes('pg_advisory_xact_lock')).length,1);
+ await assert.rejects(repo.transaction(a,()=>repo.transaction(b,async()=>undefined)),/undeclared owner/);
+ assert.equal(sql.at(-1),'ROLLBACK');
+});
+
+test('guest upgrade acquires both owners in deterministic order before checking its receipt',async()=>{
+ const calls:{sql:string;values:unknown[]}[]=[];
+ const client={query:async(sql:string,values:unknown[]=[])=>{calls.push({sql,values});return {rows:sql.includes('SELECT request_hash,result_payload')?[{request_hash:'fixture-hash',result_payload:{targetUserId:'owner-a'}}]:[]};},release(){}};
+ const repo=new PostgresLightTickRepository({...client,connect:async()=>client});
+ await repo.upgradeGuestAccount({appId:'lighttick',guestUserId:'owner-z',targetUserId:'owner-a',operationId:'upgrade-key',requestHash:'fixture-hash'} as any);
+ assert.deepEqual(calls.filter(q=>q.sql.includes('pg_advisory_xact_lock(hashtextextended')).map(q=>q.values[0]),['lighttick-owner:lighttick:owner-a','lighttick-owner:lighttick:owner-z']);
+ assert.equal(calls.at(-1)?.sql,'COMMIT');
 });

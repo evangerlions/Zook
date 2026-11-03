@@ -2466,6 +2466,7 @@ paths:
   /api/v1/lighttick/sync/pull:
     get:
       operationId: pullLightTickSyncChanges
+      description: PostgreSQL owner writes acquire one transaction gate before domain locks and sequence allocation. A later write for the same owner cannot commit past an earlier uncommitted change. Sequence gaps across owners are allowed; the wire cursor format is unchanged.
       tags:
       - lighttick-sync
       summary: Pull an ordered owner-scoped change feed

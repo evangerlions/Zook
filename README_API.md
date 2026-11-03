@@ -1688,3 +1688,7 @@ No database migration is required. Existing group-member invitation tokens are r
 客户端须在 `sessions` HTTP 前将命令 `operationId` 安全驻留。响应丢失时不可重发创建以索取 token。`close-sessions` 请求为 `{command,signature}`，Ed25519 domain 为 `close-sessions`；command 严格字段为 `version:1, subjectId, operationId, actorAccountId, actorDeviceId, expiresAt, creationOperationIds:[UUID]`（1–100 个不重复值，expiresAt 当前后 5 分钟内）。响应 `{closed:true,creationOperationIds}`。设备公钥必须与该主体下永久绑定记录完全一致；已撤设备仅能提交此负向关闭操作，不能恢复授权。
 
 迁移 `083_yaohezi_session_creation_cleanup.sql` 为现有会话增加可空创建操作号（不猜测历史操作号）及永久关闭表。新创建在相同账号→主体事务锁内检查关闭表，命中返回 `YAOHEZI_SESSION_CREATION_CLOSED`；重复创建返回操作冲突或挑战已消费，绝不再次返回 token。客户端确认全部创建操作号关闭后才删除对应本机清理条目。旧 `logout` 单会话接口仍保留；普通账号退出应在其 refresh 被撤销前完成健康清理，失败保留原账号清理条目并停止本机连接。
+
+### LightTick owner 提交顺序（2026-11-03）
+
+PostgreSQL 仓储事务在领域锁及 change sequence 分配前取得统一 owner 事务锁，较晚的同 owner 写入不能越过未提交的较早变更。跨 owner 序号允许有空隙，cursor wire 格式不变。多 owner 的 guest upgrade 预先按固定顺序取全体 owner 锁；嵌套事务只能复用已声明 owner，不能在领域写入后临时扩大锁范围。外部请求和计算不应放入持锁事务。
