@@ -1,3 +1,4 @@
+import { seedAlipayPrices } from "../support/alipay-pricing-fixture.ts";
 import assert from "node:assert/strict";
 import baseTest from "node:test";
 import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
@@ -11,6 +12,7 @@ import type { AlipayGateway } from "../../src/modules/billing/alipay-models.ts";
 const NOW = new Date("2026-10-18T10:00:00Z");
 async function fixture() {
   const seed = buildDefaultSeed();
+  seedAlipayPrices(seed);
   seed.appUsers!.push({ id: "recovery_alice", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion: "CN", joinedAt: NOW.toISOString() });
   const queried: string[] = [];
   let paid = true;

@@ -62,6 +62,7 @@ import { createDefaultRoles } from "./admin-console-roles.ts";
 import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
 import { AiNovelConversationRecordService } from "../ai-novel/ai-novel-conversation-record.service.ts";
 import { cleanAiNovelRevenueCatConfig } from "./ainovel-revenuecat-config.ts";
+import { validateAiNovelAlipayPricing } from "../billing/ainovel-alipay-pricing.ts";
 
 export class AdminConsoleService extends AdminConsoleCommonFacade {
   constructor(
@@ -230,6 +231,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
     const app = await this.requireConfigApp(appId);
     const normalized = cleanAiNovelRevenueCatConfig(app.id, normalizeConfig(rawJson));
+    validateAiNovelAlipayPricing(app.id, normalized);
 
     await this.appConfigService.setValue(
       app.id,
@@ -248,6 +250,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
+    validateAiNovelAlipayPricing(app.id, existing.content);
     await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);

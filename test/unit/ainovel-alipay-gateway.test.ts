@@ -15,6 +15,23 @@ const notifyUrl = "https://zook.example.test/api/v1/ai_novel/billing/webhooks/al
 const returnUrl = "https://client.example.test/#/membership";
 const gateway = new OfficialAlipayGateway({ notifyUrl, returnUrl }, async () => sdk);
 
+test("sandbox checkout omits callback URLs even when placeholders are configured", async () => {
+  const sandboxGateway = new OfficialAlipayGateway({ environment: "sandbox", notifyUrl: "http://localhost/notify", returnUrl: "invalid" }, async () => sdk);
+  for (const platform of ["android", "web"] as const) {
+    const payment = await sandboxGateway.payment({ ...order(platform), checkoutMode: platform === "web" ? "mobile_web" : undefined });
+    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.type === "page" ? payment.url : "").searchParams;
+    assert.equal(params.has("notify_url"), false);
+    assert.equal(params.has("return_url"), false);
+  }
+  for (const platform of ["web", "windows"] as const) {
+    const desktop = await sandboxGateway.payment({ ...order(platform), checkoutMode: "desktop_web" });
+    assert.equal(desktop.type, "page");
+    if (desktop.type !== "page") throw new Error("Expected page payment");
+    assert.equal(new URL(desktop.url).searchParams.has("notify_url"), false);
+    assert.equal(new URL(desktop.url).searchParams.has("return_url"), false);
+  }
+});
+
 function order(platform: AlipayOrder["platform"]): AlipayOrder {
   return { platform, distribution: platform === "android" ? "direct_android" : platform,
     productKey: "plus_monthly", idempotencyKey: "test_intent", orderId: "alp_test", appId: "ai_novel",

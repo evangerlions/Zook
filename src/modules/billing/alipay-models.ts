@@ -56,7 +56,4 @@ export interface AlipayOptions {
   publicKeyPath?: string;
   gateway?: AlipayGateway;
   now?: () => Date;
-  /** Explicit minor-unit price catalog. Defaults are development placeholders only. */
-  prices?: Record<AlipayProductKey, number>;
-  pricesApproved?: boolean;
 }

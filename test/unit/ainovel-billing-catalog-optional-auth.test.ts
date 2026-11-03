@@ -1,3 +1,4 @@
+import { seedAlipayPrices } from "../support/alipay-pricing-fixture.ts";
 import assert from "node:assert/strict";
 import baseTest from "node:test";
 import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
@@ -7,6 +8,7 @@ import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/defau
 
 test("catalog exposes public prices without membership reads; UserInfo owns personal restrictions", async () => {
   const seed = buildDefaultSeed();
+  seedAlipayPrices(seed);
   seed.appUsers!.push({ id: "catalog_alice", appId: "ai_novel", userId: "user_alice",
     status: "ACTIVE", accountRegion: "CN", joinedAt: new Date().toISOString() });
   const runtime = await createApplication({ seed, alipay: { environment: "sandbox",

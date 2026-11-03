@@ -2400,6 +2400,60 @@ export const AINovelPublicConfigSchema = {
               "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
             }
           }
+        },
+        "alipay": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prices"
+          ],
+          "properties": {
+            "prices": {
+              "type": "object",
+              "description": "Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.",
+              "additionalProperties": false,
+              "required": [
+                "plus_monthly",
+                "plus_quarterly",
+                "plus_yearly",
+                "pro_monthly",
+                "pro_quarterly",
+                "pro_yearly"
+              ],
+              "properties": {
+                "plus_monthly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "plus_quarterly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "plus_yearly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "pro_monthly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "pro_quarterly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                },
+                "pro_yearly": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999999999999
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -2500,6 +2554,16 @@ export type AINovelPublicConfig = {
   "billing"?: {
   "revenueCat"?: {
   "proxyUrl"?: string | null;
+};
+  "alipay"?: {
+  "prices": {
+  "plus_monthly": number;
+  "plus_quarterly": number;
+  "plus_yearly": number;
+  "pro_monthly": number;
+  "pro_quarterly": number;
+  "pro_yearly": number;
+};
 };
 };
   [key: string]: unknown;
@@ -2983,6 +3047,60 @@ export const PublicConfigDataSchema = {
                   "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
                 }
               }
+            },
+            "alipay": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "prices"
+              ],
+              "properties": {
+                "prices": {
+                  "type": "object",
+                  "description": "Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.",
+                  "additionalProperties": false,
+                  "required": [
+                    "plus_monthly",
+                    "plus_quarterly",
+                    "plus_yearly",
+                    "pro_monthly",
+                    "pro_quarterly",
+                    "pro_yearly"
+                  ],
+                  "properties": {
+                    "plus_monthly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "plus_quarterly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "plus_yearly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "pro_monthly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "pro_quarterly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    },
+                    "pro_yearly": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999999
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -3092,6 +3210,16 @@ export type PublicConfigData = {
   "billing"?: {
   "revenueCat"?: {
   "proxyUrl"?: string | null;
+};
+  "alipay"?: {
+  "prices": {
+  "plus_monthly": number;
+  "plus_quarterly": number;
+  "plus_yearly": number;
+  "pro_monthly": number;
+  "pro_quarterly": number;
+  "pro_yearly": number;
+};
 };
 };
   [key: string]: unknown;
@@ -4189,6 +4317,60 @@ export const BillingPublicConfigSchema = {
           "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
         }
       }
+    },
+    "alipay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prices"
+      ],
+      "properties": {
+        "prices": {
+          "type": "object",
+          "description": "Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.",
+          "additionalProperties": false,
+          "required": [
+            "plus_monthly",
+            "plus_quarterly",
+            "plus_yearly",
+            "pro_monthly",
+            "pro_quarterly",
+            "pro_yearly"
+          ],
+          "properties": {
+            "plus_monthly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "plus_quarterly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "plus_yearly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "pro_monthly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "pro_quarterly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            },
+            "pro_yearly": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999999999999
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -4196,6 +4378,16 @@ export const BillingPublicConfigSchema = {
 export type BillingPublicConfig = {
   "revenueCat"?: {
   "proxyUrl"?: string | null;
+};
+  "alipay"?: {
+  "prices": {
+  "plus_monthly": number;
+  "plus_quarterly": number;
+  "plus_yearly": number;
+  "pro_monthly": number;
+  "pro_quarterly": number;
+  "pro_yearly": number;
+};
 };
 };
 

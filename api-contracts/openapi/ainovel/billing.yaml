@@ -16,7 +16,7 @@ info:
     Use the same header for users/me, billing, credits and AI requests. Cache and
     recovery state must be scoped by environment. Signed provider callbacks use
     verified provider evidence rather than the caller's header.
-    Development CNY prices are placeholders, not approved production catalog prices.
+    Alipay CNY prices come from the versioned Admin billing.alipay.prices configuration; no env or code price fallback exists.
 
     This contract intentionally excludes personal AI usage balances and
     provider-specific receipt payloads from the client API. AI usage is enforced
@@ -38,7 +38,7 @@ paths:
         Persisted idempotency binds user, product, platform, distribution and merchant environment.
         Only server prices apply. Active RevenueCat access returns 409. A new intent may coexist
         with older pending checkouts after client cancellation; idempotency prevents retry duplicates.
-        Production requires explicit enablement, approved prices and complete merchant configuration.
+        New orders require a complete Admin price catalog and merchant configuration, without a separate enablement or price-approval flag. Existing orders retain their frozen amount after price edits/removal and remain replayable and confirmable.
         payment is null for terminal or expired orders; clients must not relaunch checkout on recovery.
       tags: [ainovel-billing]
       parameters:

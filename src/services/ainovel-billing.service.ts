@@ -6,6 +6,7 @@ import { readAlipayMembership } from "./ainovel-alipay-projection.ts";
 import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 import { selectStoreMembership, storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
 import type { AlipayOptions } from "../modules/billing/alipay-models.ts";
+import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
 import { syncMembership } from "./ainovel-billing-sync.ts";
 import { syncRevenueCatMembership } from "./ainovel-revenuecat-membership-sync.ts";
 import { persistRevenueCatSnapshot } from "./ainovel-revenuecat-snapshot-persistence.ts";
@@ -50,6 +51,7 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 
 export interface AiNovelBillingServiceOptions {
   alipay?: AlipayOptions;
+  readAlipayPrices?: () => Promise<AlipayPrices | undefined>;
   secretApiKey?: string;
   revenueCatProjectId?: string;
   webhookAuthorization?: string;
@@ -86,7 +88,8 @@ export class AiNovelBillingService {
     this.revenueCatGoogleAppId = options.revenueCatGoogleAppId?.trim();
     this.allowSandbox = options.allowSandbox ?? false;
     this.now = options.now ?? (() => new Date());
-    this.alipay = new AiNovelAlipayService(database, options.alipay ?? {}, user => this.getMembership(user), logger);
+    this.alipay = new AiNovelAlipayService(database, options.alipay ?? {}, user => this.getMembership(user), logger,
+      options.readAlipayPrices ?? (async () => undefined));
   }
 
   private readonly webhookAuthorization: string | undefined;

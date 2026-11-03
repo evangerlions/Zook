@@ -1,3 +1,4 @@
+import { seedAlipayPrices } from "../support/alipay-pricing-fixture.ts";
 import assert from "node:assert/strict";
 import baseTest from "node:test";
 import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
@@ -18,6 +19,7 @@ const NOTIFY = "/api/v1/ai_novel/billing/webhooks/alipay";
 const NOW = new Date("2026-10-04T10:00:00Z");
 async function fixture(overrides: Record<string, unknown> = {}) {
   const seed = buildDefaultSeed();
+  seedAlipayPrices(seed);
   seed.appUsers!.push({ id: "alipay_alice", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion: "CN", joinedAt: NOW.toISOString() });
   seed.appUsers!.push({ id: "alipay_bob", appId: "ai_novel", userId: "user_bob", status: "ACTIVE", accountRegion: "CN", joinedAt: NOW.toISOString() });
   let response: Record<string, unknown> = { code: "40004" };
@@ -185,6 +187,17 @@ test("Alipay production remains gated and wrong region/channel are rejected", as
   const missingApp = await fixture({ appId: undefined }); assert.equal((await missingApp.create()).statusCode, 503);
   const unapproved = await fixture({ environment: "production" }); assert.equal((await unapproved.create()).statusCode, 503);
   const f = await fixture(); assert.equal((await f.create({ productKey: "plus_monthly", platform: "web", distribution: "direct_android", checkoutMode: "desktop_web", idempotencyKey: "test_key_0001" })).statusCode, 403);
+});
+
+test("sandbox checkout without callbacks settles through verified query", async () => {
+  const f = await fixture({ notifyUrl: undefined, returnUrl: undefined });
+  const created = await f.create();
+  assert.equal(created.statusCode, 200);
+  const id = created.body.data.order.orderId;
+  f.setResponse({ ...f.fields(id), code: "10000" });
+  const result = await f.query(id);
+  assert.equal(result.body.data.order.membershipApplied, true);
+  assert.equal(result.body.data.membership.active, true);
 });
 
 test("client cancellation permits a new idempotency intent while preserving old pending order", async () => {

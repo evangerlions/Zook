@@ -129,6 +129,14 @@ Admin Web 的 `/_admin/runtime-config.js` 仅在显式 `APP_ENV=local` 且
 admin.delivery_config
 ```
 
+`ai_novel` 的支付宝价格使用此配置中的 `billing.alipay.prices`，在现有“配置管理”
+JSON 编辑器维护。六个必填商品为 `plus_monthly`、`plus_quarterly`、`plus_yearly`、
+`pro_monthly`、`pro_quarterly`、`pro_yearly`，值为 1 至 999999999999 的整数，单位为人民币分，与结算金额格式一致。
+保存与历史恢复均校验完整目录；非法价格返回 `400 ADMIN_CONFIG_INVALID_JSON`，不创建新版本。
+保存或恢复后，商品目录及新订单读取同一最新版本，无需重启或重新部署。
+删除 `billing.alipay` 停止新销售；旧订单、幂等重放和支付确认仍使用冻结金额。
+这些低敏价格随公开配置返回，App Store/Google Play 的价格仍由商店决定。
+
 ### 3.4.1 全局应用升级目录
 
 升级目录位于 `common` 工作区，使用版本化配置键 `common.release_updates`。它可以
