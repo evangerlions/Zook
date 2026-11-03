@@ -53,7 +53,7 @@ test("Google webhook financial evidence uses the same canonical identity and rej
 test("webhook rejects cross-store app IDs even when both apps are configured", async () => {
   const runtime = await createApplication({ revenueCat: {
     secretApiKey: "mock", projectId: "proj_test", appId: "apple_app",
-    googleAppId: "google_app", webhookAuthorization: "Bearer mock", allowSandbox: true,
+    googleAppId: "google_app", webhookAuthorization: "Bearer mock",
     fetcher: fixtureFetcher(async () => Response.json(googleFixture()), "google_app"),
   } });
   for (const [appId, store, expected] of [

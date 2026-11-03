@@ -1035,7 +1035,7 @@ def main() -> int:
             },
         )
 
-        alipay_overlay = alipay_key_mounts.prepare(state_dir, app_env_file)
+        alipay_overlay = alipay_key_mounts.prepare(state_dir, app_env_file, slot=slot_name)
         if alipay_overlay:
             compose_files.append(alipay_overlay)
 

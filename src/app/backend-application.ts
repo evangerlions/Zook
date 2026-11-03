@@ -4,7 +4,7 @@ import { tryHandleYaoheziV1Routes, ownsYaoheziHealthTransaction } from "./yaohez
 import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 
-import { billingRequestEnvironment, billingSandboxAllowed, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { billingRequestEnvironment, billingDeploymentEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -163,7 +163,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly frogsleepEnabled = false,
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
-    private readonly billingPolicy: { allowSandbox: boolean; defaultEnvironment?: import("../modules/billing/billing-environment.ts").BillingEnvironment } = { allowSandbox: billingSandboxAllowed(), defaultEnvironment: "production" as const },
+    private readonly billingDeployment = billingDeploymentEnvironment(),
     private readonly yaoheziEnabled = false,
     private readonly yaoheziHealthEnabled = false,
   ) {
@@ -199,7 +199,7 @@ export class BackendApplication extends BackendRouteContext {
     request.cookies ??= parseCookies(request.headers.cookie);
     const execute = async () => {
       request.adminSession = await this.resolveAdminSession(request);
-      return await inBillingEnvironment(billingRequestEnvironment(request, this.billingPolicy), () => this.dispatch(request));
+      return await inBillingEnvironment(billingRequestEnvironment(request, this.billingDeployment), () => this.dispatch(request));
     };
     const startedAt = Date.now();
     try {

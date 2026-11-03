@@ -15,13 +15,13 @@ const membership = { appId: "ai_novel" as const, userId: "user_alice", active: t
   source: "app_store" as const, managementUrl: null, lastSyncedAt: "2026-10-23T00:00:00Z", accountDeletedAt: null };
 
 test("online rejects sandbox overrides even when an old debug preference is supplied", async () => {
-  const runtime = await createApplication({ billingEnvironment: { allowSandbox: false }, revenueCat: { allowSandbox: true } });
+  const runtime = await createApplication({ appEnvironment: "online" });
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const response = await runtime.app.handle({ method: "GET", path: "/api/v1/users/me",
     headers: { authorization: `Bearer ${token}`, "x-app-id": "ai_novel", "x-billing-environment": "sandbox" } });
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.code, "BILLING_ENVIRONMENT_FORBIDDEN");
-  assert.equal(billingRequestEnvironment({ headers: {} } as any, { allowSandbox: false, defaultEnvironment: "sandbox" }), "production");
+  assert.equal(billingRequestEnvironment({ headers: {} } as any, "online"), "production");
   await runtime.close();
 });
 
@@ -67,8 +67,8 @@ test("RevenueCat mixed receipts select only the requested environment and persis
   });
   const seed=buildDefaultSeed();
   seed.appUsers!.push({id:"billing_environment_user",appId:"ai_novel",userId:"user_alice",status:"ACTIVE",accountRegion:"GLOBAL",joinedAt:new Date().toISOString()});
-  const runtime = await createApplication({ seed, billingEnvironment:{allowSandbox:true},revenueCat:{
-    allowSandbox:true,secretApiKey:"test_secret",projectId:"proj_test",appId:"app_test",
+  const runtime = await createApplication({ seed, appEnvironment:"dev",revenueCat:{
+    secretApiKey:"test_secret",projectId:"proj_test",appId:"app_test",
     fetcher:fixtureFetcher(async()=>Response.json(mixed),"app_test"),
   }});
   for(const env of ["sandbox","production"] as const){

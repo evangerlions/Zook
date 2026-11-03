@@ -62,19 +62,36 @@ cp deploy_configs/dev.env.example deploy_configs/dev.env
 1. 作为部署脚本的参数来源
 2. 作为容器运行时的 `env_file`
 
-配置支付宝时，部署脚本从同一份容器 env 文件读取已有的支付环境和两个密钥路径，
-自动为 `api`、`worker` 添加只读 bind mount；`admin-web` 不挂载密钥。
-宿主机目录按支付环境确定，不新增 env 字段：
+支付宝不再配置 `ALIPAY_AI_NOVEL_ENVIRONMENT` 或两个密钥路径 env 字段。支付环境权限
+只从可信部署身份派生：`DEPLOY_SLOT` 优先于 `APP_ENV`，local/dev/test 支持正式与沙箱，
+online/未知环境只支持正式。部署脚本按实际部署槽位生成 `api`、`worker` 的只读挂载；
+`admin-web` 不挂载密钥。既有 env 文件中的旧三个支付宝字段应删除。
 
-- `sandbox`：部署用户的 `~/.zook/secrets/ainovel-alipay/sandbox`
-- `production`：部署用户的 `~/.zook/secrets/ainovel-alipay/production`
+宿主机使用部署用户的固定 Secret 目录：
 
-目录内保留 `app-private-key.pem`、`alipay-public-key.pem`，容器内路径分别为
-`/run/secrets/ainovel-alipay/app-private-key.pem` 和
-`/run/secrets/ainovel-alipay/alipay-public-key.pem`。文件必须能被容器的 `node` 用户
-（UID 1000）读取；密钥不进入仓库或镜像。部署前会检查文件存在且可读，缺失时停止，
-不会自动创建空密钥目录。挂载配置生成在槽位的 `.deploy/<slot>/alipay-keys.compose.json`，
-供正常部署、回滚和 Grow 发布快照共用。未配置支付宝的部署不增加挂载。
+- 正式：`~/.zook/secrets/ainovel-alipay/production`
+- 沙箱：`~/.zook/secrets/ainovel-alipay/sandbox`
+
+每个目录保留 `app-private-key.pem`、`alipay-public-key.pem`，分别映射到容器的
+`/run/secrets/ainovel-alipay/{production|sandbox}/`。online 从不挂载沙箱目录；dev 可同时
+挂载两套已有凭证。同一部署的两种支付环境共用一份后台价格，不新增 env 字段或开关。
+
+文件必须能被容器的 `node` 用户（UID 1000）读取；密钥不进入仓库或镜像。未提供某环境
+目录时，该环境不能新下单；已提供目录却缺少文件或不可读时部署失败。脚本不会自动创建
+空密钥目录。挂载配置生成在 `.deploy/<slot>/alipay-keys.compose.json`，供正常部署、回滚
+和 Grow 发布快照共用。完全未提供支付宝 Secret 的部署不增加挂载。
+
+本地开发直接使用 `npm run dev`，加载已有 `deploy_configs/local.env` 的缺省配置，默认
+`APP_ENV=local`，不再使用专门的沙箱启动参数/配置文件。本机使用同样的
+`~/.zook/secrets/ainovel-alipay/{production|sandbox}/` 布局。正式支付在本地通过验签查询
+与补单确认，不伪造公网通知地址。首次升级目录布局前，先将既有密钥安全迁移到上述位置；
+不更换密钥，不把 PEM 内容写入 env。旧版发布的自动任务可能仍加载旧部署脚本：等待其
+完成后，再按本文已有显式部署命令运行新脚本，核对两套目标路径及只读挂载。
+
+首次跨密钥布局升级前，保留旧 env 和完整渲染的 Compose 快照（包含凭证时必须以
+0600 权限存放在仓库外的私密备份目录）。旧单环境镜像依赖原三个 env 字段及平铺
+容器路径；回退时必须同时恢复对应 env 与挂载快照，不能只切回旧镜像。常规健康检查
+成功不代表旧镜像的支付密钥可读，跨布局回退后还须检查支付目录及查询签名。
 
 容器网络统一使用 Docker 默认 bridge 网络。若 Redis / PostgreSQL 部署在宿主机上，
 请在 `REDIS_URL` / `DATABASE_URL` 中使用 `host.docker.internal`，并确保宿主机服务

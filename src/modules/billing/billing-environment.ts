@@ -13,14 +13,20 @@ export function inBillingEnvironment<T>(environment: BillingEnvironment, work: (
   return scope.run(environment, work);
 }
 
-export function billingSandboxAllowed(): boolean {
-  return ["local", "dev", "development", "test"].includes(process.env.APP_ENV?.trim().toLowerCase() ?? "");
+export function billingDeploymentEnvironment(env: NodeJS.ProcessEnv = process.env): string {
+  return (env.DEPLOY_SLOT?.trim() || env.APP_ENV?.trim() || "").toLowerCase();
 }
-export function billingRequestEnvironment(request: HttpRequest, policy: { allowSandbox: boolean; defaultEnvironment?: BillingEnvironment } = { allowSandbox: billingSandboxAllowed() }): BillingEnvironment {
+export function billingSandboxAllowed(deployment = billingDeploymentEnvironment()): boolean {
+  return ["local", "dev", "development", "test"].includes(deployment.trim().toLowerCase());
+}
+export function billingEnvironments(deployment = billingDeploymentEnvironment()): readonly BillingEnvironment[] {
+  return billingSandboxAllowed(deployment) ? ["production", "sandbox"] : ["production"];
+}
+export function billingRequestEnvironment(request: HttpRequest, deployment = billingDeploymentEnvironment()): BillingEnvironment {
   const value = getHeader(request.headers, BILLING_ENVIRONMENT_HEADER.toLowerCase());
   if (value !== undefined && value !== "sandbox" && value !== "production")
     throw new ApplicationError(400, "REQ_INVALID_BODY", "Invalid billing environment.");
-  if (value === "sandbox" && !policy.allowSandbox)
+  if (value === "sandbox" && !billingSandboxAllowed(deployment))
     throw new ApplicationError(403, "BILLING_ENVIRONMENT_FORBIDDEN", "Sandbox membership is not allowed on this server.");
-  return value ?? (policy.allowSandbox ? policy.defaultEnvironment ?? "production" : "production");
+  return value === "sandbox" ? "sandbox" : "production";
 }

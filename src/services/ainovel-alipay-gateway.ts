@@ -26,8 +26,10 @@ export class OfficialAlipayGateway implements AlipayGateway {
       total_amount: (order.amountMinor / 100).toFixed(2), subject: alipayProductName(order.productKey),
       time_expire: new Date(Date.parse(order.expiresAt) + 8 * 3600000).toISOString().slice(0, 19).replace("T", " "),
       product_code: order.platform === "android" ? "QUICK_MSECURITY_PAY" : "QUICK_WAP_WAY" };
-    const callbacks = this.options.environment === "sandbox" ? {} :
-      { notifyUrl: this.options.notifyUrl, returnUrl: this.options.returnUrl };
+    const callbacks = this.options.environment === "sandbox" ? {} : {
+      ...(this.options.notifyUrl ? { notifyUrl: this.options.notifyUrl } : {}),
+      ...(this.options.returnUrl ? { returnUrl: this.options.returnUrl } : {}),
+    };
     const params = { bizContent, ...callbacks };
     if (order.platform === "android") return { type: "app", orderString: sdk.sdkExecute("alipay.trade.app.pay", params) };
     if (order.platform === "web" && order.checkoutMode === "mobile_web") {
@@ -37,7 +39,7 @@ export class OfficialAlipayGateway implements AlipayGateway {
       // No returnUrl: the cashier must not navigate the merchant's parent page.
       // Order query/notify remains the only settlement authority.
       return { type: "page", url: sdk.pageExecute("alipay.trade.page.pay", "GET", {
-        ...(this.options.environment === "sandbox" ? {} : { notifyUrl: this.options.notifyUrl }),
+        ...(this.options.environment !== "sandbox" && this.options.notifyUrl ? { notifyUrl: this.options.notifyUrl } : {}),
         bizContent: { ...bizContent, product_code: "FAST_INSTANT_TRADE_PAY", qr_pay_mode: "4", qrcode_width: 220 },
       }) };
     }

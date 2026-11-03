@@ -9,7 +9,7 @@ export class PostgresAlipayOrders {
     return (await this.query(sql, values)).rows[0]?.record as AlipayOrder | undefined;
   }
   findOrder(orderId: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE order_id = $1", [orderId]); }
-  findIdempotency(userId: string, key: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE app_id = 'ai_novel' AND user_id = $1 AND idempotency_key = $2", [userId, key]); }
+  findIdempotency(userId: string, key: string) { return this.find("SELECT record FROM zook_ai_novel_alipay_orders WHERE app_id = 'ai_novel' AND user_id = $1 AND idempotency_key = $2 AND environment = $3", [userId, key, billingEnvironment()]); }
   async listRecovery(environment: string, merchant: string, seller: string, limit: number): Promise<AlipayOrder[]> {
     const result = await this.query(`SELECT record FROM zook_ai_novel_alipay_orders
       WHERE environment = $1 AND record->>'merchantAppId' = $2 AND record->>'sellerId' = $3

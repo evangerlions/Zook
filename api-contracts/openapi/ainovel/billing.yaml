@@ -10,13 +10,13 @@ info:
     The client reads canonical membership state from Zook and uses RevenueCat
     for store purchases. Explicitly configured Alipay supports CN one-off memberships.
     Membership and credits default to production. Non-online servers explicitly
-    configured with APP_ENV=local/dev/development/test accept X-Billing-Environment:
-    sandbox or production. Online (including missing/unknown APP_ENV) rejects sandbox
+    identified by DEPLOY_SLOT (otherwise APP_ENV) as local/dev/development/test accept X-Billing-Environment:
+    sandbox or production. Online (including missing/unknown deployment identity) rejects sandbox
     with 403 BILLING_ENVIRONMENT_FORBIDDEN, irrespective of client or provider flags.
     Use the same header for users/me, billing, credits and AI requests. Cache and
     recovery state must be scoped by environment. Signed provider callbacks use
     verified provider evidence rather than the caller's header.
-    Alipay CNY prices come from the versioned Admin billing.alipay.prices configuration; no env or code price fallback exists.
+    Alipay production and sandbox share one versioned Admin billing.alipay.prices catalog per deployment and one checkout/settlement implementation; only provider credentials/gateways and financial/entitlement data differ. No env or code price fallback exists.
 
     This contract intentionally excludes personal AI usage balances and
     provider-specific receipt payloads from the client API. AI usage is enforced
@@ -35,7 +35,7 @@ paths:
       operationId: createAiNovelAlipayOrder
       summary: Create or replay an owned CN one-off Alipay checkout
       description: |
-        Persisted idempotency binds user, product, platform, distribution and merchant environment.
+        Persisted idempotency is scoped by user and payment environment, then binds product, platform, distribution and merchant. Production and sandbox may independently use the same key.
         Only server prices apply. Active RevenueCat access returns 409. A new intent may coexist
         with older pending checkouts after client cancellation; idempotency prevents retry duplicates.
         New orders require a complete Admin price catalog and merchant configuration, without a separate enablement or price-approval flag. Existing orders retain their frozen amount after price edits/removal and remain replayable and confirmable.

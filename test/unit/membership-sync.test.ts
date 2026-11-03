@@ -18,8 +18,8 @@ async function fixture() {
   seed.appUsers!.push({id:'sync_alice',appId:'ai_novel',userId:'user_alice',status:'ACTIVE',accountRegion:'CN',joinedAt:now.toISOString()});
   const gateway: AlipayGateway = {payment:async()=>({type:'app',orderString:'signed'}),verifyNotify:async()=>true,
     query:async id=>{calls.push(id);const response=responses.get(id);return typeof response==='function'?response(): response??{code:'40004'};}};
-  const runtime=await createApplication({seed,alipay:{appId:'merchant',sellerId:'seller',environment:'sandbox',
-    notifyUrl:'https://example.test/notify',returnUrl:'https://example.test/return',gateway,queryTimeoutMs:10,now:()=>now},revenueCat:{now:()=>now}});
+  const runtime=await createApplication({seed,alipay:{sandbox:{appId:'merchant',sellerId:'seller',
+    notifyUrl:'https://example.test/notify',returnUrl:'https://example.test/return',gateway,queryTimeoutMs:10,now:()=>now}},revenueCat:{now:()=>now}});
   const service=runtime.services.aiNovelBillingService;
   const create=async(productKey='plus_monthly')=>(await service.alipay.create('user_alice','CN',{
     productKey:productKey as any,platform:'android',distribution:'direct_android',idempotencyKey:'key_'+Math.random().toString(36).slice(2)})).order.orderId;
