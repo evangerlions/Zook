@@ -10,7 +10,9 @@ import type {
 
 const GA4_PATH = "/telemetry/ga4";
 const GA4_MAX_BODY_BYTES = 130_000;
-const SENTRY_MAX_BODY_BYTES = 1024 * 1024;
+// Native crash envelopes include minidump attachments and can exceed 1 MiB.
+const SENTRY_MAX_BODY_BYTES = 8 * 1024 * 1024;
+const SENTRY_TIMEOUT_MS = 30_000;
 const MAX_UPSTREAM_RESPONSE_BYTES = 64 * 1024;
 const DEFAULT_TIMEOUT_MS = 3_000;
 const DEFAULT_BODY_TIMEOUT_MS = 5_000;
@@ -42,8 +44,8 @@ export function isTelemetryPath(path: string): boolean {
 }
 
 export class TelemetryGateway {
-  private readonly timeoutMs: number;
-  private readonly bodyTimeoutMs: number;
+  private readonly timeoutMs: number | undefined;
+  private readonly bodyTimeoutMs: number | undefined;
   private readonly limiter: TelemetryRateLimiter;
 
   constructor(
@@ -51,8 +53,8 @@ export class TelemetryGateway {
     private readonly logger: StructuredLogger,
     private readonly fetchImplementation: typeof fetch = globalThis.fetch,
   ) {
-    this.timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-    this.bodyTimeoutMs = config.bodyTimeoutMs ?? DEFAULT_BODY_TIMEOUT_MS;
+    this.timeoutMs = config.timeoutMs;
+    this.bodyTimeoutMs = config.bodyTimeoutMs;
     this.limiter = new TelemetryRateLimiter(
       config.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
     );
@@ -106,12 +108,13 @@ export class TelemetryGateway {
       const body = await readLimitedBody(
         request.body,
         route.maxBodyBytes,
-        this.bodyTimeoutMs,
+        this.bodyTimeoutMs ?? (route.lane === "sentry" ? SENTRY_TIMEOUT_MS : DEFAULT_BODY_TIMEOUT_MS),
       );
       const { response: upstreamResponse, body: responseBody } = await this.forward(
         upstream.request.url,
         upstream.request.headers,
         body,
+        this.timeoutMs ?? (route.lane === "sentry" ? SENTRY_TIMEOUT_MS : DEFAULT_TIMEOUT_MS),
       );
       const responseHeaders = copyResponseHeaders(upstreamResponse.headers);
       return this.finish(
@@ -229,10 +232,11 @@ export class TelemetryGateway {
     url: URL,
     headers: Record<string, string>,
     body: Buffer,
+    timeoutMs: number,
   ): Promise<{ response: Response; body: Buffer }> {
     const controller = new AbortController();
-    const deadline = Date.now() + this.timeoutMs;
-    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    const deadline = Date.now() + timeoutMs;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await this.fetchImplementation(url, {
         method: "POST",

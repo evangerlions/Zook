@@ -6,6 +6,7 @@ import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts"
 import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 
 import { billingRequestEnvironment, billingDeploymentEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { bindBillingResponseEnvironment } from "../modules/billing/billing-response-environment.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -200,7 +201,9 @@ export class BackendApplication extends BackendRouteContext {
     request.cookies ??= parseCookies(request.headers.cookie);
     const execute = async () => {
       request.adminSession = await this.resolveAdminSession(request);
-      return await inBillingEnvironment(billingRequestEnvironment(request, this.billingDeployment), () => this.dispatch(request));
+      const environment = billingRequestEnvironment(request, this.billingDeployment);
+      const response = await inBillingEnvironment(environment, () => this.dispatch(request));
+      return bindBillingResponseEnvironment(response, environment);
     };
     const startedAt = Date.now();
     try {

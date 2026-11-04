@@ -109,6 +109,28 @@ test("Sentry forwarding accepts the OpenAPI path without a trailing slash", asyn
   assert.equal(fetchCount, 1);
 });
 
+test("Sentry native crash envelopes retain large binary attachments and enforce a bounded size", async () => {
+  const attachment = Buffer.alloc(2 * 1024 * 1024, 0xab);
+  attachment.write("MDMP");
+  const envelope = Buffer.concat([
+    Buffer.from('{}\n' + JSON.stringify({ type: "attachment", attachment_type: "event.minidump", filename: "minidump.dmp", length: attachment.length }) + '\n'),
+    attachment,
+  ]);
+  let forwarded: Buffer | undefined;
+  let calls = 0;
+  const { gateway } = createGateway(completeConfig, async (_input, init) => {
+    calls++;
+    forwarded = Buffer.from(init?.body as Uint8Array);
+    return new Response('{"id":"native-crash"}', { status: 200 });
+  });
+  const request = { path: "/telemetry/sentry/api/42/envelope/", contentType: "application/x-sentry-envelope", sentryAuth: "Sentry sentry_key=public-key" };
+  assert.equal((await gateway.handle(createRequest({ ...request, body: envelope }))).statusCode, 200);
+  assert.deepEqual(forwarded, envelope);
+  assert.equal((await gateway.handle(createRequest({ ...request, body: Buffer.alloc(8 * 1024 * 1024) }))).statusCode, 200);
+  assert.equal((await gateway.handle(createRequest({ ...request, body: Buffer.alloc(8 * 1024 * 1024 + 1) }))).statusCode, 413);
+  assert.equal(calls, 2);
+});
+
 test("gateway rejects unavailable and non-allowlisted destinations before reading the body", async () => {
   let fetchCount = 0;
   const fakeFetch = async () => {
