@@ -54,6 +54,7 @@
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "alipay-sdk": "4.14.0",
+    "decimal.js": "10.6.0",
     "nodemailer": "10.1.4",
     "pg": "^8.20.0",
     "redis": "^5.11.0"
