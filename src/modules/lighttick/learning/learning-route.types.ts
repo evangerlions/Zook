@@ -16,12 +16,14 @@ export interface LearningRoute extends LightTickOwner {
   brief: CourseBrief; document: CourseDocument; updatedAt: string;
 }
 export interface LearningRouteVersion extends LightTickOwner {
-  routeId: string; version: number; brief: CourseBrief; document: CourseDocument; digest: string; createdAt: string;
+  routeId: string; version: number; brief: CourseBrief; document: CourseDocument; digest: string; createdAt: string|null;
 }
 export interface RouteLessonLink extends LightTickOwner {
   routeId: string; number: number; lessonId: string; routeVersion: number; firstContentVersion: string;
 }
 export interface LearningRouteRepository {
+  counts(owner: LightTickOwner): Promise<Record<string,number>>;
+  clearStaging(owner: LightTickOwner): Promise<void>;
   readonly work: LearningWorkRepository;
   readRouteProgressFacts(owner: LightTickOwner, id: string): Promise<{ number: number; lessonId: string; contentVersion: string; completed: boolean; sourceCompleted: boolean }[]>;
   getLearningRoute(owner: LightTickOwner, id: string): Promise<LearningRoute | undefined>;

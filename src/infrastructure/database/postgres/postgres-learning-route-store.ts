@@ -7,6 +7,12 @@ type Transaction = <T>(owner: LightTickOwner, callback: () => Promise<T>) => Pro
 export class PostgresLearningRouteStore implements LearningRouteRepository {
   readonly work=new PostgresLearningWorkStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   constructor(private readonly query: Query, private readonly transaction: Transaction) {}
+  async counts(o:LightTickOwner){
+    const result:Record<string,number>={};
+    for(const [key,table]of Object.entries({routes:'learning_routes',route_versions:'learning_route_versions',route_links:'learning_route_lessons',work:'learning_work'}))result[key]=Number((await this.query('SELECT count(*)::int AS n FROM zook_lighttick_'+table+' WHERE app_id=$1 AND user_id=$2',[o.appId,o.userId])).rows[0].n);
+    return result;
+  }
+  async clearStaging(o:LightTickOwner){await this.transaction(o,async()=>{for(const table of ['learning_work','learning_route_lessons','learning_route_versions','learning_routes'])await this.query('DELETE FROM zook_lighttick_'+table+' WHERE app_id=$1 AND user_id=$2',[o.appId,o.userId]);});}
   async readRouteProgressFacts(o: LightTickOwner, id: string) {
     const r = await this.query(`SELECT l.number,l.lesson_id,n.published_version,p.completed,
       n.source_completed AND n.source_completed_version=n.published_version AS source_completed

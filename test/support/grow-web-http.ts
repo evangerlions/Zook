@@ -1,5 +1,6 @@
 /** Disposable localhost-only HTTP/PG integration runtime; never imported by production. */
 import { LightTickWorker } from '../../src/modules/lighttick/lighttick-worker.ts';
+import { LearningWorkRunner } from '../../src/modules/lighttick/learning/learning-work.runner.ts';
 import { LightTickAiRunner } from '../../src/modules/lighttick/ai/lighttick-ai-runner.ts';
 import { createServer } from 'node:http';
 import { Pool } from 'pg';
@@ -17,6 +18,12 @@ const repository = new PostgresLightTickRepository(pool);
 const seed = buildDefaultSeed(undefined, { includeLightTick: true });
 for (const userId of ['user_alice', 'user_bob']) seed.appUsers.push({ id: 'grow-web-' + userId, appId: 'lighttick', userId, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
+ const template=seed.users.find(u=>u.id==='user_alice')!;
+ for(let n=0;n<12;n++){
+  const userId='user_course_'+n;
+  seed.users.push({...template,id:userId,email:'course'+n+'@example.com',phone:'+86188000010'+String(n).padStart(2,'0')});
+  seed.appUsers.push({id:'grow-course-'+n,appId:'lighttick',userId,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
+ }
  const config=seed.appConfigs.find(c=>c.appId==='lighttick'&&c.configKey==='admin.delivery_config')!;
  const value=JSON.parse(config.configValue);value.enabled=true;value.featureFlags.conversationalPlanning=true;config.configValue=JSON.stringify(value);
  if(process.env.GROW_WEB_TEST_PORT){value.settings={...value.settings,growWebUrl:'http://127.0.0.1:'+process.env.GROW_WEB_TEST_PORT+'/grow/'};config.configValue=JSON.stringify(value);}
@@ -26,9 +33,22 @@ let queueTimer: ReturnType<typeof setInterval> | undefined;
 if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   const runtime = app.services.lighttickRuntime!;
   runtime.planningEnabled = true;
-  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository, { complete: async (input: any) => ({ provider: 'synthetic', providerModel: 'synthetic', text: JSON.stringify(input.messages.some((m: any) => m.content.includes('"planning_action":"messages"')) ? {message: '请核对投入与日期，再审阅草案。',fields: {}} : {tasks: [{title:'合成规划步骤',estimated_minutes:5,scheduled_for:'2030-01-01T09:00:00Z',completion_criteria:'写下一条具体结论',steps:['打开笔记','写下结论']}]}) }) } as any));
-  let running=false;
-  queueTimer=setInterval(()=>{ if(running)return; running=true; void app.queue.processDueJobs(job=>runtime.worker!.process(job),new Date()).catch(()=>{}).finally(()=>{running=false;}); },100);
+  const llm={complete:async(input:any)=>{
+   const user=String(input.messages.at(-1)?.content??'');
+   if(user.includes('Draft a formal curriculum')){
+    const context=JSON.parse(user.split('INPUT_JSON=').at(-1)!);
+    if(context.brief.title.includes('慢任务'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);input.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});
+    const count=context.brief.pacing==='weekly'?context.brief.weeks*context.brief.sessions:context.brief.lesson_count;
+    return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({prerequisites:'合成先修说明',stages:[{title:'合成基础',goal:'解释合成概念'}],lessons:Array.from({length:count},(_,i)=>context.frozen?.find((l:any)=>l.number===i+1)??{number:i+1,topic:'合成课次 '+(i+1),goal:'说明具体结论',exercise:'写下一条应用',assessment:'自查证据',minutes:context.brief.minutes,stage:1,kind:i===count-1?'review':'lesson',requires:i?[i]:[]})})};
+   }
+   if(user.includes('Draft one complete lesson'))return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({content:'# 合成教学正文\n## 引导问题\n合成问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n写下一条应用\n---\n## 参考分析\n核对证据\n## 自查\n自查\n## 记忆提示\n提示',references:'仅使用明确审阅的合成资料'})};
+   return { provider: 'synthetic', providerModel: 'synthetic', text: JSON.stringify(input.messages.some((m: any) => m.content.includes('"planning_action":"messages"')) ? {message: '请核对投入与日期，再审阅草案。',fields: {}} : {tasks: [{title:'合成规划步骤',estimated_minutes:5,scheduled_for:'2030-01-01T09:00:00Z',completion_criteria:'写下一条具体结论',steps:['打开笔记','写下结论']}]}) };
+  }} as any;
+  const learning=runtime.worker!.learning!;
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,llm),undefined,new LearningWorkRunner(runtime.learningWork!,llm,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner));
+  let running=false,lastRecovery=0;
+  queueTimer=setInterval(()=>{if(running)return;running=true;void (async()=>{if(Date.now()-lastRecovery>1000){lastRecovery=Date.now();await runtime.worker!.recover();}await app.queue.processDueJobs(job=>runtime.worker!.process(job),new Date());})().catch(()=>{}).finally(()=>{running=false;});},100);
+
 }
 const api = createServer(async (request, response) => {
   try {

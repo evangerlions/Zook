@@ -33,8 +33,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     return result;
   });
   private nativeLearning=new InMemoryNativeLearningStore();
-  getNativeLearningCounts=this.nativeLearning.getNativeLearningCounts.bind(this.nativeLearning);
-  async clearNativeLearningStaging(o:LightTickOwner){await this.nativeLearning.clearNativeLearningStaging(o);for(const [id,r] of this.operations)if(r.appId===o.appId&&r.userId===o.userId&&r.deviceId==='learning-migration')this.operations.delete(id);}
+  getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
+  async clearNativeLearningStaging(o:LightTickOwner){await this.learningRoutes.clearStaging(o);await this.nativeLearning.clearNativeLearningStaging(o);for(const [id,r] of this.operations)if(r.appId===o.appId&&r.userId===o.userId&&r.deviceId==='learning-migration')this.operations.delete(id);}
   async listLearningReceipts(o:LightTickOwner,id:string){return clone([...this.operations.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.entityType==='learning_private'&&r.entityId===id&&r.operationId.startsWith('learning-compat:')).slice(0,1000));}
   getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
   saveLearningAuthority=this.nativeLearning.saveLearningAuthority.bind(this.nativeLearning);

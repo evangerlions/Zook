@@ -39457,7 +39457,10 @@ export const LightTickNativeLearningRouteVersionSchema = {
       "pattern": "^[a-f0-9]{64}$"
     },
     "created_at": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "date-time"
     }
   }
@@ -39499,7 +39502,7 @@ export type LightTickNativeLearningRouteVersion = {
 )[];
 };
   "digest": string;
-  "created_at": string;
+  "created_at": string | null;
 };
 
 export const LightTickNativeLearningRoutePublishWriteSchema = {
@@ -40701,7 +40704,10 @@ export const LightTickNativeLearningRouteVersionEnvelopeSchema = {
           "pattern": "^[a-f0-9]{64}$"
         },
         "created_at": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "format": "date-time"
         }
       }
@@ -40751,7 +40757,7 @@ export type LightTickNativeLearningRouteVersionEnvelope = {
 )[];
 };
   "digest": string;
-  "created_at": string;
+  "created_at": string | null;
 };
   "requestId": string;
 };

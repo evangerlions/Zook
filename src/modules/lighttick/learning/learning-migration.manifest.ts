@@ -1,4 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
+import {readImportedRoutes,type ImportedRoutes} from './learning-migration.routes.ts';
 import type {
   LearningCollection,
   NativeLesson,
@@ -19,6 +20,7 @@ import {
   version,
 } from "./native-learning.validation.ts";
 export interface LearningMigrationManifest {
+  routes:ImportedRoutes;
   digest: string;
   source: {
     instance: string;
@@ -79,6 +81,7 @@ export function readLearningManifest(
     "private_states",
     "private_history",
     "receipts",
+    "routes",
   ]);
   if (b.format_version !== 1 || b.module !== "learning")
     fail(422, "Unsupported learning migration format.");
@@ -382,12 +385,14 @@ export function readLearningManifest(
     )
       fail(409, "Private history conflicts with its latest snapshot.");
   }
+  const importedRoutes=readImportedRoutes(owner,b.routes,collections,lessons,publications,source.frozen_at);
   if (
-    (!consent.reading && (collections.length || lessons.length)) ||
+    (!consent.reading && (collections.length || lessons.length || importedRoutes.routes.length)) ||
     (!consent.private && (states.length || history.length || receipts.length))
   )
     fail(403, "Migration would expand source consent.");
   return {
+    routes:importedRoutes,
     digest: expectedDigest,
     source,
     reading: consent.reading,

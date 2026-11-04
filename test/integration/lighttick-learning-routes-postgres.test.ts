@@ -7,6 +7,8 @@ import {NativeLearningService} from "../../src/modules/lighttick/learning/native
 import {LearningRouteService} from "../../src/modules/lighttick/learning/learning-route.service.ts";
 import {routeProgress} from "../../src/modules/lighttick/learning/learning-route.progress.ts";
 import {routeFixture} from "../support/learning-route-fixture.ts";
+import {courseMigrationFixture} from "../support/learning-route-migration-fixture.ts";
+import {LearningMigrationService} from "../../src/modules/lighttick/learning/learning-migration.service.ts";
 const dsn=process.env.LIGHTTICK_TEST_DATABASE_URL;
 if(!dsn||!['localhost','127.0.0.1'].includes(new URL(dsn).hostname)||!new URL(dsn).pathname.startsWith('/grow_web_u1_'))throw Error("Disposable synthetic Grow database required");
 test("PostgreSQL route CAS, atomic lesson publication, reconnect and deletion preserve versioned course facts",async()=>{
@@ -31,5 +33,17 @@ test("PostgreSQL route CAS, atomic lesson publication, reconnect and deletion pr
     assert.deepEqual(await new LearningRouteService(reconnect).publishLesson(owner,id,1,body,"route-pg-lesson-original"),result);
     assert.equal((await new LearningRouteService(reconnect).read(owner,id,1)).document.lessons.length,2);
     await repo.deleteOwnerData(owner);assert.equal(await repo.learningRoutes.getLearningRoute(owner,id),undefined);
+  }finally{await repo.deleteOwnerData(owner);await pool.end();}
+});
+test("PostgreSQL formal route migration verifies counts, history digests and relationships with unknown publication time retained",async()=>{
+  await runPostgresMigrations({connectionString:dsn,log:()=>{}});
+  const pool=new Pool({connectionString:dsn}),repo=new PostgresLightTickRepository(pool),f=courseMigrationFixture('route-import-pg-'+process.pid),owner={appId:'lighttick' as const,userId:f.bundle.mapping.target_user_id};
+  const native=new NativeLearningService(repo,true),migration=new LearningMigrationService(native);
+  try{
+    for(const action of ['freeze','import','verify','activate'] as const){const a=await repo.getLearningAuthority(owner);await migration.command(owner,action,f.bundle,f.digest,a?.revision??0,'pg-course-import-'+action);}
+    const restarted=new PostgresLightTickRepository(pool),current=new NativeLearningService(restarted,true);
+    assert.equal((await new LearningRouteService(current).read(owner,f.id,1)).created_at,null);
+    assert.equal((await routeProgress(current,owner,f.id)).lessons[0].lesson_id,f.lesson);
+    assert.deepEqual(await restarted.learningRoutes.counts(owner),{routes:1,route_versions:2,route_links:1,work:0});
   }finally{await repo.deleteOwnerData(owner);await pool.end();}
 });

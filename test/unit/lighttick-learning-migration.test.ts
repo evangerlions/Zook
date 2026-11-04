@@ -206,7 +206,7 @@ test("verification detects changed private history; abort before activation rest
   assert.equal((await f.repo.getLearningLibrary(owner))?.source_revision, 9);
   assert.deepEqual(
     Object.values(await f.repo.getNativeLearningCounts(owner)),
-    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0],
   );
   await f.native.assertLegacyWrite(owner);
   await step(f, "freeze", "round-two");

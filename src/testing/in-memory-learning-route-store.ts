@@ -10,6 +10,8 @@ export class InMemoryLearningRouteStore implements LearningRouteRepository {
   private routes = new Map<string,LearningRoute>();
   private versions = new Map<string,LearningRouteVersion>();
   private links = new Map<string,RouteLessonLink>();
+  async counts(o:LightTickOwner){return Object.fromEntries(Object.entries({routes:this.routes,route_versions:this.versions,route_links:this.links}).map(([k,map])=>[k,[...map.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId).length]).concat([['work',this.work.countOwner(o)]]));}
+  async clearStaging(o:LightTickOwner){this.deleteOwner(o);}
   snapshot() { return structuredClone({ routes: [...this.routes], versions: [...this.versions], links: [...this.links], work:this.work.snapshot() }); }
   restore(s: ReturnType<InMemoryLearningRouteStore["snapshot"]>) { this.routes=new Map(s.routes);this.versions=new Map(s.versions);this.links=new Map(s.links);this.work.restore(s.work); }
   deleteOwner(o: LightTickOwner) { this.work.deleteOwner(o);for (const map of [this.routes,this.versions,this.links]) for (const [id,r] of map) if(r.appId===o.appId&&r.userId===o.userId)map.delete(id); }

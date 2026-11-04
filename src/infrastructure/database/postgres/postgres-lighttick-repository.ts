@@ -25,8 +25,8 @@ import { ApplicationError } from "../../../shared/errors.ts";
 export class PostgresLightTickRepository implements LightTickRepository {
   readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
-  getNativeLearningCounts=this.nativeLearning.getNativeLearningCounts.bind(this.nativeLearning);
-  clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,()=>this.nativeLearning.clearNativeLearningStaging(owner));
+  getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
+  clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,async()=>{await this.learningRoutes.clearStaging(owner);await this.nativeLearning.clearNativeLearningStaging(owner);});
   listLearningReceipts=this.nativeLearning.listLearningReceipts.bind(this.nativeLearning);
   getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
   saveLearningAuthority=(...args:Parameters<PostgresNativeLearningStore["saveLearningAuthority"]>)=>this.transaction(args[0],()=>this.nativeLearning.saveLearningAuthority(...args));

@@ -1,4 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
+import {verifyImportedRoutes} from './learning-migration.routes.ts';
 import type {
   NativePrivateState,
   LearningHistoryEntry,
@@ -104,6 +105,10 @@ export class LearningMigrationService {
       history,
       receipts,
       counts: {
+        routes:m.routes.routes.length,
+        route_versions:m.routes.versions.length,
+        route_links:m.routes.links.length,
+        work:0,
         collections: m.collections.length,
         lessons: m.lessons.length,
         publications: m.publications.length,
@@ -270,6 +275,9 @@ export class LearningMigrationService {
           for (const row of m.lessons) await this.repo.saveNativeLesson(row, 0);
           for (const row of m.publications)
             await this.repo.insertLessonPublication(row);
+          for(const row of m.routes.routes)await this.repo.learningRoutes.saveLearningRoute(row,0);
+          for(const row of m.routes.versions)await this.repo.learningRoutes.insertLearningRouteVersion(row);
+          for(const row of m.routes.links)await this.repo.learningRoutes.insertRouteLessonLink(row);
           for (const row of resolved.states)
             await this.repo.saveNativePrivateState(row, 0);
           for (const row of resolved.history)
@@ -383,6 +391,7 @@ export class LearningMigrationService {
     resolved: ReturnType<LearningMigrationService["resolve"]>,
   ) {
     const actual = await this.repo.getNativeLearningCounts(owner);
+    await verifyImportedRoutes(this.repo.learningRoutes,owner,m.routes);
     for (const [name, count] of Object.entries(resolved.counts))
       if (name !== "receipts" && actual[name] !== count)
         fail(409, "Migration count mismatch: " + name);

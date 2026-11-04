@@ -156,6 +156,7 @@ export async function tryHandleNativeLearningRoutes(
     else {
       const collection = /^\/collections\/([^/]+)$/.exec(path),
         publish = /^\/lessons\/(lesson-[a-z0-9-]+)\/publications$/.exec(path),
+        currentLesson = /^\/lessons\/(lesson-[a-z0-9-]+)$/.exec(path),
         content =
           /^\/lessons\/(lesson-[a-z0-9-]+)\/versions\/([a-f0-9]{64})$/.exec(
             path,
@@ -180,8 +181,8 @@ export async function tryHandleNativeLearningRoutes(
           key,
           assertActive,
         );
-      else if (content && r.method === "GET") {
-        const x = await service.publication(owner, content[1], content[2]);
+      else if ((content || currentLesson) && r.method === "GET") {
+        const x = await service.publication(owner, content?.[1] ?? currentLesson![1], content?.[2]);
         result = {
           ...service.lessonData(x.lesson),
           content_version: x.publication.contentVersion,

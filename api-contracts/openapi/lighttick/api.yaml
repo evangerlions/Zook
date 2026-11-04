@@ -4890,6 +4890,44 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickNativeLearningWorkAdopt'
+  /api/v1/lighttick/learning/lessons/{lessonId}:
+    get:
+      operationId: nativeLearningCurrentPublication
+      tags:
+      - lighttick-learning
+      summary: Read current publication and lesson revision atomically
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
+      parameters:
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      responses:
+        '200':
+          description: Owner-scoped native learning result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningPublicationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -13497,7 +13535,9 @@ components:
           type: string
           pattern: ^[a-f0-9]{64}$
         created_at:
-          type: string
+          type:
+          - string
+          - 'null'
           format: date-time
     LightTickNativeLearningRoutePublishWrite:
       type: object

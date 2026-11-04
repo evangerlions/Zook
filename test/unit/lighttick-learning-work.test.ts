@@ -85,3 +85,17 @@ test('cancel polling aborts supported model transport without accepting a late c
  try{await Promise.race([Promise.all([running,aborted.promise]),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Cancellation did not abort model transport')),2500);})]);}finally{if(timer)clearTimeout(timer);}
  assert.equal((await f.work.read(owner,job.id)).status,'cancelled');assert.equal((await f.work.read(owner,job.id)).output,null);
 });
+
+test('final commit rejects membership revocation and a lease expiring during authorization',async()=>{
+ for(const expire of [false,true]){
+  const f=setup();let checks=0;
+  const runner=new LearningWorkRunner(f.work,f.llm,f.runner.sources,async()=>{
+   if(++checks===3){if(expire)f.advance(60000);else throw Object.assign(Error('Membership revoked'),{statusCode:403});}
+  });
+  const job=await f.work.create(owner,request(),'work-final-authorization');await runner.execute(owner,job.id);
+  const current=await f.work.read(owner,job.id);assert.equal(current.output,null);
+  assert.equal(current.status,expire?'running':'failed');
+  if(expire){await f.runner.execute(owner,job.id);assert.equal((await f.work.read(owner,job.id)).attempt,2);}
+  else assert.equal(current.error_code,'LEARNING_CONTEXT_STALE');
+ }
+});

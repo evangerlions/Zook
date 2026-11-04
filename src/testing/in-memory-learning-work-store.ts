@@ -4,6 +4,7 @@ import { ApplicationError } from "../shared/errors.ts";
 const key=(o:LightTickOwner,id:string)=>JSON.stringify([o.appId,o.userId,id]);
 export class InMemoryLearningWorkStore implements LearningWorkRepository {
   private values=new Map<string,LearningWork>();
+  countOwner(o:LightTickOwner){return [...this.values.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId).length;}
   snapshot(){return structuredClone([...this.values]);}
   restore(v:ReturnType<InMemoryLearningWorkStore["snapshot"]>){this.values=new Map(v);}
   deleteOwner(o:LightTickOwner){for(const [k,r]of this.values)if(r.appId===o.appId&&r.userId===o.userId)this.values.delete(k);}
