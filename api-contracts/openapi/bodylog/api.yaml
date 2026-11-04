@@ -8,6 +8,23 @@ info:
   description: Canonical app-scoped profile, social, leaderboard, invitation, and challenge API for BodyLog.
 servers:
   - url: https://api.zook.dev
+x-bodylog-feature-gates:
+  description: >-
+    Each authenticated route is checked server-side after authentication. A
+    disabled gate returns 404 with code BODYLOG_FEATURE_DISABLED. Missing flag
+    records are treated as disabled. Route families are listed by their path
+    prefix; challengeCreation applies only to POST /challenges.
+  accountSocial:
+    paths: [/profile, /friends, /friend-requests, /blocks, /reports, /invitations, /buddies, /groups, /notification-preferences, /push-devices]
+  friends:
+    paths: [/friends, /friend-requests, /blocks, /reports]
+  competition:
+    paths: [/leaderboards, /challenges]
+  challengeCreation:
+    paths: [/challenges]
+    methods: [POST]
+  growth:
+    paths: [/seven-day-plan, /missions, /rewards, /campaigns, /retention]
 security:
   - bearerAuth: []
 tags:
@@ -359,7 +376,7 @@ paths:
     post:
       operationId: recordBodyLogInvitationProgress
       tags: [bodylog-invitation]
-      summary: Record today's completed plan day for invitation qualification
+      summary: Reconcile recorded local-goal plan days for invitation qualification
       requestBody:
         required: true
         content:
@@ -493,18 +510,30 @@ paths:
   /api/v1/bodylog/buddies/encourage:
     post:
       operationId: encourageBodyLogBuddy
-      tags: [bodylog-buddy]
+      tags:
+      - bodylog-buddy
       summary: Send encouragement to buddy
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              { $ref: "#/components/schemas/BodyLogEncourageBuddyRequest" }
+              $ref: '#/components/schemas/BodyLogEncourageBuddyRequest'
       responses:
-        "200": { $ref: "#/components/responses/BuddyEncouragement" }
-        "400": { $ref: "#/components/responses/Error" }
-        "404": { $ref: "#/components/responses/Error" }
+        '200':
+          $ref: '#/components/responses/BuddyEncouragement'
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: Stable sender/pair operation ID. Same payload replays the original receipt; different payload returns BODYLOG_EVENT_CONFLICT.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
   /api/v1/bodylog/buddies/checkin:
     post:
       operationId: checkinBodyLogBuddy
@@ -539,6 +568,53 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/GroupList" }
         "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/preview:
+    get:
+      operationId: previewBodyLogGroupCode
+      tags: [bodylog-group]
+      summary: Preview the signed-in recipient's group invitation
+      description: Recipient-bound six-character code; seven-day expiry. Does not expose members or habits or activate membership.
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string, pattern: '^[A-HJ-NP-Za-hj-np-z2-9]{6}$' }
+      responses:
+        "200":
+          description: Minimal invitation preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BodyLogGroupCodePreviewResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "410": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/join-by-code:
+    post:
+      operationId: joinBodyLogGroupByCode
+      tags: [bodylog-group]
+      summary: Accept an invitation code for the signed-in recipient
+      description: Same-account replay returns the existing group without a second joined activity. Capacity and account quotas are checked atomically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^[A-HJ-NP-Za-hj-np-z2-9]{6}$' }
+                expectedGroupId: { type: string, minLength: 1, description: Preview identity; a mismatch returns 409 without joining. }
+      responses:
+        "200": { $ref: "#/components/responses/Group" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "410": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/groups/{groupId}:
     parameters:
       - $ref: "#/components/parameters/GroupId"
@@ -662,6 +738,11 @@ paths:
       tags: [bodylog-growth]
       summary: Enroll in a 7-day growth plan
       description: Requires the growth feature flag (disabled by default); returns 404 when disabled.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogGrowthPlanEnrollRequest" }
       responses:
         "200": { $ref: "#/components/responses/GrowthPlan" }
         "404": { $ref: "#/components/responses/Error" }
@@ -709,10 +790,32 @@ paths:
     post:
       operationId: completeBodyLogMission
       tags: [bodylog-growth]
-      summary: Mark a mission as completed
+      summary: Legacy manual completion endpoint; never marks a mission complete
+      description: Returns 409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED. Submit local daily goal aggregates instead.
       responses:
-        "200": { $ref: "#/components/responses/Mission" }
         "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}/daily-aggregate:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    post:
+      operationId: submitBodyLogGrowthDailyAggregate
+      tags: [bodylog-growth]
+      summary: Submit local-goal completion aggregate for one local calendar day
+      description: >-
+        Account-authenticated replacement by user and local date. One or more
+        eligible local goals completes that day's mission. Replaying the same
+        aggregate is idempotent; a changed aggregate for the same date replaces
+        prior progress. No habit IDs or raw check-in values are accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogGrowthDailyAggregateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/GrowthDailyAggregate" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
         "409": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/seven-day-plan/{planId}/rewards:
     parameters:
@@ -745,6 +848,8 @@ paths:
       security: []
       responses:
         "200": { $ref: "#/components/responses/PublicConfig" }
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/bodylog/notification-preferences:
     get:
       operationId: getBodyLogNotificationPreferences
@@ -801,12 +906,558 @@ paths:
         "200": { $ref: "#/components/responses/PushDeviceRemoved" }
         "401": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/invitations/preview:
+    get:
+      operationId: previewBodyLogInvitation
+      tags:
+      - bodylog-invitation
+      summary: Preview exactly one code or token without binding or exposing personal data
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    $ref: '#/components/schemas/BodyLogInvitationPreviewData'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: code
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 6
+          maxLength: 6
+      - name: token
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 512
+  /api/v1/bodylog/invitations/{token}:
+    delete:
+      operationId: revokeBodyLogInvitation
+      tags:
+      - bodylog-invitation
+      summary: Idempotently revoke an owned growth invitation
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: object
+                    required:
+                    - revoked
+                    properties:
+                      revoked:
+                        type: boolean
+                        const: true
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,512}$
+  /api/v1/bodylog/entitlements:
+    get:
+      operationId: getBodyLogAccountEntitlements
+      tags:
+      - bodylog-growth
+      summary: Read continuous current entitlement and separate queued promotional grants
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    $ref: '#/components/schemas/BodyLogAccountEntitlementsData'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/bodylog/missions:
+    get:
+      operationId: listBodyLogUnifiedMissions
+      tags:
+      - bodylog-growth
+      summary: Read own seven-day and invitation missions
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BodyLogUnifiedMission'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/bodylog/rewards:
+    get:
+      operationId: listBodyLogUnifiedRewards
+      tags:
+      - bodylog-growth
+      summary: Read own reward sources and confirmed grants
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BodyLogUnifiedReward'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/bodylog/campaigns/active:
+    get:
+      operationId: listBodyLogActiveCampaigns
+      tags:
+      - bodylog-growth
+      summary: Read configured active campaigns; unconfigured returns an empty list
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: object
+                    required:
+                    - campaigns
+                    properties:
+                      campaigns:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BodyLogCampaign'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/bodylog/retention/events:
+    post:
+      operationId: recordBodyLogRetentionEvent
+      tags:
+      - bodylog-growth
+      summary: Record an explicitly consented minimal action event; idempotent eventId
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: object
+                    required:
+                    - accepted
+                    properties:
+                      accepted:
+                        type: boolean
+                        const: true
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BodyLogRetentionEventRequest'
+  /api/v1/bodylog/retention/assignment:
+    get:
+      operationId: getBodyLogRetentionAssignment
+      tags:
+      - bodylog-growth
+      summary: Read stable server-assigned experiment bucket; disabled by default
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    $ref: '#/components/schemas/BodyLogRetentionAssignment'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/v1/bodylog/campaigns/{campaignId}/join:
+    post:
+      operationId: joinBodyLogCampaign
+      tags:
+      - bodylog-growth
+      summary: Join account campaign participation; server review required for first claim
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: object
+                    required:
+                    - participation
+                    properties:
+                      participation:
+                        $ref: '#/components/schemas/BodyLogCampaignParticipation'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+  /api/v1/bodylog/campaigns/{campaignId}/participation:
+    get:
+      operationId: participationBodyLogCampaign
+      tags:
+      - bodylog-growth
+      summary: Participation account campaign participation; server review required for first claim
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: object
+                    required:
+                    - participation
+                    properties:
+                      participation:
+                        $ref: '#/components/schemas/BodyLogCampaignParticipation'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+  /api/v1/bodylog/campaigns/{campaignId}/submit:
+    post:
+      operationId: submitBodyLogCampaign
+      tags:
+      - bodylog-growth
+      summary: Submit account campaign participation; server review required for first claim
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    type: object
+                    required:
+                    - participation
+                    properties:
+                      participation:
+                        $ref: '#/components/schemas/BodyLogCampaignParticipation'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - platform
+              - url
+              properties:
+                platform:
+                  type: string
+                url:
+                  type: string
+                  format: uri
+                  maxLength: 2048
+      parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+  /api/v1/bodylog/campaigns/{campaignId}/claim:
+    post:
+      operationId: claimBodyLogCampaign
+      tags:
+      - bodylog-growth
+      summary: Claim account campaign participation; server review required for first claim
+      responses:
+        '200':
+          description: Confirmed account-scoped response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - code
+                - data
+                properties:
+                  code:
+                    type: string
+                    const: OK
+                  data:
+                    $ref: '#/components/schemas/BodyLogCampaignClaimData'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
+  /api/v1/bodylog/buddies/encouragements:
+    post:
+      operationId: createBodyLogDurableEncouragement
+      tags:
+      - bodylog-buddy
+      summary: Deliver an idempotent encouragement through a protocol-specific route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BodyLogEncourageBuddyRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BuddyEncouragement'
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: Stable sender/pair operation ID. Same payload replays the original
+          receipt; different payload returns BODYLOG_EVENT_CONFLICT.
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,128}$
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     FriendRequestId:
       name: requestId
@@ -1062,6 +1713,11 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/BodyLogGrowthPlanResponse" }
+    GrowthDailyAggregate:
+      description: Persisted local-goal aggregate after mission progress recalculation
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGrowthDailyAggregateResponse" }
     MissionList:
       description: List of missions
       content:
@@ -1166,9 +1822,13 @@ components:
     BodyLogInvitationAttributeRequest:
       type: object
       additionalProperties: false
-      required: [token, installId]
+      required: [installId]
+      oneOf:
+        - required: [token]
+        - required: [code]
       properties:
-        token: { type: string, minLength: 1 }
+        token: { type: string, minLength: 1, maxLength: 512 }
+        code: { type: string, pattern: "^[A-Z2-9]{6}$" }
         installId: { type: string, minLength: 8 }
     BodyLogInvitationProgressRequest:
       type: object
@@ -1530,6 +2190,9 @@ components:
           acceptedAt,
         ]
       properties:
+        canAcceptInvitation:
+          type: boolean
+          description: Whether the authenticated viewer may accept this unexpired addressed pending invitation. Server authorization is still enforced.
         id: { type: string }
         partnerUserId: { type: string }
         partnerNickname: { type: string }
@@ -2039,8 +2702,13 @@ components:
         message: { type: string }
         data:
           type: object
-          required: [invited]
-          properties: { invited: { type: boolean, const: true } }
+          required: [invited, code, expiresAt, invitationUrl, invitationToken]
+          properties:
+            invited: { type: boolean, const: true }
+            code: { type: string, pattern: '^[A-HJ-NP-Z2-9]{6}$' }
+            expiresAt: { type: string, format: date-time }
+            invitationUrl: { type: string, format: uri }
+            invitationToken: { type: string, description: Addressed recipient grant; the same token is embedded in invitationUrl. }
         requestId: { type: string }
     BodyLogGroupResponse:
       type: object
@@ -2141,6 +2809,14 @@ components:
         code: { type: string }
         message: { type: string }
         data: { $ref: "#/components/schemas/BodyLogGrowthPlanData" }
+        requestId: { type: string }
+    BodyLogGrowthDailyAggregateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogGrowthDailyAggregateData" }
         requestId: { type: string }
     BodyLogMissionListResponse:
       type: object
@@ -2291,6 +2967,35 @@ components:
         totalMissions: { type: integer, minimum: 0 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        timeZone: { type: string }
+    BodyLogGrowthPlanEnrollRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        timeZone: { type: string, minLength: 1, maxLength: 64, example: Asia/Shanghai }
+    BodyLogGrowthDailyAggregateRequest:
+      type: object
+      additionalProperties: false
+      required: [localDate, timeZone, completedGoalCount, eligibleGoalCount, definitionVersion, eventId]
+      properties:
+        localDate: { type: string, format: date }
+        timeZone: { type: string, minLength: 1, maxLength: 64 }
+        completedGoalCount: { type: integer, minimum: 0, maximum: 500 }
+        eligibleGoalCount: { type: integer, minimum: 0, maximum: 500 }
+        definitionVersion: { type: integer, const: 1 }
+        eventId: { type: string, format: uuid }
+    BodyLogGrowthDailyAggregateData:
+      type: object
+      required: [userId, localDate, timeZone, completedGoalCount, eligibleGoalCount, definitionVersion, eventId, updatedAt]
+      properties:
+        userId: { type: string }
+        localDate: { type: string, format: date }
+        timeZone: { type: string }
+        completedGoalCount: { type: integer, minimum: 0 }
+        eligibleGoalCount: { type: integer, minimum: 0 }
+        definitionVersion: { type: integer, const: 1 }
+        eventId: { type: string, format: uuid }
+        updatedAt: { type: string, format: date-time }
     BodyLogMissionData:
       type: object
       required: [id, planId, day, type, target, completed, completedAt, createdAt]
@@ -2298,7 +3003,7 @@ components:
         id: { type: string }
         planId: { type: string }
         day: { type: integer, minimum: 1, maximum: 7 }
-        type: { type: string, enum: [steps, water, sleep] }
+        type: { type: string, enum: [steps, water, sleep, localGoal] }
         target: { type: integer, minimum: 0 }
         completed: { type: boolean }
         completedAt: { type: [string, "null"], format: date-time }
@@ -2314,3 +3019,479 @@ components:
         claimed: { type: boolean }
         claimedAt: { type: [string, "null"], format: date-time }
         createdAt: { type: string, format: date-time }
+
+    BodyLogInvitationPreviewData:
+      type: object
+      required:
+      - intent
+      - code
+      - expiresAt
+      properties:
+        intent:
+          type: string
+          enum:
+          - general
+          - buddy
+          - group
+        code:
+          type:
+          - string
+          - 'null'
+        expiresAt:
+          type: string
+          format: date-time
+    BodyLogEffectiveEntitlement:
+      type: object
+      required:
+      - isPremium
+      - sources
+      - premiumUntil
+      properties:
+        isPremium:
+          type: boolean
+        sources:
+          type: array
+          items:
+            type: string
+        premiumUntil:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    BodyLogPromotionalEntitlement:
+      type: object
+      required:
+      - id
+      - userId
+      - source
+      - sourceId
+      - type
+      - value
+      - startsAt
+      - endsAt
+      - createdAt
+      - campaignId
+      - participationId
+      - status
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        source:
+          type: string
+          enum:
+          - invitation
+          - campaign
+          - buddy
+          - group
+        sourceId:
+          type: string
+        type:
+          type: string
+          const: premium
+        value:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        campaignId:
+          type: string
+        participationId:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - queued
+          - expired
+    BodyLogAccountEntitlementsData:
+      type: object
+      required:
+      - effective
+      - promotional
+      properties:
+        effective:
+          $ref: '#/components/schemas/BodyLogEffectiveEntitlement'
+        promotional:
+          type: array
+          items:
+            $ref: '#/components/schemas/BodyLogPromotionalEntitlement'
+    BodyLogUnifiedMission:
+      type: object
+      required:
+      - id
+      - source
+      - planId
+      - day
+      - completed
+      - target
+      - completedUnits
+      - completedAt
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+          enum:
+          - sevenDayPlan
+          - invitation
+        planId:
+          type: string
+        day:
+          type: integer
+          minimum: 0
+        completed:
+          type: boolean
+        target:
+          type: integer
+          minimum: 0
+        completedUnits:
+          type: integer
+          minimum: 0
+        completedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    BodyLogUnifiedReward:
+      type: object
+      required:
+      - id
+      - source
+      - type
+      - value
+      - status
+      - createdAt
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+          enum:
+          - sevenDayPlan
+          - invitation
+          - campaign
+          - buddy
+          - group
+        type:
+          type: string
+          enum:
+          - badge
+          - premium
+        value:
+          type: string
+        status:
+          type: string
+          enum:
+          - claimed
+          - claimable
+          - progressing
+        createdAt:
+          type: string
+          format: date-time
+        planId:
+          type: string
+        sourceId:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        claimedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    BodyLogCampaignParticipation:
+      type: object
+      required:
+      - id
+      - campaignId
+      - status
+      - verificationLevel
+      - rewardClaimStatus
+      - retryRemaining
+      - reviewTargetHours
+      - expiresAt
+      properties:
+        id:
+          type:
+          - string
+          - 'null'
+        campaignId:
+          type: string
+        status:
+          type: string
+          enum:
+          - none
+          - created
+          - manual_review
+          - verified
+          - rejected
+          - claimed
+        verificationLevel:
+          type: string
+          enum:
+          - none
+          - manual_review_required
+          - public_link_verified
+          - rejected
+        rewardClaimStatus:
+          type: string
+          enum:
+          - not_eligible
+          - ready_to_claim
+          - claimed
+        retryRemaining:
+          type: integer
+          minimum: 0
+        reviewTargetHours:
+          type: integer
+          minimum: 0
+        expiresAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        claimCode:
+          type: string
+        submittedUrl:
+          type: string
+          format: uri
+        normalizedUrl:
+          type: string
+          format: uri
+        platform:
+          type: string
+        rejection:
+          type:
+          - object
+          - 'null'
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retryAllowed:
+              type: boolean
+            retryRemaining:
+              type: integer
+              minimum: 0
+        shareCopy:
+          type: object
+          required:
+          - title
+          - text
+          - requiredCode
+          properties:
+            title:
+              type: string
+            text:
+              type: string
+            requiredCode:
+              type: string
+    BodyLogCampaign:
+      type: object
+      required:
+      - id
+      - status
+      - title
+      - subtitle
+      - startsAt
+      - endsAt
+      - reward
+      - rules
+      - platformPolicy
+      - participation
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          const: active
+        title:
+          type: string
+        subtitle:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        reward:
+          type: object
+          required:
+          - type
+          - durationDays
+          - displayText
+          properties:
+            type:
+              type: string
+              const: premium
+            durationDays:
+              type: integer
+              minimum: 1
+              maximum: 31
+            displayText:
+              type: string
+        rules:
+          type: array
+          items:
+            type: string
+        platformPolicy:
+          type: object
+          required:
+          - allowedPlatforms
+          - freeFormAllowed
+          - oauthPlatforms
+          - manualReviewPlatforms
+          properties:
+            allowedPlatforms:
+              type: array
+              items:
+                type: string
+            freeFormAllowed:
+              type: boolean
+            oauthPlatforms:
+              type: array
+              items:
+                type: string
+            manualReviewPlatforms:
+              type: array
+              items:
+                type: string
+        participation:
+          $ref: '#/components/schemas/BodyLogCampaignParticipation'
+    BodyLogCampaignClaimData:
+      type: object
+      required:
+      - reward
+      - effectiveEntitlement
+      properties:
+        reward:
+          type: object
+          required:
+          - claimStatus
+          - entitlementId
+          - entitlementStatus
+          - startsAt
+          - endsAt
+          properties:
+            claimStatus:
+              type: string
+              const: claimed
+            entitlementId:
+              type: string
+            entitlementStatus:
+              type: string
+              enum:
+              - active
+              - queued
+              - expired
+            startsAt:
+              type: string
+              format: date-time
+            endsAt:
+              type: string
+              format: date-time
+        effectiveEntitlement:
+          $ref: '#/components/schemas/BodyLogEffectiveEntitlement'
+    BodyLogRetentionEventRequest:
+      type: object
+      required:
+      - eventId
+      - name
+      - properties
+      - timestamp
+      - consent
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          enum:
+          - growth_card_opened
+          - local_goal_completed
+          - invitation_created
+          - invitation_opened
+          - invitation_attributed
+          - buddy_encouragement_sent
+          - seven_day_plan_opened
+          - seven_day_plan_completed
+          - reward_claimed
+        properties:
+          type: object
+          additionalProperties: false
+          properties:
+            source:
+              type: string
+              enum:
+              - dashboard
+              - home
+              - invitation
+              - buddy
+              - plan
+            state:
+              type: string
+              enum:
+              - active
+              - completed
+              - queued
+            action:
+              type: string
+              enum:
+              - open
+              - complete
+              - retry
+              - claim
+        timestamp:
+          type: string
+          format: date-time
+        consent:
+          type: boolean
+          const: true
+    BodyLogRetentionAssignment:
+      type: object
+      required:
+      - experimentId
+      - variant
+      properties:
+        experimentId:
+          type: string
+        variant:
+          type: string
+          enum:
+          - control
+          - treatment
+
+    BodyLogGroupCodePreviewResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [id, name, currentMembers, maxMembers, expiresAt]
+          additionalProperties: false
+          properties:
+            id: { type: string }
+            name: { type: string }
+            currentMembers: { type: integer, minimum: 0 }
+            maxMembers: { type: integer, minimum: 2, maximum: 5 }
+            expiresAt: { type: string, format: date-time }
+        requestId: { type: string }

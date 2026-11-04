@@ -25,9 +25,7 @@ export function buildSleepSummaryArtifact(input: {
         ? "interrupted"
         : hadRecovery
           ? "recovered"
-          : input.completed
-            ? "morning_completed"
-            : "in_progress";
+          : "in_progress";
   return {
     artifact_version: SLEEP_ARTIFACT_VERSION,
     visible_state: visibleState,
@@ -72,11 +70,11 @@ function resultState(state: unknown, input: {
   completed: boolean;
 }) {
   const normalized = String(state ?? "");
-  if (normalized === "paused_tonight" || input.pausedTonight) return "paused";
+  if (normalized === "paused_tonight") return "paused";
   if (normalized === "morning_completed") return "completed";
   if (normalized === "returned" || (input.interruptedCount > 0 && input.returnedCount > 0)) return "recovered";
   if (normalized === "interrupted" || input.interruptedCount > 0) return "interrupted";
-  return input.completed ? "completed" : "incomplete";
+  return "incomplete";
 }
 
 function combinedResultTypeFor(myResultState: string, partnerResultState: string | null, input: {

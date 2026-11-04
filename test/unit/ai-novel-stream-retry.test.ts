@@ -1,3 +1,4 @@
+import { unmeteredTestCreditsFlow } from "../support/unmetered-test-credits-flow.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -17,6 +18,30 @@ async function collect<T>(stream: AsyncIterable<T>): Promise<T[]> {
   }
   return chunks;
 }
+
+test("manual chat preference reaches LLM and never retries a different logical model", async () => {
+  const calls: string[] = [];
+  const preferences: unknown[] = [];
+  const service = new AiNovelLlmService(
+    unmeteredTestCreditsFlow,
+    { stream: async function* ({ modelKey }: { modelKey: string }) {
+      calls.push(modelKey);
+      throw new ApplicationError(503, "LLM_PROVIDER_REQUEST_FAILED", "timeout", { reason: "timeout" });
+    } } as never,
+    {} as never,
+    { resolveChatModelKey: async (_identity: unknown, options: { selection: unknown }) => {
+      preferences.push(options.selection);
+      return "manual-model";
+    } } as never,
+  );
+  await assert.rejects(() => collect(service.createChatCompletionStream({
+    sceneKey: "write_turn", agentProtocol: "pi-v1",
+    modelSelection: { mode: "manual", modelKey: "manual-model" },
+    messages: [{ role: "user", content: "hello" }],
+  })), /timed out/);
+  assert.deepEqual(calls, ["manual-model"]);
+  assert.deepEqual(preferences, [{ mode: "manual", modelKey: "manual-model" }]);
+});
 
 test("AINovel stream retries once with an excluded model before the first chunk", async () => {
   const selectedModels: string[] = [];
@@ -180,6 +205,7 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
     new InMemoryDatabase(),
   );
   const service = new AiNovelLlmService(
+    unmeteredTestCreditsFlow,
     {
       stream: async function* ({ modelKey }: { modelKey: string }) {
         modelCalls.push(modelKey);
@@ -258,6 +284,7 @@ test("AINovel internal compaction completion is not recorded as a user conversat
     new InMemoryDatabase(),
   );
   const service = new AiNovelLlmService(
+    unmeteredTestCreditsFlow,
     {
       async complete() {
         return {

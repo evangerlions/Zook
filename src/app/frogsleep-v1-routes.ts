@@ -1,3 +1,4 @@
+import { tryHandlePrivateSleepData } from "./frogsleep-private-data-routes.ts";
 import { randomUUID } from "node:crypto";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -5,6 +6,7 @@ import { FROGSLEEP_APP_ID } from "../modules/frogsleep/frogsleep-app.ts";
 import { FrogSleepFocusBuddyService } from "../modules/frogsleep/focus-buddy/focus-buddy.service.ts";
 import { LegacyBuddyInvitationAdapter } from "../modules/frogsleep/buddy-growth/legacy-buddy-invitation-adapter.ts";
 import { FrogSleepProductDataService } from "../modules/frogsleep/product-data/frogsleep-product-data.service.ts";
+import { FrogSleepGuestUpgradeService } from "../modules/frogsleep/product-data/frogsleep-guest-upgrade.service.ts";
 import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-analytics.ts";
 import { parsePaginationParams } from "../modules/frogsleep/frogsleep-validation.ts";
 import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
@@ -120,7 +122,6 @@ async function trackInviteOpenBestEffort(track: () => Promise<void>): Promise<vo
   }
 }
 
-
 export async function tryHandleFrogSleepV1Routes(
   this: BackendRouteContext,
   request: HttpRequest,
@@ -193,6 +194,8 @@ export async function tryHandleFrogSleepV1Routes(
   }
   const routePath = normalizeFrogSleepPath(request.path);
   const routeRequest = routePath === request.path ? request : { ...request, path: routePath };
+  const privateData = await tryHandlePrivateSleepData(this, routeRequest);
+  if (privateData) return privateData;
 
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/auth/email/send-code") {
     return await handleFrogSleepEmailCode(this, routeRequest);
@@ -355,7 +358,7 @@ export async function tryHandleFrogSleepV1Routes(
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/stats/week") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await focusBuddyService(this).weekStats(auth.userId), routeRequest.requestId as string);
+    return frogSleepOk(this, await focusBuddyService(this).weekStats(auth.userId, routeRequest.query?.week_start ?? routeRequest.query?.weekStart), routeRequest.requestId as string);
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/achievements") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
@@ -555,18 +558,6 @@ export async function tryHandleFrogSleepV1Routes(
       routeRequest.requestId as string,
     );
   }
-  if (routeRequest.method === "POST" && routeRequest.path === "/v1/product-data/sleep-reports") {
-    const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await productDataService(this).createSleepReport(auth.userId, asBody(routeRequest)), routeRequest.requestId as string);
-  }
-  if (routeRequest.method === "GET" && routeRequest.path === "/v1/product-data/sleep-reports") {
-    const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(
-      this,
-      await productDataService(this).listSleepReports(auth.userId, parsePaginationParams(routeRequest.query)),
-      routeRequest.requestId as string,
-    );
-  }
   const productProgressMatch = routeRequest.path.match(/^\/v1\/product-data\/progress\/([^/]+)$/);
   if ((routeRequest.method === "PUT" || routeRequest.method === "PATCH") && productProgressMatch) {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
@@ -589,6 +580,16 @@ export async function tryHandleFrogSleepV1Routes(
     return frogSleepOk(
       this,
       dualResourcePayload("entitlement", await productDataService(this).currentEntitlement(auth.userId)),
+      routeRequest.requestId as string,
+    );
+  }
+  if (routeRequest.method === "POST" && routeRequest.path === "/v1/account/upgrade") {
+    const auth = await authenticateFrogSleepRequest(this, routeRequest);
+    const body = asBody(routeRequest);
+    const guestDeviceId = typeof body.guest_device_id === "string" ? body.guest_device_id.trim() : "";
+    return frogSleepOk(
+      this,
+      await new FrogSleepGuestUpgradeService().upgradeGuestData(guestDeviceId, auth.userId),
       routeRequest.requestId as string,
     );
   }

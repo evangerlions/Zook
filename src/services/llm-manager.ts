@@ -1,8 +1,12 @@
 import { withContextUsage } from "./llm-context-window.ts";
+import { LlmCallObservationSession } from "./llm-call-observation.ts";
+import { calculateLlmPointMicros } from "./llm-point-pricing.ts";
+import { normalizeLlmUsage } from "./llm-usage-normalizer.ts";
 import { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
 import { LlmRequestResolver, type ResolvedLlmRequest } from "./llm-request-resolver.ts";
 import { isLlmCallerCancelledError } from "./llm-caller-cancellation.ts";
 import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
+import { isLlmBalanceFailure } from "./llm-balance-failure.ts";
 import type {
   LLMCompleteViaStreamOptions,
   LLMCompletionRequest,
@@ -62,6 +66,7 @@ export class LLMManager {
 
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResult> {
     const resolution = await this.requestResolver.resolve(request);
+    assertPricingAvailable(resolution);
     const startedAt = this.getNow();
     const observation = this.startObservation(resolution, "non_stream", startedAt);
 
@@ -70,7 +75,7 @@ export class LLMManager {
         resolution.request.model.provider
       ].complete(resolution.request);
       const usage = withContextUsage(
-        result.usage ?? estimateCompletionUsage(result, resolution.request),
+        normalizeLlmUsage(result.usage) ?? estimateCompletionUsage(result, resolution.request),
       );
       const completedAt = this.getNow();
       await observation?.finalize({ usage, completedAt });
@@ -101,6 +106,7 @@ export class LLMManager {
     options: LLMCompleteViaStreamOptions = {},
   ): Promise<LLMCompletionResult> {
     const resolution = await this.requestResolver.resolve(request);
+    assertPricingAvailable(resolution);
     const startedAt = this.getNow();
     const observation = this.startObservation(resolution, "stream", startedAt);
     let firstByteLatencyMs: number | undefined;
@@ -173,7 +179,7 @@ export class LLMManager {
             usageEstimate.addFinalToolCall(event.toolCall);
             break;
           case "usage":
-            usage = withContextUsage(event.usage);
+            usage = withContextUsage(normalizeLlmUsage(event.usage)) ?? usage;
             break;
           case "done":
             finishReason = event.finishReason;
@@ -228,6 +234,7 @@ export class LLMManager {
   async *stream(request: LLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
     if (request.signal?.aborted) return;
     const resolution = await this.requestResolver.resolve(request);
+    assertPricingAvailable(resolution);
     if (request.signal?.aborted) return;
     const startedAt = this.getNow();
     const observation = this.startObservation(resolution, "stream", startedAt);
@@ -260,11 +267,13 @@ export class LLMManager {
             yield event;
             break;
           case "usage":
-            usage = withContextUsage(event.usage);
-            yield {
-              ...event,
-              usage,
-            };
+            {
+              const validUsage = withContextUsage(normalizeLlmUsage(event.usage));
+              if (validUsage) {
+                usage = validUsage;
+                yield { ...event, usage };
+              }
+            }
             break;
           case "done": {
             const completedAt = this.getNow();
@@ -375,18 +384,21 @@ export class LLMManager {
     const recorder = this.options.llmCallObservationRecorder ??
       this.options.llmMetricsService?.observationRecorder;
     const route = resolution.routeRef;
-    return recorder?.start({
+    const context = {
+      onUsageFinalized: resolution.request.onUsageFinalized,
       appId: resolution.request.usageOwner?.appId,
       callPurpose: resolution.request.callPurpose,
       routingModelKey: route.modelKey,
       provider: route.provider,
       providerModel: route.providerModel,
-      operation: "chat",
+      operation: "chat" as const,
       responseMode,
       routingConfigRevision: resolution.routingConfigRevision,
+      pointPricing: resolution.request.model.pointPricing,
       startedAt,
       now: this.options.now,
-    });
+    };
+    return recorder?.start(context) ?? (context.onUsageFinalized ? new LlmCallObservationSession(undefined, context) : undefined);
   }
 
   private addUsageEstimateEvent(
@@ -419,7 +431,7 @@ export class LLMManager {
     usage: LLMUsage | undefined,
     occurredAt: Date,
   ): Promise<void> {
-    if (!owner || !usage) {
+    if (!owner?.userId || !usage) {
       return;
     }
     try {
@@ -469,6 +481,7 @@ export class LLMManager {
         resolution.request.usageOwner?.userId,
         resolution.circuitBreakerEnabled,
         llmErrorDiagnosticCode(error),
+        isLlmBalanceFailure(resolution.routeRef.provider, error),
       );
       if (confirmation) {
         void Promise.resolve(
@@ -522,5 +535,12 @@ function isEffectiveStreamEvent(event: LLMStreamEvent): boolean {
       return false;
     default:
       return false;
+  }
+}
+
+function assertPricingAvailable(resolution: ResolvedLlmRequest): void {
+  if (!resolution.request.requirePointPricing) return;
+  if (calculateLlmPointMicros({ promptTokens: 0, completionTokens: 0, totalTokens: 0 }, resolution.request.model.pointPricing) === undefined) {
+    throw new ApplicationError(503, "AINOVEL_CREDITS_PRICE_UNAVAILABLE", "The selected AI model does not have valid point pricing.");
   }
 }

@@ -1,5 +1,23 @@
 # API Interface Specification
 
+Grow H5 的兼容部署入口为 `/grow/`，其原 Python API 经 `/grow/api/*` 转发，
+使用独立 Grow 会话 Cookie（Path=/grow/），不接受 Zook Admin 会话作为用户登录。
+子路径部署使用 `zook_grow_session` Cookie，避免旧服务的根路径 Cookie 冲突。
+`PLAN_CONTENT_BACKEND=postgresql` 时，记录与课程正文均由 PostgreSQL 持久化，
+`/grow/api/storage-status.formal_markdown`、课程/规划响应的 `storage` 为 `postgresql`；
+数据库课程不生成 GitHub 链接，原 `github_url` 可为 null。
+`/grow/api/account/github` 兼容配置响应新增 `storage_backend`，界面据此显示当前内容存储。
+这些是迁移保留的 H5 兼容路径，不是新增的平台公共 API；原生 LightTick 接入仍以
+本文 `/api/v1/lighttick/*` canonical 合同为准。部署见 [Grow H5](docs/grow-h5-deployment.md)。
+
+### AINovel 试运营额度（2026-10-20）
+
+Free / Plus / Pro 的独立 7 天周期额度分别为 200 / 1000 / 4000 credits。
+公开套餐权益中的免费额度倍率由同一额度策略计算，Plus 为 5X，Pro 为 20X，
+随现有 locale 系统本地化下发。既有 Free 账号在同周期首次同步时仅补 180 credits
+差额，保留已消耗量、活动余额与刷新日期；重复读取不重复补发。购买时长与额度
+重置周期无关。个人剩余额度仍通过原有受认证的 credits 接口读取。
+
 ## 1. 文档目标
 
 本文档只面向外部 App / Web / H5 接入方。
@@ -21,6 +39,12 @@
 - [docs/admin-api-spec.md](docs/admin-api-spec.md)
 - [docs/frogsleep-buddy-operations-runbook.md](docs/frogsleep-buddy-operations-runbook.md)
 - [docs/frogsleep-buddy-security-review.md](docs/frogsleep-buddy-security-review.md)
+
+### 2026-10-25 合同校验对齐
+
+公共合同补齐既有鉴权/参数错误响应，并将日志、文件、通知、配置、FrogSleep 私有同步与邀请、LightTick 资源响应接到对应的数据模型；未新增运行时接口。FrogSleep 通知类型继续允许兼容及未来字符串，邀请投递允许 `not_queued` 且该状态不要求尝试次数。邀请落地链接仍为 302 预览跳转，旧 BodyLog 手动完成接口仍返回 409。加密 AI 接口的 `x-decrypted-*` 引用只说明加密内层模型，不是明文网络载荷。
+
+规则检查和逐节点语义例外说明见 [OpenAPI 质量记录](docs/openapi-quality-20261025.md)，唯一合同来源仍为 `api-contracts/openapi/`。
 
 ## 2. 核心原则
 
@@ -257,6 +281,8 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 `reminder.intervalSeconds` 提供可选升级提醒的次数与最小间隔；`mandatory` 强制升级不受
 提醒次数限制。产物可选提供 `messageI18n`（locale 到文本的映射），客户端只在存在当前
 语言文本时显示；未配置时不显示客户端内置的替代更新消息。
+AINovel 的 `GET /api/v1/ai_novel/public/config` 响应 `data.countryCode` 可选，表示根据当前请求可信代理信息或 IP 推断的 ISO 3166-1 alpha-2 国家代码；无法确定时省略。该响应为请求特定数据，设置 `Cache-Control: private, no-store`。客户端应在返回有效值时更新本地缓存。
+
 AINovel 读取既有 `GET /api/v1/ai_novel/public/config` 时，也会在 `config.releaseUpdate`
 中收到同一份 AINovel 专属投影，便于客户端减少一次请求。
 
@@ -372,10 +398,14 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
+| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
+| `GET`  | `/api/v1/ai_novel/billing/catalog`        | 获取当前渠道可用的 Plus / Pro 月度、季度、年度商品与支付方式；按 app scope 和账号当前权益返回可用性                              |
+| `POST` | `/api/v1/ai_novel/billing/sync`           | 统一同步支付宝或 RevenueCat 会员；客户端不得提交 receipt、token 或用户 ID                                              |
+| `POST` | `/api/v1/ai_novel/billing/webhooks/revenuecat` | 接收 RevenueCat 事件并重新读取服务端订阅快照；仅供 RevenueCat 调用                                                       |
 | `POST` | `/api/v1/ai_novel/ai-output-reports`      | 提交 AI 消息或章节 revision 举报；按客户端 `submissionId` 幂等，举报原文在服务端加密存储                                              |
 | `POST` | `/api/v1/ai_novel/ai-output-reactions`    | 提交最新生成章节的轻量 reaction；当前支持 `chapter_revision + like`                                                                |
 | `POST` | `/api/v1/frogsleep/auth/password/login`    | FrogSleep 密码登录，内部固定使用 `appId=frogsleep`                                                                                   |
@@ -465,8 +495,52 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 当 `hasPassword = false` 的账号尝试 `POST /api/v1/auth/login` 密码登录时，服务端返回 `401 AUTH_PASSWORD_NOT_SET`，`message` 会按请求语言本地化，提示用户先使用验证码登录并在账号设置中设置密码。
 如果账号不存在，密码登录返回 `401 AUTH_ACCOUNT_NOT_FOUND`，`message` 会按请求语言本地化提示账号不存在；如果账号存在但密码错误，仍返回 `401 AUTH_INVALID_CREDENTIAL`。
 
+登录和刷新响应中的 accessToken、refreshToken 均作为 opaque credential 使用；当前 access token 实现不是标准 JWT，客户端不得拆解 token 推断身份或权限。App 的 `scope=current` 登出须在 JSON body 提供当前 refreshToken，Web 可使用 HttpOnly refresh cookie；`scope=all` 无需 refreshToken。单设备登出撤销 refresh 凭证，不承诺立即使已发 access token 失效；健康产品另需可撤销的设备会话。
+
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+19a. AINovel Billing 使用 `/api/v1/ai_novel/billing/...` 产品命名空间。`GET /api/v1/users/me` 的 `data.membership` 只表示当前 Bearer Token app scope 下的权益；同一用户在不同 app 的权益互不通用。App Store 与 Google Play 使用 RevenueCat；CN 中国 Android 应用商店、官网直装 Android、Web、Windows 在显式配置启用后支持一次性支付宝会员。全球 Web / Windows 用户引导至 iOS 或 Android 订阅。
+
+公开 catalog 的每个 product 另含 `benefits:[{key,text,included,order,comingSoon}]` 和 `usage:{credits,resetPeriod:"P7D"}`。文案复用现有 locale query / X-App-Locale / Accept-Language 解析及语言回退，不在 data 回传 locale；客户端只展示排序后的文案及勾选/灰色状态，comingSoon 不显示为已可用。公共额度复用实际创作点策略，不能当个人剩余余额或授权结果。现有 app config `ai_novel.billing_benefits` 可分别覆盖 plus/pro 数组，text 使用 locale→文案的对象，`{credits}` 引用实际档位额度；未配置档位使用默认值。默认提供全部 20 种语言，缺失配置语言沿用共享语言回退。该配置不是计费或权限配置。客户端缓存需包含权益并按请求语言隔离；相同内容不闪烁，内容改变立即更新。
+
+`products[].purchaseSubtitle` 是服务端按同一 locale 系统解析的可选支付按钮副标题（字符串或 null）。未配置、缺失、null 或空白时客户端隐藏整行，不按支付渠道/周期生成默认文案；客户端目录缓存及店铺报价适配必须保留此字段，服务端更新或清空后刷新即生效。
+
+`products[].purchaseTitle` 是可选的本地化主按钮完整文案。非空时直接显示；缺失、null、空白时回退客户端当前语言的默认「立即开通」。客户端不得自动追加价格、分隔符或周期文案，月/季/年规则一致；不覆盖登录或渠道不可用状态。缓存及店铺报价适配同样保留此字段。
+
+catalog 的可选 `display:{title,agreement,plusLabel,proLabel}` 与产品的 `periodLabel` 为完整本地化文案；缺失/null/空白时使用客户端对应的必要多语言默认值。`products[].displayName` 为完整商品名，不解析 productKey 拼接；`badgeText` 为可选营销标签，未配置就隐藏，不按周期推断试用或划线原价。所有展示字段随现有目录缓存保存、更新和清空。`providers[].price.localizedDisplay` 为完整格式化价格；App Store/Google Play 客户端仍以商店 SDK 返回的价格字符串优先，旧响应缺失时仅做金额格式化，不拼营销文案。
+
+支付宝创建订单响应可选 `display:{title,hint,waiting,productName,amountText}` 供当前页二维码弹框直接展示。必要提示缺省使用客户端多语言，商品名缺省显示通用会员标题而非猜测商品 ID。`amountText` 只由订单真实 CNY 金额格式化产生，不接受营销配置覆盖；身份、金额、支付/发放验证仍以 `order` 与现有确认流程为准。
+
+二维码展示配置不作为创建或幂等重试订单的前置校验：无关页面文案不参与此路径，错误格式的配置 JSON 视为没有展示覆盖；无效的二维码本地化字段分别回退为空，其他有效字段仍保留。客户端使用必要默认提示。此容错仅针对可选文案，不放宽订单、鉴权、金额或支付确认校验。支付按钮副标题只显示一行，超出以省略号截断，不换行。
+
+`GET /api/v1/ai_novel/billing/catalog` 支持可选认证，但只返回公开套餐、已配置价格和渠道信息，不读取或写入个人会员数据。不发送 Authorization 时使用 `X-App-Region` 的 CN / GLOBAL 提示（缺省 GLOBAL）；有效 Bearer 使用账号持久地区。无效或过期的认证返回 401，不能降级为匿名请求。响应禁止缓存。个人购买限制由 UserInfo 的 `membership.active`、`expiresAt` 和 `source` 表达：有效且未到期的会员只能在原渠道购买，取消续订不提前解除限制。客户端复用这份会员结构展示限制，不另建重复字段。下单、订单查询、会员查询和购买确认仍要求认证，并独立校验渠道。未登录客户端保留公开价格，购买按钮先打开登录。
+19b. AINovel 商品固定提供 `plus_monthly`、`plus_quarterly`、`plus_yearly`、`pro_monthly`、`pro_quarterly`、`pro_yearly` 六个逻辑商品；价格和 provider ID 由服务端 app-scoped catalog 配置返回，客户端不得提交金额或 provider 订单号。RevenueCat entitlement ID 与业务 tier 分开：`plus` 商品使用 `orangewrite_plus`，`pro` 商品使用 `orangewrite_pro`。若另一渠道仍有有效会员，当前渠道入口返回不可用并提示回到原平台管理。
+19c. 登录后购买、恢复、启动及显式重查调用 `POST /api/v1/ai_novel/billing/sync`，统一入口为 `syncMembership`。body 为 `{provider: alipay|revenuecat, reason?: purchase|restore|app_start|retry, purchaseReference?: {kind: alipay_order|store_transaction,id}}`。引用只定位待验证交易，不是付款凭证；kind须匹配provider。用户/App与支付环境来自认证和服务端策略。返回 `{syncStatus: complete|pending,membership,targetPurchase,pendingOrderCount,checkedAt}`；targetPurchase为null或`{reference,status:pending|paid|closed|failed,entitlementStatus:applied|blocked|not_applicable|pending}`。当前会员与本次付款确认独立：历史订单pending不推翻本次paid/applied；已确认旧付款也可能已过期。普通业务只读本地权益按服务端时间判定，不查询供应商。
+
+RevenueCat 的目标交易确认使用本轮完整、已校验 App/用户/环境的快照，以及经既有写入路径合并后的本地交易事实。有效期内的目标必须有其所属订阅的商品/权益证据；不能借用另一笔订阅或当前最高套餐。已验证且已结束的付款周期可以返回 `paid/applied`，当前会员仍按真实到期状态返回，不补发时长。已退款/撤销/删除账号的交易返回 `blocked`；未结束周期仍检查当前支付来源冲突，已结束的历史周期不阻止用户后续合法换渠道。有效期内的权益证据还必须通过既有快照新鲜度保护，较旧查询晚到不能误报成功；缺失目标、权益证据不足或尚未持久化保持 `pending`。
+
+19d. RevenueCat webhook 地址为 `POST /api/v1/ai_novel/billing/webhooks/revenuecat`，按 `app_id + event.id` 幂等。部署端必须配置服务端密钥 `REVENUECAT_AI_NOVEL_SECRET_API_KEY`，以及 webhook 的 `REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION`（完整 Authorization header 值）。RC Project、Apple/Google App ID 统一定义在 `src/modules/billing/ainovel-payment-config.ts`，不再通过 env 配置。RC webhook 必须配置相同静态 Authorization header；当前 HTTP 入口 JSON 解析前不保留 raw body，因此不验证 RevenueCat HMAC 签名，不能使用 HMAC-only 部署。Webhook 只触发 RevenueCat customer API 重新读取，绝不单凭 webhook body 授权；未知事件和未知用户记录为 ignored。会员投影和交易证据存 PostgreSQL 的 `ai_novel` app scope；重复同步按 provider transaction ID upsert。账号删除时会员投影软失效，订单证据保留并标记 `account_deleted_at` 供财务审计。
+
+19e. 服务端仅使用 RevenueCat REST V2，没有 V1 fallback；现有数据库结构与客户端接口不变，不需要用户或订单数据迁移。V2 服务端密钥需要客户信息只读权限和 `project_configuration:products:read`，不需要退款、删除或授予权益的写权限。同步完整读取 customer subscriptions / active entitlements、验证 product.app_id、读取 subscription transactions 后统一入库；分页或任一 provider 请求失败都返回 pending，不写入部分结果。会员观察时间在查询发起时确定，避免旧查询晚到覆盖新状态；财务记录按 provider 交易时间排序，普通查询不能伪装成退款撤销。订阅金额读取单笔交易的本币 gross，而不是累计收入。V2 交易金额没有退款事件时间，负收入本身不判定为退款；财务退款/撤销记录依赖明确的已鉴权 webhook 事件，会员失效仍可由 V2 查询独立确认。Webhook 的 `api_version: 1.0` 是事件格式，与 REST V2 无关。
+19f. Google Play 使用六个同名 subscription，各自绑定 `auto-renew` base plan；catalog 返回的 `providerProductId` 为 `<productKey>:auto-renew`，业务 `productKey` 不变。服务端按代码中的独立 Apple/Google RC App ID 校验对应 store（不是 Android 包名）。客户端内置对应 Public SDK key；公开配置只保留可选 HTTPS `billing.revenueCat.proxyUrl`。未知 base plan、跨 App/store 商品均不能授权；仅 Google Global 包启用购买，商户与凭证未配置前不能视为真实支付可用。
+
+19g. Alipay uses authenticated `POST /api/v1/ai_novel/billing/alipay/orders` (Bearer + `X-App-Id: ai_novel`), body `{productKey,platform,distribution,idempotencyKey,checkoutMode?}`. Supported pairs are `android` with `china_android_store`/`direct_android`, `web/web`, and `windows/windows`, CN accounts only. Mobile Web selects `mobile_web` (`alipay.trade.wap.pay`); desktop Web and Windows select `desktop_web` (`alipay.trade.page.pay`, `FAST_INSTANT_TRADE_PAY`, embedded QR mode 4). Web and Windows must supply their checkout mode; the old `qr` mode and precreate path are removed. `desktop_web` returns the existing `{type:"page",url}` signed HTTPS URL for an iframe (HtmlElementView on Web, WebView2-backed WebView on Windows), without a return URL that could navigate the parent. Browser navigation/frame events are never settlement evidence; continue querying the owned order. The merchant must have computer-website-payment capability enabled. Native Android omits mode; Windows rejects mobile_web. Six Plus/Pro monthly/quarterly/yearly keys match the store catalog. Server freezes price, mode, merchant identity and ownership before preparing checkout; the same key within one payment environment replays the same order, changed inputs return 409; production and sandbox may independently use the same key (migration 084). Response envelope data is `{order,payment}`: payment is `{type:"app",orderString}`, `{type:"page",url}`, or null for terminal/expired checkout. Checkout preparation failures retain the owned pending order for reconciliation. The provider-facing subject is the CN customer-facing product name (for example `橘子写作 Plus 年度会员`), never an internal product key. This applies to Android app, mobile Web, desktop Web and Windows checkout. Do not log these checkout payloads.
+
+New `orderId` / Alipay `out_trade_no` format is `ow_{and|web|win}_{a01|a03|a12|b01|b03|b12}_{userId first 6 characters}_{16 random hex characters}`. `a` is Plus, `b` Pro; numbers are months. No timestamp or user hash is included. User prefixes may contain ASCII letters/digits, `_` or `-`, and are diagnostic only. Existing `ow_`/`alp_` plus 32-hex IDs remain supported and unchanged. Do not infer ownership or entitlement from order text. Apply migration 073 before deploying the new generator.
+
+Apple App Store, Google Play and Alipay are pairwise exclusive while membership is active and unexpired, including cancelled renewal until expiry. Catalog availability reflects public channel configuration only; personal cross-channel restrictions come from UserInfo membership (active, expiresAt, source). Same-channel purchase and changing channel after expiry remain allowed. RC confirmation/webhook cannot replace an established active channel with another store's higher tier. Verified financial transactions remain recorded, server logs identify `provider_conflict`, and `/billing/sync` returns `pending` for conflicting active evidence rather than falsely confirming activation. Client hints identify the original channel using `membership.source`. These checks do not prevent charges made directly through a store by bypassed or concurrent clients; support resolves exceptional double payments.
+
+19h. `GET /api/v1/ai_novel/billing/alipay/orders/{orderId}` 仅返回已持久化的 `{order,membership}`，不查支付宝、不结算；需主动核实使用上述POST同步入口，purchaseReference.kind=alipay_order。服务端按用户与环境发现订单，本地恢复记录只用于找回丢失的下单身份。明确结果不重查，paid未应用只本地补齐；pending订单逐笔查询，每笔本轮一次。每个支付宝或RC外部HTTP查询超时20秒（RC多页各自20秒），多笔耗时累加；不设置整个同步固定总超时、不自动连重试、不合并不同请求。超时/验签失败保留待确认并继续。所有付款事实经同一短事务结算，网络请求在事务外；同等级按付款时间和稳定订单顺序累计日历月，重复确认不加时。普通读取本地区间，Pro到期可自动回落仍有效Plus。
+
+19i. `POST /api/v1/ai_novel/billing/webhooks/alipay` accepts bounded (16 KiB), non-duplicated form fields. Official `alipay-sdk` validates RSA2 via `checkNotifySignV2`; official order queries use `validateSign:true`. Notify app/seller and all settlement order/amount/trade identifiers must match frozen order facts. Query app identity is tied to configured signed merchant SDK requests, not a presumed response app_id; optional response seller/app fields are validated. Query and notify share atomic, exactly-once settlement. Success acknowledgement is exactly raw text `success` (no quotes/newline). Deleted accounts retain financial evidence without re-granting access.
+
+19j. Payment environment admission follows only the trusted deployment identity (`DEPLOY_SLOT`, otherwise `APP_ENV`): local/dev/development/test support both production and sandbox; online/production/missing/unknown allow production only. There is no Alipay environment selector or sandbox enable flag. Both environments reuse the same checkout, verification, settlement and recovery implementation. Code-owned merchant identities and gateways select separate fixed Secret directories (`production` and `sandbox`), with no key-path env variables. Local Secrets live under `~/.zook/secrets/ainovel-alipay`; containers use `/run/secrets/ainovel-alipay`; each environment directory contains `app-private-key.pem` and `alipay-public-key.pem`. Only complete readable keysets expose new checkout. RevenueCat API/webhook credentials retain their existing Secret injection. Notify URLs follow the trusted dev/online deployment slot; browser return targets `https://orangewrite.cn/app/#/membership` (navigation only; desktop/Windows omit it). Sandbox omits callbacks. Local production has no public notify target and confirms through verified queries/recovery. Never route local production callbacks to another deployment.
+19j-1. Alipay production and sandbox share one price catalog within each deployment; local/dev/online Admin configurations remain independent. Prices are edited in Admin → ai_novel → 配置管理, under `admin.delivery_config` → `billing.alipay.prices`. All six products require integer CNY minor-unit amounts from 1 through 999999999999, matching the settlement amount format. Save and revision restore use the canonical versioned configuration path; catalog and new orders read the latest revision without restart. There is no env or code price fallback. Remove `billing.alipay` to stop new sales. Existing order amounts, idempotent replay, notifications, synchronization and recovery remain bound to the frozen order facts, including after prices are removed. App Store/Google Play localized prices remain store-owned.
+
+19k. External Alipay refund synchronization and refund execution are not implemented. Paid orders are not polled for later refunds. Verified TRADE_CLOSED after payment is retained in notification history but does not undo the canonical paid amount or grant. Admin pending/closed/failed quoted amounts are not revenue. Docker billing logs contain identifiers/outcomes only, never signed checkout payloads, form fields or keys.
+
+Alipay recovery: the API process runs a startup pass and a one-minute bounded pass (20 orders maximum per allowed payment environment, sequential queries within each environment, no overlapping passes) through `syncAlipayMembership` and the same canonical settlement as notifications. Authenticated GET order reads are pure; clients explicitly call POST membership sync to verify pending payments or reconcile local grants. Each provider HTTP query has a 20-second timeout. Trusted local refunded/revoked facts revoke the corresponding grant during sync without requerying settled payments. Merchant/environment and deleted-account restrictions remain enforced. See [internal recovery operation](docs/ainovel-alipay-recovery.md).
+19l. 创作点统一使用账号独立 7 天窗口，不按自然周/月刷新。Plus / Pro 的起点为服务端验证的连续会员期购买时间；连续续费只延长有效期，升级不移动窗口和已消耗量，中断后的重购开启新窗口。Free 以首次创建额度账户为起点。`GET /api/v1/ai_novel/credits` 返回精确整数微点、权威 tier 和 `refreshAt`；时区只影响客户端时间展示。旧会员缺少可信支付锚点时返回 `AINOVEL_CREDITS_MEMBERSHIP_ANCHOR_UNAVAILABLE`，应同步会员后重试，不伪造余额；过期的并发权益快照返回 `AINOVEL_CREDITS_ENTITLEMENT_STALE`，重试查询。旧测试余额迁移不额外补满。当前配置为 Free 200 / Plus 1,000 / Pro 4,000，周额度成本需重新核定；额度校验和扣费始终执行，Auto 的免扣由模型选择配置中的 `autoFree` 控制；月付/季付/年付商品不受窗口规则影响。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。
 21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、可流式取消的 Pi context compaction 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
@@ -488,8 +562,18 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
     project/public key/origin，不接受客户端指定上游。请求体、GA4 secret、Sentry
     public key 均不写日志；详细配置与边界见
     `deploy_configs/*.env.example` 和 `src/modules/telemetry/`。Sentry event ID
-    响应与限流 header 会透传；`X-Forwarded-For` 只在直接连接来自 loopback 或
+    响应与限流 header 会透传；Sentry Envelope 支持原生 minidump 附件，最大
+    8 MiB，接收与上游期限各 30 秒；GA4 的体积与超时限制保持不变。`X-Forwarded-For` 只在直接连接来自 loopback 或
     `ZOOK_TRUSTED_PROXY_IPS` 明确列出的代理时参与每 IP 限流。
+
+### 7.1 Registration and session recovery guarantees
+
+- Fixed email test codes require explicit `APP_ENV=local` with `NODE_ENV` other than `production`. Missing or loopback client addresses do not enable test login.
+- Email and SMS code endpoints reserve verification state and limits in a short transaction, then contact the provider outside that transaction. Email provider requests time out after 10 seconds. A late failed send cannot erase a newer challenge.
+- New-user registration rolls back the identity and membership if session persistence fails. The registration code remains available for retry until successfully consumed or expired.
+- Refresh validates account access before atomically committing the replacement token and indexes. Transient failures before commit allow retrying the original token. Explicit account-region denials still revoke the denied device refresh chain. Concurrent refresh has one winner; the successfully replaced token returns `AUTH_REFRESH_TOKEN_REVOKED`.
+- Setting, changing, or resetting the shared password invalidates prior access and refresh tokens across all apps and issues a new session for the current app. Ordinary `logout(scope=all)` and app-account deletion retain their app-only scope.
+
 
 ## 8. BodyLog API
 
@@ -542,14 +626,15 @@ POST /api/v1/auth/login/email
 | `GET` | `/api/v1/bodylog/groups/{groupId}/leaderboard` | 无 | 小组排行榜（成员周统计与排名） |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/members/remove` | `{ "userId": "..." }` | 组长/管理员移除成员（组长可移除任意 member/admin，admin 仅可移除 member，不能移除 leader） |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
-| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
+| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | `{ "timeZone"?: "Asia/Shanghai" }` | 报名 7 天成长计划；新计划每天一条本地目标任务（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
 | `POST` | `/api/v1/bodylog/subscription/purchases` | iOS `{platform:"ios", productId, signedTransaction}`；Android `{platform:"android", productId, purchaseToken}` | 服务端验签并同步云端权益；同一商店交易不能绑定到其他 BodyLog 账号 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
 | `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/missions` | 无 | 计划任务列表 |
-| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 完成一项任务 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/daily-aggregate` | 日期、时区、达标目标数、适用目标数、定义版本和 eventId | 覆盖提交某本地日期汇总并自动重算当日任务 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 兼容旧客户端的废弃路由；始终返回 `409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED`，不会手动完成任务 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards` | 无 | 计划奖励列表 |
 | `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards/{rewardId}/claim` | 无 | 领取奖励 |
 | `GET` | `/api/v1/bodylog/notification-preferences` | 无 | 查询通知偏好 |
@@ -559,6 +644,10 @@ POST /api/v1/auth/login/email
 | `DELETE` | `/api/v1/bodylog/push-devices/{deviceId}` | 无 | 移除推送设备 |
 
 BodyLog 新增接口约定：
+
+- `GET /api/v1/bodylog/public/config` 匿名返回 `accountSocial`、`friends`、`competition`、`challengeCreation`、`growth` 五个布尔开关。客户端可接受 `{ code, data }` 信封；缺失/无效的开关按关闭处理。远程配置缓存超过 24 小时后不再授权远程域。
+- 服务端在认证后逐域检查开关：profile/好友/邀请/搭子/小组/社交通知设备路由需 `accountSocial`；好友请求、好友、屏蔽和举报还需 `friends`；挑战与排行榜需 `competition`；仅创建挑战额外要求 `challengeCreation`；所有七日计划路由需 `growth`。开关关闭或记录缺失统一返回 `404 BODYLOG_FEATURE_DISABLED`。逐路由列表同步记录在 BodyLog OpenAPI 的 `x-bodylog-feature-gates` 扩展中。
+- 关闭这些远程路由不会影响 iOS 本地习惯日志、健康提醒或 Watch 快速打卡；客户端 DEBUG 构建也遵循远程开关（仅显式 `-BodyLogGrowthFixture` 可展示本地成长 fixture）。
 
 - 新客户端在 `/buddies/checkin` 同时传 `eventId` 与 `occurredAt`。同一账号、同一配对、同一事件重复发送不增加活动或重复入队通知；改变习惯、次数或时间后复用事件 ID 返回 409 `BODYLOG_EVENT_CONFLICT`。缺一个字段、非法 ID/时间或超过服务器时间 5 分钟的未来时间返回 400。旧版不带这两个字段仍按原有非幂等方式处理。
 - `occurredAt` 使用带时区的 ISO 8601 时间；服务端按 UTC 归属活动日期。早于关系接受时间的本地记录不进入新关系；历史补报不会重新结算已结算的搭子日期。客户端只上传用户明确共享的非私密习惯。
@@ -571,7 +660,7 @@ BodyLog 新增接口约定：
 - 创建小组返回 `{ group, invitationUrl }`；详情返回 `{ group, members, recentActivities, weeklyRecords }`，每日记录的 `completionRate` 为 0–100 的百分数。
 - 直接配对/小组链接分别为 `/b/{pairId}?token=...` 和 `/g/{groupId}?token=...`；小组接受请求从链接提取 groupId 和 token。小组共享链接有效期为创建后 7 天；定向邀请链接随通知 `data.invitation_url` 发送。`POST groups/{groupId}/invite` 返回 `{ invited: true }`。邀请归因接口生成的 `/i/{token}`、`/b/{token}`、`/g/{token}` 仍由归因接口消费。
 - 小组仅活跃组长/管理员可邀请；离组组长的权限立即失效，组长转让持久化。打卡仅接受小组共同习惯和正整数 count。
-- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。同一任务只能完成一次，重复并发请求返回 `409 BODYLOG_GROWTH_MISSION_COMPLETED`；奖励只能在计划完成后领取。
+- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。新计划按版本 1 生成 7 条 `localGoal` 日任务；每天至少达成一个明确次数/时长目标后由服务端自动完成。日汇总按账号/日期覆盖保存；同一请求重试幂等，撤销或改目标后的新汇总可重算进度。直接手动完成返回 `409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED`。奖励只能在计划完成后领取；领取奖励后锁定计划汇总，避免已发权益与回退状态冲突。
 - 注册推送设备的 `name` 可省略；同一设备 token 被新账号注册后转移归属，旧账号列表不再显示该设备。
 - 注销 BodyLog app 账号会清理成长计划、通知偏好、设备、订阅、搭子关系与所拥有的小组；其他小组中的个人成员和活动记录同时清理。共享 Zook 用户及其他产品数据保留。
 
@@ -772,7 +861,11 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `GET /api/v1/frogsleep/sleep-buddy/invites/preview?token=...` 或 `?code=...` 需要 FrogSleep Bearer 鉴权，只用于登录后恢复邀请上下文，不会创建关系、不会消耗邀请。响应包含 `invite.domain = "sleep"`、`invite_id`、`raw_invite_id`、`status`、`inviter_user_id`、`invitee_user_id`、`viewer_can_accept`、`accept_method`、`expires_at`、`share_title`、`share_subtitle`。接受成功后，关系响应会带回 `source_invite_id`、`accept_source`、`accepted_at`；邀请内部会记录 `accepted_by_user_id`，便于统计邀请转化。
 
-睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 按 `relationship_id + date_anchor` 幂等：同一关系同一日期已有 pending/active session 时返回既有 session，不再创建重复 session。
+邀请决定更新使用严格递增的持久化逻辑时间，已读时间追平最新决定；同毫秒操作或设备时钟回退不会吞掉新的未读状态，相同状态和版本的幂等重放保持已读。
+
+同一对用户已有 active/paused 的睡眠或专注关系时，重复组合邀请的对应领域只读显示已连接，复用原关系 ID；此规则同时覆盖旧聚合 `/accept` 与新逐域接受产生的关系。不会新建关系、占用新 slot 或扩大任一方授权；canonical 撤销记录仍覆盖旧关系事实。
+
+睡眠搭子关系状态机为 `active -> paused -> active`，`active|paused -> revoked`；`revoked` 是终态，不能恢复、暂停或创建新的共同守护 session。`POST /api/v1/frogsleep/sleep-buddy/shared-sessions` 可传 `joint_activity_id`（兼容别名 `jointActivityId`），将已接受并开始的 `tonight_together` 活动固定到同一个共享会话；双方跨午夜、跨时区加入、并发重试以及活动完成后的恢复均返回原会话，不再按各自 `date_anchor` 新建。活动必须属于该关系及当前参与者；错误关系/活动返回 `403`，未接受、未开始或已过期且尚无绑定会话返回 `409`。共同活动仅使用绑定会话的真实完成事实。未传活动 ID 时保留 `relationship_id + date_anchor` 的 pending/active 会话复用规则；日期键接受有效日历日期及旧 ISO 时间戳并归一为其书写日期部分（不转换为 UTC 日期），非法日期返回 `400`。
 
 `PATCH /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences` 成功响应包含 `preferences` 和当前 `relationship`，用于 iOS 在保存守护偏好后直接刷新关系状态。请求只接受 `guard_level`、`visibility_scope`、`mute_for_tonight`、`allow_morning_summary_push`、`allow_recovery_nudges`；未知字段或类型不匹配返回 `400 REQ_INVALID_BODY`。共同守护 session 响应包含 Zook canonical 字段 `session_id`、`relationship_id`、`status`、`participant_states`、`starts_at`、`ends_at`，并额外保留 iOS 兼容字段 `shared_session_id`、`initiator_user_id`、`invite_status`、`date_anchor`、`initiator_state`、`partner_state`、`started_at`、`ended_at`；其中 `initiator_state` / `partner_state` 会把后端内部 `pending` 映射为 iOS 已有枚举 `invited`。
 
@@ -788,7 +881,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 }
 ```
 
-共同守护事件 `event_type` 仅支持 `interrupted`、`returned`、`paused_tonight`、`morning_completed`。未知事件、非法 `occurred_at` 或不可见 session 返回 `400/403`，不会写入事件。`morning_completed` 与 `paused_tonight` 会生成基于共同守护事件的 summary/recap。summary 保留 `completed`、`date_anchor`、`started_at`、`ended_at`、`interrupted_count`、`returned_count`、`paused_tonight`、`telemetry_level = "shared_session_events"`，并补充 iOS 可见字段 `artifact_version`、`visible_state`、`started_on_time`、`had_recovery`、`returned_after_recovery`、`completed_morning`、`headline`。recap 保留 `participant_states`、`event_types` 等字段，并补充 `artifact_version`、`combined_result_type`、`my_result_state`、`partner_result_state`、`headline`、`supporting_line`、`recommended_next_step`。这些字段来自共同守护 session 和事件，不是睡眠阶段或医疗级睡眠评分。
+共同守护事件 `event_type` 支持 `sleep_started`、`ritual_completed`、`interrupted`、`returned`、`paused_tonight`、`morning_completed`。未知事件、非法 `occurred_at` 或不可见 session 返回 `400/403`，不会写入事件。`morning_completed` 与 `paused_tonight` 会生成基于共同守护事件的 summary/recap。summary 保留 `completed`、`date_anchor`、`started_at`、`ended_at`、`interrupted_count`、`returned_count`、`paused_tonight`、`telemetry_level = "shared_session_events"`，并补充 iOS 可见字段 `artifact_version`、`visible_state`、`started_on_time`、`had_recovery`、`returned_after_recovery`、`completed_morning`、`headline`。recap 保留 `participant_states`、`event_types` 等字段，并补充 `artifact_version`、`combined_result_type`、`my_result_state`、`partner_result_state`、`headline`、`supporting_line`、`recommended_next_step`。这些字段来自共同守护 session 和事件，不是睡眠阶段或医疗级睡眠评分。
 
 ### 9.3 FrogSleep 专注搭子
 
@@ -850,9 +943,13 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
 
-`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请创建时绑定的被邀请用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；不修改组合邀请、另一领域、旧子邀请或旧关系，也不会隐式开启任何分享授权。
+统一邀请的列表与预览 `status` 按 `domain_results` 的有效状态聚合：只要仍有待处理领域即为 `pending`，全部接受后为 `accepted`，客户端不应继续对已处理领域展示接受按钮。同一对用户在某领域已有 active/paused 关系时，新邀请该领域返回只读 `accepted`、既有 `relationship_id` 和空 `viewer_actions`；不重复创建子邀请或关系，不重置既有授权，其它领域仍可独立操作。过期旧关系的原 decision 不会借用新关系恢复。
 
-`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/decline` 与 `/cancel` 是始终可用的安全命令：均要求 FrogSleep Bearer 鉴权，但不受普通搭子能力、邀请收件箱、显式同意或双向 block 影响。`domain` 仅支持 `sleep`、`focus`，请求体使用与单领域 accept 相同的正整数 JSON `expected_version` 和非空 `idempotency_key`。`decline` 仅允许邀请时绑定的被邀请用户，`cancel` 仅允许邀请人；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功时只更新指定领域 decision（分别为 `declined` 或 `cancelled`）并向对方写入一条去重 outbox 事件，不修改组合邀请、其它领域、slot、关系、授权、回执或旧邀请记录。相同行为和 idempotency key 可在组合邀请过期或终态后无写入重放；不同 key 或冲突版本返回现有 `409` 冲突响应。安全命令的成功响应 `data` **只**包含 `invitation_id`、`domain`、`decision_status`、`decision_version`。
+邀请列表 `unread` 由当前查看者的持久化阅读时间与邀请/逐域决定更新时间比较生成。按 ID、code 或 token 成功预览后会标记当前查看者已读；随后产生的新决定会重新变为未读。发起者创建邀请时视为已读，另一方初次查看前为未读。预览只更新阅读状态，不接受、拒绝或取消邀请。
+
+`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请绑定的收件用户，或当前邮箱与未认领邀请目标匹配的用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；同步该领域兼容子邀请的终态，保留另一领域及既有关系，不隐式开启任何分享授权。单域关系建立时在同一事务内初始化双方各四类、共八条 `revoked` grant；不会沿用旧关系的自动补授逻辑。随后可通过该 `relationship_id` 查询 grants，各用户仅可 PATCH 自己作为 grantor 的记录；授权失败只重试 grant 更新，不重新接受另一个域。Bundle 预览的 `domain_results` 按实际领域 decision 返回 `status`、`decision_version` 和匹配该次接受的 `relationship_id`，不能使用 Bundle 总版本代替领域 decision 版本。旧领域关系已不可用时返回空关系 ID 和 `BUDDY_RELATIONSHIP_UNAVAILABLE`，不会从新 slot 恢复旧关系。
+
+`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/decline` 与 `/cancel` 是始终可用的安全命令：均要求 FrogSleep Bearer 鉴权，但不受普通搭子能力、邀请收件箱、显式同意或双向 block 影响。`domain` 仅支持 `sleep`、`focus`，请求体使用与单领域 accept 相同的正整数 JSON `expected_version` 和非空 `idempotency_key`。`decline` 仅允许绑定收件用户或当前邮箱匹配的未认领邀请收件用户，`cancel` 仅允许邀请人；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功时只更新指定领域 decision（分别为 `declined` 或 `cancelled`）并向对方写入一条去重 outbox 事件，同步对应兼容子邀请的终态，保留其它领域、slot、关系和授权。相同行为和 idempotency key 可在组合邀请过期或终态后无写入重放；不同 key 或冲突版本返回现有 `409` 冲突响应。安全命令的成功响应 `data` **只**包含 `invitation_id`、`domain`、`decision_status`、`decision_version`。
 
 `accept` 成功响应的 `data` 仅包含 `invitation_id`、`domain`、`decision_status`、`decision_version`、`relationship_id`、`relationship_status`。相同 idempotency key 重放返回已有权威结果，即使旧 bundle 随后过期或进入旧终态也不增加版本或 outbox；重放仍校验不可变被邀请人和领域归属。不同 key 的终态重放或 `expected_version` 过期返回 `409 REQ_INVALID_BODY`。任一参与者的领域 slot 已占用时返回 `409 BUDDY_DOMAIN_SLOT_OCCUPIED`，且 decision、slot、关系和 outbox 均不产生部分写入。
 已生成的共享总结或联合回顾在授权移除后只返回 `redacted=true` 的稳定占位对象。运营元数据与 Push 路由仅允许不透明资源 ID 和路由枚举；邀请 token/code、私密总结、备注、自定义文本和原始记录会被丢弃，不进入日志、分析、Push 或错误轨迹。
@@ -924,6 +1021,10 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 }
 ```
 
+私人专注上报支持可选 `session_id`（兼容 `sessionId`）：1–128字符、至少包含一个非空白字符、大小写敏感，不自动trim或按UUID改写；两者都传时必须相同。幂等键为认证推导的 `(app_id, owner_user_id, client_session_id)`，请求体伪造owner/app不改变归属。相同内容重试返回相同的 `session_id`（服务端实体ID）、`id`（客户端ID）及创建时间，并保留首次省略时间字段时的服务端默认值；并发重复上报只产生一条有效记录。同键内容修正更新原记录，保留服务端ID/创建时间，周/日统计按最新内容计一次；按数据库最后接受的写入为准，尚无客户端revision排序。首次里程碑/共享检测仅在插入时触发，不因重试或私人修正重复创建。省略两个ID继续旧客户端每次新增行为；显式null、非字符串、全空白、超长或两个别名冲突返回 `400 REQ_INVALID_BODY`。
+
+迁移 `021_frogsleep_focus_session_idempotency.sql` 对既有同app/user/client ID重复行保留最早实体ID和created_at、采用最新updated_at内容，其余软删除，并重接历史共享时刻的session引用；无有效客户端ID的旧记录保持原状。唯一索引与整理同事务安装，需要先在dev验证迁移与候选版本；没有自动发布授权。请求分析事件仍记录上报请求次数，唯一session数量以历史/统计接口为准。
+
 专注 session 上报会校验 `started_at`、`ended_at` 为 ISO 时间，且 `ended_at >= started_at`；`planned_minutes`、`actual_minutes`、`interrupt_count` 必须是有限非负数，超出范围返回 `400 REQ_INVALID_BODY`。`status` 支持完成态 `completed`、`abandoned`、`interrupted`、`cancelled`，以及 presence 推导使用的进行态 `active`、`in_progress`、`focusing`。`GET /api/v1/frogsleep/focus-buddy/sessions`、`GET /api/v1/frogsleep/focus-buddy/achievements`、`GET /api/v1/frogsleep/focus-buddy/messages`、`GET /api/v1/frogsleep/focus-buddy/shared` 支持 `limit`、`cursor`，响应保留原列表容器字段并额外返回 `pagination = { limit, next_cursor, has_more }`。`limit` 默认 50，最大 100。
 
 专注匹配搜索只返回已开启 `matching_consent`、仍有公开资料、与当前用户匹配条件兼容、且未与当前用户存在 pending / accepted 专注关系的候选人。候选响应除 `score`、`matched_scenes`、`matched_study_types`、`explanation` 外，还会带 `recommendation_type = "controlled_focus_partner"`、`privacy_note_key = "buddy_match.privacy.summary_only"`、`why_recommended`、`invite_prompt_key = "buddy_match.invite.controlled_prompt"`，用于客户端展示受控推荐理由和隐私边界。如果当前用户已有未过期的 outgoing pending 专注邀请，`/api/v1/frogsleep/focus-buddy/matches/search` 会直接返回空候选，并在 `empty_state` 中给出 `reason = "pending_invites"`、`title_key`、`subtitle_key`、`pending_relationship_id`、`pending_user_id`，客户端应引导用户回到待处理邀请状态；如果关联邀请已过期，搜索会先刷新过期状态，不继续卡住匹配。`dismiss` 与 `report` 都是当前用户维度的匹配反馈：请求体可传 `reason`、`note`，成功后该候选人会从当前用户后续匹配搜索中排除；不能对自己执行 dismiss / report。搜索内部会批量读取当前用户的 dismiss/report 反馈，避免按候选逐个查询。
@@ -939,16 +1040,29 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 | 方法 | Path | 说明 |
 | ---- | ---- | ---- |
 | `POST` | `/api/v1/frogsleep/product-data/sleep-reports` | 保存睡眠报告快照 |
-| `GET` | `/api/v1/frogsleep/product-data/sleep-reports` | 查询当前用户睡眠报告快照 |
+| `GET` | `/api/v1/frogsleep/product-data/sleep-reports?since={iso}&limit={n}&cursor={cursor}` | 查询当前用户睡眠报告快照（支持增量同步） |
 | `PUT/PATCH` | `/api/v1/frogsleep/product-data/progress/{namespace}` | upsert 当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/progress/{namespace}` | 查询当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/entitlements/current` | 查询当前 FrogSleep 权益状态 |
+| `POST` | `/api/v1/frogsleep/account/guest-sessions` | 创建/恢复受限云游客；独立设备密钥与幂等 key |
+| `POST` | `/api/v1/frogsleep/account/upgrade` | 正式账号凭据升级游客；旧设备ID正文仍409 |
+| `POST/GET` | `/api/v1/frogsleep/product-data/sleep-sessions` | 原始终态睡眠创建/固定边界恢复，含墓碑 |
+| `GET/PUT/PATCH/DELETE` | `/api/v1/frogsleep/product-data/sleep-sessions/{sessionId}` | 本人原始历史读取、修正和墓碑删除 |
 
-睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。
+睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。`GET` 支持 `limit`（1–100，默认50）和不透明 `cursor`；按规范报告时间、稳定资源ID倒序在数据库分页，持续使用 `pagination.next_cursor` 直到 `has_more=false`，可恢复超过500条的完整历史。游标绑定认证身份和固定恢复边界，非法游标返回409 `FROGSLEEP_SYNC_CURSOR_INVALID`。
+
+列表查询支持增量同步参数：
+- `since`: ISO 8601 时间戳，返回 `recorded_at > since` 的报告；修订和删除使用changes
+- `limit`: 最大返回记录数（默认 50，最大 100）
+- `cursor`: 分页游标
 
 进度快照 `namespace` 当前支持 `habit_progress`、`companion_state`、`cat_state`、`onboarding`、`report_preferences`。请求必须包含 `schema_version`（或 `version`）和对象型 `state`（或 `data`）；未知 namespace 返回 `400 REQ_INVALID_BODY`。权益查询返回当前 app-scoped entitlement；无记录时返回 `{ state: "unknown", plan: "free", source: "none" }`。FrogSleep logout 只注销 App 登录态，不删除报告、进度、权益记录，也不删除 Zook 全局账号。
 
+`POST /api/v1/frogsleep/account/guest-sessions` 接收安全随机 `device_secret`、`device_id`、`platform`，必填 `Idempotency-Key`；返回受限 Bearer/refresh 和独立升级凭据，身份有效期30天。正式账号以自己的 Bearer、当前 `X-Sync-Epoch`、`Idempotency-Key`、来源 `guest_user_id/guest_upgrade_token/device_id` 及 `confirmed:true` 原子升级私人原始睡眠、报告和偏好。目标相同数据去重，不同正文或墓碑冲突整次回滚；成功撤销来源访问，原请求可重放确认。游客只能访问私人同步和本人会话，不能使用公共平台、搭子、专注或设备管理。旧 `guest_device_id` 单字段请求仍409 `FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，设备ID不证明归属。完整请求、错误、限额与重试见 [游客升级专题](docs/public-frogsleep-guest-upgrade.md)。
+
 ### 9.5 FrogSleep 邀请链接与推送
+
+后台 Web server 对 `/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite` 三个精确 GET 路径转发到同槽位 `ADMIN_API_PROXY_TARGET`，保留 query 与深链跳转，强制 no-store/no-referrer，避免 Admin SPA fallback 吞掉邀请页；其他方法返回405。可用 `python3 build_scripts/frogsleep_domain_acceptance.py --base-url https://app-dev.youwoai.net --expected-version <发布版本>` 验证实际页面内容。外层代理日志仍需运维核定，直接代理示例见 `deploy_configs/nginx/frogsleep-links.conf.example`。这不自动启用 Universal Links/App Links，也不能复用 HabitTap 的 AASA 身份；真实设备唤起与无安装场景仍须单独验收。
 
 FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
 
@@ -981,6 +1095,10 @@ FrogSleep push 使用 Zook 通知队列，设备来源是 `/api/v1/frogsleep/dev
 - `morning_summary`
 - `focus_buddy_invite`
 - `focus_achievement`
+
+睡眠 session 邀请、恢复动态与晨报推送在入队及投递前读取接收方的最新关系和偏好：`mute_for_tonight=true` 抑制这些推送，`allow_recovery_nudges=false` 抑制 interrupted/returned，`allow_morning_summary_push=false` 抑制晨报。已入队后关闭偏好也会抑制投递；这些设置不阻止个人流程或共享事件/晨报保存。
+
+通知任务只有提供方成功接受后才记录 `SENT`，不代表设备已经展示。无有效设备或投递被禁止时记录 `SUPPRESSED`；缺少 APNs/FCM 配置或目标平台 dispatcher 时记录 `FAILED` 并保留 failed-event 补偿，日志回退不能算作发送成功。恢复配置后，worker 可重投失败事件。
 
 APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当前 app、当前用户、当前 push token 对应的 FrogSleep device 软删除或禁用，后续不会继续向该无效 token 发送；provider 429/5xx 等可重试错误仍保留原有 failed event / retry 行为，不会清理设备。
 
@@ -1098,6 +1216,7 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 | POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
 | PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
 | POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?}`，返回 202；instruction 用于调整当前草案 |
+| PATCH /planning-sessions/{id}/draft | `{base_version,context_revision,draft_plan_id,plan_version,tasks}`，在同一草案ID逐项修改标题、投入、日期、标准、步骤/指导和优先级；校验摘要总投入与当前每日容量，不创建执行任务 |
 | POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session |
 
 所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
@@ -1112,7 +1231,7 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 
 Canonical OpenAPI 与生成模型已同步；跨端错误/并发样例见 `api-contracts/fixtures/lighttick/planning-errors.json`。本阶段尚未接入 iOS/Android 会话 UI。
 
-Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。
+Android HttpURLConnection 可对会话 context 和同一未确认草案 draft 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。兼容传输与 canonical PATCH 共用相同幂等回执，不重复编辑或排程。
 
 
 ### LightTick App 规划、执行与复盘闭环
@@ -1128,6 +1247,12 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - 本轮未改变鉴权、app scope 和公共路径；指导字段存储依赖增量迁移 `064_lighttick_task_guidance.sql`。部署迁移及后端后再启用新客户端能力。完整顺序和验证边界见 `docs/lighttick/app-loop-integration.md`。
 
 
+### AINovel usage 校验与缓存输入（2026-10-04）
+
+- Chat usage 可兼容增加 `cachedInputTokens`，表示厂商返回、已包含在 `promptTokens` 中的缓存读取输入子集；不得再次加进 `totalTokens`。字段缺失表示未知，不是零；缓存写入量不能代替缓存读取量。
+- 有效厂商 usage 优先，包括真实的 0。计数必须为安全非负整数、总量等于输入加输出、缓存和 reasoning 不超过各自父项。缺失或异常 usage 不丢弃正文，走现有服务端估算兜底并标记 `estimated: true`；stream 在 done 前输出兜底 usage。异常厂商元数据产生 `invalid_usage_counters` 警告，不打印请求正文。
+- 此改动不启用会员扣点，不改变上下文预算、模型路由、正文/工具进度事件或失败/取消策略。三类倍率、缓存费率快照和余额结算仍为后续实现范围。
+
 ### LightTick 通用规划与个人复盘（2026-09-19）
 
 - `GET /api/v1/lighttick/reflections?goal_id=...`：返回该目标已保存个人复盘，`data.items` 按更新时间倒序。需要注册 LightTick membership，与其他产品/用户隔离。
@@ -1136,3 +1261,439 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
 - 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
 - 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。
+## AINovel 创作点整数单位
+
+- `GET /api/v1/ai_novel/credits`：返回会员 `tier`、`refreshAt`，以及 `periodicMicros`、`periodicLimitMicros`、`giftMicros`、`remainingMicros`。
+- Zook 在每次 provider 调用正常完成后，使用服务端 usage（缺失时复用估算）和费率直接原子扣费；无客户端 finish 接口。多轮逐轮扣费，客户端取消、保存或显示失败不会退回已经成功调用的费用。
+- 余额接口需要产品鉴权。全部金额为非负 JSON 整数微点，**1 点 = 1,000,000 微点**，最大安全整数为 `9007199254740991`；不返回浮点点数或金额字符串。客户端公共逻辑保存原始整数，仅在显示时换算并向下取整，不以展示值判断是否有额度。
+- 精确合同见 `api-contracts/openapi/ainovel/credits.yaml`。额度校验及扣费始终执行，Auto 对话是否免扣由 `autoFree` 控制。
+- 周额度为账户独立的 168 小时窗口，会员从可信连续激活起点计时；续费/升级保留窗口，断档重购开启新窗口。Free 暂从首次建立创作点账户计时。部署须执行 `074_ai_novel_credit_window_anchor.sql`。
+
+## OrangeWrite 全局模型选择
+
+模型目录还返回 `localIcon`（本地图标选择器）和 `onlineIcon`（公共 HTTPS 图片 URL，可为空）；可选 `description` 和 `badge` 为产品配置的介绍与标签。客户端先显示本地资源，在线图片解码出第一帧后替换，加载中或失败继续使用本地资源；更换 URL 后不得暂留上一模型的图标。图片须为客户端可解码的光栅格式，不携带鉴权凭证。列表顺序及隐藏配置由服务端应用后返回，费率仍只从点数计价配置计算。
+
+- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`estimatedMultiplier`、`contextWindowTokens`。`estimatedMultiplier` 由 Zook 按历史 94.51% 未缓存输入 / 5.49% 输出、基础上下文档估算并归整，仅供列表展示，不参与结算；客户端不计算此值。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
+- 加密 chat inner body 可选 `modelSelection: {"mode":"auto"}` 或 `{"mode":"manual","modelKey":"qwen3.6-plus"}`；缺省保持 Auto。`sceneKey` 只决定工作流。直接 `model` / `modelKey` / `providerModel` 等旧字段仍拒绝。不可用手动模型返回 `AI_MODEL_NOT_AVAILABLE`，不静默降级为其他模型。
+- Auto 保留现有健康度/权重和跨逻辑模型重试；手动仅允许同一逻辑模型内部的 provider 路由重试。客户端任务启动时固定选择快照，后端每次 HTTP 请求固定收到的选择。embedding 不接受模型选择，仍用专用 embedding 模型。
+- 模型目录 `data.autoFree` 下发 `{ enabled, active, startsAt?, endsAt?, serverTime }`。响应为 `Cache-Control: no-store`。缺省或缺少字段按未启用优惠处理；时间按服务端计算，开始包含、结束不包含。开启且在生效期内，Auto 聊天（包括缺省选择的旧客户端）不受 credits 余额准入限制、不扣 credits；手动聊天及 embedding 仍走原计费路径。每个请求在开始时固定本次计费规则，执行中关停不追溯扣费。无内置固定期限。
+- 客户端从同一目录读取模型和优惠配置，启动/登录、配置更新、回前台及在线每分钟刷新；按 `serverTime` 校正显示时钟，起止边界自动更新标签。配置失败时不宣称免费，旧快照超过两分钟不继续展示优惠。后台手动切换的展示同步存在最长约一分钟轮询延迟，服务端新请求立即按最新配置判断；客户端标签不是免扣授权凭证。
+- 三个倍率复用后台 AINovel 实际点数配置，费率除以 100 得到倍率（1 点=10000 加权 tokens）；缓存费率未配时等于普通输入费率。目录展示基础倍率，已配置的长上下文计价阶梯结算时仍生效。`contextWindowTokens` 为现有 Zook 256000 操作预算，不是假定的上游物理容量；目前无独立模型上下文/输出容量配置。
+- 精确合同见 `api-contracts/openapi/ainovel/models.yaml`。
+
+### FrogSleep 2A：统一邀请分域决策（2026-10-11）
+
+`GET /api/v1/frogsleep/buddy/invitations/{inviteId}` 与 `.../preview` 的 `domain_results` 现在包含每个域自己的 `status`、`relationship_id`、`decision_version` 和 `viewer_actions`。预览只读，不绑定收件人或建立关系；不能用组合邀请的 `version/status` 代替某一域的决策。终态域没有接受/拒绝/取消动作，另一个 pending 域可以继续处理。旧兼容决策可能不含 `decision_version`。
+
+| 操作 | canonical 路径 | 操作者 |
+|---|---|---|
+| 接受单域 | `POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{sleep|focus}/accept` | 收件账号 |
+| 拒绝单域 | 同上末段 `/decline` | 收件账号 |
+| 取消单域 | 同上末段 `/cancel` | 邀请人，包括对方尚未注册的情况 |
+
+请求为 `{"expected_version":1,"idempotency_key":"persisted-command-key"}`。客户端在发送前保存请求身份；相同动作重试复用原 key 和原版本。成功回执含 `invitation_id/domain/decision_status/decision_version`，accept 另含原始 `relationship_id` 和其当前 `relationship_status`。相同 key 的回放不重复写关系、slot、授权或通知事件；错版本、不同 key 的终态写入及竞争失败为 409。接受回放读取决策保存的原关系，不读取当前 slot，关系被解除后也不会重新激活。
+
+未绑定的邮箱邀请只允许当前收件邮箱对应账号显式接受/拒绝时绑定。错误账号、错误角色和不存在的邀请统一返回中性的 `404 REQ_ROUTE_NOT_FOUND`，回放也重新检查角色和 active app membership；客户端保留 locator，登录正确账号后重新预览，不自动接受。code 支持首尾空白及大小写规范化。accept 仍受普通邀请 capability 控制，decline/cancel 保持能力关闭时可用。
+
+单域 accept 建立 canonical 域关系与两端 slot，**不隐含共享授权**；共享仍需后续独立授权。旧整单接口保留已发布客户端的授权语义，已由新协议决策的邀请禁止再用整单操作改变 sibling；新旧接受共用用户/域 slot 锁并检查既有旧关系，避免不同邀请重复建立同域关系。兼容回放必须由原操作角色执行。
+
+迁移 `022_frogsleep_invitation_relationship_receipt.sql` 持久化原始关系回执；历史回填仅匹配同 app、域、账号对和决定时间的唯一关系，无法确认时返回冲突，绝不猜测当前搭子。详情和本机证据见 [邀请专题](docs/public-frogsleep-invites.md) 与 [2A 验证记录](docs/frogsleep-phase2a-invitation-closeout-verification-2026-10-11.md)。
+
+
+### FrogSleep 2A 方向授权与关系生命周期（2026-10-11）
+
+新邀请建立的 canonical 关系和旧兼容关系共用以下入口，鉴权为 FrogSleep active membership，安全/撤权操作不依赖 discovery flags。pending Focus 邀请关系不能通过这些入口转换为 accepted，仍须走邀请决策。
+
+| Method | Canonical path | 行为 |
+| --- | --- | --- |
+| GET | `/api/v1/frogsleep/buddy/relationships` | 当前 active/paused 的 Sleep、Focus 关系元数据 |
+| GET | `/api/v1/frogsleep/buddy/relationships/{id}` | 本人关系快照及 terminal receipt |
+| POST | `/api/v1/frogsleep/buddy/relationships/{id}/{pause,resume,revoke,mute,unmute}` | body `{"expected_version":1}`；成功返回关系快照 |
+| GET | `/api/v1/frogsleep/buddy/relationships/{id}/grants` | `viewer_user_id` 与双方独立授权；允许 paused 状态读取授权元数据 |
+| PUT | `/api/v1/frogsleep/buddy/relationships/{id}/grants` | 原子替换当前 token 授权人向另一方的选择 |
+
+关系快照包含 `id/viewer_user_id/partner_user_id/domain/status/version/paused_by_user_ids/is_muted`。暂停按参与人分别记录；恢复只移除本人暂停，另一个参与人仍暂停时返回 paused。旧 Sleep resume 也遵循这一安全规则，不能替对方恢复。历史 paused 缺少操作人时按双方暂停保守处理。新统一端点重复已经生效的 pause/resume/revoke 不增加版本；旧 Focus revoke 保留既有重复请求 400 行为。终止关系不能恢复，需新邀请。解除只释放仍指向旧关系的 slot，旧回放不得触碰新搭子的 slot。
+
+PUT 授权示例：
+
+```json
+{"domain":"sleep","categories":["presence","daily_summary"],"expected_versions":{"presence":0,"daily_summary":0,"weekly_trend":0,"shared_activity":0}}
+```
+
+必须传全部四个类别的原版本。不存在的授权以 revoked/version 0 的只读默认项呈现，不在 GET 时写库；首次授予后为 version 1。当前服务端从 token 推导授权人，不接受外部指定 grantor，不能改变另一方向。批次在双方 domain slot 锁中重验关系及全部版本，再写授权/审计；冲突或审计失败整批回滚。授权变更不修改关系 version；paused 可撤销已有授权，新增授予需要 active。撤销 shared_activity 会关闭既有共享协调会话；daily_summary/weekly_trend 读时即时过滤。A→B 授权只允许 B 读取 A，不隐含 B→A；A 发布自己的摘要以 A→B 的授权为准。只有既有旧关系保留历史无 grant 记录的兼容回填，新关系永不隐式授予。
+
+静默是本人按关系的通知偏好，不撤销共享授权；不修改旧睡眠守护配置。Buddy worker 每次尝试（含 retry）重验真实目标类型/ID、收件人、过期、关系 active、当前方向类别和本人静默，再物化通知/入 Push 队列。旧共享睡眠通知入队前也重验相同权限和静默。通知 route 在每次打开时重新验权，GET 不以历史通知或仅 target 存在作为授权，撤权/暂停/解除/拉黑后的旧通知不会绕过保护。新报告/里程碑/目标路由键分别为 `report_id/milestone_id/goal_id`，旧 `interaction_id` 仅在指向同一个真实目标且类型一致时兼容。
+
+解除和双边拉黑会撤销该关系双方授权、结束共享 Sleep/joint activity 协调会话；拉黑覆盖同一参与人对的 Sleep/Focus 及兼容关系，解除拉黑不复活关系、授权或会话。私人 Sleep/Focus 历史不受影响。403/404 表示不可访问，409 为版本冲突或关系终态，客户端先清共享缓存再重新取数；网络失败不得显示操作成功。
+
+本机实现/测试证据见 [生命周期验证记录](docs/frogsleep-phase2a-lifecycle-closeout-verification-2026-10-11.md)。实际 provider 重试、已进入通用 Push 队列的投递门槛、dev/真机和发布仍属于未完成的 2.3/§3 验收。
+
+
+### 2A 双账号专注与共同守护旅程（2026-10-11）
+
+统一邀请产生的 canonical Focus 关系直接投影到旧 current-relationship、比较和 shared-moments 读端，兼容输出 accepted，但不写入另一份旧关系。所有共享读端继续按当前方向授权重新验权。私人专注原子上报先提交本人记录；共享派生失败不把个人成功变成错误。完成/回放时在关系双方 slot 锁中重验 active 与双向 shared_activity，按关系和两个服务端 session ID 生成唯一时刻，旧时刻也按原 pair 去重；回放可补派生，不能重复累计个人统计。
+
+shared-moments 每项增加稳定UUID `moment_id`、`server_moment_id`、查看者自己的 `my_session_id` 与对方的 `viewer_buddy_session_id`，以及交叠 `start_time`/`overlap_minutes`。保留 `session_id`/`buddy_session_id` 原服务端引用。没有client ID时使用server ID；这些是兼容读取字段，不改变私人上报身份或承诺多设备版本冲突解决。
+
+共享 Sleep 事件增加 `sleep_started`、`ritual_completed`，兼容客户端个人开始/仪式完成的共享镜像。共享状态只描述双方协调：一个参与人morning_completed或paused_tonight后session仍允许另一人独立完成；双方都进入morning_completed/paused_tonight终态后session才completed。单方暂停不覆盖另一人的晨间结果。terminal不接受新流程事件；重复accept及同参与人重复终态acknowledgement返回原状态、不重置完成标记，相同 actor/type/规范化 occurred_at 的非终态重试不增加事件。每个 session 每个查看者维护一个summary和一个recap，第二个人未确认不能显示晨间已完成。旧单主recap根据存储的participant_states重投影；缺少查看者上下文返回redacted。
+
+读取 status snapshot/latest summary/recap 每次验证当前 daily_summary，redacted 占位不应解码为普通晨报或完成。断网与401仅影响共享和该身份的网络同步；个人本地计时、历史与固定owner队列保留。客户端本次共享请求重试保留进程内原session/事件时间，重启后的共享持久化恢复属于2B，未在此承诺。
+
+本机双账号真实HTTP、PG及iOS证据与复现步骤见 [旅程验证记录](docs/frogsleep-phase2a-two-account-journey-verification-2026-10-11.md)。当前dev/真机/provider发布验收仍未完成。
+
+
+### 2A 通知投递、重试与站内回退（2026-10-11）
+
+通知feed的`id`是站内列表、Push payload的`notification_id`及route/read使用的同一稳定身份。`GET /api/v1/frogsleep/buddy/notifications`提供当前登录人的分页元数据，不依赖设备或系统通知授权；不能把历史safe route当作当前授权，打开必须调用`.../{id}/route`。客户端已读后再次resolve，再检查账号/缓存代际，撤权或身份切换期间不得导航。重复read保留首次已读时间，重复打开不重复站内记录。
+
+Buddy outbox与通用Push job按稳定身份和跨进程session锁串行。outbox重放始终沿用同一逻辑job，只有一条in_app与逻辑Push记录；worker在重试时重新计算当前禁用类别、静默、静音时段、冷却/预算（排除自身通知），不以原attempt跳过。进入通用队列及failed_event之后，每次实际发送、每个设备发送前仍重验app membership、当前目标、关系/方向授权、静默、Push开关和设备归属。数据库故障不被当作授权拒绝而静默丢弃。
+
+设备确认成功、永久拒绝、processing及outcome_unknown回执写入原job的内部`_frogsleep_delivery` JSON，key只保存app/owner/platform/token哈希，不增加token明文副本。确认成功设备不会重发，失败设备继续按原job重试，provider attempt最多5次，每job至多一个待重放failed_event，已关闭或预算耗尽不会再重放。发送前先持久化processing，崩溃恢复或传输响应丢失变为`PROVIDER_OUTCOME_UNKNOWN`，停止自动重发并保留站内回退；不能把未知结果说成成功，也不保证外部provider物理恰好一次。
+
+outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`表示该任务停止自动处理，须结合内部outcome看provider接受、抑制、无设备或结果未知。逻辑Push delivery成功使用`provider_accepted`，不当作设备已展示；in_app `delivered`表示站内物化。无有效设备为`NO_ACTIVE_DEVICES`，不制造provider失败事件；无配置provider、可重试provider拒绝、永久设备错误与结果未知分别记录，不使用logging-only当成功。永久无效token只清当前app/owner/device，不清另一账号或app。
+
+`POST /api/v1/frogsleep/devices`按认证账号绑定(app_id,platform,push_token)唯一活跃身份；新账号注册同token会转移归属，旧账号不能删除新主记录。068迁移扩展逻辑delivery的provider_accepted状态，069迁移保留每app/platform/token最近注册，软删除旧活跃重复，建立partial unique index；不改其他app的设备归属，不猜测guest绑定。
+
+邮件worker每次claim/重试检查开关、有效邀请/邀请人及已绑定收件人的禁用类别/拉黑。已provider_accepted不再次投递，SES callback才更新delivered。过期processing及已发请求后响应未知进入`dead_letter/PROVIDER_OUTCOME_UNKNOWN`，等待核查，不盲目自动重发；已知可重试失败最多5次，配置/永久拒绝停止。静音时段是Push中断偏好，不自动静默异步邮件；总禁用/邀请类别禁用适用于已绑定收件人的邮件。
+
+本机测试/迁移/复现见[通知收口验证记录](docs/frogsleep-phase2a-notification-closeout-verification-2026-10-11.md)。邮件真实送达、APNs/FCM当前配置、真机deep link及dev/发布仍须单独验证。
+
+设备历史若最新注册时间并列，069停止这些冲突token的活跃绑定，等待当前账号显式重新注册；不通过随机ID猜当前使用人。PG已验证并列停用、重新注册与旧主不能删除新主。
+
+### Sleep 私人报告同步（2026-10-11）
+
+个人报告 API 以稳定 snapshot_id 幂等保存；新增本人 detail/PUT/DELETE、personal-sync/state、固定边界 restore、提交有序 changes，并将 report_preferences 接入相同修订协议。历史 GET 使用完整数据库分页，无前500条截断。写入支持 X-Sync-Epoch、Idempotency-Key、If-Match，409冲突/410墓碑不可盲目覆盖或复活。旧无epoch兼容仅限未重建的账号。范围已扩展到原始终态睡眠、报告和报告偏好，并支持独立凭据的游客云升级；客户端2B恢复仍需双端验收。接入细则、保留策略、开关和回滚见 [私人同步专题](docs/public-frogsleep-personal-sync.md)。
+
+### FrogSleep 共享读取的身份与撤权边界
+
+`/api/v1/frogsleep/buddy/relationships/:id/grants` 与受保护摘要读取使用关系参与者、域和定向 grant 校验。共享读取在初次授权查询后重新检查关系仍 active/accepted、双方未屏蔽、授权仍 granted 且版本未变化；读取途中暂停、解除、撤权或撤权再授权，旧读取不得凭最初状态放行。使用现有 403/404 安全错误或摘要 redacted 占位，不新增对第三方可见的关系详情。
+
+本次校验不承诺撤回已发送的 HTTP 字节；客户端必须在 UI 和持久缓存提交前复核账号、关系/授权代次、请求序号及期限。A→B→A 或撤权→恢复均不能复用旧请求。新读取可使用新授权重新获取。客户端本地搭子开关关闭应取消同步并清共享缓存；服务端能力开关停用普通增长/通知路径时，暂停、撤销等安全命令仍应可用。单域接受与 grant 是独立协议动作，Bundle 不能隐式授予另一个域。
+
+### FrogSleep 二期：游客绑定上传及账号删除（A03/A10）
+
+沿用 `POST /api/v1/frogsleep/focus/sessions` 与 `POST /api/v1/frogsleep/product-data/sleep-reports`，不增加并行上传通道。上传 owner 始终来自 FrogSleep 会话；可选 `owner_user_id` / `ownerUserId` / `user_id` / `userId` 若与登录主体不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`，不能把旧账号作业改归当前账号。
+
+- 专注历史记录提供稳定 `session_id`（兼容 `sessionId`），按账号+类型+记录 ID 去重；相同内容重试返回原结果。带 `binding` 的 completed/abandoned/interrupted/cancelled 确认导入记录内容不可变，更换终态内容返回 `409 REQ_INVALID_BODY`；未带 `binding` 的既有专注上报仍支持同 ID 修正并保留服务端 ID 和创建时间。睡眠报告使用稳定 `snapshot_id`（兼容 report_id/id），统一保存在私人同步仓库；相同内容幂等重试，修正已有报告必须通过私人同步协议携带当前 revision，否则返回 `409 FROGSLEEP_SYNC_REVISION_CONFLICT`。不同账号的相同本机 ID 互不覆盖。查重不受列表分页限制。
+- 可选 `binding: {owner_user_id, job_id, confirmed_at}` 表示用户确认的导入作业。owner 必须等于当前主体；job_id 非空，confirmed_at 为 ISO 时间。更换作业 ID不会重复导入同一条记录。绑定专注记录必须是终态、有稳定 ID和原始开始/结束时间，否则返回400。客户端只发送用户确认的类别、日期与记录；设备状态、未完成锁定和运行中会话不迁移。服务端不能以这份 metadata 代替客户端的真实确认界面。
+- 旧专注调用未提供记录 ID 时保留 append 行为；运行中状态仍走原有通道，不以终态去重规则改变生命周期。绑定上传不得使用这个兼容分支。存量已重复的数据不在本次自动删除。
+- `DELETE /api/v1/frogsleep/me/account` 保持既有响应，清理 FrogSleep 数据并撤销其凭据，保留 Zook 全局身份和其他产品。新增清理规范化分域关系、双方授权、邀请决定/邮件任务、相关通知；释放搭子的领域占位并推进版本。清理与 membership 更新在事务内完成，数据库失败回滚。删除与领域命令使用同一 slot 锁边界；旧接受重放不能恢复已删除关系。
+- 删除成功后旧 token 再次请求返回401，不提供使用失效 token 的成功重放；数据清理可重复执行且无跨产品副作用。外部提供方已接收的邮件/推送不能撤回，待发送任务清理及发送前权限校验仍是边界。以上本地测试不等同于生产部署或双端整体联调。
+
+
+### 2026-10-18 整合后的 Sleep 边界补充
+
+- `GET /api/v1/frogsleep/focus-buddy/stats/week`（以及兼容 `/focus/stats/week`）支持 `week_start` / `weekStart`，按该周返回统计；非法日期返回400。
+- `GET /api/v1/frogsleep/product-data/sleep-reports` 的 `since` 严格筛选 `recorded_at > since`，游标绑定该筛选和固定读取边界；后续分页须重复同一时间（等价ISO表达可规范化）。筛选改变返回409，非法时间返回400。`since` 仅为报告时间筛选；修改/删除增量必须使用 `personal-sync/changes`。
+- canonical关系接受后会持久化双方共八条 `revoked/version=1` 授权。PUT前必须先GET本人当前grant版本，不能固定传0；仅尚不存在的只读默认项为version0。默认revoked不代表已共享。
+- 未授予共享时守护状态可显示关系，活动共享session为空；完成晨间确认的参与者不能重新accept覆盖终态。通知在入队和实际投递前重验接收方睡眠偏好。
+- 共同目标调整不能跨Sleep/Focus域；共同活动必须双方完成真实记录才计完成。周报进度来自终态专注和本人晨间确认，不采信客户端声明的累计贡献。撤权后目标列表省略不可访问项，活动命令仍拒绝。
+
+能力范围、分支整合及当前验证限制见 [Sleep审计](docs/sleep-api-capability-audit-2026-10-18.md)。
+
+### FrogSleep 首次共同完成（P0，本地未发布）
+
+- 搭子中心、目标、专注与睡眠读取同一逐域关系事实；新关系默认关闭各类分享，显式授权后才可操作。活动/目标必须匹配关系域，`adjust` 也校验。
+- `POST /api/v1/frogsleep/buddy/joint-activities/{activityId}/start`：接受后参与者各自开始，开始时间持久化、重试不重置。接受后有效期36小时；先完成或由发起人取消当前活动，再开始新的同域活动。
+- `payload.participant_progress` 按用户 ID 返回 `status: pending|started|completed`、`completed_at`、`minutes`。只有双方实际完成才更新活动 `completed` 并产生去重通知。接受、点击完成或暂停今晚均不等于共同完成。
+- 专注按开始后真实 `completed` 会话且分钟达到 `planned_minutes`；`session_id` 是当前账号内稳定身份，重传返回已有记录，不重复计数。分钟上限取上报分钟与实际起止时长较小值，未来/未完成源不计。睡眠按本人 `morning_completed` 原始事件，不用对方摘要推定。
+- 目标只累计双方接受之后、目标时间窗内的对应域真实记录。分钟求和；天数以目标时区自然日去重；鼓励按发送自然日去重。`sleep_schedule_days` 当前表示完成共同睡眠的天数，不代表按时入睡，三端显示为共同睡眠天数。暂停后冻结截止时间，双方达标自动完成。
+- 共同活动读取与目标读取可修复离线重试后遗漏的衍生状态；真实会话写入同样触发刷新。撤权/解除后不返回受保护内容，个人专注保存不依赖共享权限。
+
+
+追加整合：共同目标从双方接受时开始计数，暂停后冻结进度；共同活动以真实完成时间归属周窗口，超过期限且未完成才失效。共同睡眠按每位参与者持久化的事件时间归属完成事实，之后另一人的事件不能改写先完成者的日期。canonical关系（包括已撤销关系）遮蔽同一参与者/域的旧兼容关系，避免旧记录重新显示或绕过撤权；解除/拉黑仍清理被遮蔽的旧事实。私人专注列表及周统计读取完整数据库记录，不因旧500/200条上限截断。
+
+### FrogSleep 原始睡眠同步与可信游客升级
+
+原始睡眠 `sleep-sessions` 支持 completed/cancelled/interrupted 终态、结构化事件和128 KiB以内私有历史；所有写入/删除必填 X-Sync-Epoch、Idempotency-Key，修正/删除要求 If-Match。单条响应为 data.sleep_session；分页和统一 restore/changes 包含 sleep_session 种类及墓碑，不能恢复为活动设备锁。详见 [私人同步协议](docs/public-frogsleep-personal-sync.md)。游客凭据只以哈希持久化，来源与目标锁定后一次迁移，最多10,000个最新资源/32 MiB，不截断。独立凭据、明确确认、回执重试及会话撤销见 [游客升级协议](docs/public-frogsleep-guest-upgrade.md)。
+
+### FrogSleep 浏览器同步预检
+
+允许的 Web Origin 发起 `OPTIONS` 预检后，服务端允许 `GET/POST/PUT/PATCH/DELETE/OPTIONS`。个人同步的 `Authorization`、`Content-Type`、`X-Sync-Epoch`、`Idempotency-Key`、`If-Match` 可用于跨域请求；响应会反映浏览器声明的请求头，默认请求头列表也包含这三个同步头。`PUT` 修正睡眠原始记录、报告和偏好不应被浏览器预检拦截。Origin allowlist、鉴权和账号归属规则仍独立生效。原始记录和升级协议见 [私人同步](docs/public-frogsleep-personal-sync.md) 与 [游客升级](docs/public-frogsleep-guest-upgrade.md)。
+
+私人同步与游客创建/升级由资源服务拥有数据库事务，HTTP 错误转换在其提交/回滚之后执行；升级冲突不能留下已迁入的部分记录。SQL 提交后才撤销游客会话；会话清理失败时可保留原请求重试，不能把5xx视为未提交。dev 专项入口与可删账号边界见 [验收记录](docs/frogsleep-dev-personal-sync-acceptance-2026-10-18.md)。
+
+
+## LightTick 共享行动计划
+
+新增 `/api/v1/lighttick/action-plans`、`/action-plans/{id}/operations`、执行记录、复盘及AI历史、日历、`/action-link-tickets` 和受信 `/grow-bridge`。正式账号公共登录鉴权；功能开关 `LIGHTTICK_ACTIONS_ENABLED=1`，未开启返回503。完整方法、字段、幂等、签名、接管恢复与错误语义见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+
+### FrogSleep 异步搭子留言与小花（V1，受控发布）
+
+所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/requestId` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
+### LightTick 独立记录（Grow I1）
+
+注册 LightTick 成员以 Token 中的 app/user 归属访问，无需 goal/plan；游客仅在客户端暂存。记录不会自动进入 AI 上下文。
+
+| 方法 | Canonical 路径 | 结果 |
+|---|---|---|
+| GET | `/api/v1/lighttick/records` | `items,has_more,next_cursor`；q/date/archived=false,true,all/limit(1–200)/cursor；日期降序后按 ID 降序，游标固定 owner 与筛选 |
+| GET | `/api/v1/lighttick/records/{recordId}` | 当前记录，他人或未知 ID 为 404 |
+| PUT | `/api/v1/lighttick/records/{recordId}` | 客户端稳定 ID，base_version=0 创建；之后使用当前版本 |
+| GET | `/api/v1/lighttick/records/{recordId}/versions` | 含归档/恢复操作的不可变历史，版本倒序 |
+| POST | `/api/v1/lighttick/records/{recordId}/archive`、`/restore` | body: `{base_version}`，产生新版本 |
+| GET | `/api/v1/lighttick/records/export` | format_version=1、exported_at、records[{record,versions}]，含归档及全部历史 |
+
+PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_date 为真实 YYYY-MM-DD；prompt_kind 为 free/learning/difficulty/decision，guided_answers 可选（最多12项，每值2000字符），tags 可选（最多20项，每项50字符）。采用整理 adopted_summary 需提供 summary_basis_version（1至base_version）；本轮不生成 AI 整理。
+
+所有写请求必须携带 8–128 字符 Idempotency-Key；同键同请求返回原结果，不再增加版本或变化；同键更换正文、对象或操作返回 LIGHTTICK_IDEMPOTENCY_MISMATCH(409)。陈旧版本为 LIGHTTICK_VERSION_CONFLICT(409)，输入不得自动覆盖。写入、历史、请求结果与 sync change log 同事务；sync/pull 返回 entity_type=record 的完整快照，sync/push 仍仅承载已有任务事件。LightTick 应用删除覆盖新表、历史、操作及变化日志，其他产品保持原归属。无旧 Grow 数据迁移或账户自动合并。
+
+
+### Grow 独立记录交接（默认关闭）
+
+- `POST /api/v1/lighttick/record-link/tickets`：正式账户生成五分钟记录连接码；`GET /record-link/status` 返回该账户当前阶段。与 action-link 的计划授权分开。
+- `POST /api/v1/lighttick/record-bridge`：仅信任配置的 Grow 实例和服务端登录 subject。HMAC 签名覆盖实例、subject、秒级时间、nonce 和递归排序的紧凑 JSON；窗口 ±120 秒，nonce 入库防重放。原生端不能自行声明 Grow 身份。
+- 流程：preview → claim → stage（原生查询、同步和导出均不可见）→ 来源持久化写屏障和精确备份 → 签名 frozen 回执 → activate。binding、operation、快照 SHA256、目标 owner 必须一致；激活、历史和变更日志在同一个 owner 事务内提交。响应丢失使用相同操作和快照重试，不覆盖之后的新编辑。
+- `cancel` 仅允许 prepared/staged，取消确认后来源可恢复写入；active/readonly 禁止取消。已激活回退使用 `POST /record-link/readonly` 返回 `{phase, export}`：目标停止写入并导出最新完整状态，来源继续冻结，不能用交接前快照直接回写。
+- 交接包最大 4 MiB / 10000 条，包含所有归档记录、实际存在的版本、当前观察快照、AI 私人历史与安全的操作元数据。旧版未存下的版本须在 `source.missing_versions` 明列。原始结构保存在 owner-only `source_history`，完整导出一并返回；不会伪造缺失历史。凭据字段不得进入包。
+- 转入记录的 `source` 只由服务端写入；客户端编辑不得提交该字段。原文、日期、提问类型、回答、标签和已采用整理保持独立于目标。AI 历史在本阶段只读，桥接不能触发新 AI 生成。
+- 记录、版本、来源历史、stage 备份、连接码及绑定随 LightTick app-scoped 账户删除清理；原 Grow 只读备份的独立删除仍由 Grow 账户负责，删除目标不会重新开放旧来源。
+- 部署配置：Zook `LIGHTTICK_RECORD_HANDOFF_ENABLED=1`、`GROW_RECORDS_SOURCE_ID`、`GROW_RECORDS_BRIDGE_SECRET`（至少 32 字符）；Grow 使用相同来源 ID 和密钥，加 `LIGHTTICK_BRIDGE_URL`。只允许 HTTPS，localhost 合成验收可用 HTTP。密钥只留在服务端。未配置或网络错误时保持当前写入归属并保留输入。
+- 记录写入在 owner 锁内复核 ACTIVE user/membership，避免删除与在途写入交错后重建数据。桥接每次也在锁内复核正式账户访问资格。
+
+旧 Grow 历史版本未记录 `summary_basis_version` 时，不从最新记录推断旧依据；规范投影可省略该历史版本的整理字段，原始 `adopted_summary` 完整保存在 `source_history.private_history.versions`，被省略的版本号在 `private_history.normalization.summary_basis_missing_versions` 明列。当前观察快照使用其实际保存的依据。
+
+`/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`启用读取，另需显式 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 才开放写入、新连接码和 Grow v2 接管。行动POST须声明 `X-Grow-Action-Schema: 2`；默认关闭时仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED，旧版本始终拒写。原生消费者在本地候选适配，真机和生产发布另验。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+### LightTick：Grow 私有来源证明与可靠回执（C2）
+
+`POST /api/v1/lighttick/grow-bridge` 增加签名 source-context/source-confirmation/source-receipt/source-reconcile。仅已有 active 绑定和活跃注册会员可用；服务器生成的 article_read/lesson_completed 证明通过私有 outbox 投递，按不可变事件 ID/hash 去重，丢响应后查询/重放，running 结束后核对原事件完成。origin 证明保留原计划日期/时区；不复制正文/笔记。新增稳定错误 SOURCE_EVENT_CONFLICT、SOURCE_PROOF_INVALID、SOURCE_DELIVERY_UNAVAILABLE；详细字段、状态与恢复见 [共享行动协议](docs/public-lighttick-actions.md#c2-私有来源通道2026-10-21) 和唯一 OpenAPI 的 LightTickActionSource* schemas。
+
+默认不放行普通 action 写入、新配对或 v2 接管；2026-10-25 独立 v2 开关与消费者适配见行动协议当前接入节，生产尚未部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。
+
+### LightTick 行动接管快照 v2（默认关闭，显式启用）
+
+唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对默认关闭；显式 v2 开关启用后由三模式消费者接入，旧消费者仍拒写。私有切换协调、来源确认屏障、不可变备份与故障恢复已隔离验收；新增 LightTickActionHandoffReceipt 严格区分预检和导入回执，并将迁移事件接入既有 C2 完成核对。目标版本冲突用 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED 拒绝，pending 仅可对同一备份重预检；未恢复来源发布日志会阻断冻结。2026-10-25 已将同一内部服务接到显式启用的受信 bridge 预检/导入动作；默认门禁和旧客户端拒写仍保留。原生/真实双端与生产放行仍待完成，不能据内部通过迁移真实账号；最新证据见 docs/verification/lighttick-handoff-cutover/README.md。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
+
+
+### Grow 手机学习计划进度（本地候选）
+
+`GET /api/v1/lighttick/action-plans/learning-progress` 读取正式账号本人已绑定 Grow 来源的最近快照，无快照返回 `data.progress:null`。有快照包含来源修订/观察和接收时间、配置网页地址、正式计划及阶段的总课数/发布数/本人学完数/百分比；不含课程正文、笔记、反馈或模型输出。匿名与游客不能读取私人进度。源每30秒通过受信 `grow-bridge action=learning-progress` 检查并持久重试投递，绑定、修订、摘要及阶段数量必须匹配；不接受客户端自报完成数。协议、配置、H5分工与开关见 [行动协议当前接入](docs/public-lighttick-actions.md#2026-10-25-原生执行及学习计划进度)。
+
+### 2026-10-25 Grow 原生课程只读接入
+
+`GET /api/v1/lighttick/learning-library` 返回本人当前绑定且已另行授权的课程目录；`GET /api/v1/lighttick/learning-library/{lessonId}` 返回正文、来源参考、内容版本和来源学完状态。需要 lighttick 正式账户 Bearer 与有效成员身份，禁用服务返回503；未授权目录为空，正文404。仅投影已发布内容，不含笔记/作答，不产生完成。正文版本绑定 content+references 的 canonical SHA256，课程ID不随标题改名变化。
+
+可信 Grow 源通过既有签名桥接 `action=learning-library` 推送，需 schema 2、相同已认领的 binding（可处于只读 staged 阶段）、单调 source_revision、observed_at、consent_enabled 和有界 lessons。授权单独在 Grow 确认，旧行动/记录授权不扩大。重放同版本同摘要幂等；篡改、过期绑定和乱序拒绝。最多200节、每正文/参考100000字符、整包4MiB。独立可重建投影表不膨胀行动工作区，产品账户删除覆盖镜像。原生每账户有界缓存、同版本阅读位置；撤回后在线清理，离线旧缓存须设备清理。默认 v2 写开关不变，不推送私人正文到未授权账户。
+
+只读课程连接允许使用已认领但未接管行动的 staged binding：只有显式阅读 scope 可读写课程镜像，其他行动/来源操作仍要求 active，不能因此绕过 R20 或行动冻结/接管门禁。
+### FrogSleep 异步搭子留言与小花（V1，本地实现，未部署）
+
+所有接口使用 FrogSleep bearer/app membership，canonical 前缀 `/api/v1/frogsleep/buddy-support`，响应为统一 `code/data/request_id` 信封并携带 `data.server_time`；成功响应 `Cache-Control: no-store`。
+
+| 方法 / 子路径 | 输入与结果 |
+| --- | --- |
+| GET `/center` | `include_content` 默认true、`limit` 1–20、`cursor`；合并相同搭子，返回每域capabilities及最近收到的便签。保护个人活动时传false，只读元数据。 |
+| GET `/capabilities` | 必填`relationship_id`；返回`capability`，含本人接收开关、revision、can_send、can_read_history、本人静默及next_send_at。 |
+| PUT `/permissions/{relationshipId}` | `enabled`、`expected_revision`、`operation_id`；仅修改本人定向接收，返回permission。默认关闭，与数据共享独立。 |
+| POST `/notes` | `relationship_id`、`operation_id`、`template_key`（可null）、`flower`、可选`context`；至少模板或一朵花，返回note及operation_id。 |
+| GET `/notes` | 可选`partner_id`、`domain: sleep/focus`、`limit`1–50、`cursor`；返回notes/next_cursor。游标绑定账号与筛选。 |
+| GET `/notes/{noteId}` | 返回当前仍授权且未到期的note。 |
+| GET `/operations/{operationId}` | 仅本人操作回执，state为accepted/not_sent/not_found；not_found不能推断原发送失败。 |
+| PUT `/operations/{operationId}/resolution` | `relationship_id`和原始`submission`快照；与发送共享事务锁，返回`operation`终态。确认先获锁则持久化not_sent，迟到发送拒绝；发送已提交则accepted。 |
+| POST `/notes/{noteId}/acknowledgement` | `operation_id`；接收者单次显式收下，返回note_id/acknowledged，不创建反向留言。 |
+
+模板固定 `focus_start_small/focus_keep_pace/focus_effort_seen/focus_restart/sleep_goodnight/sleep_no_rush/sleep_morning/sleep_support`，同域匹配；发送不接受domain/template_version/custom_text等额外字段。context仅支持同关系`{type: buddy_share|buddy_joint_activity,id}`且双方仍有对应数据授权；查询时撤回上下文不影响普通模板与花。无context不要求摘要/活动共享。
+
+滚动24小时同一发送人→接收人跨两域最多3条成功留言；重试不重复扣额。配额429 `BUDDY_SUPPORT_LIMIT_REACHED`返回本人`next_send_at/retry_after_seconds`；revision和异载荷操作冲突409；已封口操作409 `BUDDY_SUPPORT_OPERATION_CLOSED`；暂停、拉黑、解除、跨对象或无接收许可统一404 `BUDDY_SUPPORT_UNAVAILABLE`。模板/自由文字错误400。本人已持久化的操作终态可在关系解除后通过resolution确认，仅返回state/resource_id，不恢复正文；尚未建立终态时仍需当前可用关系。旧focus messages及growth encouragement/praise/support在试点关系上409 `BUDDY_SUPPORT_UPDATE_REQUIRED`，不能绕过许可。
+
+启用需先应用迁移075并配置 `FROGSLEEP_BUDDY_SUPPORT_ENABLED=true`、生产 `FROGSLEEP_SUPPORT_CURSOR_SECRET`（独立随机密钥，所有实例一致）。开关关闭时center返回enabled=false，其余support资源404；持久policy仍阻断试点旧写。受控内部`BuddySupportCommand.enroll`选择已验证双端版本的关系，不提供公开自动enroll接口，GET不写policy；enroll不替用户开启许可。首次试点需运营明确选定关系并验证双方兼容，当前未执行生产enroll。
+
+内容30天到期即时不可读，worker每轮批量物理清理1000条及31天前操作；删除FrogSleep账号同时清理双方相关便签/许可/操作。V1发送和收下均不创建Push、邮件或interaction_received通知，客户端不得自动重发未知操作。原focus消息7天生命周期保持不变。
+
+
+2026-10-24 support补充：仅服务端记载去重的`frogsleep_support_sent/acknowledged/receive_changed`事实，客户端公共analytics入口不接受这三种事件。元数据仅domain、花/模板类别或本人enabled布尔值，不采集正文、template_key、搭子ID、当地观看事实或上下文。统计失败不回滚已提交业务；不会建立通知。邀请页勾选后仍须先建立关系，再单独提交接收许可；不符合已验证试点资格时保持关闭，显示关系已连接/留言授权待重试。
+
+留言契约的 Swift/Kotlin/Zook 同源测试 fixture 位于客户端仓库 `contracts/fixtures/buddy-support-v1.json`；通过 `scripts/sync-buddy-support-fixture.py --check --zook-root /Users/hao/Documents/project/Zook` 校验快照，Zook 回归 `test/unit/frogsleep-support-contract.test.ts` 验证模板、域和毫秒日期。
+
+试点观察准备：`node --experimental-transform-types scripts/frogsleep-support-observation.ts docs/frogsleep-support-observation-input.example.json` 仅处理离线聚合；五项护栏必须是显式有效值，每组需真实完整 14 日数据及匹配的合格展示来源。缺失/无效返回 `not_ready`（退出码 2、guardrail=null），不按 0 处理；样本不足为 `insufficient_sample`（2），完整输入护栏越界为 `stop`（3），`review`（0）也不是发布通过。当前可信展示来源目录为空，输入不能自行注册，空示例及历史无来源整数输入都未就绪。始终 releaseReady=false、improvementClaim=false，不上传浏览、不开放 cohort。输入字段、来源注册边界与人工复核要求见[观察工具说明](docs/frogsleep-support-observation.md)。
+
+### BodyLog account, invitation and retention integrity (2026-10-28)
+
+Canonical prefix: `/api/v1/bodylog`. All operations below require a valid Bearer token with active BodyLog app membership; `X-User-ID` and device identifiers never authenticate a caller. Responses use `{code:"OK",data,...}`. Disabled route families return `404 BODYLOG_FEATURE_DISABLED`. OpenAPI: `api-contracts/openapi/bodylog/api.yaml`.
+
+- `GET /invitations/preview?code=XXXXXX` or `?token=...`: exactly one locator; returns only `intent`, `code`, `expiresAt`. It does not bind an account or disclose the inviter's identity/device. Invalid/expired/revoked invitations return 410.
+- `POST /invitations/attribute`: `{installId,token}` or `{installId,code}`. The same account, invitation and installation confirm the original attribution, including after revocation/expiry. Changing any binding returns 409. Self/same-device/block checks continue to apply. All growth intents produce `/i/{token}`; `/b` and `/g` remain relationship namespaces.
+- `DELETE /invitations/{token}`: owner-only, idempotent `{revoked:true}`. Revocation blocks new attribution and preview without erasing confirmed prior attribution.
+- `POST /invitations/progress` remains compatible with `{date,timezone}` but dates alone never qualify a user. The server reconciles completed local-goal missions saved by the seven-day aggregate service; aggregate corrections update unqualified invitation progress. Three distinct eligible days qualify once. Qualification and both promotional grants share one database transaction. The current reward remains **one day per eligible recipient**, with at most three inviter awards per UTC calendar month. Previously emitted awards are immutable; this is privacy-minimized client aggregate evidence, not independent verification of sensor data.
+- `POST /buddies/encouragements` is the durable protocol route and requires a stable `Idempotency-Key`; older deployments return 404 without writing. This prevents rollback from silently downgrading a pending delivery. `POST /buddies/encourage` remains compatible and supports optional `Idempotency-Key` (`[A-Za-z0-9_-]{1,128}`). Same sender, pair, key and payload return the persisted original receipt, across concurrent application instances and restarts. Changed content returns `409 BODYLOG_EVENT_CONFLICT`. Blocked/dissolved relationships cannot receive new messages. Block also stops check-in broadcast, listing and feed access. Legacy callers without a key retain non-idempotent semantics.
+- `GET /missions` and `GET /rewards`: account-scoped arrays merging the actual seven-day plan and invitation sources. Claimed historical badges remain in the ledger. Seven-day claims continue through the existing plan reward claim route; invitation rewards issue automatically; campaign rewards require reviewed participation.
+- `GET /entitlements`: `{effective:{isPremium,sources,premiumUntil},promotional:[...]}`. Paid subscriptions and promotional grants are separate records, including invitation, campaign and stable buddy/group milestone sources. Only a continuous currently active interval extends `premiumUntil`; queued future grants cannot bridge an entitlement gap. The same effective entitlement controls server-side Buddy/Group Premium quotas. App-data deletion removes only that account's BodyLog ledger.
+- `GET /campaigns/active`: `{campaigns:[]}` if unconfigured. Campaign definitions come from the admin-managed `bodylog.campaigns` JSON array, not client payloads. Supported operations: `POST /campaigns/{id}/join`, `GET /campaigns/{id}/participation`, `POST /campaigns/{id}/submit` with `{platform,url}`, `POST /campaigns/{id}/claim`. Submission stores a public HTTPS URL for manual review; it never fetches a submitted URL or trusts client approval. OAuth verification is not offered. Duplicate/invalid configuration fails closed. A confirmed claim remains replayable after the campaign closes, with the original active/queued/expired receipt.
+- `POST /retention/events`: `{eventId,name,properties,timestamp,consent:true}`. Closed event and value allowlists are in OpenAPI. No habit names, health values, free text, invite tokens or client-chosen identity/variant are accepted as event properties. Event IDs deduplicate per authenticated account. `GET /retention/assignment` returns the server-assigned experiment ID/variant; default is disabled/control. `bodylog.retention-experiment` uses `{id,enabled,treatmentPercent,design}` with treatment limited to 0–50%; enabling requires a validated pre-registered design, mature sample target, observation windows, owner and guardrails. Incomplete or invalid config disables enrollment; see the internal experiment plan for operational ownership. Client consent is optional, account-scoped, off by default and checked again at transport dispatch. The local queue is capped at 100 events/seven days and cleared on opt-out/logout. Completed-plan exposure anchors UTC D1/D7 observed goal-action retention; immature cohorts have null rates. Collection and assignment do not establish a retention benefit without a deployed, mature experiment.
+
+`GET /public/config` adds capability booleans `buddyDeliveryV2`, `invitationManagement`, `retentionLedger`. They advertise the implemented contracts and do not replace permission gates. Clients must keep conservative behavior when a capability is absent. This source change does not certify that any public deployment exposes these capabilities.
+
+### BodyLog browser invitation handoff (2026-10-28)
+
+The public HTML routes `/i/{token}`, legacy `/invite/{token}`, `/b/{pairId}` and `/g/{groupId}?token={token}` provide an explicit `bodylog://` open button and an installation/return-to-original-link fallback. Opening HTML never attributes, accepts a relationship or claims a reward. `/invite-code?code={six-character-code}` opens `bodylog://invite-code/{code}`; the app stores it as a code and validates through the authenticated preview/attribution contracts. No store listing ID is guessed. Pages are no-store/no-referrer/noindex, run no script, and expose no inviter profile. Invalid path/token/code input is rejected.
+
+The AASA document includes `/i/*`, `/invite/*`, `/b/*`, `/g/*` and `/invite-code`, fixed to `LTN9Y4UXN3.com.youwoai.habittap`. Actual TLS, proxy hosting, signed app association and installed/uninstalled behavior remain deployment gates. Use `deploy_configs/nginx/bodylog-links.conf.example` inside the actual HTTPS host, selecting the correct slot; never proxy these routes to the Admin SPA fallback. Disable URL access logs for token-bearing paths. Client-side link support or an API unit test alone is not proof of public-domain association.
+
+
+Buddy pair responses now include optional-compatible `canAcceptInvitation:boolean`, computed for the authenticated viewer: false for the inviter, active/dissolved/expired pairs and legacy pairs without an addressed inviter; true only for the pending recipient. It is a UI affordance, not permission to bypass the accept endpoint. Existing acceptance authorization remains authoritative.
+
+## 药盒子（Yaohezi）账号接入
+
+公共账号校验仅接受服务端签发的完整 opaque credential；追加分段、非 URL-safe 签名、缺失或类型错误的内部声明均返回 `401 AUTH_INVALID_TOKEN`，不应触发客户端无限刷新。客户端不读取这些内部声明，沿用响应中的有效期和 user 信息。
+
+药盒子使用独立 `appId/productKey=yaohezi` 和 `/api/v1/yaohezi/*`。服务端仅在显式设置 `YAOHEZI_ENABLED=true` 时注册默认产品角色/配置并启用账号路由；未设置时保持关闭，不随部署 slot 自动开启。已有部署须确认产品元数据已通过标准 seed 注册。
+
+App 通过公共 `/api/v1/auth/login/sms-code`、`/api/v1/auth/login/sms`、`/api/v1/auth/refresh` 与 `/api/v1/auth/logout` 建立账号会话，预登录请求提供 `appId=yaohezi`；不得使用开发验证码绕过。
+
+`GET /api/v1/yaohezi/me` 要求匹配的有效 token、启用的 app 和 ACTIVE membership，返回 `{code,message,data,requestId}`，其中 data 为 `{appId,userId,healthAccessEstablished:false,capabilities:{cloudSync:false,familySharing:false,reportAI:false,subscriptionSales:false}}`。登录不关联、上传或认领本地档案；成员角色不授予健康资料权限，其他产品 token 返回 403。该端点只确认账号接入，当前返回的云端/共享/AI/销售能力均关闭。
+
+唯一合同为 `api-contracts/openapi/yaohezi/api.yaml`；运行时使用生成后的 `YaoheziMeData`。服务地区、供应商、付费 SKU 与实际部署另行验证后配置，不在本账号入口隐式开启。
+
+本地接入验证：在 Zook 工作区运行 `npm run verify:yaohezi-local`。需要 Node、正在运行的本机 PostgreSQL（当前 OS 用户具备建库权限）及 PATH 中的 `redis-server`；可用 `YAOHEZI_LOCAL_PG_PORT` 指定本机数据库端口。脚本只连 `127.0.0.1`，为每次运行创建独立 `yaohezi_local_*` 数据库，并启动独占端口、随机密码的临时 Redis，不读取生产 `DATABASE_URL/REDIS_URL`，不清空现有数据库或 Redis。结束后关闭该 Redis，保留测试数据库和 `.artifacts/yaohezi/<数据库名>/` 证据供检查。
+
+该验证经过真实 PostgreSQL 迁移、真实 Redis、loopback HTTP、服务端验证码校验、账号/产品成员关系、跨产品拒绝、并发 refresh 单一成功、登出后 refresh 失效及新应用实例的会话/成员关系读取。短信发送器与任务队列是明确的本地 fixture，无外发短信或推送；不代表家庭授权、可信设备、密文同步、支付或视觉模型已验收。禁止把 fixture 配置用于部署。
+
+同一命令还验证内部主体关联端口的真实 PG 并发/回执与账号隔离。该端口尚未开放为公共 API，`me.healthAccessEstablished` 仍为 `false`；本人声明关联不等于已验证本人、受信设备、共享授权或密钥领取。当前没有健康内容上传接口。
+
+iOS 持续本地联调使用独立的 `npm run dev:yaohezi-local`，默认只监听 `127.0.0.1:18763`，创建独立 PG/Redis，短信为正常验证码校验加本地 capture transport。该 fixture 的控制路径不属于公共 API、不会注册到部署入口。iOS 使用固定版本的轻量合同快照，账号登录/刷新/退出/切换不触发档案关联或上传。启动与 XCTest 步骤见 [本地开发说明](docs/yaohezi-local-development.md)。
+
+### I4 private learning (2026-10-25, local implementation)
+`GET /api/v1/lighttick/learning-library/{lessonId}/private` reads separately consented Grow notes, exercise answers, completion and saved position. `POST` accepts `LightTickLearningPrivateCommand` with immutable id, current content version/revision, action `save|complete|position`, notes/answers and position; requires formal LightTick bearer membership and schema header2. Acceptance queues a command, never fabricates source completion; GET operations expose pending/applied/conflict/unavailable receipts. Source CAS conflicts preserve phone input for comparison. Notes and completion are independent commands. Unknown legacy completion timestamps remain null.
+
+Signed bridge `learning-private` exchanges monotonic source snapshots and bounded command receipts against the current claimed binding; reading-only consent never authorizes private data. Grow remains sole writer and H5 uses the same source stores. Reading revocation and account deletion clear the private mirror/queues. Offline local drafts require device cleanup. Default action/v2 gates stay unchanged; no production scope is enabled by this code.
+
+### LightTick learning-to-practice loop (2026-10-29)
+
+`GET /api/v1/lighttick/action-plans/practices` returns `{practices:[...]}` with optional `source_kind=lesson|record` and `source_id` filters. `POST` to the same path accepts `{key,title,source_kind,source_id,source_version,date,timezone?,parent_id?}`. `date` is explicitly null or a calendar date. It creates one day/check action; lesson completion, time and source records stay unchanged. Requires formal LightTick membership or the existing trusted active Grow action bridge, `X-Grow-Action-Schema: 2` and the existing opt-in action/v2 write gates. A reading-only binding does not transfer action authority. `capabilities.learning_practice` advertises availability; consumers treat absence as unavailable.
+
+Source identity and version are checked against a currently consented lesson or the owner's non-archived record. Record validation takes record-owner then action-owner locks, matching deletion ordering. Stable `key` replay returns the original committed result even after source withdrawal; a changed payload under that key conflicts. Fresh commands require current source/version and preserve no copied source title, URL, lesson body or record text in `practice_source`. It retains only `{kind,id,version,binding_id}`. The user's explicitly authored action title and feedback remain part of the action history until normal account-data deletion.
+
+`POST /api/v1/lighttick/action-plans/{planId}/operations` adds `action: "practice-feedback"` with current `revision`, stable `key` and `feedback:{outcome:"applied"|"not_applied"|"unknown",result?,evidence?,next_step?}`. At least one text field is nonblank; result/evidence are capped at 2000 characters, next_step at 1000, and each practice at 100 feedback entries. Entries append IDs/timestamps to `practice_feedback`; completed practices may receive feedback, archived practices remain read-only. Feedback never creates completion facts, minutes, another task or a model request. Practice mode stays check/day with no content target through edits.
+
+`GET /api/v1/lighttick/action-plans/practices/{planId}/source` revalidates current access and returns `{available:true,title,text,current_version}` or `{available:false}`. A changed lesson binding cannot reopen a different source. Reading does not mutate facts. These responses and receipts are no-store and owner scoped. Error classes remain the existing 403/404/409/422/503 semantics; no production switch or account migration is enabled by this change.
+
+### 2026-10-30 Grow网页统一会话的记录历史读取
+
+`GET /api/v1/lighttick/records/{recordId}/history`使用正式LightTick Bearer及活跃membership，返回本人`{record,versions,source_history?}`；与现有记录详情／版本同一权威存储，异账号返回404，不生成AI、不改写来源。可选source_history仅包含已接管的本人原始历史，遵循现有导出／删除范围，禁止凭据。Grow同源BFF使用该公共合同读取单条历史，无须以来源签名代替本人Token或为一次详情导出全部记录。
+
+### 2026-10-30 实践反馈到后续安排
+
+`GET /api/v1/lighttick/action-plans/practices/{planId}/follow-up?feedback_id=...`只读返回选中反馈、原行动revision、当前来源版本／可用性及本人当前有效的上级计划。`POST`同一路径提交`key,revision,feedback_id,source_version,title,date`，可选`timezone,parent_id,parent_revision`；所选上级必须携带当前revision。沿用schema头2、注册会员、独立写入开关与原请求幂等。原行动／来源／上级变化返回冲突供本人重新核对；来源撤回拒绝新建，但已提交同key先重放。
+
+新实践附带只读`practice_origin:{plan_id,feedback_id}`，来源仍为当前授权材料；原反馈、完成事实、上级日期与目标分钟不变。不自动复制整期预算，不自动生成计划或调用模型。旧端忽略可选字段，按`capabilities.practice_follow_up`识别能力；课程与整体Goal Coach约束仍遵循各自原任务。
+
+### 药盒子 M2：可信健康设备（2026-10-31，本地验证）
+
+账号入口和健康设备入口分别受 `YAOHEZI_ENABLED=true`、`YAOHEZI_HEALTH_DEVICES_ENABLED=true` 控制，二者默认关闭。只开启账号不会开放设备接口。M2 路径均为 `POST /api/v1/yaohezi/health/{action}`，要求有效药盒子 Bearer、活动账号/app/membership 和真实 PostgreSQL；无持久化存储返回 `503 YAOHEZI_HEALTH_STORAGE_REQUIRED`，无内存授权降级。普通 `X-Device-Id` 不提供设备证明。
+
+| action | 额外证明 | 行为 |
+| --- | --- | --- |
+| `challenges` | `subjectId + purpose + device` | 生成绑定账号/主体/不可变签名和封装公钥的五分钟单次挑战；每账号五分钟最多 20 次 |
+| `bootstrap` | 首次设备签名、明确本人确认、独立恢复 verifier/密文包 | 仅无历史健康 authority 时建立首个本人设备；self_asserted 不是患者身份验证 |
+| `sessions` | 当前可信设备的新挑战签名 | 返回 15 分钟 opaque 健康会话及 `creationOperationId`；数据库只存 token hash；创建操作号不可重建会话 |
+| `close-sessions` | 本设备 `close-sessions` 签名及普通账号 Bearer；无需健康 bearer | 将本设备指定创建操作号永久关闭并撤销已创建的会话；可先于或后于创建提交，不受设备撤销影响；仅限本账号/主体/设备 |
+| `recovery` | 同一 owner 账号 | 返回 verifier/加密恢复包；账号本身不能解密或恢复设备信任 |
+| `recover` | 新设备挑战签名 + 当前恢复 verifier 的恢复签名 | 新恢复材料、epoch/version 必须接续；原子撤销所有旧设备授权/会话，移除所有中继能力包，仅信任新设备 |
+| `enroll` | owner 健康会话及签名、新设备自身挑战签名 | 同账号设备批准，必须核对完整指纹；可给 owner 或限定资源的 reader；不是家人邀请 |
+| `inspect` | 当前健康会话及设备签名 | 返回绑定请求 nonce、账号/主体/epoch 的 30 秒信任快照和本设备能力包；reader 只获取自身、合法 writer 及必需证书链 |
+| `key-capsules` | owner 健康会话及签名 | 只存按资源 UUID、资源版本 UUID、epoch、接收设备/授权版本绑定的签名 HPKE 密文；不得上传库钥/整档案钥 |
+| `revoke-device` | owner 健康会话及签名、新恢复材料 | 撤销目标设备，推进 epoch/恢复版本，清除旧能力包并使旧 epoch 会话失效 |
+| `rotate-keys` | owner 健康会话及签名、新恢复材料 | 推进 epoch/恢复版本；未来内容须用新的资源版本和随机 DEK，旧明文/钥不能远程收回 |
+| `logout` | 当前健康会话及设备签名 | 立即撤销当前健康会话；不删除本人本地健康库或把其私钥交给服务器 |
+| `verify-operation` | 当前健康会话、外层命令签名、内层 revision 签名 | 校验当前主体/资源/动作/设备授权、版本/epoch/摘要/到期；返回 `healthContentAccepted:false`，不写临床事实、不代替 M3 修订接收 |
+
+后七类受保护调用（`enroll/inspect/key-capsules/revoke-device/rotate-keys/logout/verify-operation`）同时要求 `X-Yaohezi-Health-Session`，完整请求形状以 canonical OpenAPI 为准。管理命令包含 `version:1/subjectId/operationId/actorAccountId/actorDeviceId/grantVersion/keyEpoch/expiresAt`；签名输入为 UTF-8 canonical JSON `['yaohezi-health-v1', action, command]`，对象键排序，只接受整数及规范字段，base64url 不带 padding。设备签名为 Ed25519，公钥 32 字节、签名 64 字节。新设备 `enroll-proof` 和恢复 `recover-authority` 使用独立 domain。不能把验签成功当成改药授权。
+
+健康会话、设备和授权状态每次在相同账号→主体 advisory lock、authority 行锁、membership/share lock 的事务中重新核验，副作用与审计/回执在该事务提交。M2 路由不持有旧应用全局锁；同主体撤销先提交后，后续健康操作必须拒绝，即使普通账号 access token 仍有效。旧回执也先验当前授权，不复活已撤设备。`400` 非法结构；`403` 会话/信任/动作/签名拒绝；`409` 旧 epoch/version、已用挑战或操作冲突；`429` 挑战额度；`404` 开关关闭。权限拒绝不应触发账号无限刷新。
+
+设备信任、健康会话与普通账号会话不同。公共 `/auth/logout` 保持原 refresh-token 契约，不等于设备撤销；未来启用健康会话的原生退出流程须先调用健康 `logout`，再执行公共退出。再次建立健康会话需要可信私钥与新挑战；已撤销设备连新挑战入会也会被拒绝，必须通过有效批准/恢复路径。
+
+密码组合为 RFC 9180 X25519/HKDF-SHA256/AES-256-GCM 资源密钥封装，以及独立 256 位离线恢复材料派生的签名 verifier 和 AES-GCM 恢复 vault。服务器不执行解密、不持恢复 secret、设备私钥、SQLCipher key 或明文 DEK。不能检查恶意发送方放入密文的字节；客户端资源类型与核验边界仍是必要条件。实现与互操作参考在 `clients/yaohezi-security`，该目录和 HPKE 开发依赖不会被服务端运行时导入。详细威胁边界、AAD/framing 和评审见 `docs/security/yaohezi-m2-protocol.md`、`docs/security/yaohezi-m2-review.md`。
+
+本轮没有部署上述接口，没有完成原生可信设备 UI/Keychain、真机互操作、远程家庭授权、密文修订持久化、私有附件或 AI。不能用本地两个 Node 参考设备代替正式两台 iOS 设备验收。健康开关上线前还须处理已记录的依赖安全告警及产品删除编排；原件/共享/订阅功能开关仍为 false。
+
+### LightTick 原生手动计划与本机转属（N2）
+
+`/api/v1/lighttick/manual-plans` 使用现有 goal / plan / task 主数据，正式 Zook 账户即可使用；不要求 Grow 身份、绑定、网页会话或 AI。`GET` 列表；`POST` 新草稿；`GET/PATCH /{planId}` 读取或逐项编辑；`POST /{planId}/confirm` 核对 `base_version` 和 `goal_base_version` 后原子生效。Android 的 PATCH 可用同一路径 POST 加 `X-HTTP-Method-Override: PATCH`。所有写入必须带不可变 `Idempotency-Key`，相同 key/body 返回持久回执；相同 key 不同 body 返回 409。失败不留下部分任务；版本冲突需重新读取和审阅，不能换 key 盲重试。
+
+草稿必须有目标标题和 1–50 个行动，日期窗口最多 31 天；标题、说明、完成标准、日期、未知或正整数分钟遵循唯一 OpenAPI。日期须是真实日历日期且在窗口内。每日已知投入（包含已有安排）不超过 1440 分钟；未知投入保持 `null`，不能推断成零或默认十五分钟。未定日期的手动/转属行动不进入 Today。已有安排保留，不因新窗口而隐藏今日历史。手动草稿不会调用模型或生成执行任务。
+
+新原生包必须在 task / plan / Today / sync 请求发送 `X-LightTick-Task-Schema: 2`。已有计划读取遇到手动/转属对象时，旧包收到 `426 CONTRACT_UPGRADE_REQUIRED`，须升级后继续；服务端不会向旧包伪造已知投入或返回不完整的 Today。正式开放前须将 delivery config 的 minimum client version 更新到双端验收包。
+
+`POST /api/v1/lighttick/local-adoptions` 是独立审阅授权的单向转属。请求明确列出选中的目标及其行动、复盘、历史，必须包含关系闭包；不包含草稿和未选择对象。登录、游客升级及记录授权不触发本机计划上传。使用本机持久随机 workspace/source proof 生成稳定源映射，proof 不存入回执、操作日志或数据库。回执含 owner、各本机 ID 对应的云端 ID；同源重复请求只返回已有映射，换账户或改变已转属源内容返回 409。真实完成与复盘时间、未知日期/投入以及原历史保留，导入不虚构一次当下执行。客户端必须在发请求前冻结所选本机源；结果待核对时只恢复原账户、原 payload/key；成功后本机保留只读来源和回执，正式修改改走云端对象。
+
+账户删除清除产品内容、映射内容与回执，仅保留不可逆源散列墓碑，阻止复制旧本机文件复活已删数据。`LIGHTTICK_MANUAL_PLANNING_ENABLED=0` 可关闭新写入，既有手动计划读取与已有原请求回执恢复仍可用；不清空本机输入。共用 fixture：`api-contracts/fixtures/lighttick/native-manual-loop.json`。本轮仅研发候选，实际部署及商店开放另行验收。
+
+### 目标停止与旧入口（2026-10-31）
+
+目标生命周期与任务 start/complete/variant/step 等写入在同一 owner 事务锁下核验。暂停、达成或结束的目标不能被缓存任务命令、旧通知／深链隐式恢复；状态不允许时返回409，历史仍可读取。旧接口明确选择 keep_light_tasks 的轻量／最小任务保持兼容。手动目标仍有未完成事项时，直接 lifecycle resume 返回409，须先审阅剩余事项并确认恢复安排；不会自动把旧积压补排到今日。通知执行时按其目标／计划／任务来源重新核验，已停止目标的延迟投递被抑制。
+
+### 无网页原生接续与已确认条件（N3）
+
+- `GET /api/v1/lighttick/goals/{goalId}/continuation?period_start=YYYY-MM-DD&period_end=YYYY-MM-DD` 读取本人目标在显式近期窗口（最多31天）的任务、已保存复盘、来源安排、条件历史和每天容量。`goal` 是同一ID/版本的最小投影；`daily_limits` 同时返回已知分钟、未知项数和超限标记。读取超限安排不会删除或改变工作。
+- `POST /api/v1/lighttick/goals/{goalId}/conditions` 用 Idempotency-Key 确认条件。提交 `id, base_version`（目标版本）、`condition_version`（新条件0）、`scope`（ongoing/temporary）、`starts_on, ends_on, daily_minutes, active, reason`；持续条件 ends_on 明确为null，临时条件必须有界日期。启用分钟为1–1440；失效提交 active=false、daily_minutes=null，保留原适用窗口。目标与条件并发更正返回409并保留原事实。历史保存在目标自有的 `confirmed_planning_conditions` 审计范围；通用目标PATCH不得伪造或删除它。
+- 最新本人确认的持续值进入后续窗口，临时值到期退出；失效不会恢复被取代旧预算。降低容量不隐式删除已有任务，超限在审阅中显式处理。未知投入保持未知，不冒充零投入；实际完成仍允许如实记录。条件原因和原始审计历史不自动进入模型，规划上下文只消费所选窗口内的有效数值及来源版本。
+- 手动草稿新增可选 `source_reflection_id/source_reflection_version`，必须成对且属于同一目标。保存复盘及下一步文字仍然零排程；明确保存并确认关联草稿后，生成一个可追溯后续安排。来源变化返回409；同一复盘版本已确认过的后续安排不可再次消费。确认时的原文依据保存在 owner 范围的只读来源快照，不隐式加入AI上下文。
+- 手动草稿可提交 `replace_tasks: [{id,version}]`，逐项审阅待替换的 pending/in_progress 任务；行动可带 `source_task_id` 保留 lineage。确认事务内核对来源、任务、目标版本和当前容量，取消明确替换的旧事项并写入新事项，完成历史不变。`resume_goal=true` 允许为暂停／恢复中的目标制定新安排，须覆盖所有未完成事项；未选为继续的工作会明确显示在替换清单，不自动补债。
+- `PUT reflections/{id}` 按稳定资源ID和提交的 base_version 持久保存原响应。同一完整请求在后续修正发生后仍可核对原已接受版本；同一ID/base_version的不同正文409。保持旧客户端已有PUT及header行为，持久请求身份不与其他域共用的header key冲突。
+- `LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0` 关闭新的条件、关联后续、替换与审阅恢复写入；读取及匹配的已接受原请求仍可核对。已有有效条件继续约束普通安排，关闭不删除历史；正式账户及membership验证不变，不要求Grow绑定或网页会话。
+
+### LightTick 可选规划增强（N4）
+
+草案逐项编辑复用既有 PlanningSession 和 proposed AI plan，不另建手动副本。编辑前校验会话、摘要与计划版本、来源、目标状态、到期时间及当天容量；确认时再次校验持久草案未超出已审阅总投入，最终任务只在显式确认事务中创建。共用请求 fixture：`api-contracts/fixtures/lighttick/native-planning-edit.json`。AI 上下文仅追加当前窗口有效的每日分钟及条件ID/修订，不包含私人原因或审计历史。
+
+`public/config.features.conversational_planning` 只有运行时 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 与 delivery `featureFlags.conversationalPlanning=true` 同时开启才为 true；旧响应缺失视为 false，原生据此隐藏增强入口。规划开关关闭时拒绝新的写入；既有会话可读取，已接受的相同 key/body 回执可恢复，恢复不重新启动生成任务。未接受的请求仍拒绝。App 本机/手动基础链不依赖规划开关或 Grow 会话。
+
+Grow 的可选网页入口经 C05 同源受限代理调用现有 `goals`、`manual-plans` 和 continuation 读取路由，只允许基础草稿创建、逐项修改与显式确认；浏览器不接触 Zook token，不将基本计划复制到 Grow 计划库。该入口的 `GROW_NATIVE_BASIC_PLANS_ENABLED` 默认关闭；原生基础能力独立。真实 provider 质量、真机及用户观察证据与工程替身测试分开记录。
+
+### Billing environment isolation
+
+`X-Billing-Environment: production|sandbox` selects independent membership and
+credits records; omitted means production. Only a trusted deployment identity of `local`, `dev`,
+`development` or `test` permits sandbox (`DEPLOY_SLOT` takes precedence over `APP_ENV`).
+Online/unknown environments reject sandbox with `403 BILLING_ENVIRONMENT_FORBIDDEN`.
+No provider-specific sandbox enable flags exist.
+Alipay order ownership/access/renewals and RevenueCat snapshots/callbacks retain
+their verified environment. Migration 076 separates existing sandbox projections,
+credits and financial receipt identities; legacy active membership without matching
+verified environment evidence requires resynchronization. Billing, users/me, credits
+and AI callers must use the same header and environment-scoped cache.
+For streaming AI requests, the selected environment is retained throughout lazy
+stream iteration, usage settlement and cancellation/error cleanup. Consuming an
+HTTP stream after dispatch or concurrently with another environment must never
+change the membership or credits pool used by that request.
+
+### Billing market attribution
+
+Alipay order creation accepts optional `market` build attribution independently
+from distribution and payment source. Android China-store builds may report
+`xiaomi|vivo|oppo|huawei|honor|direct`; Web/Windows/direct Android accept `direct`.
+Missing market is allowed for legacy and generic builds. The server freezes it with
+the idempotent order; replay with a different market returns409. Attribution never
+changes server price, payment verification, membership or credit authorization.
+The Flutter client obtains it from resolved build distribution rather than region.
+
+
+### Membership synchronization transport
+
+Billing sync is cancellable. Callers must allow multiple 20-second provider queries
+to accumulate rather than applying a fixed receive deadline; keep connection/send
+timeouts and use explicit cancellation. Do not automatically retry the entire
+request on transport failures. Alipay QR polling invokes the same POST sync and
+never overlaps. Closing a wait does not cancel payment or erase committed facts.
+RevenueCat SDK purchase transaction identifiers are matched to verified REST V2
+subscription transaction `id`, as specified in the [official transaction reference](https://www.revenuecat.com/docs/api-v2/subscription-transactions). Old active access alone cannot confirm a new purchase.
+
+
+### BodyLog addressed group invitation codes (2026-11-01)
+
+`GET /api/v1/bodylog/public/config` advertises `groupInvitationCodes=true` when these contracts are implemented. Absent capability means the client must hide manual code joining. The `accountSocial` permission gate remains authoritative; capability does not enable production features.
+
+- `POST /api/v1/bodylog/groups/{groupId}/invite` accepts `{userId}` for a leader/admin and returns `{invited:true,code,expiresAt,invitationUrl,invitationToken}`. The six-character uppercase code is bound to the invited account and reuses the persisted addressed invitation grant, with a seven-day expiry. Renewing a pending invitation rotates its grant and invalidates the old code. The URL/token are not log or analytics data.
+- `GET /api/v1/bodylog/groups/preview?code=ABC234` requires the invited account and returns only `{id,name,currentMembers,maxMembers,expiresAt}`. It does not reveal habit/member data or join automatically. Wrong account, removed invitation or unknown code returns404; expired returns410; malformed returns400. Ambiguous codes fail closed. The bounded account lookup rejects excessive invitation records with429.
+- `POST /api/v1/bodylog/groups/join-by-code` accepts `{code,expectedGroupId?}`. A preview identity mismatch returns409 without writing. Success returns the direct group document. Repeated redemption by the same account returns the existing group, with no repeated joined activity. A fresh admission enforces the group capacity and per-account quota atomically in PostgreSQL. Capacity/quota rejection is determined inside admission, so a delayed same-account duplicate also recovers the existing group after its peer consumes the last slot or quota. Removed/archived groups cannot be reopened by replay.
+
+No database migration is required. Existing group-member invitation tokens are retained after acceptance to recover same-account code retries during their original validity period; they are not returned in member lists, and removed/left records are ineligible. Concurrent renewal cannot turn an active member back into pending. Free/Premium limits remain 2/5 groups and 3/5 members. This source change does not certify deployment, signed device acceptance or real push delivery.
+
+### 药盒子原生退出的创建操作号屏障（2026-10-31）
+
+客户端须在 `sessions` HTTP 前将命令 `operationId` 安全驻留。响应丢失时不可重发创建以索取 token。`close-sessions` 请求为 `{command,signature}`，Ed25519 domain 为 `close-sessions`；command 严格字段为 `version:1, subjectId, operationId, actorAccountId, actorDeviceId, expiresAt, creationOperationIds:[UUID]`（1–100 个不重复值，expiresAt 当前后 5 分钟内）。响应 `{closed:true,creationOperationIds}`。设备公钥必须与该主体下永久绑定记录完全一致；已撤设备仅能提交此负向关闭操作，不能恢复授权。
+
+迁移 `083_yaohezi_session_creation_cleanup.sql` 为现有会话增加可空创建操作号（不猜测历史操作号）及永久关闭表。新创建在相同账号→主体事务锁内检查关闭表，命中返回 `YAOHEZI_SESSION_CREATION_CLOSED`；重复创建返回操作冲突或挑战已消费，绝不再次返回 token。客户端确认全部创建操作号关闭后才删除对应本机清理条目。旧 `logout` 单会话接口仍保留；普通账号退出应在其 refresh 被撤销前完成健康清理，失败保留原账号清理条目并停止本机连接。

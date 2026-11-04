@@ -10,9 +10,13 @@ function shouldParseAsJson(contentTypeHeader?: string): boolean {
 export async function readRequestBody(
   request: AsyncIterable<Buffer>,
   contentTypeHeader?: string,
+  maxBytes = Number.POSITIVE_INFINITY,
 ): Promise<unknown> {
   const chunks: Buffer[] = [];
+  let size = 0;
   for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBytes) throw new Error("Request body exceeds allowed size");
     chunks.push(chunk);
   }
 

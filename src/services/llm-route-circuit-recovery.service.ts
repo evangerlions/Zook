@@ -2,6 +2,7 @@ import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LLMProvider } from "./llm-manager.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
+import { isLlmBalanceFailure } from "./llm-balance-failure.ts";
 import { buildLlmSmokeChatRequest } from "./llm-smoke-test.service.ts";
 import type {
   LlmRouteCircuitBreakerService,
@@ -22,7 +23,7 @@ export class LlmRouteCircuitRecoveryService {
     const config = await this.commonLlmConfigService.getRuntimeConfig();
     return this.circuitBreaker.recoverDueRoutes(
       Boolean(config?.enabled && config.routeCircuitBreaker?.enabled),
-      async (ref) => this.probe(config, ref),
+      async (ref) => (await this.probe(config, ref)) === "success",
     );
   }
 
@@ -63,44 +64,47 @@ export class LlmRouteCircuitRecoveryService {
     config: Awaited<ReturnType<CommonLlmConfigService["getRuntimeConfig"]>>,
     confirmation: LlmRouteCircuitConfirmation,
   ): Promise<"cleared" | "opened" | "skipped"> {
-    const succeeded = await this.probe(config, confirmation.ref) || await this.probe(config, confirmation.ref);
+    const first = await this.probe(config, confirmation.ref);
+    // Credit failure is conclusive: never let a second cheap success cancel it.
+    const succeeded = first === "success" || (first === "failure" && await this.probe(config, confirmation.ref) === "success");
     return this.circuitBreaker.completeCircuitConfirmation(confirmation, succeeded);
   }
 
   private async probe(
     config: Awaited<ReturnType<CommonLlmConfigService["getRuntimeConfig"]>>,
     ref: Required<LlmRouteRef>,
-  ): Promise<boolean> {
+  ): Promise<"success" | "failure" | "insufficient_balance"> {
     const model = config?.models.find((item) => item.key === ref.modelKey && item.kind === "chat");
     if (!model) {
       this.logProbeFailure(ref, "model_not_found_or_not_chat");
-      return false;
+      return "failure";
     }
     const route = model?.routes.find((item) =>
       item.provider === ref.provider && item.providerModel === ref.providerModel && item.enabled,
     );
     if (!route) {
       this.logProbeFailure(ref, "enabled_route_not_found");
-      return false;
+      return "failure";
     }
     const provider = config?.providers.find((item) => item.key === ref.provider && item.enabled);
     if (!provider) {
       this.logProbeFailure(ref, "provider_disabled_or_not_found");
-      return false;
+      return "failure";
     }
     const adapter = this.chatProviders[ref.provider];
     if (!adapter) {
       this.logProbeFailure(ref, "provider_adapter_not_registered");
-      return false;
+      return "failure";
     }
     try {
       const response = await adapter.complete(buildLlmSmokeChatRequest({ model, route, provider }));
       const succeeded = Boolean(response.text.trim() || response.reasoningText?.trim() || response.toolCalls?.length);
       if (!succeeded) this.logProbeFailure(ref, "probe_returned_empty_response");
-      return succeeded;
+      return succeeded ? "success" : "failure";
     } catch (error) {
-      this.logProbeFailure(ref, "probe_request_failed", llmErrorDiagnosticCode(error));
-      return false;
+      const balanceFailure = isLlmBalanceFailure(ref.provider, error);
+      this.logProbeFailure(ref, balanceFailure ? "probe_insufficient_balance" : "probe_request_failed", llmErrorDiagnosticCode(error));
+      return balanceFailure ? "insufficient_balance" : "failure";
     }
   }
 

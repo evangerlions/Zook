@@ -31,7 +31,7 @@ async function relationship(app: Awaited<ReturnType<typeof runtime>>, alice: str
 test("joint goal proposal requires bilateral acceptance and versioned idempotent actions", async () => {
   const app = await runtime(); const alice = await login(app, "alice@example.com");
   const bob = await login(app, "bob@example.com"); const relationshipId = await relationship(app, alice, bob);
-  const createBody = { relationship_id: relationshipId, type: "focus_minutes", target: 120,
+  const createBody = { relationship_id: relationshipId, type: "sleep_schedule_days", target: 3,
     timezone: "Asia/Shanghai", idempotency_key: "goal-create-1" };
   const created = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/goals",
     headers: auth(alice), body: createBody, requestId: "goal_create" } as never);
@@ -58,7 +58,7 @@ test("goal adjustment returns to bilateral consent and verified source events de
   const app = await runtime(); const alice = await login(app, "alice@example.com");
   const bob = await login(app, "bob@example.com"); const relationshipId = await relationship(app, alice, bob);
   const created = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/goals", headers: auth(alice),
-    body: { relationship_id: relationshipId, type: "focus_days", target: 3, timezone: "UTC",
+    body: { relationship_id: relationshipId, type: "sleep_schedule_days", target: 3, timezone: "UTC",
       idempotency_key: "adjust-create" }, requestId: "adjust_create" } as never);
   assert.equal(created.statusCode, 200, JSON.stringify(created.body));
   await app.app.handle({ method: "POST", path: `/api/v1/frogsleep/buddy/goals/${created.body.data.id}/accept`,
@@ -78,14 +78,16 @@ test("goal adjustment returns to bilateral consent and verified source events de
   const completed = await app.app.handle({ method: "POST",
     path: `/api/v1/frogsleep/buddy/goals/${created.body.data.id}/complete`, headers: auth(bob),
     body: { expected_version: 5, idempotency_key: "goal-complete" }, requestId: "goal_complete" } as never);
-  assert.equal(completed.body.data.status, "completed");
+  assert.equal(completed.statusCode, 409, "paused goals still require bilateral terminal progress");
 
   const now = new Date().toISOString();
-  await app.database.insertFrogSleepEntity({ id: "focus_verified", appId: "frogsleep", kind: "focus_session",
-    ownerUserId: "user_alice", status: "completed", payload: {}, createdAt: now, updatedAt: now });
+  await app.database.insertFrogSleepEntity({ id: "sleep_verified", appId: "frogsleep", kind: "sleep_summary",
+    relationshipId, ownerUserId: "user_alice", partnerUserId: "user_bob", status: "completed",
+    payload: { participantStates: { user_alice: "morning_completed", user_bob: "paused_tonight" } },
+    startsAt: now, occurredAt: now, createdAt: now, updatedAt: now });
   const service = new BuddyJointGoalService(app.database);
-  const contribution = { relationshipId, userId: "user_alice", sourceEventId: "focus_verified",
-    sourceKind: "focus_session" as const, amount: 1, occurredAt: now };
+  const contribution = { relationshipId, userId: "user_alice", sourceEventId: "sleep_verified",
+    sourceKind: "sleep_summary" as const, amount: 1, occurredAt: now };
   await service.recordVerifiedContribution(contribution); await service.recordVerifiedContribution(contribution);
   const stored = await app.database.listFrogSleepEntities({ appId: "frogsleep", kind: "buddy_goal_contribution",
     relationshipId, limit: 10 });

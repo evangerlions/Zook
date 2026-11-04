@@ -1,7 +1,27 @@
+import {PostgresUserStore} from "./postgres-users.ts";
+import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
+import { PostgresYaoheziHealthStore } from "./postgres-yaohezi-health-store.ts";
+import { PostgresYaoheziProfileStore } from "./postgres-yaohezi-profile-store.ts";
+import { PostgresRbacStore } from './postgres-rbac.ts';
+import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
+import { PostgresPersonalSyncRepository } from "./postgres-personal-sync.ts";
+import { PostgresFrogSleepAdminStore } from "./postgres-frogsleep-admin.ts";
+import { withPostgresNotificationLock } from "./postgres-notification-lock.ts";
+import { lockBuddySlots } from "./postgres-buddy-slot-lock.ts";
+import { PostgresFocusSessionStore } from "./postgres-focus-session-store.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { PostgresAlipayOrders } from "./postgres-alipay-orders.ts";
+import type { AlipayOrder } from "../../../modules/billing/alipay-models.ts";
 import { Pool, type PoolClient } from "pg";
 import type {
   AnalyticsEventRecord,
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingAdminEventFilter,
+  AiNovelBillingAdminEventPage,
+  AiNovelBillingAdminOrderDetailFilter,
+  AiNovelBillingAdminOrderFilter,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
@@ -49,9 +69,9 @@ import type {
 } from "../../../shared/types.ts";
 import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-database.ts";
 import { runPostgresMigrations } from "./migrate.ts";
-import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
 import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
+import { PostgresAiNovelBillingStore } from "./postgres-ainovel-billing.ts";
 import { PostgresAiNovelConversationStore } from "./postgres-ai-novel-conversation.ts";
 import { PostgresAiOutputReportingStore } from "./postgres-ai-output-reporting.ts";
 import { PostgresAppUserStore } from "./postgres-app-users.ts";
@@ -77,18 +97,18 @@ import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../..
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts";
 import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
+import { PostgresAiNovelCreditsStore } from "./postgres-ai-novel-credits.ts";
 import { PostgresBodyLogCheckinStore } from "./postgres-bodylog-checkin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
-import {
-  parseApp,
-  parseAppConfig,
-  parsePermission,
-  parseRole,
-  parseRolePermission,
-  parseUser,
-  parseUserRole,
-} from "./postgres-row-parsers.ts";
+import { PostgresAppRegistryStore } from "./postgres-app-registry.ts";
 export class PostgresDatabase extends ApplicationDatabase {
+  private get alipayOrders() { return new PostgresAlipayOrders((sql, values) => this.query(sql, values)); }
+  override findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
+  override findAiNovelAlipayIdempotency(user: string, key: string) { return this.alipayOrders.findIdempotency(user, key); }
+  override listAiNovelAlipayOrders(user: string, filter: { before: string; after?: string; limit: number }) { return this.alipayOrders.listOrders(user, filter); }
+  override listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
+  override listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) { return this.alipayOrders.listRecovery(environment, merchant, seller, limit); }
+  override saveAiNovelAlipayOrder(order: AlipayOrder) { return this.alipayOrders.save(order); }
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly appUsers: PostgresAppUserStore;
@@ -99,6 +119,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly aiNovelStatistics: PostgresAiNovelStatisticsStore;
+  private readonly aiNovelBilling: PostgresAiNovelBillingStore;
   readonly aiNovelConversationStore: PostgresAiNovelConversationStore;
   private readonly aiOutputReporting: PostgresAiOutputReportingStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
@@ -108,11 +129,13 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
   private readonly lightTick: PostgresLightTickRepository;
   readonly llmObservabilityStore: PostgresLlmObservabilityStore;
+  readonly aiNovelCreditsStore: PostgresAiNovelCreditsStore;
   private readonly bodyLogStores: BodyLogStores;
   private readonly bodyLogAdmin: PostgresBodyLogCheckinStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
+    this.aiNovelCreditsStore = new PostgresAiNovelCreditsStore(async () => this.pool.connect());
     this.appUsers = new PostgresAppUserStore(async (sql, values = []) => await this.query(sql, values));
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
@@ -122,6 +145,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.aiNovelStatistics = new PostgresAiNovelStatisticsStore(async (sql, values = []) => await this.query(sql, values));
+    this.aiNovelBilling = new PostgresAiNovelBillingStore(async (sql, values = []) => await this.query(sql, values));
     this.aiNovelConversationStore = new PostgresAiNovelConversationStore(async (sql, values = []) => await this.query(sql, values));
     this.aiOutputReporting = new PostgresAiOutputReportingStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
@@ -134,6 +158,15 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
     this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
+  private readonly appRegistry = new PostgresAppRegistryStore((sql, values) => this.query(sql, values));
+  private readonly users = new PostgresUserStore((sql,values) => this.query(sql,values));
+  private readonly rbac = new PostgresRbacStore((sql,values) => this.query(sql,values));
+  getBuddySupportRepository() { return new PostgresBuddySupportRepository((sql, values) => this.query(sql, values)); }
+  override getYaoheziHealthStore(): PostgresYaoheziHealthStore { return new PostgresYaoheziHealthStore(this.pool); }
+  override getYaoheziProfileStore(): PostgresYaoheziProfileStore { return new PostgresYaoheziProfileStore(this.pool); }
+  getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
+  getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect(), () => this.sessionContext.getStore()); }
+  getFrogSleepAdminStore() { return new PostgresFrogSleepAdminStore((sql, values) => this.query(sql, values)); }
   getLightTickRepository(): PostgresLightTickRepository { return this.lightTick; }
   getBodyLogBuddyStore(): BodyLogBuddyStore { return this.bodyLogStores.buddy; }
   getCheckInGroupStore(): BodyLogGroupStore { return this.bodyLogStores.group; }
@@ -141,6 +174,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   getGrowthStore(): BodyLogGrowthStore { return this.bodyLogStores.growth; }
   getBodyLogNotificationStore(): BodyLogNotificationStore { return this.bodyLogStores.notification; }
   getBodyLogFeatureFlagStore(): BodyLogFeatureFlagStore { return this.bodyLogStores.flags; }
+  getBodyLogRetentionStore(): BodyLogStores['retention'] { return this.bodyLogStores.retention; }
   getBodyLogJobStore(): BodyLogStores['jobs'] { return this.bodyLogStores.jobs; }
   getBodyLogAdminStore(): BodyLogAdminStore { return this.bodyLogStores.admin; }
   static async create(
@@ -157,11 +191,15 @@ export class PostgresDatabase extends ApplicationDatabase {
     await database.initialize();
     return database;
   }
+  override async withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      await this.query("SELECT id FROM zook_app_users WHERE app_id = $1 AND user_id = $2 FOR UPDATE", [appId, userId]);
+      return await fn();
+    });
+  }
   override async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     const existingClient = this.sessionContext.getStore();
-    if (existingClient) {
-      return await fn();
-    }
+    if (existingClient) return await fn();
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
@@ -176,6 +214,19 @@ export class PostgresDatabase extends ApplicationDatabase {
       client.release();
     }
   }
+  override async withNewUserTransaction<T>(_userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      await this.query("SAVEPOINT auth_registration");
+      try {
+        const result = await fn();
+        await this.query("RELEASE SAVEPOINT auth_registration");
+        return result;
+      } catch (error) {
+        await this.query("ROLLBACK TO SAVEPOINT auth_registration");
+        throw error;
+      }
+    });
+  }
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
   override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
   override async close(): Promise<void> {
@@ -189,53 +240,13 @@ export class PostgresDatabase extends ApplicationDatabase {
       appConfigs: await this.listAppConfigs(),
     };
   }
-  override async listApps(): Promise<AppRecord[]> {
-    const result = await this.query("SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps ORDER BY id ASC");
-    return result.rows.map(parseApp);
-  }
-  override async listAppIds(): Promise<string[]> {
-    const result = await this.query("SELECT id FROM zook_apps ORDER BY id ASC");
-    return result.rows.map((row) => String(row.id));
-  }
-  override async findApp(appId: string): Promise<AppRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps WHERE id = $1 OR code = $1 LIMIT 1",
-      [appId],
-    );
-    return result.rows[0] ? parseApp(result.rows[0]) : undefined;
-  }
-  override async findAppByApiDomain(hostname: string): Promise<AppRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps WHERE lower(api_domain) = lower($1) LIMIT 1",
-      [hostname],
-    );
-    return result.rows[0] ? parseApp(result.rows[0]) : undefined;
-  }
-  override async insertApp(record: AppRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_apps (id, code, name, name_i18n, status, api_domain, join_mode, created_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8::timestamptz)
-       ON CONFLICT (id) DO UPDATE SET
-         code = EXCLUDED.code,
-         name = EXCLUDED.name,
-         name_i18n = EXCLUDED.name_i18n,
-         status = EXCLUDED.status,
-         api_domain = EXCLUDED.api_domain,
-         join_mode = EXCLUDED.join_mode,
-         created_at = EXCLUDED.created_at,
-         updated_at = NOW()`,
-      [record.id, record.code, record.name, JSON.stringify(record.nameI18n), record.status, record.apiDomain ?? null, record.joinMode, record.createdAt],
-    );
-  }
-  override async updateAppNames(appId: string, name: string, nameI18n: AppNameI18n): Promise<void> {
-    await this.query(
-      "UPDATE zook_apps SET name = $2, name_i18n = $3::jsonb, updated_at = NOW() WHERE id = $1",
-      [appId, name, JSON.stringify(nameI18n)],
-    );
-  }
-  override async deleteApp(appId: string): Promise<void> {
-    await deletePostgresApp(async (sql, values) => await this.query(sql, values), appId);
-  }
+  override async listApps(): Promise<AppRecord[]> { return await this.appRegistry.listApps(); }
+  override async listAppIds(): Promise<string[]> { return await this.appRegistry.listAppIds(); }
+  override async findApp(appId: string): Promise<AppRecord | undefined> { return await this.appRegistry.findApp(appId); }
+  override async findAppByApiDomain(hostname: string): Promise<AppRecord | undefined> { return await this.appRegistry.findAppByApiDomain(hostname); }
+  override async insertApp(record: AppRecord): Promise<void> { await this.appRegistry.insertApp(record); }
+  override async updateAppNames(appId: string, name: string, nameI18n: AppNameI18n): Promise<void> { await this.appRegistry.updateAppNames(appId, name, nameI18n); }
+  override async deleteApp(appId: string): Promise<void> { await this.appRegistry.deleteApp(appId); }
   override async listAppUsers(appId?: string): Promise<AppUserRecord[]> {
     return await this.appUsers.list(appId);
   }
@@ -250,8 +261,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt?: string,
   ): Promise<AppUserRecord | undefined> {
-    return await this.appUsers.updateStatus(appId, userId, status);
+    return await this.appUsers.updateStatus(appId, userId, status, updatedAt);
   }
   override async finalizeAppUserAccountRegion(
     appId: string,
@@ -260,7 +272,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   ): Promise<AppUserRecord | undefined> {
     return await this.appUsers.finalizeAccountRegion(appId, userId, accountRegion);
   }
-  override async deleteAppUserRuntimeData(appId: string, userId: string): Promise<void> {
+  override async deleteAppUserRuntimeData(
+    appId: string,
+    userId: string,
+    deletedAt = new Date().toISOString(),
+  ): Promise<void> {
+    if (appId === "ai_novel") {
+      await this.aiNovelBilling.softDeleteAccount("ai_novel", userId, deletedAt);
+    }
     await deletePostgresAppUserRuntimeData(
       async (sql, values = []) => await this.query(sql, values),
       appId,
@@ -289,6 +308,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
   override async findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByTokenHash(appId, tokenHash); }
   override async findBodyLogInvitationByCode(appId: string, code: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByCode(appId, code); }
+  override async updateBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.updateInvitation(record); }
   override async insertBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.insertInvitation(record); }
   override async listBodyLogInvitations(appId: string, inviterUserId: string): Promise<BodyLogInvitationRecord[]> { return await this.bodyLogInvitations.listInvitations(appId, inviterUserId); }
   override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }
@@ -300,140 +320,21 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): Promise<void> { await this.bodyLogChallenges.insertMembers(records); }
   override async updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): Promise<void> { await this.bodyLogChallenges.updateMember(record); }
   override async listBodyLogChallengeMembers(appId: string): Promise<BodyLogChallengeMemberRecord[]> { return await this.bodyLogChallenges.listMembers(appId); }
-  override async listRoles(appId?: string): Promise<RoleRecord[]> {
-    const result = appId
-      ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])
-      : await this.query("SELECT id, app_id, code, name, status FROM zook_roles ORDER BY id ASC");
-    return result.rows.map(parseRole);
-  }
-  override async findRole(appId: string, roleCode: string): Promise<RoleRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 AND code = $2 LIMIT 1",
-      [appId, roleCode],
-    );
-    return result.rows[0] ? parseRole(result.rows[0]) : undefined;
-  }
-  override async insertRoles(records: RoleRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_roles (id, app_id, code, name, status)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO UPDATE SET
-           app_id = EXCLUDED.app_id,
-           code = EXCLUDED.code,
-           name = EXCLUDED.name,
-           status = EXCLUDED.status,
-           updated_at = NOW()`,
-        [record.id, record.appId, record.code, record.name, record.status],
-      );
-    }
-  }
-  override async listPermissions(): Promise<PermissionRecord[]> {
-    const result = await this.query("SELECT id, code, name, status FROM zook_permissions ORDER BY id ASC");
-    return result.rows.map(parsePermission);
-  }
-  override async insertRolePermissions(records: RolePermissionRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_role_permissions (id, role_id, permission_id)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (id) DO UPDATE SET
-           role_id = EXCLUDED.role_id,
-           permission_id = EXCLUDED.permission_id,
-           updated_at = NOW()`,
-        [record.id, record.roleId, record.permissionId],
-      );
-    }
-  }
-  override async findUserRole(appId: string, userId: string, roleId: string): Promise<UserRoleRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, user_id, role_id FROM zook_user_roles WHERE app_id = $1 AND user_id = $2 AND role_id = $3 LIMIT 1",
-      [appId, userId, roleId],
-    );
-    return result.rows[0] ? parseUserRole(result.rows[0]) : undefined;
-  }
-  override async insertUserRole(record: UserRoleRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_user_roles (id, app_id, user_id, role_id)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (id) DO NOTHING`,
-      [record.id, record.appId, record.userId, record.roleId],
-    );
-  }
-  override async getPermissionCodes(appId: string, userId: string): Promise<string[]> {
-    const result = await this.query(
-      `SELECT DISTINCT p.code
-       FROM zook_user_roles ur
-       JOIN zook_role_permissions rp ON rp.role_id = ur.role_id
-       JOIN zook_permissions p ON p.id = rp.permission_id
-       WHERE ur.app_id = $1 AND ur.user_id = $2
-       ORDER BY p.code ASC`,
-      [appId, userId],
-    );
-    return result.rows.map((row) => String(row.code));
-  }
+  override async listRoles(appId?: string): Promise<RoleRecord[]> { return await this.rbac.listRoles(appId); }
+  override async findRole(appId: string, roleCode: string): Promise<RoleRecord | undefined> { return await this.rbac.findRole(appId, roleCode); }
+  override async insertRoles(records: RoleRecord[]): Promise<void> { return await this.rbac.insertRoles(records); }
+  override async listPermissions(): Promise<PermissionRecord[]> { return await this.rbac.listPermissions(); }
+  override async insertRolePermissions(records: RolePermissionRecord[]): Promise<void> { return await this.rbac.insertRolePermissions(records); }
+  override async findUserRole(appId: string, userId: string, roleId: string): Promise<UserRoleRecord | undefined> { return await this.rbac.findUserRole(appId, userId, roleId); }
+  override async insertUserRole(record: UserRoleRecord): Promise<void> { return await this.rbac.insertUserRole(record); }
+  override async getPermissionCodes(appId: string, userId: string): Promise<string[]> { return await this.rbac.getPermissionCodes(appId, userId); }
 
-  override async findUserById(userId: string): Promise<UserRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, email, phone, password_hash, password_algo, status, created_at FROM zook_users WHERE id = $1 LIMIT 1",
-      [userId],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByAccount(account: string): Promise<UserRecord | undefined> {
-    const normalized = account.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(email, '')) = $1 OR lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async findUserByPhone(phone: string): Promise<UserRecord | undefined> {
-    const normalized = phone.trim().toLowerCase();
-    const result = await this.query(
-      `SELECT id, email, phone, password_hash, password_algo, status, created_at
-       FROM zook_users
-       WHERE lower(coalesce(phone, '')) = $1
-       LIMIT 1`,
-      [normalized],
-    );
-    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
-  }
-
-  override async insertUser(record: UserRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_users (id, email, phone, password_hash, password_algo, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz)
-       ON CONFLICT (id) DO UPDATE SET
-         email = EXCLUDED.email,
-         phone = EXCLUDED.phone,
-         password_hash = EXCLUDED.password_hash,
-         password_algo = EXCLUDED.password_algo,
-         status = EXCLUDED.status,
-         created_at = EXCLUDED.created_at,
-         updated_at = NOW()`,
-      [record.id, record.email ?? null, record.phone ?? null, record.passwordHash, record.passwordAlgo, record.status, record.createdAt],
-    );
-  }
-
-  override async updateUserEmail(userId: string, email: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET email = $2, updated_at = NOW() WHERE id = $1",
-      [userId, email],
-    );
-  }
-
-  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> {
-    await this.query(
-      "UPDATE zook_users SET password_hash = $2, password_algo = $3, updated_at = NOW() WHERE id = $1",
-      [userId, passwordHash, passwordAlgo],
-    );
-  }
+  override async findUserById(userId: string) { return await this.users.findUserById(userId); }
+  override async findUserByAccount(account: string) { return await this.users.findUserByAccount(account); }
+  override async findUserByPhone(phone: string) { return await this.users.findUserByPhone(phone); }
+  override async insertUser(record: UserRecord) { return await this.users.insertUser(record); }
+  override async updateUserEmail(userId: string, email: string) { return await this.users.updateUserEmail(userId,email); }
+  override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string) { return await this.users.updateUserPassword(userId,passwordHash,passwordAlgo); }
 
   override async insertAuditLog(record: AuditLogRecord): Promise<void> {
     await this.query(
@@ -454,39 +355,10 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
   }
 
-  override async listAppConfigs(appId?: string): Promise<AppConfigRecord[]> {
-    const result = appId
-      ? await this.query("SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs WHERE app_id = $1 ORDER BY config_key ASC", [appId])
-      : await this.query("SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs ORDER BY app_id ASC, config_key ASC");
-    return result.rows.map(parseAppConfig);
-  }
-
-  override async findAppConfig(appId: string, configKey: string): Promise<AppConfigRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, config_key, config_value, updated_at FROM zook_app_configs WHERE app_id = $1 AND config_key = $2 LIMIT 1",
-      [appId, configKey],
-    );
-    return result.rows[0] ? parseAppConfig(result.rows[0]) : undefined;
-  }
-
-  override async upsertAppConfig(record: AppConfigRecord): Promise<AppConfigRecord> {
-    const result = await this.query(
-      `INSERT INTO zook_app_configs (id, app_id, config_key, config_value, updated_at)
-       VALUES ($1, $2, $3, $4, $5::timestamptz)
-       ON CONFLICT (app_id, config_key)
-       DO UPDATE SET
-         id = EXCLUDED.id,
-         config_value = EXCLUDED.config_value,
-         updated_at = EXCLUDED.updated_at
-       RETURNING id, app_id, config_key, config_value, updated_at`,
-      [record.id, record.appId, record.configKey, record.configValue, record.updatedAt],
-    );
-    return parseAppConfig(result.rows[0]);
-  }
-
-  override async deleteAppConfigsByApp(appId: string): Promise<void> {
-    await this.query("DELETE FROM zook_app_configs WHERE app_id = $1", [appId]);
-  }
+  override async listAppConfigs(appId?: string): Promise<AppConfigRecord[]> { return await this.appRegistry.listAppConfigs(appId); }
+  override async findAppConfig(appId: string, configKey: string): Promise<AppConfigRecord | undefined> { return await this.appRegistry.findAppConfig(appId, configKey); }
+  override async upsertAppConfig(record: AppConfigRecord): Promise<AppConfigRecord> { return await this.appRegistry.upsertAppConfig(record); }
+  override async deleteAppConfigsByApp(appId: string): Promise<void> { await this.appRegistry.deleteAppConfigsByApp(appId); }
 
   override async insertAnalyticsEvents(records: AnalyticsEventRecord[]): Promise<void> {
     await this.operationalRecords.insertAnalyticsEvents(records);
@@ -584,6 +456,25 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listAiNovelDailyStatistics(filter: { appId: string; userId: string; dateFrom?: string; dateTo?: string }): Promise<AiNovelDailyStatisticsRecord[]> {
     return await this.aiNovelStatistics.listDailyStatistics(filter);
   }
+  override async findAiNovelBillingMembership(appId: "ai_novel", userId: string): Promise<AiNovelBillingMembershipRecord | undefined> { return await this.aiNovelBilling.findMembership(appId, userId); }
+  override async listBillingAdminMemberships(filter: import("../../../shared/types/billing-admin.ts").BillingMembershipFilter) { return await this.aiNovelBilling.listAdminMemberships(filter); }
+  override async getBillingAdminRevenue(filter: import("../../../shared/types/billing-admin.ts").BillingSummaryFilter) {
+    const { queryBillingRevenue } = await import("./postgres-billing-admin.ts");
+    return await queryBillingRevenue(async (sql, values) => await this.query(sql, values), filter);
+  }
+  override async upsertAiNovelBillingMembership(record: AiNovelBillingMembershipRecord): Promise<void> { await this.aiNovelBilling.upsertMembership(record); }
+  override async upsertAiNovelBillingTransaction(record: AiNovelBillingTransactionRecord): Promise<void> { await this.aiNovelBilling.upsertTransaction(record); }
+  override async listAiNovelBillingTransactions(appId: "ai_novel", userId: string): Promise<AiNovelBillingTransactionRecord[]> { return await this.aiNovelBilling.listTransactions(appId, userId); }
+  override async listAiNovelBillingAdminOrders(filter: AiNovelBillingAdminOrderFilter): Promise<AiNovelBillingTransactionRecord[]> { return await this.aiNovelBilling.listAdminOrders(filter); }
+  override async findAiNovelBillingAdminOrder(filter: AiNovelBillingAdminOrderDetailFilter): Promise<AiNovelBillingTransactionRecord | undefined> { return await this.aiNovelBilling.findAdminOrder(filter); }
+  override async listAiNovelBillingAdminEvents(filter: AiNovelBillingAdminEventFilter): Promise<AiNovelBillingAdminEventPage> { return await this.aiNovelBilling.listAdminEvents(filter); }
+  override async findAiNovelBillingWebhookEvent(appId: "ai_novel", eventId: string): Promise<AiNovelBillingWebhookEventRecord | undefined> { return await this.aiNovelBilling.findWebhookEvent(appId, eventId); }
+  override async insertAiNovelBillingWebhookEvent(record: AiNovelBillingWebhookEventRecord): Promise<boolean> { return await this.aiNovelBilling.insertWebhookEvent(record); }
+  override async softDeleteAiNovelBillingAccount(appId: "ai_novel", userId: string, deletedAt: string): Promise<void> {
+    await this.aiNovelBilling.softDeleteAccount(appId, userId, deletedAt);
+    await this.query("UPDATE zook_ai_novel_alipay_orders SET record = jsonb_set(record, '{accountDeletedAt}', to_jsonb($2::text)) WHERE user_id = $1 AND record->>'accountDeletedAt' IS NULL", [userId, deletedAt]);
+  }
+  override async withFrogSleepNotificationLock<T>(key: string, operation: () => Promise<T> | T): Promise<T> { return await withPostgresNotificationLock<T>({ client: this.sessionContext.getStore(), connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) }, key, operation); }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
   }
@@ -592,15 +483,17 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async updateNotificationJob(
     jobId: string,
-    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
+    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount" | "payload">>,
   ): Promise<NotificationJobRecord | undefined> {
     return await this.operationalRecords.updateNotificationJob(jobId, patch);
   }
   override async upsertFrogSleepDevice(record: FrogSleepDeviceRecord): Promise<FrogSleepDeviceRecord> { return await this.frogSleep.upsertDevice(record); }
   override async deleteFrogSleepDevice(appId: string, userId: string, deviceId: string): Promise<FrogSleepDeviceRecord | undefined> { return await this.frogSleep.deleteDevice(appId, userId, deviceId); }
   override async listFrogSleepDevices(filter: { appId: string; userId?: string; pushEnabled?: boolean; includeDeleted?: boolean }): Promise<FrogSleepDeviceRecord[]> { return await this.frogSleep.listDevices(filter); }
+  override async upsertFrogSleepFocusSession(record: FrogSleepEntityRecord) { return await new PostgresFocusSessionStore((sql, values) => this.query(sql, values)).upsert(record); }
   override async insertFrogSleepEntity(record: FrogSleepEntityRecord): Promise<void> { await this.frogSleep.insertEntity(record); }
   override async findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntity(kind, appId, id); }
+  override async findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findPersonalRecord(kind, ownerUserId, clientId); }
   override async findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntityByCode(kind, appId, code); }
   override async findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntityByToken(kind, appId, token); }
   override async listFrogSleepEntities(filter: FrogSleepEntityFilter): Promise<FrogSleepEntityRecord[]> { return await this.frogSleep.listEntities(filter); }
@@ -609,15 +502,18 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listFrogSleepBuddySharingGrants(appId: string, relationshipId: string): Promise<FrogSleepBuddySharingGrantRecord[]> { return await this.buddyGrowth.listGrants(appId, relationshipId); }
   override async findFrogSleepBuddySharingGrant(appId: string, grantId: string): Promise<FrogSleepBuddySharingGrantRecord | undefined> { return await this.buddyGrowth.findGrant(appId, grantId); }
   override async updateFrogSleepBuddySharingGrant(appId: string, grantId: string, expectedVersion: number, state: FrogSleepBuddySharingGrantRecord["state"]): Promise<FrogSleepBuddySharingGrantRecord | undefined> { return await this.buddyGrowth.updateGrant(appId, grantId, expectedVersion, state); }
+  override async markFrogSleepBuddyInvitationRead(appId: string, bundleId: string, userId: string) { return await this.buddyGrowth.markInvitationRead(appId, bundleId, userId); }
   override async upsertFrogSleepBuddyInvitationBundle(record: FrogSleepBuddyInvitationBundleRecord): Promise<FrogSleepBuddyInvitationBundleRecord> { return await this.buddyGrowth.upsertBundle(record); } override async findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): Promise<FrogSleepBuddyInvitationBundleRecord | undefined> { return await this.buddyGrowth.findBundle(appId, bundleId); } override async listFrogSleepBuddyInvitationBundles(input: { appId: string; userId: string; direction: "incoming" | "outgoing"; recipientEmailHash?: string; recipientEmail?: string }): Promise<FrogSleepBuddyInvitationBundleRecord[]> { return await this.buddyGrowth.listBundles(input); }
   override async findFrogSleepBuddyInvitationBundleByCode(appId: string, code: string): Promise<FrogSleepBuddyInvitationBundleRecord | undefined> { return await this.buddyGrowth.findBundleByCode(appId, code); } override async findFrogSleepBuddyInvitationBundleByToken(appId: string, token: string): Promise<FrogSleepBuddyInvitationBundleRecord | undefined> { return await this.buddyGrowth.findBundleByToken(appId, token); } override async enqueueFrogSleepBuddyInvitationEmailDelivery(record: FrogSleepBuddyInvitationEmailDeliveryRecord): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord> { return await this.buddyGrowth.enqueueInvitationEmailDelivery(record); } override async findFrogSleepBuddyInvitationEmailDelivery(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined> { return await this.buddyGrowth.findInvitationEmailDelivery(appId, invitationId); } override async findFrogSleepBuddyInvitationEmailDeliveryByProviderMessageId(providerMessageId: string): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined> { return await this.buddyGrowth.findInvitationEmailDeliveryByProviderMessageId(providerMessageId); }
   override async listFrogSleepBuddyInvitationEmailDeliveries(filter: { invitationId?: string; status?: FrogSleepBuddyInvitationEmailDeliveryRecord["status"]; limit?: number } = {}): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord[]> { return await this.buddyGrowth.listInvitationEmailDeliveries(filter); } override async claimReadyFrogSleepBuddyInvitationEmailDeliveries(nowIso: string, limit: number): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord[]> { return await this.buddyGrowth.claimReadyInvitationEmailDeliveries(nowIso, limit); } override async updateFrogSleepBuddyInvitationEmailDelivery(id: string, patch: Partial<Omit<FrogSleepBuddyInvitationEmailDeliveryRecord, "id" | "appId" | "invitationId" | "createdAt">>): Promise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined> { return await this.buddyGrowth.updateInvitationEmailDelivery(id, patch); } override async insertFrogSleepBuddyInvitationEmailAttempt(record: FrogSleepBuddyInvitationEmailAttemptRecord): Promise<FrogSleepBuddyInvitationEmailAttemptRecord> { return await this.buddyGrowth.insertInvitationEmailAttempt(record); } override async listFrogSleepBuddyInvitationEmailAttempts(appId: string, deliveryId: string): Promise<FrogSleepBuddyInvitationEmailAttemptRecord[]> { return await this.buddyGrowth.listInvitationEmailAttempts(appId, deliveryId); }
+  override async lockFrogSleepBuddyDomainSlots(keys: FrogSleepBuddyCommandSlotKey[]): Promise<void> { await lockBuddySlots(async (sql, values = []) => await this.query(sql, values), keys); }
+  override async lockFrogSleepBuddyInvitationBundle(appId: string, invitationId: string): Promise<void> { await this.query("SELECT id FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND id=$2 FOR UPDATE", [appId, invitationId]); }
   override async upsertFrogSleepBuddyInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord): Promise<FrogSleepBuddyInvitationDomainDecisionRecord> { return await this.buddyGrowth.upsertInvitationDomainDecision(record); }
   override async findFrogSleepBuddyInvitationDomainDecision(appId: string, invitationId: string, domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined> { return await this.buddyGrowth.findInvitationDomainDecision(appId, invitationId, domain); }
-  override async listFrogSleepBuddyInvitationDomainDecisions(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationDomainDecisionRecord[]> { return await this.buddyGrowth.listInvitationDomainDecisions(appId, invitationId); } override async compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: { appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]; expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"]; decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; terminalReason?: string; updatedAt: string }): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined> { return await this.buddyGrowth.compareAndUpdateInvitationDomainDecision(input); }
+  override async listFrogSleepBuddyInvitationDomainDecisions(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationDomainDecisionRecord[]> { return await this.buddyGrowth.listInvitationDomainDecisions(appId, invitationId); } override async compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: { appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]; expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"]; decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; relationshipId?: string; terminalReason?: string; updatedAt: string }): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined> { return await this.buddyGrowth.compareAndUpdateInvitationDomainDecision(input); }
   override async ensureFrogSleepBuddyDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }): Promise<FrogSleepBuddyDomainSlotRecord> { return await this.buddyGrowth.ensureDomainSlot(input); } override async findFrogSleepBuddyDomainSlot(appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"]): Promise<FrogSleepBuddyDomainSlotRecord | undefined> { return await this.buddyGrowth.findDomainSlot(appId, userId, domain); }
   override async listFrogSleepBuddyDomainSlots(appId: string, userId: string): Promise<FrogSleepBuddyDomainSlotRecord[]> { return await this.buddyGrowth.listDomainSlots(appId, userId); } override async compareAndUpdateFrogSleepBuddyDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number; state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string }): Promise<FrogSleepBuddyDomainSlotRecord | undefined> { return await this.buddyGrowth.compareAndUpdateDomainSlot(input); }
-  override async insertFrogSleepBuddyDomainRelationship(record: FrogSleepBuddyDomainRelationshipRecord): Promise<FrogSleepBuddyDomainRelationshipRecord> { return await this.buddyGrowth.insertDomainRelationship(record); } override async findFrogSleepBuddyDomainRelationship(appId: string, relationshipId: string): Promise<FrogSleepBuddyDomainRelationshipRecord | undefined> { return await this.buddyGrowth.findDomainRelationship(appId, relationshipId); } override async listCurrentFrogSleepBuddyDomainRelationships(appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"]): Promise<FrogSleepBuddyDomainRelationshipRecord[]> { return await this.buddyGrowth.listCurrentDomainRelationships(appId, userId, domain); }   override async compareAndUpdateFrogSleepBuddyDomainRelationship(input: { appId: string; id: string; expectedVersion: number; status: FrogSleepBuddyDomainRelationshipRecord["status"]; pausedByUserIds: string[]; revokedAt?: string; updatedAt: string }): Promise<FrogSleepBuddyDomainRelationshipRecord | undefined> { return await this.buddyGrowth.compareAndUpdateDomainRelationship(input); }
+  override async insertFrogSleepBuddyDomainRelationship(record: FrogSleepBuddyDomainRelationshipRecord): Promise<FrogSleepBuddyDomainRelationshipRecord> { return await this.buddyGrowth.insertDomainRelationship(record); } override async findFrogSleepBuddyDomainRelationship(appId: string, relationshipId: string): Promise<FrogSleepBuddyDomainRelationshipRecord | undefined> { return await this.buddyGrowth.findDomainRelationship(appId, relationshipId); } override async listCurrentFrogSleepBuddyDomainRelationships(appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked = false): Promise<FrogSleepBuddyDomainRelationshipRecord[]> { return await this.buddyGrowth.listCurrentDomainRelationships(appId, userId, domain, includeRevoked); }   override async compareAndUpdateFrogSleepBuddyDomainRelationship(input: { appId: string; id: string; expectedVersion: number; status: FrogSleepBuddyDomainRelationshipRecord["status"]; pausedByUserIds: string[]; revokedAt?: string; updatedAt: string }): Promise<FrogSleepBuddyDomainRelationshipRecord | undefined> { return await this.buddyGrowth.compareAndUpdateDomainRelationship(input); }
   override async insertFrogSleepBuddyGroup(record: FrogSleepBuddyGroupRecord): Promise<FrogSleepBuddyGroupRecord> { return await this.buddyGroups.insertGroup(record); } override async findFrogSleepBuddyGroup(appId: string, groupId: string): Promise<FrogSleepBuddyGroupRecord | undefined> { return await this.buddyGroups.findGroup(appId, groupId); } override async listFrogSleepBuddyGroupsForUser(appId: string, userId: string): Promise<FrogSleepBuddyGroupRecord[]> { return await this.buddyGroups.listGroupsForUser(appId, userId); } override async listFrogSleepBuddyGroupsForOwner(appId: string, ownerUserId: string): Promise<FrogSleepBuddyGroupRecord[]> { return await this.buddyGroups.listGroupsForOwner(appId, ownerUserId); } override async compareAndUpdateFrogSleepBuddyGroup(input: { appId: string; id: string; expectedVersion: number; status: FrogSleepBuddyGroupRecord["status"]; memberCount: number; sharingBaseline: string[]; dissolvedAt?: string; updatedAt: string; groupName?: string; groupDescription?: string; groupDescriptionSpecified?: boolean }): Promise<FrogSleepBuddyGroupRecord | undefined> { return await this.buddyGroups.compareAndUpdateGroup(input); }
   override async insertFrogSleepBuddyGroupMember(record: FrogSleepBuddyGroupMemberRecord): Promise<FrogSleepBuddyGroupMemberRecord> { return await this.buddyGroups.insertGroupMember(record); } override async findFrogSleepBuddyGroupMember(appId: string, groupId: string, userId: string): Promise<FrogSleepBuddyGroupMemberRecord | undefined> { return await this.buddyGroups.findGroupMember(appId, groupId, userId); } override async listFrogSleepBuddyGroupMembers(appId: string, groupId: string): Promise<FrogSleepBuddyGroupMemberRecord[]> { return await this.buddyGroups.listGroupMembers(appId, groupId); } override async compareAndUpdateFrogSleepBuddyGroupMember(input: { appId: string; groupId: string; userId: string; expectedVersion: number; role: FrogSleepBuddyGroupMemberRecord["role"]; status: FrogSleepBuddyGroupMemberRecord["status"]; leftAt?: string; updatedAt: string }): Promise<FrogSleepBuddyGroupMemberRecord | undefined> { return await this.buddyGroups.compareAndUpdateGroupMember(input); }
   override async insertFrogSleepBuddyGroupInvitation(record: FrogSleepBuddyGroupInvitationRecord): Promise<FrogSleepBuddyGroupInvitationRecord> { return await this.buddyGroups.insertGroupInvitation(record); } override async findFrogSleepBuddyGroupInvitation(appId: string, invitationId: string): Promise<FrogSleepBuddyGroupInvitationRecord | undefined> { return await this.buddyGroups.findGroupInvitation(appId, invitationId); } override async listFrogSleepBuddyGroupInvitations(appId: string, groupId: string): Promise<FrogSleepBuddyGroupInvitationRecord[]> { return await this.buddyGroups.listGroupInvitations(appId, groupId); } override async compareAndUpdateFrogSleepBuddyGroupInvitation(input: { appId: string; invitationId: string; expectedVersion: number; status: FrogSleepBuddyGroupInvitationRecord["status"]; respondedAt?: string; updatedAt: string }): Promise<FrogSleepBuddyGroupInvitationRecord | undefined> { return await this.buddyGroups.compareAndUpdateGroupInvitation(input); }
@@ -661,10 +557,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async deleteBodyLogHabitTemplate(appId: string, id: string) { return await this.bodyLogAdmin.deleteBodyLogHabitTemplate(appId, id); }
 
   private async initialize(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
+    if (this.initialized) return;
     await this.withExclusiveSession(async () => {
       await seedPostgresDefaults(this.seed, {
         query: async (sql, values = []) => await this.query(sql, values),
@@ -676,17 +569,10 @@ export class PostgresDatabase extends ApplicationDatabase {
     });
     this.initialized = true;
   }
-
-  private async listRolePermissions(): Promise<RolePermissionRecord[]> {
-    const result = await this.query("SELECT id, role_id, permission_id FROM zook_role_permissions ORDER BY id ASC");
-    return result.rows.map(parseRolePermission);
-  }
-
+  private async listRolePermissions(): Promise<RolePermissionRecord[]> { return await this.rbac.listRolePermissions(); }
   private async query(sql: string, values: unknown[] = []) {
     const client = this.sessionContext.getStore();
-    if (client) {
-      return await client.query(sql, values);
-    }
+    if (client) return await client.query(sql, values);
     return await this.pool.query(sql, values);
   }
 }

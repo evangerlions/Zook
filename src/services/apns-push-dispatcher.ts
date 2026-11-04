@@ -1,3 +1,4 @@
+import { sendApnsRequest } from "./apns-http2-transport.ts";
 import { createSign, createPrivateKey, type KeyObject } from "node:crypto";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
@@ -43,7 +44,7 @@ export class ApnsPushDispatcher implements PushDispatcher {
   private readonly endpoint: string;
   private readonly privateKey: KeyObject;
   private cachedToken: ApnsTokenCache | null = null;
-  private readonly fetchImpl: typeof fetch;
+  private readonly fetchImpl: typeof sendApnsRequest;
   private readonly logger: StructuredLogger | null;
   private readonly database: ApplicationDatabase | null;
 
@@ -57,7 +58,7 @@ export class ApnsPushDispatcher implements PushDispatcher {
   ) {
     this.endpoint = config.production ? PRODUCTION_ENDPOINT : SANDBOX_ENDPOINT;
     this.privateKey = createPrivateKey(config.privateKeyPem);
-    this.fetchImpl = options.fetchImplementation ?? globalThis.fetch;
+    this.fetchImpl = options.fetchImplementation ?? sendApnsRequest;
     this.logger = options.logger ?? null;
     this.database = options.database ?? null;
   }

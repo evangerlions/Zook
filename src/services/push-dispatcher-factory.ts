@@ -109,6 +109,7 @@ export function createPushDispatcher(options: {
     logger.info("no push dispatchers configured, using logging fallback");
     return {
       async dispatch(req: PushDispatchRequest): Promise<void> {
+        if (req.appId === "frogsleep") throw new Error("FrogSleep push provider is not configured");
         if (req.appId === "bodylog") throw new Error("BodyLog push provider is not configured");
         logger.info("push notification dispatched (logging fallback)", {
           appId: req.appId,

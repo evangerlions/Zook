@@ -1,333 +1,127 @@
-import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import { BodyLogGrowthService } from "../../src/modules/bodylog/bodylog-growth.service.ts";
-import type { BodyLogGrowthPlan, BodyLogGrowthMission, BodyLogGrowthReward } from "../../src/modules/bodylog/bodylog-growth.types.ts";
-import type { BodyLogGrowthStore } from "../../src/infrastructure/bodylog-store-ports.ts";
+import { InMemoryBodyLogGrowthStore } from "../../src/modules/bodylog/bodylog-stores.ts";
 
-describe("BodyLogGrowthService", () => {
-  let service: BodyLogGrowthService;
-  let mockDb: BodyLogGrowthStore;
+function setup() {
+  const store = new InMemoryBodyLogGrowthStore();
+  const service = new BodyLogGrowthService(store);
+  const plan = store.createGrowthPlan({ userId: "alice", startDate: "2026-01-01T00:00:00.000Z",
+    endDate: "2026-01-08T00:00:00.000Z", status: "active", completedMissions: 0, totalMissions: 7, timeZone: "UTC" });
+  for (let day = 1; day <= 7; day++) store.createGrowthMission({ planId: plan.id, day, type: "localGoal", target: 1, completed: false });
+  const reward = store.createGrowthReward({ planId: plan.id, type: "badge", value: "7_day_champion", claimed: false });
+  return { store, service, plan, reward };
+}
 
-  const mockPlan: BodyLogGrowthPlan = {
-    id: "plan-1",
-    userId: "user-1",
-    startDate: "2026-08-27T00:00:00.000Z",
-    endDate: "2026-09-03T00:00:00.000Z",
-    status: "active",
-    completedMissions: 0,
-    totalMissions: 21,
-    createdAt: "2026-08-27T00:00:00.000Z",
-    updatedAt: "2026-08-27T00:00:00.000Z",
-  };
+const aggregate = (day = 1, completedGoalCount = 1) => ({ localDate: `2026-01-0${day}`, timeZone: "UTC",
+  completedGoalCount, eligibleGoalCount: 2, definitionVersion: 1, eventId: "00000000-0000-4000-8000-000000000001" });
+const error = (code: string, statusCode: number) => (value: any) => {
+  assert.equal(value.code, code); assert.equal(value.statusCode, statusCode); return true;
+};
 
-  const mockMission: BodyLogGrowthMission = {
-    id: "mission-1",
-    planId: "plan-1",
-    day: 1,
-    type: "steps",
-    target: 8000,
-    completed: false,
-    completedAt: null,
-    createdAt: "2026-08-27T00:00:00.000Z",
-  };
+test("enrollment creates seven local goal missions and one reward in the selected time zone", async () => {
+  const store = new InMemoryBodyLogGrowthStore(); const service = new BodyLogGrowthService(store);
+  const plan = await service.enroll("alice", "Asia/Shanghai");
+  assert.equal(plan.totalMissions, 7); assert.equal(plan.timeZone, "Asia/Shanghai");
+  assert.deepEqual((await service.getMissions("alice", plan.id)).map(m => [m.day, m.type, m.target, m.completed]),
+    Array.from({ length: 7 }, (_, i) => [i + 1, "localGoal", 1, false]));
+  assert.equal((await service.getRewards("alice", plan.id)).length, 1);
+  await assert.rejects(service.enroll("alice"), error("BODYLOG_GROWTH_PLAN_ACTIVE", 409));
+  await assert.rejects(service.enroll("bob", "Mars/Olympus"), error("BODYLOG_GROWTH_AGGREGATE_INVALID", 400));
+});
 
-  const mockReward: BodyLogGrowthReward = {
-    id: "reward-1",
-    planId: "plan-1",
-    type: "badge",
-    value: "7_day_champion",
-    claimed: false,
-    claimedAt: null,
-    createdAt: "2026-08-27T00:00:00.000Z",
-  };
+test("growth plan, mission and reward reads enforce account ownership and missing resources", async () => {
+  const { service, plan, reward } = setup();
+  await assert.rejects(service.getPlan("alice", "missing"), error("BODYLOG_GROWTH_PLAN_NOT_FOUND", 404));
+  for (const read of [() => service.getPlan("bob", plan.id), () => service.getMissions("bob", plan.id),
+    () => service.getRewards("bob", plan.id), () => service.claimReward("bob", plan.id, reward.id),
+    () => service.submitDailyAggregate("bob", plan.id, aggregate())])
+    await assert.rejects(read(), error("BODYLOG_GROWTH_PLAN_FORBIDDEN", 403));
+  assert.equal((await service.getLatestPlan("alice"))?.id, plan.id);
+  assert.equal(await service.getLatestPlan("bob"), null);
+});
 
-  beforeEach(() => {
-    mockDb = {
-      createGrowthPlan: mock.fn(async () => mockPlan),
-      findLatestGrowthPlan: mock.fn(async () => null),
-      findActiveGrowthPlan: mock.fn(async () => null),
-      findGrowthPlanById: mock.fn(async () => mockPlan),
-      updateGrowthPlan: mock.fn(async () => mockPlan),
-      incrementGrowthPlanCompletedMissions: mock.fn(async () => {}),
-      createGrowthMission: mock.fn(async () => mockMission),
-      findGrowthMissionsByPlanId: mock.fn(async () => [mockMission]),
-      findGrowthMissionById: mock.fn(async () => mockMission),
-      updateGrowthMission: mock.fn(async () => ({ ...mockMission, completed: true, completedAt: "2026-08-27T12:00:00.000Z" })),
-      createGrowthReward: mock.fn(async () => mockReward),
-      findGrowthRewardsByPlanId: mock.fn(async () => [mockReward]),
-      findGrowthRewardById: mock.fn(async () => mockReward),
-      updateGrowthReward: mock.fn(async () => ({ ...mockReward, claimed: true, claimedAt: "2026-08-27T12:00:00.000Z" })),
-    } as unknown as BodyLogGrowthStore;
+test("legacy manual completion always requires local aggregate evidence", async () => {
+  const { store, service, plan } = setup(); const [mission] = await service.getMissions("alice", plan.id);
+  await assert.rejects(service.completeMission("alice", plan.id, mission!.id), error("BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED", 409));
+  assert.equal(store.findGrowthMissionById(mission!.id)?.completed, false);
+  await assert.rejects(service.completeMission("alice", plan.id, "missing"), error("BODYLOG_GROWTH_MISSION_NOT_FOUND", 404));
+  const foreign = store.createGrowthMission({ planId: "another-plan", day: 1, type: "localGoal", target: 1, completed: false });
+  await assert.rejects(service.completeMission("alice", plan.id, foreign.id), error("BODYLOG_GROWTH_MISSION_MISMATCH", 400));
+});
 
-    service = new BodyLogGrowthService(mockDb);
-  });
+test("daily aggregate retries count once and a correction reverses the same mission", async () => {
+  const { store, service, plan } = setup();
+  await Promise.all(Array.from({ length: 4 }, () => service.submitDailyAggregate("alice", plan.id, aggregate())));
+  assert.equal((await service.getPlan("alice", plan.id)).completedMissions, 1);
+  await service.submitDailyAggregate("alice", plan.id, aggregate(1, 0));
+  assert.equal((await service.getPlan("alice", plan.id)).completedMissions, 0);
+  const [mission] = store.findGrowthMissionsByPlanId(plan.id);
+  assert.equal(mission?.completed, false); assert.equal(mission?.completedAt, null);
+});
 
-  describe("enroll", () => {
-    it("should create a new 7-day plan with missions and rewards", async () => {
-      const result = await service.enroll("user-1");
+test("seven daily aggregates complete the plan and reward claims replay safely", async () => {
+  const { service, plan, reward } = setup();
+  await assert.rejects(service.claimReward("alice", plan.id, reward.id), error("BODYLOG_GROWTH_PLAN_INACTIVE", 409));
+  for (let day = 1; day <= 7; day++) await service.submitDailyAggregate("alice", plan.id, aggregate(day));
+  assert.equal((await service.getPlan("alice", plan.id)).status, "completed");
+  assert.equal(await service.getActivePlan("alice"), null);
+  const claimed = await service.claimReward("alice", plan.id, reward.id);
+  assert.equal(claimed.claimed, true);
+  assert.deepEqual(await service.claimReward("alice", plan.id, reward.id), claimed);
+  await assert.rejects(service.submitDailyAggregate("alice", plan.id, aggregate(1, 0)), error("BODYLOG_GROWTH_AGGREGATE_LOCKED", 409));
+  assert.equal((await service.getPlan("alice", plan.id)).completedMissions, 7);
+});
 
-      assert.equal(result.userId, "user-1");
-      assert.equal(result.status, "active");
-      assert.equal(result.totalMissions, 21);
-      assert.equal(result.completedMissions, 0);
+test("unclaimed completed plans can be corrected and later completed again", async () => {
+  const { service, plan } = setup();
+  for (let day = 1; day <= 7; day++) await service.submitDailyAggregate("alice", plan.id, aggregate(day));
+  await service.submitDailyAggregate("alice", plan.id, aggregate(2, 0));
+  assert.equal((await service.getPlan("alice", plan.id)).status, "active");
+  assert.equal((await service.getPlan("alice", plan.id)).completedMissions, 6);
+  await service.submitDailyAggregate("alice", plan.id, aggregate(2));
+  assert.equal((await service.getPlan("alice", plan.id)).status, "completed");
+});
 
-      const createPlanMock = mockDb.createGrowthPlan as ReturnType<typeof mock.fn>;
-      assert.equal(createPlanMock.mock.callCount(), 1);
+test("invalid dates and aggregate counts return application errors without changing progress", async () => {
+  const { service, plan } = setup();
+  for (const patch of [{ localDate: "2026-13-01" }, { localDate: "2026-02-30" }, { localDate: "2026-00-01" },
+    { localDate: "9999-01-01" }, { timeZone: "Mars/Olympus" }, { completedGoalCount: -1 },
+    { completedGoalCount: 3 }, { eligibleGoalCount: 501 }, { completedGoalCount: 0.5 },
+    { definitionVersion: 2 }, { eventId: "invalid" }])
+    await assert.rejects(service.submitDailyAggregate("alice", plan.id, { ...aggregate(), ...patch }), error("BODYLOG_GROWTH_AGGREGATE_INVALID", 400));
+  assert.equal((await service.getPlan("alice", plan.id)).completedMissions, 0);
+});
 
-      const createMissionMock = mockDb.createGrowthMission as ReturnType<typeof mock.fn>;
-      assert.equal(createMissionMock.mock.callCount(), 21); // 7 days * 3 missions per day
+test("aggregate dates and time zones must belong to the enrolled plan", async () => {
+  const { store, service, plan } = setup();
+  await assert.rejects(service.submitDailyAggregate("alice", plan.id, { ...aggregate(), timeZone: "Asia/Shanghai" }), error("BODYLOG_GROWTH_AGGREGATE_TIME_ZONE_MISMATCH", 400));
+  for (const localDate of ["2025-12-31", "2026-01-08"])
+    await assert.rejects(service.submitDailyAggregate("alice", plan.id, { ...aggregate(), localDate }), error("BODYLOG_GROWTH_AGGREGATE_OUT_OF_PLAN", 400));
+  store.updateGrowthPlan(plan.id, { status: "cancelled" });
+  await assert.rejects(service.submitDailyAggregate("alice", plan.id, aggregate()), error("BODYLOG_GROWTH_PLAN_NOT_ACTIVE", 409));
+});
 
-      const createRewardMock = mockDb.createGrowthReward as ReturnType<typeof mock.fn>;
-      assert.equal(createRewardMock.mock.callCount(), 1);
-    });
+test("legacy plans without local goal missions reject aggregate evidence", async () => {
+  const { store, service } = setup();
+  const legacy = store.createGrowthPlan({ userId: "bob", startDate: "2026-01-01T00:00:00.000Z",
+    endDate: "2026-01-08T00:00:00.000Z", status: "active", completedMissions: 0, totalMissions: 21, timeZone: "UTC" });
+  await assert.rejects(service.submitDailyAggregate("bob", legacy.id, aggregate()), error("BODYLOG_GROWTH_MISSION_DEFINITION_MISSING", 409));
+});
 
-    it("should reject enrollment if user already has an active plan", async () => {
-      (mockDb.findActiveGrowthPlan as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => mockPlan);
 
-      await assert.rejects(
-        async () => service.enroll("user-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_PLAN_ACTIVE");
-          assert.equal(error.statusCode, 409);
-          return true;
-        }
-      );
-    });
-  });
+test("reward claims reject missing rewards and rewards from another plan", async () => {
+  const { store, service, plan } = setup();
+  await assert.rejects(service.claimReward("alice", plan.id, "missing"), error("BODYLOG_GROWTH_REWARD_NOT_FOUND", 404));
+  const foreign = store.createGrowthReward({ planId: "another-plan", type: "badge", value: "champion", claimed: false });
+  await assert.rejects(service.claimReward("alice", plan.id, foreign.id), error("BODYLOG_GROWTH_REWARD_MISMATCH", 400));
+});
 
-  describe("getPlan", () => {
-    it("should return plan details", async () => {
-      const result = await service.getPlan("user-1", "plan-1");
-
-      assert.equal(result.id, "plan-1");
-      assert.equal(result.userId, "user-1");
-    });
-
-    it("should throw 404 if plan not found", async () => {
-      (mockDb.findGrowthPlanById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => null);
-
-      await assert.rejects(
-        async () => service.getPlan("user-1", "non-existent"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_PLAN_NOT_FOUND");
-          assert.equal(error.statusCode, 404);
-          return true;
-        }
-      );
-    });
-
-    it("should throw 403 if user does not own the plan", async () => {
-      await assert.rejects(
-        async () => service.getPlan("user-2", "plan-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_PLAN_FORBIDDEN");
-          assert.equal(error.statusCode, 403);
-          return true;
-        }
-      );
-    });
-  });
-
-  describe("getMissions", () => {
-    it("should return all missions for a plan", async () => {
-      const missions = await service.getMissions("user-1", "plan-1");
-
-      assert.equal(missions.length, 1);
-      assert.equal(missions[0].id, "mission-1");
-      assert.equal(missions[0].day, 1);
-    });
-
-    it("should throw 403 if user does not own the plan", async () => {
-      await assert.rejects(
-        async () => service.getMissions("user-2", "plan-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_PLAN_FORBIDDEN");
-          assert.equal(error.statusCode, 403);
-          return true;
-        }
-      );
-    });
-  });
-
-  describe("completeMission", () => {
-    it("should mark a mission as completed", async () => {
-      const result = await service.completeMission("user-1", "plan-1", "mission-1");
-
-      assert.equal(result.completed, true);
-      assert.ok(result.completedAt);
-
-      const updateMissionMock = mockDb.updateGrowthMission as ReturnType<typeof mock.fn>;
-      assert.equal(updateMissionMock.mock.callCount(), 1);
-
-      const incrementMock = mockDb.incrementGrowthPlanCompletedMissions as ReturnType<typeof mock.fn>;
-      assert.equal(incrementMock.mock.callCount(), 1);
-    });
-
-    it("should throw 400 if plan is not active", async () => {
-      (mockDb.findGrowthPlanById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => ({
-        ...mockPlan,
-        status: "completed",
-      }));
-
-      await assert.rejects(
-        async () => service.completeMission("user-1", "plan-1", "mission-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_PLAN_INACTIVE");
-          assert.equal(error.statusCode, 400);
-          return true;
-        }
-      );
-    });
-
-    it("should throw 404 if mission not found", async () => {
-      (mockDb.findGrowthMissionById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => null);
-
-      await assert.rejects(
-        async () => service.completeMission("user-1", "plan-1", "non-existent"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_MISSION_NOT_FOUND");
-          assert.equal(error.statusCode, 404);
-          return true;
-        }
-      );
-    });
-
-    it("should throw 400 if mission does not belong to plan", async () => {
-      (mockDb.findGrowthMissionById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => ({
-        ...mockMission,
-        planId: "plan-2",
-      }));
-
-      await assert.rejects(
-        async () => service.completeMission("user-1", "plan-1", "mission-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_MISSION_MISMATCH");
-          assert.equal(error.statusCode, 400);
-          return true;
-        }
-      );
-    });
-
-    it("should throw 409 if mission already completed", async () => {
-      (mockDb.findGrowthMissionById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => ({
-        ...mockMission,
-        completed: true,
-      }));
-
-      await assert.rejects(
-        async () => service.completeMission("user-1", "plan-1", "mission-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_MISSION_COMPLETED");
-          assert.equal(error.statusCode, 409);
-          return true;
-        }
-      );
-    });
-
-    it("should mark plan as completed when all missions are done", async () => {
-      // completeMission 会两次读取计划：getPlan 权限/状态检查（仍差 1 个任务），
-      // 以及 increment 之后的最新计数（21/21 触发完成）。
-      let planReads = 0;
-      (mockDb.findGrowthPlanById as ReturnType<typeof mock.fn>).mock.mockImplementation(async () => {
-        planReads += 1;
-        return {
-          ...mockPlan,
-          completedMissions: planReads >= 2 ? mockPlan.totalMissions : mockPlan.totalMissions - 1,
-        };
-      });
-
-      await service.completeMission("user-1", "plan-1", "mission-1");
-
-      const updatePlanMock = mockDb.updateGrowthPlan as ReturnType<typeof mock.fn>;
-      assert.equal(updatePlanMock.mock.callCount(), 1);
-      assert.deepEqual(updatePlanMock.mock.calls[0].arguments[1], { status: "completed" });
-    });
-  });
-
-  describe("getRewards", () => {
-    it("should return all rewards for a plan", async () => {
-      const rewards = await service.getRewards("user-1", "plan-1");
-
-      assert.equal(rewards.length, 1);
-      assert.equal(rewards[0].id, "reward-1");
-      assert.equal(rewards[0].type, "badge");
-    });
-
-    it("should throw 403 if user does not own the plan", async () => {
-      await assert.rejects(
-        async () => service.getRewards("user-2", "plan-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_PLAN_FORBIDDEN");
-          assert.equal(error.statusCode, 403);
-          return true;
-        }
-      );
-    });
-  });
-
-  describe("claimReward", () => {
-    it("rejects rewards before plan completion without changing the reward", async () => {
-      await assert.rejects(service.claimReward("user-1", "plan-1", "reward-1"), (error: any) => {
-        assert.equal(error.code, "BODYLOG_GROWTH_PLAN_INACTIVE");
-        assert.equal(error.statusCode, 409);
-        return true;
-      });
-      assert.equal((mockDb.updateGrowthReward as ReturnType<typeof mock.fn>).mock.callCount(), 0);
-    });
-    it("should mark a reward as claimed", async () => {
-      (mockDb.findGrowthPlanById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => ({ ...mockPlan, status: 'completed', completedMissions: 21 }));
-      const result = await service.claimReward("user-1", "plan-1", "reward-1");
-
-      assert.equal(result.claimed, true);
-      assert.ok(result.claimedAt);
-
-      const updateRewardMock = mockDb.updateGrowthReward as ReturnType<typeof mock.fn>;
-      assert.equal(updateRewardMock.mock.callCount(), 1);
-    });
-
-    it("should throw 404 if reward not found", async () => {
-      (mockDb.findGrowthRewardById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => null);
-
-      await assert.rejects(
-        async () => service.claimReward("user-1", "plan-1", "non-existent"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_REWARD_NOT_FOUND");
-          assert.equal(error.statusCode, 404);
-          return true;
-        }
-      );
-    });
-
-    it("should throw 400 if reward does not belong to plan", async () => {
-      (mockDb.findGrowthRewardById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => ({
-        ...mockReward,
-        planId: "plan-2",
-      }));
-
-      await assert.rejects(
-        async () => service.claimReward("user-1", "plan-1", "reward-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_REWARD_MISMATCH");
-          assert.equal(error.statusCode, 400);
-          return true;
-        }
-      );
-    });
-
-    it("should throw 409 if reward already claimed", async () => {
-      (mockDb.findGrowthRewardById as ReturnType<typeof mock.fn>).mock.mockImplementationOnce(async () => ({
-        ...mockReward,
-        claimed: true,
-      }));
-
-      await assert.rejects(
-        async () => service.claimReward("user-1", "plan-1", "reward-1"),
-        (error: any) => {
-          assert.equal(error.code, "BODYLOG_GROWTH_REWARD_CLAIMED");
-          assert.equal(error.statusCode, 409);
-          return true;
-        }
-      );
-    });
-  });
+test("aggregate day assignment uses the enrolled local date across UTC midnight", async () => {
+  const { store, service } = setup();
+  const plan = store.createGrowthPlan({ userId: "bob", startDate: "2026-01-01T20:00:00.000Z",
+    endDate: "2026-01-08T20:00:00.000Z", status: "active", completedMissions: 0, totalMissions: 7, timeZone: "Asia/Shanghai" });
+  const mission = store.createGrowthMission({ planId: plan.id, day: 1, type: "localGoal", target: 1, completed: false });
+  await service.submitDailyAggregate("bob", plan.id, { ...aggregate(2), timeZone: "Asia/Shanghai" });
+  assert.equal(store.findGrowthMissionById(mission.id)?.completed, true);
 });

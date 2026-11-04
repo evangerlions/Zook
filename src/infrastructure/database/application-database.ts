@@ -1,5 +1,18 @@
+import type { BuddySupportRepository } from "../../modules/frogsleep/buddy-support/buddy-support.types.ts";
+import { ApplicationBodyLogDatabase } from "./application-bodylog-database.ts";
+import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
+import type { PersonalSyncRepository } from "../../modules/frogsleep/personal-sync/personal-sync.types.ts";
+import type { FrogSleepAdminStore } from "../../modules/frogsleep/admin/frogsleep-admin.types.ts";
+import type { FrogSleepFocusSessionWriteResult } from "../../shared/frogsleep-focus-session.ts";
 import type {
   AnalyticsEventRecord,
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingAdminEventFilter,
+  AiNovelBillingAdminEventPage,
+  AiNovelBillingAdminOrderDetailFilter,
+  AiNovelBillingAdminOrderFilter,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
@@ -47,28 +60,9 @@ import type {
 } from "../../shared/types.ts";
 import type { LlmObservabilityStore } from "./llm-observability-store.ts";
 import type { AiNovelConversationStore } from "./ai-novel-conversation-store.ts";
+import type { AiNovelCreditsStore } from "../../modules/ai-novel/credits/ai-novel-credits-model.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
-import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
-import type {
-  BodyLogBlockRecord,
-  BodyLogFriendRequestRecord,
-  BodyLogFriendshipRecord,
-  BodyLogReportRecord,
-} from "../../modules/bodylog/bodylog-social.types.ts";
-import type {
-  BodyLogDailyAggregate,
-  BodyLogLeaderboardEntryRecord,
-  BodyLogWeeklyGoalSnapshot,
-} from "../../modules/bodylog/bodylog-scoring.types.ts";
-import type {
-  BodyLogInvitationAttributionRecord,
-  BodyLogInvitationRecord,
-} from "../../modules/bodylog/bodylog-invitation.types.ts";
-import type {
-  BodyLogChallengeMemberRecord,
-  BodyLogChallengeRecord,
-} from "../../modules/bodylog/bodylog-challenge.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -84,10 +78,20 @@ export interface ManagedStateSnapshot {
  * Production implementations should talk to PostgreSQL directly.
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
-export abstract class ApplicationDatabase {
+export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
+  /** Optional internal product port; unsupported adapters fail closed. */
+  getYaoheziHealthStore(): import("../../modules/yaohezi/security/health-store.ts").YaoheziHealthStore | undefined { return undefined; }
+  getYaoheziProfileStore(): import("../../modules/yaohezi/profiles/yaohezi-profile-store.ts").YaoheziProfileStore | undefined { return undefined; }
+  abstract getBuddySupportRepository(): BuddySupportRepository;
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;
+  abstract readonly aiNovelCreditsStore: AiNovelCreditsStore;
+  abstract getSleepGuestStore(): SleepGuestStore;
+  abstract getPersonalSyncRepository(): PersonalSyncRepository;
+  abstract getFrogSleepAdminStore(): FrogSleepAdminStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
+  abstract withNewUserTransaction<T>(userId: string, fn: () => Promise<T> | T): Promise<T>;
+  abstract withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],
     fn: () => Promise<T> | T,
@@ -114,55 +118,19 @@ export abstract class ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt?: string,
   ): MaybePromise<AppUserRecord | undefined>;
   abstract finalizeAppUserAccountRegion(
     appId: string,
     userId: string,
     accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
   ): MaybePromise<AppUserRecord | undefined>;
-  abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
-
-  abstract findBodyLogProfile(
+  abstract deleteAppUserRuntimeData(
     appId: string,
     userId: string,
-  ): MaybePromise<BodyLogProfileRecord | undefined>;
-  abstract listBodyLogProfilesByIds(
-    appId: string,
-    userIds: string[],
-  ): MaybePromise<Map<string, BodyLogProfileRecord>>;
-  abstract upsertBodyLogProfile(
-    record: BodyLogProfileRecord,
-  ): MaybePromise<BodyLogProfileRecord>;
-  abstract listBodyLogFriendRequests(appId: string): MaybePromise<BodyLogFriendRequestRecord[]>;
-  abstract upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): MaybePromise<BodyLogFriendRequestRecord>;
-  abstract listBodyLogFriendships(appId: string): MaybePromise<BodyLogFriendshipRecord[]>;
-  abstract insertBodyLogFriendship(record: BodyLogFriendshipRecord): MaybePromise<void>;
-  abstract deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): MaybePromise<void>;
-  abstract listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
-  abstract insertBodyLogBlock(record: BodyLogBlockRecord): MaybePromise<void>;
-  abstract deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
-  abstract insertBodyLogReport(record: BodyLogReportRecord): MaybePromise<void>;
-  abstract listBodyLogReports(appId: string, reporterUserId: string): MaybePromise<BodyLogReportRecord[]>;
-  abstract findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogWeeklyGoalSnapshot | undefined>;
-  abstract upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): MaybePromise<BodyLogWeeklyGoalSnapshot>;
-  abstract listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogDailyAggregate[]>;
-  abstract upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): MaybePromise<BodyLogDailyAggregate>;
-  abstract findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord | undefined>;
-  abstract upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): MaybePromise<BodyLogLeaderboardEntryRecord>;
-  abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
-  abstract findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): MaybePromise<BodyLogInvitationRecord | undefined>;
-  abstract findBodyLogInvitationByCode(appId: string, code: string): MaybePromise<BodyLogInvitationRecord | undefined>;
-  abstract insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
-  abstract listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;
-  abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
-  abstract updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
-  abstract listBodyLogInvitationAttributions(appId: string): MaybePromise<BodyLogInvitationAttributionRecord[]>;
-  abstract insertBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
-  abstract updateBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
-  abstract listBodyLogChallenges(appId: string): MaybePromise<BodyLogChallengeRecord[]>;
-  abstract insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): MaybePromise<void>;
-  abstract updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): MaybePromise<void>;
-  abstract listBodyLogChallengeMembers(appId: string): MaybePromise<BodyLogChallengeMemberRecord[]>;
+    deletedAt?: string,
+  ): MaybePromise<void>;
+
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
   abstract insertRoles(records: RoleRecord[]): MaybePromise<void>;
@@ -221,11 +189,12 @@ export abstract class ApplicationDatabase {
     limit?: number;
   }): MaybePromise<EmailDeliveryEventRecord[]>;
 
+  abstract withFrogSleepNotificationLock<T>(key: string, operation: () => Promise<T> | T): Promise<T>;
   abstract insertNotificationJob(record: NotificationJobRecord): MaybePromise<void>;
   abstract findNotificationJob(jobId: string): MaybePromise<NotificationJobRecord | undefined>;
   abstract updateNotificationJob(
     jobId: string,
-    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
+    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount" | "payload">>,
   ): MaybePromise<NotificationJobRecord | undefined>;
 
   abstract upsertFrogSleepDevice(record: FrogSleepDeviceRecord): MaybePromise<FrogSleepDeviceRecord>;
@@ -237,8 +206,10 @@ export abstract class ApplicationDatabase {
     includeDeleted?: boolean;
   }): MaybePromise<FrogSleepDeviceRecord[]>;
 
+  abstract upsertFrogSleepFocusSession(record: FrogSleepEntityRecord): MaybePromise<FrogSleepFocusSessionWriteResult>;
   abstract insertFrogSleepEntity(record: FrogSleepEntityRecord): MaybePromise<void>;
   abstract findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract listFrogSleepEntities(filter: FrogSleepEntityFilter): MaybePromise<FrogSleepEntityRecord[]>;
@@ -258,6 +229,7 @@ export abstract class ApplicationDatabase {
     state: FrogSleepBuddySharingGrantRecord["state"],
   ): MaybePromise<FrogSleepBuddySharingGrantRecord | undefined>;
   abstract upsertFrogSleepBuddyInvitationBundle(record: FrogSleepBuddyInvitationBundleRecord): MaybePromise<FrogSleepBuddyInvitationBundleRecord>;
+  abstract markFrogSleepBuddyInvitationRead(appId: string, bundleId: string, userId: string): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
   abstract findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
   abstract listFrogSleepBuddyInvitationBundles(input: {
     appId: string; userId: string; direction: "incoming" | "outgoing";
@@ -301,6 +273,8 @@ export abstract class ApplicationDatabase {
     appId: string,
     deliveryId: string,
   ): MaybePromise<FrogSleepBuddyInvitationEmailAttemptRecord[]>;
+  lockFrogSleepBuddyDomainSlots(_keys: FrogSleepBuddyCommandSlotKey[]): MaybePromise<void> {}
+  lockFrogSleepBuddyInvitationBundle(_appId: string, _invitationId: string): MaybePromise<void> {}
   abstract upsertFrogSleepBuddyInvitationDomainDecision(
     record: FrogSleepBuddyInvitationDomainDecisionRecord,
   ): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord>;
@@ -316,7 +290,7 @@ export abstract class ApplicationDatabase {
   abstract compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: {
     appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
     expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
-    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; terminalReason?: string; updatedAt: string;
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; relationshipId?: string; terminalReason?: string; updatedAt: string;
   }): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   abstract ensureFrogSleepBuddyDomainSlot(input: {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
@@ -338,7 +312,7 @@ export abstract class ApplicationDatabase {
     appId: string, relationshipId: string,
   ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
   abstract listCurrentFrogSleepBuddyDomainRelationships(
-    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked?: boolean,
   ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord[]>;
   abstract compareAndUpdateFrogSleepBuddyDomainRelationship(input: {
     appId: string; id: string; expectedVersion: number;
@@ -449,7 +423,6 @@ export abstract class ApplicationDatabase {
   }): MaybePromise<ContentSafetyCheckRecord[]>;
   abstract deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
 
-
   abstract insertFeedback(
     record: FeedbackRecord,
     attachments: FeedbackAttachmentRecord[],
@@ -537,190 +510,51 @@ export abstract class ApplicationDatabase {
     dateTo?: string;
   }): MaybePromise<AiNovelDailyStatisticsRecord[]>;
 
-  // ─── BodyLog 后台打卡管理 ───
+  abstract findAiNovelBillingMembership(
+    appId: "ai_novel",
+    userId: string,
+  ): MaybePromise<AiNovelBillingMembershipRecord | undefined>;
+  abstract findAiNovelAlipayOrder(orderId: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder | undefined>;
+  abstract findAiNovelAlipayIdempotency(userId: string, key: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder | undefined>;
+  abstract listAiNovelAlipayOrders(userId: string, filter: { before: string; after?: string; limit: number }): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract listAiNovelAlipayAccess(userId: string, now: string): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number): MaybePromise<import("../../modules/billing/alipay-models.ts").AlipayOrder[]>;
+  abstract saveAiNovelAlipayOrder(order: import("../../modules/billing/alipay-models.ts").AlipayOrder): MaybePromise<void>;
+  abstract listBillingAdminMemberships(filter: import("../../shared/types/billing-admin.ts").BillingMembershipFilter): MaybePromise<AiNovelBillingMembershipRecord[]>;
+  abstract getBillingAdminRevenue(filter: import("../../shared/types/billing-admin.ts").BillingSummaryFilter): MaybePromise<import("../../shared/types/billing-admin.ts").BillingRevenueRow[]>;
+  abstract upsertAiNovelBillingMembership(
+    record: AiNovelBillingMembershipRecord,
+  ): MaybePromise<void>;
+  abstract upsertAiNovelBillingTransaction(
+    record: AiNovelBillingTransactionRecord,
+  ): MaybePromise<void>;
+  abstract listAiNovelBillingTransactions(
+    appId: "ai_novel",
+    userId: string,
+  ): MaybePromise<AiNovelBillingTransactionRecord[]>;
+  abstract listAiNovelBillingAdminOrders(
+    filter: AiNovelBillingAdminOrderFilter,
+  ): MaybePromise<AiNovelBillingTransactionRecord[]>;
+  abstract findAiNovelBillingAdminOrder(
+    filter: AiNovelBillingAdminOrderDetailFilter,
+  ): MaybePromise<AiNovelBillingTransactionRecord | undefined>;
+  abstract listAiNovelBillingAdminEvents(
+    filter: AiNovelBillingAdminEventFilter,
+  ): MaybePromise<AiNovelBillingAdminEventPage>;
+  abstract findAiNovelBillingWebhookEvent(
+    appId: "ai_novel",
+    eventId: string,
+  ): MaybePromise<AiNovelBillingWebhookEventRecord | undefined>;
+  abstract insertAiNovelBillingWebhookEvent(
+    record: AiNovelBillingWebhookEventRecord,
+  ): MaybePromise<boolean>;
+  abstract softDeleteAiNovelBillingAccount(
+    appId: "ai_novel",
+    userId: string,
+    deletedAt: string,
+  ): MaybePromise<void>;
 
-  abstract getBodyLogCheckinDashboard(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-    timezone: string;
-  }): MaybePromise<{
-    summary: {
-      dau: number;
-      checkins_today: number;
-      active_groups: number;
-      total_groups: number;
-      total_members: number;
-      checkin_rate_daily: number;
-      checkin_rate_weekly: number;
-      checkin_rate_monthly: number;
-    };
-    trend: Array<{
-      date: string;
-      dau: number;
-      checkins: number;
-      completion_rate: number;
-    }>;
-    consecutive_distribution: Array<{
-      bucket: string;
-      users: number;
-    }>;
-    habit_distribution: Array<{
-      habit_id: string;
-      checkins: number;
-      share: number;
-    }>;
-  }>;
 
-  abstract listBodyLogCheckinUserDates(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-  }): MaybePromise<Array<{ userId: string; date: string }>>;
-
-  abstract searchBodyLogCheckinRecords(input: {
-    appId: string;
-    userId?: string;
-    groupId?: string;
-    fromDate?: string;
-    toDate?: string;
-    page: number;
-    limit: number;
-  }): MaybePromise<{
-    items: Array<{
-      recordId: string;
-      date: string;
-      groupId: string;
-      groupName: string;
-      userId: string;
-      completedCount: number;
-      totalMembers: number;
-      completionRate: number;
-      createdAt: string;
-    }>;
-    total: number;
-  }>;
-
-  abstract listBodyLogGroupHealth(input: {
-    appId: string;
-    status?: string;
-    health?: "active" | "stale" | "dead";
-    fromDate: string;
-    toDate: string;
-    page: number;
-    limit: number;
-  }): MaybePromise<{
-    items: Array<{
-      groupId: string;
-      name: string;
-      status: string;
-      memberCount: number;
-      leaderUserId: string;
-      createdAt: string;
-      lastActiveDate: string;
-      checkins7d: number;
-      checkins30d: number;
-      activeMembers7d: number;
-      completionRate7d: number;
-    }>;
-    total: number;
-  }>;
-
-  abstract listBodyLogGroupMemberContributions(input: {
-    groupId: string;
-    fromDate: string;
-    toDate: string;
-  }): MaybePromise<Array<{
-    userId: string;
-    nickname: string;
-    avatarKey: string | null;
-    role: string;
-    status: string;
-    checkinCount: number;
-    lastCheckinAt: string;
-  }>>;
-
-  abstract listBodyLogHabitUsage(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-  }): MaybePromise<Array<{
-    habitId: string;
-    checkins: number;
-    lastCheckinAt: string;
-  }>>;
-
-  abstract listBodyLogHabitTemplates(appId: string): MaybePromise<Array<{
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  }>>;
-
-  abstract findBodyLogHabitTemplate(appId: string, id: string): MaybePromise<{
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  } | undefined>;
-
-  abstract findBodyLogHabitTemplateByKey(appId: string, key: string): MaybePromise<{
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  } | undefined>;
-
-  abstract insertBodyLogHabitTemplate(record: {
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  }): MaybePromise<void>;
-
-  abstract updateBodyLogHabitTemplate(record: {
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  }): MaybePromise<void>;
-
-  abstract deleteBodyLogHabitTemplate(appId: string, id: string): MaybePromise<boolean>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {

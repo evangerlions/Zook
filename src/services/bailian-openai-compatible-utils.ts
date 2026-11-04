@@ -113,6 +113,12 @@ export function throwProviderRequestFailed(
       provider,
       statusCode,
       errorCode: payload.error?.code,
+      // Keep only the allowlisted source and bounded reason discriminator.
+      ...(provider === "openrouter" && payload.error?.metadata?.limit_source === "openrouter_credits"
+        ? { limitSource: "openrouter_credits", ...(payload.error.metadata.reason === undefined ? {} : {
+            creditReason: payload.error.metadata.reason === "weight_exceeds_budget" ? "weight_exceeds_budget" : "unknown",
+          }) }
+        : {}),
       errorType: payload.error?.type,
       providerRequestId: payload.request_id ?? payload.id,
     },

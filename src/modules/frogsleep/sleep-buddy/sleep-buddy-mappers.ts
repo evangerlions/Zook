@@ -9,7 +9,9 @@ function otherUserId(record: FrogSleepEntityRecord, userId: string): string {
 }
 
 function toIosParticipantState(state: string): string {
-  return state === "pending" ? "invited" : state;
+  if (state === "pending") return "invited";
+  if (["sleep_started", "ritual_completed"].includes(state)) return "started";
+  return state;
 }
 
 export function toSleepInviteResponse(invite: FrogSleepEntityRecord) {

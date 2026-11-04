@@ -16,7 +16,7 @@ export function qualifyBuddyGrowthRecord(record: FrogSleepEntityRecord): BuddyQu
   if (record.kind === "buddy_interaction" && record.status === "sent") {
     return action(record, "interaction");
   }
-  if (record.kind === "buddy_joint_activity" && ["accepted", "completed"].includes(record.status ?? "")) {
+  if (record.kind === "buddy_joint_activity" && record.status === "completed") {
     return action(record, "joint_action");
   }
   if (record.kind === "buddy_goal_contribution" && record.status === "verified") {

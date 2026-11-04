@@ -7,6 +7,7 @@ export function llmErrorDiagnosticCode(error: unknown): string {
     if (details && typeof details === "object" && !Array.isArray(details)) {
       const providerErrorCode = (details as Record<string, unknown>).errorCode;
       if (typeof providerErrorCode === "string") return safeErrorCode(providerErrorCode);
+      if (typeof providerErrorCode === "number" && Number.isFinite(providerErrorCode)) return safeErrorCode(String(providerErrorCode));
     }
     return safeErrorCode(error.code);
   }

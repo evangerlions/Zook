@@ -19,6 +19,7 @@ async function runTick(): Promise<void> {
   tickRunning = true;
   try {
     await runtime.services.contentSafetyService.cleanupExpiredRecords();
+    await runtime.database.getBuddySupportRepository().cleanup("frogsleep", new Date().toISOString());
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();

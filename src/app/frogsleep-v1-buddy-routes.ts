@@ -1,3 +1,4 @@
+import { tryHandleBuddySupportRoutes } from "./frogsleep-v1-buddy-support-routes.ts";
 import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { BuddyInvitationBundleService } from "../modules/frogsleep/buddy-growth/buddy-invitation-bundle.service.ts";
@@ -53,6 +54,8 @@ async function handleBuddyInvitationReceiptCreate(context: BackendRouteContext, 
 
 /** Handles canonical unified buddy invitation and consent routes. */
 export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, request: HttpRequest) {
+  const support = await tryHandleBuddySupportRoutes(context, request);
+  if (support) return support;
   const capabilities = resolveBuddyGrowthCapabilities();
   const notificationResponse = capabilities.invitationInbox
     ? await tryHandleBuddyNotificationRoutes(context, request) : undefined;
@@ -77,9 +80,9 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
     const auth = await authenticateFrogSleepRequest(context, request);
     const bundleService = new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager);
     const bundle = request.query?.token
-      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token)
+      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token.trim())
       : request.query?.code
-        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code)
+        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code.trim())
         : request.query?.invitation_id || request.query?.invitationId
           ? await context.database.findFrogSleepBuddyInvitationBundle(
             FROGSLEEP_APP_ID,
@@ -211,7 +214,7 @@ async function tryHandleBuddyHubRoutes(
     return frogSleepOk(context, await reportService.report(auth.userId, decodeURIComponent(reportMatch[1] as string)),
       request.requestId as string);
   }
-  const action = request.path.match(/^\/v1\/buddy\/joint-activities\/([^/]+)\/(accept|decline|cancel|complete)$/);
+  const action = request.path.match(/^\/v1\/buddy\/joint-activities\/([^/]+)\/(accept|decline|cancel|start|complete)$/);
   if (request.method === "POST" && action) {
     return frogSleepOk(context, await service.jointActivityAction(auth.userId,
       decodeURIComponent(action[1] as string), action[2] as string), request.requestId as string);

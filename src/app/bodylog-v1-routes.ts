@@ -26,6 +26,16 @@ function requestBody(request: HttpRequest): Record<string, unknown> {
     : {};
 }
 
+function isRouteUnder(path: string, roots: string[]): boolean {
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
+function requireEnabledFeature(enabled: boolean, feature: string): void {
+  if (!enabled) {
+    throw new ApplicationError(404, "BODYLOG_FEATURE_DISABLED", `${feature} is not available.`);
+  }
+}
+
 export async function tryHandleBodyLogV1Routes(
   context: BackendRouteContext,
   profileService: BodyLogProfileService,
@@ -52,8 +62,47 @@ export async function tryHandleBodyLogV1Routes(
   }
 
   const auth = await context.authenticateProductRequest(request, BODYLOG_APP_ID);
-  if (request.path.startsWith("/api/v1/bodylog/seven-day-plan/") && !(await featureFlagService.isEnabled("growth"))) {
-    throw new ApplicationError(404, "BODYLOG_FEATURE_DISABLED", "Feature is not available.");
+  const bodyLogPath = request.path.slice("/api/v1/bodylog".length);
+  if (isRouteUnder(bodyLogPath, [
+    "/profile", "/friends", "/friend-requests", "/blocks", "/reports", "/invitations",
+    "/buddies", "/groups", "/notification-preferences", "/push-devices",
+  ])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("accountSocial"), "BodyLog social");
+  }
+  if (isRouteUnder(bodyLogPath, ["/friends", "/friend-requests", "/blocks", "/reports"])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("friends"), "BodyLog friends");
+  }
+  if (isRouteUnder(bodyLogPath, ["/leaderboards", "/challenges"])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("competition"), "BodyLog competition");
+  }
+  if (bodyLogPath === "/challenges" && request.method === "POST") {
+    requireEnabledFeature(await featureFlagService.isEnabled("challengeCreation"), "BodyLog challenge creation");
+  }
+  if (isRouteUnder(bodyLogPath, ["/seven-day-plan", "/missions", "/rewards", "/campaigns", "/retention"])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("growth"), "BodyLog growth");
+  }
+  const retention = growthService.retention;
+  if (retention) {
+    if (bodyLogPath === "/retention/events" && request.method === "POST") return context.ok(await retention.execute(() => retention.telemetry.record(auth.userId, requestBody(request))), request.requestId as string);
+    if (bodyLogPath === "/retention/assignment" && request.method === "GET") return context.ok(await retention.telemetry.assignment(auth.userId), request.requestId as string);
+    if (bodyLogPath === "/entitlements" && request.method === "GET") {
+      await retention.reconcile(auth.userId);
+      return context.ok(await retention.ledger.entitlements(auth.userId), request.requestId as string);
+    }
+    if (bodyLogPath === "/missions" && request.method === "GET") return context.ok(await retention.missions(auth.userId), request.requestId as string);
+    if (bodyLogPath === "/rewards" && request.method === "GET") return context.ok(await retention.rewards(auth.userId), request.requestId as string);
+    if (bodyLogPath === "/campaigns/active" && request.method === "GET") return context.ok(await retention.campaigns.active(auth.userId), request.requestId as string);
+    const campaign = bodyLogPath.match(/^\/campaigns\/([A-Za-z0-9_-]{1,128})\/(join|participation|submit|claim)$/);
+    if (campaign) {
+      const id = campaign[1]!;
+      if (campaign[2] === "participation" && request.method === "GET") return context.ok({ participation: await retention.campaigns.participation(auth.userId, id) }, request.requestId as string);
+      if (request.method === "POST") {
+        const operation: () => Promise<unknown> = async () => campaign[2] === "join" ? retention.campaigns.join(auth.userId, id)
+          : campaign[2] === "submit" ? retention.campaigns.submit(auth.userId, id, { platform: requestBody(request).platform, url: requestBody(request).url })
+          : campaign[2] === "claim" ? retention.campaigns.claim(auth.userId, id) : Promise.reject(new ApplicationError(404, "BODYLOG_CAMPAIGN_NOT_FOUND", "Unknown operation."));
+        return context.ok(await retention.execute(operation), request.requestId as string);
+      }
+    }
   }
   if (request.path === "/api/v1/bodylog/subscription/status" && request.method === "GET") {
     return context.ok(await buddyService.subscriptionStatus(auth.userId), request.requestId as string);
@@ -182,12 +231,19 @@ export async function tryHandleBodyLogV1Routes(
       request.requestId as string,
     );
   }
+  if (request.path === "/api/v1/bodylog/invitations/preview" && request.method === "GET") {
+    return context.ok(await invitationService.preview(request.query ?? {}), request.requestId as string);
+  }
+  const revokeInvitation = request.path.match(/^\/api\/v1\/bodylog\/invitations\/([A-Za-z0-9_-]{1,512})$/);
+  if (revokeInvitation && request.method === "DELETE") {
+    return context.ok(await invitationService.revoke(auth.userId, revokeInvitation[1]!), request.requestId as string);
+  }
   if (request.path === "/api/v1/bodylog/invitations/attribute" && request.method === "POST") {
     const body = requestBody(request);
     return context.ok(
-      await invitationService.attribute(auth.userId, {
-        token: body.token, installId: body.installId,
-      }),
+      await (body.code !== undefined
+        ? (body.token !== undefined ? Promise.reject(new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Choose a token or code.")) : invitationService.attributeByCode(auth.userId, { code: body.code, installId: body.installId }))
+        : invitationService.attribute(auth.userId, { token: body.token, installId: body.installId })),
       request.requestId as string,
     );
   }
@@ -276,9 +332,13 @@ export async function tryHandleBodyLogV1Routes(
     await buddyService.dissolvePair(auth.userId, buddyDissolveMatch[1] as string);
     return context.ok({ dissolved: true }, request.requestId as string);
   }
-  if (request.path === "/api/v1/bodylog/buddies/encourage" && request.method === "POST") {
+  if (["/api/v1/bodylog/buddies/encourage", "/api/v1/bodylog/buddies/encouragements"].includes(request.path) && request.method === "POST") {
+    if (request.path.endsWith("/encouragements") && !request.headers?.["idempotency-key"]) {
+      throw new ApplicationError(400, "REQ_INVALID_BODY", "A stable Idempotency-Key is required for durable delivery.");
+    }
     const body = requestBody(request);
     const encouragement = await buddyService.encourage(auth.userId, {
+      operationId: request.headers?.["idempotency-key"],
       pairId: validation.requireString(body, "pairId"),
       emoji: validation.requireString(body, "emoji") as BuddyEncouragementEmoji,
       isSameAction: validation.optionalBoolean(body, "isSameAction") ?? false,
@@ -311,6 +371,15 @@ export async function tryHandleBodyLogV1Routes(
     const groups = await groupService.getMyGroups(auth.userId);
     return context.ok({ groups, total: groups.length }, request.requestId as string);
   }
+  if (request.path === "/api/v1/bodylog/groups/preview" && request.method === "GET") {
+    const preview = await groupService.previewGroupByCode(auth.userId, String(request.query?.code ?? ""));
+    return context.ok(preview, request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/groups/join-by-code" && request.method === "POST") {
+    const body = requestBody(request);
+    const group = await groupService.joinGroupByCode(auth.userId, validation.requireString(body, "code"), validation.optionalString(body, "expectedGroupId"));
+    return context.ok(group, request.requestId as string);
+  }
   const groupMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)$/);
   if (groupMatch && request.method === "GET") {
     const detail = await groupService.getGroupDetail(auth.userId, groupMatch[1] as string);
@@ -319,8 +388,8 @@ export async function tryHandleBodyLogV1Routes(
   const groupInviteMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/invite$/);
   if (groupInviteMatch && request.method === "POST") {
     const body = requestBody(request);
-    await groupService.inviteMember(auth.userId, groupInviteMatch[1] as string, body.userId as string);
-    return context.ok({ invited: true }, request.requestId as string);
+    const receipt = await groupService.inviteMember(auth.userId, groupInviteMatch[1] as string, validation.requireString(body, "userId"));
+    return context.ok({ invited: true, ...receipt }, request.requestId as string);
   }
   const groupAcceptMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/accept$/);
   if (groupAcceptMatch && request.method === "POST") {
@@ -362,7 +431,9 @@ export async function tryHandleBodyLogV1Routes(
 
   // ===== Growth (7-day plan) routes =====
   if (request.path === "/api/v1/bodylog/seven-day-plan/enroll" && request.method === "POST") {
-    const plan = await growthService.enroll(auth.userId);
+    const body = requestBody(request);
+    const timeZone = validation.optionalString(body, "timeZone") ?? "UTC";
+    const plan = await growthService.enroll(auth.userId, timeZone);
     return context.ok(plan, request.requestId as string);
   }
   if (request.path === "/api/v1/bodylog/seven-day-plan/latest" && request.method === "GET") {
@@ -381,6 +452,19 @@ export async function tryHandleBodyLogV1Routes(
   if (missionsMatch && request.method === "GET") {
     const missions = await growthService.getMissions(auth.userId, missionsMatch[1] as string);
     return context.ok(missions, request.requestId as string);
+  }
+  const dailyAggregateMatch = request.path.match(/^\/api\/v1\/bodylog\/seven-day-plan\/([^/]+)\/daily-aggregate$/);
+  if (dailyAggregateMatch && request.method === "POST") {
+    const body = requestBody(request);
+    const aggregate = await growthService.submitDailyAggregate(auth.userId, dailyAggregateMatch[1] as string, {
+      localDate: validation.requireString(body, "localDate"),
+      timeZone: validation.requireString(body, "timeZone"),
+      completedGoalCount: validation.requireNumber(body, "completedGoalCount"),
+      eligibleGoalCount: validation.requireNumber(body, "eligibleGoalCount"),
+      definitionVersion: validation.requireNumber(body, "definitionVersion"),
+      eventId: validation.requireString(body, "eventId"),
+    });
+    return context.ok(aggregate, request.requestId as string);
   }
   const completeMissionMatch = request.path.match(/^\/api\/v1\/bodylog\/seven-day-plan\/([^/]+)\/missions\/([^/]+)\/complete$/);
   if (completeMissionMatch && request.method === "POST") {

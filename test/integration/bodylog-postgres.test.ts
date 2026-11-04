@@ -20,7 +20,7 @@ test('BodyLog migrations replay and concurrent mission completion counts once', 
     await client.query('CREATE TABLE zook_users (id TEXT PRIMARY KEY)');
     await client.query('CREATE TABLE zook_bodylog_invitations (id TEXT PRIMARY KEY, app_id TEXT, created_at TIMESTAMPTZ)');
     const dir = new URL('../../src/infrastructure/database/postgres/migrations/', import.meta.url);
-    const files = (await readdir(dir)).filter(f => /^0(4\d|5[0-7])_/.test(f)).sort();
+    const files = (await readdir(dir)).filter(f => /^0(4\d|5[0-7])_/.test(f) || f === "067_bodylog_growth_local_goal_aggregates.sql").sort();
     for (let replay = 0; replay < 2; replay++) {
       for (const file of files) await client.query(await readFile(new URL(file, dir), 'utf8'));
     }

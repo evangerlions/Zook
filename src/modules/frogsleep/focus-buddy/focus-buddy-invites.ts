@@ -1,3 +1,4 @@
+import { lockLegacyInvitationSlots } from "../buddy-growth/buddy-invitation-slot-compatibility.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
@@ -315,6 +316,7 @@ async function acceptInvite(
       forbidden("AUTH_APP_SCOPE_MISMATCH", "This invite is not for the current user.");
     }
     await assertBuddyPairNotBlocked(database, currentInvite.ownerUserId as string, userId);
+    await lockLegacyInvitationSlots(database, currentInvite.id, "focus", currentInvite.ownerUserId as string, userId);
     const acceptedAt = nowIso();
     const currentRelationship = await database.findFrogSleepEntity(
       "focus_relationship",

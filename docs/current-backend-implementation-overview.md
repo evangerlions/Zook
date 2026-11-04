@@ -1,5 +1,21 @@
 # 当前后端实现概览
 
+## Grow H5 存储补充（2026-11-02）
+
+Zook 内的 `services/grow` 支持 PostgreSQL 内容后端：账号记录、规划、课程正文和不可变版本
+使用同槽位数据库的独立 `grow_*` schema；每个 Grow 账号继续隔离数据空间。
+这是现有 Python H5 的兼容承载，并未合并 Grow/Zook 账号或改变原生 LightTick 的数据权威。
+旧服务的历史账号、数据和配置保留不动；本次只接通本地新版供验证。
+操作及验收见 [Grow H5 部署](grow-h5-deployment.md)。
+
+## BodyLog 小组邀请码闭环（2026-11-01）
+
+定向邀请返回账号绑定的六位短码与七天有效期；预览不披露成员/打卡，兑换校验预览身份并保持重复请求幂等。PostgreSQL 在同一事务中串行化用户配额和小组最后名额，内存实现对应同样规则。复用既有邀请记录，无新 migration；实现不代表已经部署。接口见 `README_API.md`，并发门禁可用 `test/support/run_bodylog_group_postgres.py` 在全新临时 cluster 复跑。
+
+## AINovel Alipay backend MVP
+
+CN Android store/direct Android, Web and Windows use persisted one-off Alipay orders with the six existing product keys. Official SDK signed queries and RSA2 form notifications converge to shared membership/financial/admin records under one atomic settlement. Highest active tier wins; duplicate settlement does not extend twice; account soft deletion preserves financial evidence without granting. Public payment identities and callback rules are code-owned; deployment identity alone permits production online and both payment environments on local/dev. Separate merchant Secrets/gateways route into one business implementation; there is no payment selector, sandbox enable flag or key-path env variable. Both payment environments share Alipay prices from the existing versioned Admin delivery config within each deployment; catalog and new orders read current prices, while existing orders retain frozen amounts and can settle after new sales stop. No enablement/price-approval flag or env/code price fallback exists. Native/live payment and external refund synchronization are not claimed. Public contracts and integration semantics are in `README_API.md`; admin reads remain under `/api/v1/admin/billing`.
+
 ## FrogSleep 搭子 PostgreSQL 并发门禁
 
 搭子领域 slot、relationship 与原子接受的真实并发验证使用独立命令：
@@ -53,6 +69,10 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 5. 好友申请、拉黑和举报由 `022_bodylog_social.sql` 持久化，拉黑会隔离共享社交状态。
 6. 排行榜只接收冻结的目标快照和完成聚合，服务端负责计分与公开资格判定。
 7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
+
+BodyLog 远程能力按 `accountSocial`、`friends`、`competition`、`challengeCreation`、`growth` 独立 fail-closed。登录后路由逐域检查配置，缺失或关闭时返回 `404 BODYLOG_FEATURE_DISABLED`；匿名公开配置不受这些业务开关影响。`api-contracts/openapi/bodylog/api.yaml` 以 `x-bodylog-feature-gates` 记录门控路径。当前功能分支中的路由开关修改和定向用例尚未合并/部署，不代表生产环境已经具备该回滚行为。
+
+七日成长计划 v1 使用 `localGoal` mission：每天至少一个启用习惯达成其本地每日次数或时长目标即可完成当日任务。客户端只提交日期、时区、完成目标数/适用目标数、定义版本和稳定事件 ID；服务端按账号/本地日期唯一覆盖，并在单一事务中更新聚合、任务和计划。旧手动完成路由返回 `409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED`；奖励领取保持幂等，领取后阻止改变任务完成状态。迁移会结束旧定义的活动计划但保留其历史任务/奖励。新端点和迁移仍在功能分支，需审查、部署及客户端兼容性验证后才能由生产开关开放。
 8. 完整外部契约位于 `api-contracts/openapi/bodylog/api.yaml`。
 
 新增搭子、小组、7 天成长计划、通知偏好和推送设备接口。PostgreSQL store 通过请求事务上下文执行，搭子接受需要接收者确认，小组成员变更与组长转让原子保存。小组新增排行榜（`GET /groups/{groupId}/leaderboard`）、移除成员（`POST /groups/{groupId}/members/remove`，组长/管理员可移除，组长可按角色边界移除任意成员，管理员仅能移除普通成员，不能移除组长）与组长转让（`POST /groups/{groupId}/transfer`，仅现任 leader）。小组详情新增 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见。列表与详情、排行榜均使用批量查询（`listGroupMembersByGroupIds`、`listBodyLogProfilesByIds`）避免 N+1。新增本地日志 eventId 去重、保留 occurredAt 的搭子补报、排行榜冻结快照读取、最近成长计划读取及产品内云端权益查询。BodyLog 推送已接入自己的设备表与通知偏好，实际使用 APNs/FCM dispatcher，缺少产品配置时明确失败。Growth 入口默认关闭；任务完成与计划计数在同一 SQL 内提交。订阅查询和里程碑奖励使用已有订阅记录；本次不包含 IAP 验证接口。
@@ -119,6 +139,16 @@ BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周
 
 1. `src/modules/app-registry/app-registry.service.ts`
 2. `src/services/versioned-app-config.service.ts`
+
+### 2.3.1 AINovel RevenueCat 会员同步（支付测试准备）
+
+AINovel 的 App Store / Google Play 会员状态可通过 RevenueCat 与 Zook 同步：
+
+1. `POST /api/v1/ai_novel/billing/sync` 从 Bearer Token 解析 Zook 用户 ID，服务端查询 RevenueCat subscriber；客户端不能传 user ID、receipt、product 或 entitlement。
+2. 仅 `plus` / `pro` / `max` 对应的配置商品与同档 entitlement 可以更新 `ai_novel` 会员投影；`GET /api/v1/users/me` 返回该投影。重复同步按 provider transaction ID upsert。
+3. RevenueCat webhook 使用部署配置的静态 `Authorization` 和 app ID 校验，再查询 RevenueCat subscriber 作为权益依据；事件按 `app_id + event.id` 去重。
+4. RevenueCat 不可用时返回 pending 与现存状态，但有效期已过的会员不会继续被当作 active；grace period 使用其有效截止时间。账号删除与迟到的同步写入由同一数据库 session 顺序化，交易证据软脱敏保留。
+5. 当前实现覆盖 RevenueCat 同步、webhook、会员投影，以及 Server Admin 的跨应用只读会员列表、收入概览和订单详情。经过授权的 webhook 会把交易 ID、商品、状态、平台、Sandbox 标记和可用的实付金额 / 币种写入同一交易表；数据库另存 webhook 事件 allowlist 字段，并以 `(app_id, event.id)` 幂等。Admin 查询支持稳定 cursor、订单详情、当前会员投影、事件分页和读取审计；账号删除仅标记交易行并保留财务证据。收入金额缺失时保持 `null`，不能由商品标价反推。当前尚无独立 checkout ID、provider order ID 或 entitlement-grant 台账；支付宝 checkout / webhook 明确未实现。订单记录和 Docker stdout 全流程日志是两个不同概念：后台订单页用于查询持久化事实，容器日志用于 deep-dive。接口合同见 `api-contracts/openapi/ainovel/billing.yaml`、`billing-provider.yaml` 与 `api-contracts/openapi/common/billing-admin.yaml`。
 
 ### 2.4 RBAC 权限模型
 
@@ -232,7 +262,7 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 8. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
 9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
 10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
-11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：2 分钟内至少两位用户累计四次连续失败先进入不中断用户流量的确认状态，服务端立即用同一冒烟请求最多探测两次；两次都失败才隔离 `routingModelKey × provider × providerModel`。worker 用同一冒烟请求两次连续成功恢复正式熔断；管理台 runtime route 状态展示确认、熔断和下次探测信息，并支持对当前配置中的单一路由手动解除，关闭开关会清除全部既有状态
+11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：滚动 24 小时累计四次普通失败，或两次白名单余额错误（不限不同用户数）先进入确认状态。余额白名单为 BAI 的 `insufficient_user_quota`，以及 OpenRouter 的 402 + 明确 openrouter_credits 来源且无其他 reason。裸 402、Key 上限、临时并发预算、weight_exceeds_budget 和未知 reason 都走普通失败。普通确认最多两次；确认探测遇到一次白名单余额错误立即隔离当前 route。首个有效 chunk 清零未熔断计数，Redis 失败窗口保留 24 小时加 1 分钟。正式熔断沿用 worker 两次连续成功恢复及手动解除；管理台展示确认、熔断和下次探测信息。关闭开关清除全部既有状态。
 12. LLM 运营与 AINovel 反馈的低频内部告警直接复用 CI/CD 的 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` SMTP 契约；worker 对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
 13. AINovel 反馈持久化成功后通过同一 SMTP 告警路径发送反馈正文；同一用户按 Asia/Shanghai 自然日最多一封，投递失败不会影响用户反馈提交
 
@@ -347,6 +377,21 @@ AINovel 的既有 `GET /api/v1/ai_novel/public/config` 也会带上同一份
 5. Provider、上游 `providerModel`、密钥、Provider 路由权重和健康路由仍由 `common.llm_service` 负责
 6. Embedding 使用代码中固定的 `text-embedding-v4` common model key，其 Provider 路由仍归 `common.llm_service`
 
+### 2.14.1 AINovel 产品级模型点数费率
+
+AINovel 点数费率独立存放在版本化 App 配置 `ai_novel.model_point_pricing`，由 Admin Web 的 AINovel AI Model 页面维护，不混入 `common.llm_service`。配置按逻辑模型键分别保存输入和输出每百万 tokens 点数；后台同时展示 OpenRouter 美元/M token 参考价、匹配情况和备注。
+
+初始代码值按 OpenRouter 模型目录参考价乘以 `10,000 点/USD` 换算，仅是运营复核前的内部统计草案，不代表会员月额度或实际模型账单。当前包括 OrangeWrite 使用的 chat、embedding 和内容安全模型键；没有精确 OpenRouter 型号的 Doubao Seed / Text Embedding v4 标为近似参考。缺少费率表示未计价，0/0 才表示显式免费。
+
+LLM/Embedding 运行时只对 `usageOwner.appId = ai_novel` 的实际请求解析这份费率，使用同一 provider usage / 本地估算 pipeline 产生点数观测；其它产品不套用 AINovel 费率。该能力只供后台观测与未来结算复用，当前没有会员余额扣减。
+
+对应核心文件：
+
+1. `src/modules/ai-novel/ai-novel-model-point-pricing-config.service.ts`
+2. `src/modules/ai-novel/ai-novel-model-point-pricing-defaults.ts`
+3. `src/services/llm-point-pricing.ts`
+4. `src/app/admin-ai-novel-model-point-pricing-routes.ts`
+
 对应核心文件：
 
 1. `src/modules/ai-novel/ai-novel-model-selection-config.service.ts`
@@ -356,6 +401,9 @@ AINovel 的既有 `GET /api/v1/ai_novel/public/config` 也会带上同一份
 5. `src/app.module.ts`
 
 ### 2.15 FrogSleep 多 App 兼容后端
+
+2026-10-11本机2A增量：私人专注session按认证app/user及可选客户端ID原子幂等写入，内容修正保留实体ID；PostgreSQL 021迁移整理旧重复并安装部分唯一索引，Memory适配器遵循同一语义。具体见README_API私人专注段与本机验证记录；dev/online迁移和发布证据仍待补。
+
 
 当前 `frogsleep` 已作为 Zook app-scoped 产品接入，固定 app id 为 `frogsleep`。Zook 是当前多 app 注册、登录、session、refresh、app membership 与 FrogSleep 兼容层的后端所有者；FlutterDemo/AINovel 风格客户端继续走 `/api/v1/auth/*` 平台契约，FrogSleep 业务接口统一走 `/api/v1/frogsleep/*` 产品作用域契约，OpenAPI 来源为 `api-contracts/openapi/frogsleep/api.yaml`。所有 product-scoped 路由统一要求 token app scope 匹配、access token active、app 存在且当前用户 app membership active，避免已删除/封禁 membership 继续访问 ai_novel 或 FrogSleep 业务接口。FrogSleep 已作为 dev / online 部署槽的线上联调产品开放：`DEPLOY_SLOT=dev` 或 `DEPLOY_SLOT=online` 时默认 seed `frogsleep` app 并分发 FrogSleep 路由；`FROGSLEEP_ENABLED=true` / `FROGSLEEP_ENABLED=false` 可显式覆盖该默认值；测试仍可通过选项 `frogsleepEnabled` 控制。
 
@@ -368,7 +416,7 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 3. `/api/v1/frogsleep/me`、当前 FrogSleep app 账号删除 `DELETE /api/v1/frogsleep/me/account`、邮箱 bind/change、`/api/v1/frogsleep/devices` app-scoped 设备注册与删除；FrogSleep 不提供删除共享 Zook 用户或其他 app membership 的接口，`DELETE /api/v1/frogsleep/me/account` 不要求 `confirmation`，会将当前用户的 FrogSleep membership 标记为 deleted、撤销 FrogSleep app session，并清理 FrogSleep app-scoped runtime data，包括睡眠报告快照、进度快照和权益记录。`/api/v1/frogsleep/auth/password/change` 修改共享 Zook 账号密码，会影响同一账号在其他 app 的密码登录；FrogSleep 专注匹配 `display_name` 等 profile 字段保存在 FrogSleep app-scoped entity payload，不写入共享 user。
 4. 睡眠搭子邀请、pending 查询、登录后 preview 恢复、code/token/id 接受、拒绝、取消、当前关系、暂停、恢复、解除、守护偏好、共同守护 session、事件、暂停今晚、最新 summary/recap；睡眠关系状态机显式限制 `revoked` 为终态，`shared-sessions` 按 `relationship_id + date_anchor` 幂等，事件只接受 `interrupted`、`returned`、`paused_tonight`、`morning_completed`，守护偏好只接受文档化字段。summary/recap 已从最小占位升级为基于共同守护 session 和事件派生的 `artifact_version`、`visible_state`、`had_recovery`、`combined_result_type`、`supporting_line`、`recommended_next_step` 等字段，但仍不声称提供睡眠阶段或医疗级评分。守护偏好响应带回 `relationship`，共同守护 session 响应带 iOS 可解的发起人、双方状态和日期锚点 alias。邀请接受会记录 `source_invite_id`、`accept_source`、`accepted_at`、`accepted_by_user_id`，用于邀请转化分析；无指定目标的公开/纸条邀请不能被任意登录用户 decline，只能由发起人 cancel。
 5. 专注搭子 session 上报、历史查询、周统计、成就、匹配资料、受控匹配搜索、候选邀请、直接邀请、登录后 preview 恢复、code/token 接受、关系动作、消息、presence、对比、共同专注时刻；session 上报校验 ISO 时间和非负有限时长，sessions / achievements / messages / shared 列表返回兼容容器字段并附加 `pagination` 元数据。presence 现在由 focus session、消息和共同专注时刻推导 `focusing`、`recently_active`、`idle`、`stale`，comparison 支持 `week_start`，messages 支持 `receiver_user_id` / `since`，shared 支持 `room_id` / `from` / `to` 并校验非法时间窗。匹配搜索会过滤未授权公开匹配、条件不兼容、已有关系、已被当前用户 dismiss/report 的候选人，并返回 `recommendation_type`、`privacy_note_key`、`why_recommended`、`invite_prompt_key` 等受控推荐解释字段；当前用户有未过期 outgoing pending 邀请时返回 `pending_invites` 空态，关联邀请过期时会先刷新 invite/relationship 状态再恢复搜索；dismiss/report 排除数据批量读取。专注关系动作仅允许 `accept`、`decline`、`revoke`，`revoked` 为终态且不能继续用于消息、presence、共同专注时刻；专注邀请、消息和成就响应同时提供 iOS 当前客户端读取的 alias。
-6. FrogSleep 云端产品数据：支持 app-scoped 睡眠报告快照、进度快照和当前权益查询。报告内容通过 `snapshot_data` 返回，避免和 Zook envelope 的 `data` 冲突；进度 namespace 采用 allowlist；权益无记录时返回 unknown/free。logout 只撤销 FrogSleep app 登录态；`DELETE /api/v1/frogsleep/me/account` 会清理当前用户的 FrogSleep app-scoped 产品数据，但保留共享账号和其他 app 数据。
+6. FrogSleep 云端产品数据：支持 app-scoped 原始终态睡眠、报告快照、进度快照和当前权益查询。受限云游客由独立设备密钥创建/恢复，凭升级证明和正式目标会话原子迁移私人数据；旧设备ID单字段入口仍返回 `409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，不能按设备 ID 认领数据。用户确认后的本地游客报告及已结束专注记录也可通过登录账号的标准上传接口绑定。报告内容通过 `snapshot_data` 返回，原始记录放在 `data.sleep_session`，避免覆盖 Zook envelope；进度 namespace 采用 allowlist；权益无记录时返回 unknown/free。logout 只撤销 FrogSleep app 登录态；`DELETE /api/v1/frogsleep/me/account` 清理当前用户的 FrogSleep 产品数据，保留共享账号和其他 app 数据。
 7. FrogSleep push payload 类型、通知入队、worker 设备分发、无设备成功收敛、provider 失败写入 failed event；APNs/FCM 对不可恢复无效 token 会仅清理当前 app/user/token 对应的 FrogSleep device，可重试 provider 错误继续走 failed event / retry 行为。
 8. 睡眠搭子和专注搭子邀请 HTTP 中转端点，302 跳转到 deep link；中转会尽力记录 `first_opened_at`、`last_opened_at`、`open_count` 等打开统计，统计失败不影响 302。
 9. PostgreSQL migration `006_frogsleep_app.sql` 新增 `zook_frogsleep_*` 表；内存数据库同步实现对应测试存储。
@@ -694,3 +742,156 @@ PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient b
 LightTick App 闭环增量：计划确认已原子保存 guidance、完成标准与步骤；Today 按用户业务日聚合活跃计划并排除完成目标；复盘支持日/周/月且按目标、时区收集执行事实，run 携带 review_id；调整可引用同目标复盘，复盘建议生成未来可审阅周期。迁移 064 新增任务 guidance。上述为候选实现能力，不等于真实 provider 质量、真机推送或 Online 发布已验收；见 `docs/lighttick/app-loop-integration.md`。
 
 LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲突保护）、整个计划/日期范围复盘、独立AI分析记录及计划重复任务确认保护；见 README_API.md。真实模型质量与设备发布门禁仍需独立验收。
+
+### 橘子写作付费与用量（2026-10-11）
+
+Admin 橘子写作空间新增只读 `/ainovel-usage`，GET `/api/v1/admin/apps/ai_novel/usage`。迁移075在现有扣费事务里同步保存调用级两池/平台承担证据、赠送/拦截事件、窗口快照；不另行计算扣费、不修改额度/费率。仅完整覆盖、稳定、已结束的活跃七天窗口用于分布与只读调额重放。财务依据已有支付证据，按币种/环境区分；历史消耗不回填，厂商金额成本不可统计，消耗不按Sandbox隔离，不推算利润。窗口提前重置或已知会员到期会排除不完整样本。上线仍需应用迁移及实际环境验证，测试数据不能当成生产客户证据。
+
+### FrogSleep 后端四项闭环修复（2026-10-18，未发布）
+
+- 新 sleep 领域关系接入现有状态、session、偏好和晨报读取；接受时建立默认 revoked 的方向授权，显式开启后才允许共享。双方暂停独立记录，解除事务释放双方领域 slot。
+- 睡眠通知按接收方偏好在入队和投递前复核，关闭后已排队任务终结并记录抑制outcome；个人流程及事件保存不被推送设置阻断。
+- 缺失 provider 或当前平台 dispatcher 明确 FAILED 并保留 failed-event 重投，日志不再伪装为 FrogSleep 成功发送；SENT 表示任务终结，provider_accepted才表示提供方接受；无设备记录NO_ACTIVE_DEVICES。
+- 睡眠报告使用数据库游标分页，排序/边界与公开时间戳保持毫秒精度，稳定 ID 处理同时间戳；移除完整历史恢复的500条上限。
+- 专项验收入口：`test/unit/frogsleep-sleep-domain-loop.api.test.ts`、`frogsleep-sleep-notification-preferences.test.ts`、`frogsleep-push-provider-readiness.test.ts`、`frogsleep-sleep-history-pagination.test.ts`。真实 PostgreSQL 在一次性库运行 `FROGSLEEP_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/frogsleep-backend-loop-postgres.test.ts`；包含完整关系生命周期、1100条历史、微秒边界及投递补偿。本轮全量单元/API测试1331项通过；真实PostgreSQL七个子场景通过（TAP含父测试计8项），覆盖授权撤回后的通知抑制、错域/陌生人拒绝及会话与解除的真实锁竞争。OpenAPI生成一致性与lint通过。源码行数门禁仍有9个主线已存在的超限文件，本轮未修改这些文件。测试通过不代表真实邮件、设备推送或线上放行。
+FrogSleep 2A 统一邀请增量（2026-10-11）：预览返回独立域状态/CAS 版本/动作，正确邮箱账号可在显式命令中认领，accept/decline/cancel 同键同版本回放不重复关系、slot 或事件；accept 使用持久化原关系回执且不自动授予共享。新旧接受共用 slot 锁并重验既有关系，终态兼容 child 同步、错误角色回放拒绝。022 仅回填唯一可核实的旧关系。1306 项后端单测、10 项新增 PG 专项及既有 7 项 PG 回归通过；当前合同 lint 0 errors/194 warnings。仍缺 dev/provider/真机和完整方向授权发布证据；不表示线上已发布。详见 `docs/frogsleep-phase2a-invitation-closeout-verification-2026-10-11.md`。
+
+
+FrogSleep 2A 方向授权/生命周期增量（2026-10-11）：统一关系元数据与 pause/resume/revoke/mute/unmute，支持 canonical 和兼容关系。按本人方向提交全类别 CAS 的原子授权批次，新关系默认无共享；双方 domain slot 锁串行化生命周期、授权与共享协调写入，解除/拉黑释放原关系槽位并关闭共享会话。通知打开和 Buddy worker 每次尝试重验目标/成员/方向授权/静默；旧睡眠 Push 入队也适用关系静默。共同目标/里程碑/报告读取覆盖关系失效后的保护。客户端4.3与后端2.2的本机证据见 `docs/frogsleep-phase2a-lifecycle-closeout-verification-2026-10-11.md`；完整 provider/已排队 Push 投递与 dev/真机/发布不在本机通过范围。
+
+
+FrogSleep 2A 双账号旅程增量（2026-10-11）：canonical Focus关系投影到既有读端，私人记录优先提交，按slot锁/双向授权生成不重复的共同专注时刻，并返回稳定viewer身份。共同守护独立记录双方晨间结果，双方完成才终态；开始/仪式事件兼容、原时间重试去重、每人summary/recap原位更新、旧单主回顾与redacted处理已纳入本机测试。正式HTTP router的内存fixture和独立PG连接结果见 `docs/frogsleep-phase2a-two-account-journey-verification-2026-10-11.md`。2.7为新增本机旅程任务，§3 dev/provider/真机与发布门槛继续未完成。
+
+
+FrogSleep 2A 通知增量（2026-10-11）：2.3本机收口。outbox/通用Push/failed-event用稳定job身份和跨进程锁，设备processing/确认/未知回执持久化，部分失败只重试未确认设备；通用队列实际发送重验当前静默、授权、开关和设备。无设备保留站内动态，缺provider不会logging-only冒充成功。邮件claim独占、终态/禁用检查与未知结果死信；068确认状态和069当前设备归属迁移。客户端站内入口与打开后重新验权已对齐。本机1338后端、37 PG、74 iOS定向与generic build通过，见 `docs/frogsleep-phase2a-notification-closeout-verification-2026-10-11.md`；后端累计10/17，真实provider/dev/设备和发布仍未完成。
+
+### 2026-10-11 Sleep API 与后台接入
+
+- 私人报告与report_preferences：稳定ID/账号级幂等key/If-Match修订、epoch、数据库分页、历史固定restore、提交有序changes、墓碑；070/071扩展和重复快照冲突保留，账号删除纳入清理与最小epoch guard。当前不自动压缩墓碑/回执；关写入回滚保留防复活事实。
+- 管理系统：FrogSleep项目新增Sleep运营，聚合概览与10类分页元数据；用户级读与Push原任务重试分别需要现有二次授权，均审计，禁止跨App、终态、未知结果、耗尽预算重试。当前邮件诊断合同保留。
+- 新增能力完成本机API/数据库/浏览器验证；客户端2B恢复及游客绑定、当前dev/真实provider/真机/发布仍分别验收，不能据此宣布二期全部上线。
+## FrogSleep 二期账号数据基础（2026-10-17，本地验收）
+
+A03/A10：复用 focus/sessions 和 product-data/sleep-reports 的上传链路，按真实账号及稳定客户端记录 ID 对终态结果去重，相同结果返回原记录、冲突内容返回409；绑定作业 owner 不匹配返回403。客户端确认和分类上传仍由后续双端任务落实。新增 membership 行锁协调上传与删除，删除提交后晚到上传不能重新写入。
+
+账号删除现补齐规范化领域关系、双方 grant、领域决定、邀请邮件任务及相关通知的清理，释放另一方领域占位。删除与接受使用相同 slot 锁，PostgreSQL 失败回滚；保留全局身份与其他 app 数据。本地专项225项单元/API回归和独立 PostgreSQL 4个业务场景通过；不代表代码已合并、部署或 staging 联调通过。
+
+
+### 2026-10-18 本地分支整合后的 Sleep 能力
+
+已整合报告修订同步/固定恢复/提交增量/墓碑、账号数据清理及确认导入、统一领域邀请与方向授权、双人守护和真实完成事实、通知耐久回执和Sleep运营后台。新增修复：报告since保留完整DB分页，专注周统计消费week_start，确认导入标记持久化防止省略binding绕过，Sleep通知复核偏好，共同活动/目标/周报只计真实终态事实。后续已补原始终态睡眠同步和独立凭据的安全游客升级；仅设备ID的升级仍409。活动设备状态、客户端恢复和真实provider/dev/真机验收仍需独立完成。详见 `docs/sleep-api-capability-audit-2026-10-18.md`。
+
+
+### 2026-10-18 本地 P0 首次共同完成
+
+统一逐域关系投影已接入成长中心、目标、Focus runtime 与里程碑读取。共同活动新增持久化 start 与双方真实会话完成判定；目标自动按类型、接受时间窗及时区累计，双方达标后完成；专注稳定 session_id 重传去重。相关实现和合同仅本地验证，尚未推送或发布。
+
+
+Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主线幂等/授权/通知与恢复协议，补齐目标接受/暂停进度边界、活动真实完成时间归属、每位晨间参与者独立完成时间与终态、canonical撤销遮蔽旧关系，以及私人专注完整历史/周统计。公开读端过滤和解除/拉黑清理分别验证，兼容事实不能绕过canonical撤权。
+
+## FrogSleep 原始睡眠与可信游客补齐（2026-10-18）
+
+新增 product-data/sleep-sessions 的创建、详情、完整修正、固定边界列表和墓碑删除，复用私有 versions/receipts/epoch/restore/changes；072扩展kind。原始记录只接受终态，含有界事件与客户端历史JSON，不恢复设备锁或自动诊断。073保存云游客凭据哈希及创建/升级回执；account/guest-sessions 返回30天受限身份，中央鉴权限制平台/其他产品能力，refresh不续游客有效期。account/upgrade 要求正式目标、独立来源证明、确认、epoch与幂等key；最新原始记录/报告/偏好含墓碑同事务迁移，相同去重、冲突回滚、来源失效，回执支持响应丢失后重试。PG复用ambient事务，memory适配器匹配回滚语义。公共接入详见 docs/public-frogsleep-personal-sync.md、docs/public-frogsleep-guest-upgrade.md；双端凭据存储/恢复/真机与dev发布未在本轮执行。
+
+2026-10-18 dev 联调修正：CORS允许PUT及私人同步头；私人Sleep的报告/原始会话/报告偏好/恢复与游客端点由各自资源服务拥有事务，跳过会吞掉异常后仍提交的泛型请求事务，避免升级409留下部分迁入数据。其他业务路由未纳入该事务边界修复。新增真实HTTP dev验收入口，显式区分游客部分旅程、正式账号升级和独立可删QA账号的完整旅程，禁止重定向跨出dev、禁止使用相同账号兼任删号目标；本机真实PG还验证SQL提交先于KV清理。
+
+同日dev发布20261018_002（source main 2405765，release 84b59f7）完成80项真实HTTP私人数据检查，包含原始同步、正式目标游客升级/碰撞回滚、游客删号后新身份空历史与旧epoch/游标拒绝。正式注册账号删号仍缺独立可销毁QA凭据，未标为真实dev通过；详细边界与复验证据见 docs/frogsleep-dev-personal-sync-acceptance-2026-10-18.md。
+
+
+### LightTick 行动计划联动（功能开关）
+
+新增 PostgreSQL 074 迁移与账号事务锁，支持年/月/周/日层级、执行事实、复盘、请求回执和 Grow 单写者接管。canonical API 见 README_API.md 和 docs/public-lighttick-actions.md；现有 goal/plan/task API 独立。未启用生产或迁移真实账号。
+
+
+### 2026-10-28 Sleep 发布基线工程门禁
+
+为消除 origin/main 既有 8 个超长源码阻断，按原职责提取基础设施装配、响应投影、数据库类型端口、RBAC、BodyLog 查询/通知及后台 API 模块；保留原外部方法、初始化顺序、SQL 和事务回调。未引入其他产品待发布功能，未调整行数阈值或豁免名单。Sleep 业务、合同与发布结果另行记录。
+
+
+Grow I1 独立记录候选：LightTick records 提供无目标原文、版本编辑、归档恢复、导出与 sync/pull 变化；新表 zook_lighttick_records / record_versions。来源身份接管、旧 Grow 历史导入与 AI 不在本轮范围。未部署。
+
+
+2026-10-25 Grow G1：独立记录已与当前 shared action 主线整合；新增记录专用一对一绑定、私人暂存、来源冻结凭证、事务激活、防重放、激活前取消和只读恢复导出。PostgreSQL 076 为增量迁移；无真实用户搬迁、无环境发布。原生草稿转属和磁盘存储由客户端负责，后端只接受明确同步后的正式账户记录。
+
+迁移入口使用专用连接的会话级 advisory lock，串行多个 API/worker 实例的 DDL 重放，覆盖每个迁移文件的独立事务；连接结束/异常断开自动释放。并发 records + handoff PostgreSQL 验收实际复现过无锁 DDL 死锁，并已回归。
+
+沿用 PostgreSQL 074 JSONB workspace及账号事务锁；P0 v2内部运行时已支持nullable日程、time/content/check、累计分钟、completion/reversal、实际日期、来源证据消费与稳定错误码。公共写入与新接管硬关闭，既有开关仅提供读取；实际来源登记/投递和v2快照接管仍未完成，不声明可用content_receipts。canonical API见README_API.md和docs/public-lighttick-actions.md；现有goal/plan/task独立。原生未改，未发布或迁移真实账号。
+
+### 2026-10-21 LightTick 连接 P0 C2
+
+新增已绑定 Grow 私有来源证明、HMAC 行动上下文、确认事件 inbox/幂等回执和完成核对。复用现有 owner JSONB workspace/事务锁；没有新增独立后端。Grow 使用租户 publication journal + outbox 恢复投递，私密内容不进入事件载荷。普通连接写入、配对、v2 接管及公开消费者能力仍关闭。C3 接管与原生消费者、生产部署待后续验证；详见 docs/public-lighttick-actions.md 与 docs/verification/lighttick-source-delivery/README.md。
+
+### 2026-10-21 C2 验收工程门禁修复
+
+8 个超长文件已按现有职责拆分：基础设施装配、LightTick 响应投影、数据库 BodyLog 类型端口、RBAC 查询、成长后台查询、习惯模板 CRUD、小组查询/日记录/通知及后台 BodyLog/LLM API。外部方法、初始化顺序、SQL 查询和事务 query 回调保持不变；现有行数阈值/豁免名单未修改。详见 `docs/verification/lighttick-source-repair/README.md` 的回归与等价核对证据。本轮不实现 C3，不修改原生端或连接写入门禁。
+
+2026-10-21 LightTick C3 增量：内部八类快照 v2 的只读全图预检、原子导入和持久幂等接管回执可在隔离环境验证；公开配对/导入/普通写入继续关闭，未增加运行时预检路由。Grow 接管前后回执查询已衔接。私有协调与来源屏障已补齐：先等待在途来源、复核摘要、原子备份/冻结，再导入并核对回执；pending 暂停新确认，未完成来源日志阻断冻结，迁移事件延续 C2 outbox 核对。隔离 HTTP 与双方进程重启恢复见 `docs/verification/lighttick-handoff-cutover/README.md`。原生 C4/C5、真实环境与公开放行仍未完成，不能标记全部 P0 通过。
+
+
+2026-10-25 Grow 原生执行整合候选：records 与 P0 v2 三模式运行时共存；公共行动写入与完整接管通过独立 `LIGHTTICK_ACTIONS_V2_ENABLED=1` 显式启用，默认关闭。新增正式账户本人学习计划进度读取及绑定来源签名投递，进度保存在既有 owner workspace，不新增第二套课程完成事实。H5 负责制订及完善，手机负责读取、学习、执行、记录和通知；真实账号、生产及真机验证仍待办。当前协议见 README_API.md 和 docs/public-lighttick-actions.md 2026-10-25 节。
+
+2026-10-25：Grow 原生阅读新增独立课程只读镜像、单独授权与来源版本/绑定校验；正式学习写入和学完确认仍归 Grow。详情见 README_API.md 的原生课程只读接入。
+### 2026-10-23 FrogSleep support notes（本地，未发布）
+
+新增异步模板/单朵小花、定向接收revision、跨sleep/focus滚动配额、持久操作resolution、单次收下和合并中心；PostgreSQL迁移075与独立Repository接入既有四slot根事务。无Push；默认flag关闭，内部受控关系enrollment默认不授予接收许可。公开方法、环境变量及回滚见[README_API](../README_API.md)。真实PostgreSQL并发验证使用隔离测试库，不代表dev/生产已验收。
+
+2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；行数门禁已在本次隔离发布基线修复；真实环境与生产放行仍待验证。
+
+### 2026-10-28 BodyLog retention source completion
+
+The `feature/bodylog-retention-completion` worktree adds persistent encouragement idempotency, invitation preview/revocation and confirmable attribution, growth-evidence qualification, separate promotional/reward ledger, effective quota entitlement, authenticated manually reviewed campaign operations and opt-in retention measurement. Migration `079_bodylog_retention_integrity.sql` adds revocation and scoped retention documents. Canonical app-data deletion clears those documents. OpenAPI and generated public contracts are updated together. PostgreSQL multi-instance/restart/rollback and local HTTP/password-auth journeys are verified separately from production deployment and physical Watch acceptance; this entry makes no production readiness claim.
+
+
+2026-10-29 BodyLog补充：公共邀请HTML/AASA legacy/短码兜底、会话鉴权的留存运营报表（观察事件与权威账本分口径）、严格预注册配置和跨实验/UTC成熟边界修复；新增只允许loopback的实际UI联调服务、域名核验、dev账号验收与PostgreSQL必跑的发布门禁。未配置Campaign/实验仍关闭，实际域名托管、APNs、Watch、跨日奖励与D7效果保留外部门禁。
+### Authentication recovery hardening
+
+Migration `080_auth_credential_version.sql` adds the durable account-wide credential version. Shared password changes use this version to invalidate old cross-app sessions. App logout and deletion remain app-scoped. Redis atomically commits refresh-token replacement and session indexes. Failed new-user registration rolls back its identity and retains the unconsumed code. Email/SMS provider waits run outside the short verification-preparation transaction. Fixed email test codes require an explicit local environment.
+
+## Yaohezi 账号基础接入（默认关闭）
+
+`npm run verify:yaohezi-local` 提供独立本地验收入口：真实 PostgreSQL、独占临时 Redis、loopback HTTP；覆盖验证码登录、产品隔离、刷新竞态、退出与应用实例重开。数据库与日志保留在本机，临时 Redis 自动关闭。短信 transport 和队列使用本地 fixture；该入口不宣称云健康能力或外部供应商验收完成，运行要求见 README_API。
+
+药盒子独立 `YaoheziProfileStore` 内部端口已增加 PostgreSQL 主体、本人声明关联及幂等回执（迁移 081）。只有显式确认的命令可写入；数据库事务/账号与主体锁及唯一约束防止重复、操作 ID 换主体和跨账号领取。subjectId 保留本地稳定 UUID，不存 profileId、姓名、病史或付款关系；`self_asserted` 仅是账号路由声明，始终不建立健康访问权限。登录/me 不调用该端口，不自动上传。当前无公开主体路由、无按姓名/手机号关联、无代建远程授权；可信设备和恢复协议完成前不能开放健康域。关系表的 RESTRICT 约束要求未来删除编排显式处理，不能直接上线产品删除。
+
+新增独立 `yaohezi` 产品注册、member 角色和全关闭的健康功能配置；通过 `YAOHEZI_ENABLED=true` 显式启用 `/api/v1/yaohezi/me`，复用公共身份和活动 membership 校验。默认 seed/其他产品路由行为不变。账号入口不建立健康主体关系、不上传资料，也不授予家人权限。
+
+公共登出合同补齐 App 当前设备 logout 的 refreshToken；所有平台 bearer 文档改为 opaque 凭证，与当前 token 实现一致。合同源、生成类型、外部 README_API 与负向测试同步维护。健康设备会话、密文同步、授权共享、真实对象存储和付费 AI 仍须按后续门禁实现，不能用该 me 接口宣称这些能力已经上线。
+
+2026-10-24 补齐留言服务端安全埋点 allow-list（发送构成、显式收下、本人接收变更；公共客户端不能伪造；重试去重），双账号真实 HTTP/PG 服务重启回归、接收关闭与发送两种提交顺序、删除/暂停恢复/重建关系/30日到期回归及 14 日聚合观察校验脚本。预发布账号配置和实际观察数据尚缺，生产 cohort 仍未开启；全仓行数门禁仍失败，未发布。
+
+2026-10-25 I4: private learning has its own consented projection/command repository (migration078), durable source receipts, per-account binding/member checks, CAS and delete/revoke cleanup. Grow remains the private-state writer; no private notes enter the I3 reading scope.
+
+2026-10-29 I5: opt-in single check practices resolve owned current lesson/record sources, keep minimal source references, and append independent bounded feedback in the existing JSONB action workspace. Source reads revalidate authorization, and stable receipts survive source withdrawal. Record -> action lock ordering and immutable completion mode preserve existing deletion and completion boundaries. No new service, database migration, model call or production enablement.
+
+2026-10-30 LightTick新增本人记录`/records/{id}/history`组合读取，供Grow已关联的统一网页会话消费；使用公共Token鉴权，不改变来源接管／写入归属。
+
+2026-10-30 已实现从选定实践反馈审阅后建立下一次check安排：保留实践／反馈来源ID，核对当前来源和所选上级revision，原事实及上级目标值不变。该能力由独立capability及原写入开关控制，不代表完整Goal Coach或共享预算已完成。
+
+### Yaohezi M2 trusted-device backend（2026-10-31，本地）
+
+本节更新上文“健康设备会话待实现”的历史状态。新增迁移 082、独立 YaoheziHealthStore、默认关闭的设备 API 开关及同账号 self-subject 信任协议。PG 事务保护挑战、不可变设备公钥、资源版本只读授权、健康会话 hash、opaque key capsules、epoch 和最小审计/回执。撤销不依赖普通 access token 到期；恢复整体撤旧设备、清能力包并推进 epoch/verifier，不复活旧授权。M2 受保护操作自行持有账号/主体事务，不使用旧应用全局锁。
+
+Node 参考实现 HPKE 资源版本钥、离线恢复 vault、HTTPS/nonce/30 秒当前信任快照和有根证书链验权。读者不能签发 owner 授权，恢复后只需新恢复根，历史批准设备撤销不误撤合法存活设备。恢复包不是 iOS 可移植备份码，不含 token、SQLCipher key 或 current grants。
+
+本地验证和实现状态见 docs/security/yaohezi-m2-review.md。原生 UI/Keychain、真机互操作、外部密码审计、依赖告警处理仍是发布门槛。密文同步、家庭授权和付费 AI 未完成。接口及配置以 README_API 和 canonical OpenAPI 为准。未推送或部署。
+
+#### LightTick N2 原生手动计划候选（2026-10-31）
+
+新增同 goal/plan/task 域的手动草稿、编辑、双版本原子确认与持久回执；独立本机目标/行动/复盘转属采用稳定源映射和单向归属。未知投入在数据库保留 NULL，未定日期的手动任务不投影 Today。注册账户不需要 Grow / AI。接口、关闭恢复及旧客户端 schema 2 升级边界见 README_API；迁移 081。真实隔离 PostgreSQL专项覆盖并发、回滚、重连和删除；候选不代表生产或双端上线验收已完成。
+
+
+#### LightTick N3 原生复盘与继续安排（2026-10-31）
+
+原目标/计划/任务域增加指定手写复盘来源、任务版本引用替换和审阅恢复；草稿与复盘保存均不排程，显式确认原子停止选定旧事项并建立新事项，同来源不会因旧计划被取代而再次消费。PUT 复盘按资源 ID/base_version 保留持久回执，来源或任务变化会拒绝确认。
+
+目标 constraints 中保存版本化 confirmed_planning_conditions 审计；持续/临时每日可用分钟按所选窗口解析，更正/撤销保留历史，临时条件不永久化。已有事实不删除，未知投入保持未知；手动确认、旧计划/提案接受和任务强度变更共用容量规则与 owner 锁。私人条件原因/历史不自动进入 AI。生命周期阻止暂停、达成、结束目标的旧任务及定向通知恢复执行，达成与未达成结束分开记录。
+
+接口与关闭恢复见 README_API，固定合同由 api-contracts 生成供双端消费；无新表迁移。真实 PG 专项命令：`LIGHTTICK_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/lighttick-native-continuation-postgres.test.ts`（仅可丢弃数据库，独立 schema）。双端本机 UI 验证不代表真机、真实通知 provider、dev/online 或商店发布完成。
+
+#### 原生可选规划增强 N4
+PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会话/计划版本、已确认总投入与当前每日容量校验；显式确认再校验持久提案。开关关闭仍支持已有会话读取和已接受请求回执恢复，不重新调度生成。原生手动链与网页 C05 可选增强独立，网页复用 canonical manual-plans，不新增第二份计划主数据。工程回归不代替真实 provider 或上线外部门禁。
+### 药盒子原生 M2 本地退出补充（2026-10-31）
+
+新增 `health/close-sessions` 和迁移 083，使用本设备签名关闭持久化创建 UUID；支持创建前取消及响应丢失后的撤销，已撤设备仍可关闭自己的会话。会话/关闭同账号→主体事务锁串行化，普通账号 Bearer 和不可变公钥绑定仍必需。协议变更详见 README_API；不新增医疗内容同步。iOS 已用原生 CryptoKit、Keychain 和真实本地 HTTP 联调，不等同于真机或发布批准。
+
+BodyLog group admission follow-up: deterministic stale-pending interleavings now recover the same-account membership after a peer reaches capacity/quota. The release gate invokes the isolated group PostgreSQL runner as its own step (requires initdb/pg_ctl/createdb), rather than passing the retention database connection into that suite.

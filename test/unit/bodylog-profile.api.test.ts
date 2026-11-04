@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { DatabaseSeed } from "../../src/shared/types.ts";
 import { createApplication } from "../support/create-test-application.ts";
+import { resolveBodyLogStores } from "../../src/application-bodylog-stores.ts";
 
 function bodyLogSeed(): DatabaseSeed {
   const seed = buildDefaultSeed();
@@ -69,6 +70,7 @@ function bodyLogSeedWithBlockedNickname(): DatabaseSeed {
 
 test("bodylog profile is app scoped and update validates nickname", async () => {
   const runtime = await createApplication({ seed: bodyLogSeed() });
+  await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "bodylog",
@@ -137,6 +139,7 @@ test("bodylog profile is app scoped and update validates nickname", async () => 
 
 test("bodylog profile rejects an unsupported avatar", async () => {
   const runtime = await createApplication({ seed: bodyLogSeed() });
+  await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "bodylog",
@@ -163,6 +166,7 @@ test("bodylog profile rejects a nickname blocked by content safety", async () =>
   const runtime = await createApplication({
     seed: bodyLogSeedWithBlockedNickname(),
   });
+  await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "bodylog",
@@ -191,6 +195,7 @@ test("bodylog profile rejects a nickname blocked by content safety", async () =>
 
 test("deleting the BodyLog app account removes its server profile", async () => {
   const runtime = await createApplication({ seed: bodyLogSeed() });
+  await resolveBodyLogStores(runtime.database).flags.updateBodyLogFeatureFlag("accountSocial", true);
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "bodylog",

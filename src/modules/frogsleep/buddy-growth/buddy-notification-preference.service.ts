@@ -43,7 +43,7 @@ export class BuddyNotificationPreferenceService {
   }
 
   async deliveryDecision(
-    userId: string, eventType: string, targetId: string, now = new Date(),
+    userId: string, eventType: string, targetId: string, now = new Date(), excludeNotificationId?: string,
   ): Promise<{ suppressAll?: string; suppressPush?: string }> {
     const preferences = await this.get(userId);
     const category = categoryFor(eventType);
@@ -52,7 +52,7 @@ export class BuddyNotificationPreferenceService {
     }
     const history = (await this.database.listFrogSleepBuddyNotifications({
       appId: FROGSLEEP_APP_ID, recipientUserId: userId, limit: 100,
-    })).items;
+    })).items.filter(item => item.id !== excludeNotificationId);
     if (this.isCoalesced(history, eventType, targetId, now)) return { suppressAll: "EVENT_COALESCED" };
     if (this.isQuiet(preferences, now)) return { suppressPush: "QUIET_HOURS" };
     if (this.isCoolingDown(history, category, preferences, now)) return { suppressPush: "CATEGORY_COOLDOWN" };

@@ -7,6 +7,7 @@ import { RevisionList } from "./revision-list";
 import { SaveConfirmModal } from "./save-confirm-modal";
 import { AiNovelModelWeightFields } from "./ai-novel-model-weight-fields";
 import { AiNovelModelHealthTable } from "./ai-novel-model-health-table";
+import { AiNovelAutoFreeFields } from "./ai-novel-auto-free-fields";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
@@ -29,6 +30,8 @@ export function AiNovelModelSelectionPanel() {
   >([]);
   const [rawValue, setRawValue] = useState("");
   const [rawError, setRawError] = useState("");
+  const [catalog, setCatalog] = useState<AiNovelModelSelectionConfig["catalog"]>();
+  const [autoFree, setAutoFree] = useState<AiNovelModelSelectionConfig["autoFree"]>();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -47,16 +50,20 @@ export function AiNovelModelSelectionPanel() {
     }
     return {
       ...document.config,
+      catalog,
+      autoFree,
       chat: {
         default: weightedModels,
       },
     };
-  }, [document, weightedModels]);
+  }, [document, weightedModels, catalog, autoFree]);
 
   function applyDocument(payload: AdminAiNovelModelSelectionDocument) {
     const value = configJson(payload.config);
     setDocument(payload);
     setWeightedModels(payload.config.chat.default.map((item) => ({ ...item })));
+    setCatalog(payload.config.catalog);
+    setAutoFree(payload.config.autoFree);
     setRawValue(value);
     try {
       parseAiNovelModelSelectionText(
@@ -80,7 +87,7 @@ export function AiNovelModelSelectionPanel() {
     items: AiNovelModelSelectionConfig["chat"]["default"],
   ) {
     setWeightedModels(items);
-    const value = configJson({ schemaVersion: 1, chat: { default: items } });
+    const value = configJson({ schemaVersion: 1, chat: { default: items }, ...(catalog !== undefined ? { catalog } : {}), ...(autoFree !== undefined ? { autoFree } : {}) });
     setRawValue(value);
     try {
       validateRawValue(value);
@@ -95,10 +102,20 @@ export function AiNovelModelSelectionPanel() {
     try {
       const config = validateRawValue(value);
       setWeightedModels(config.chat.default.map((item) => ({ ...item })));
+      setCatalog(config.catalog);
+      setAutoFree(config.autoFree);
       setRawError("");
     } catch (error) {
       setRawError(formatApiError(error));
     }
+  }
+
+  function handleAutoFreeChange(value: NonNullable<AiNovelModelSelectionConfig["autoFree"]>) {
+    setAutoFree(value);
+    const raw = configJson({ schemaVersion: 1, chat: { default: weightedModels }, catalog, autoFree: value });
+    setRawValue(raw);
+    try { validateRawValue(raw); setRawError(""); }
+    catch (error) { setRawError(formatApiError(error)); }
   }
 
   async function loadLatest() {
@@ -228,6 +245,8 @@ export function AiNovelModelSelectionPanel() {
           </div>
 
           <div className="stack">
+            <AiNovelAutoFreeFields value={autoFree} disabled={loading || saving || !document?.isLatest}
+              onChange={handleAutoFreeChange} />
             <AiNovelModelWeightFields
               disabled={loading || !document?.isLatest}
               items={weightedModels}

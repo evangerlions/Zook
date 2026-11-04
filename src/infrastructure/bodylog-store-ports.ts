@@ -1,3 +1,4 @@
+import type { BodyLogRetentionStore } from "./bodylog-retention-store.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
 import type { BodyLogBlockRecord } from "../modules/bodylog/bodylog-social.types.ts";
 import type {
@@ -25,6 +26,9 @@ import type {
   UpdateGrowthMissionInput,
   UpdateGrowthPlanInput,
   UpdateGrowthRewardInput,
+  BodyLogGrowthDailyAggregate,
+  UpsertGrowthDailyAggregateInput,
+  ApplyGrowthDailyAggregateResult,
 } from "../modules/bodylog/bodylog-growth.types.ts";
 import type {
   NotificationPreferencesRecord,
@@ -78,6 +82,8 @@ export interface BodyLogBuddyStore {
 }
 
 export interface BodyLogGroupStore {
+  listGroupInvitations(appId: string, userId: string): MaybePromise<GroupMemberRecord[]>;
+  activateGroupMember(record: GroupMemberRecord, token: string, groupLimit: number): MaybePromise<"joined" | "alreadyMember" | "full" | "limit" | "invalid">;
   insertCheckInGroup(record: CheckInGroupRecord): MaybePromise<void>;
   findCheckInGroup(groupId: string): MaybePromise<CheckInGroupRecord | undefined>;
   updateCheckInGroup(record: CheckInGroupRecord): MaybePromise<void>;
@@ -103,6 +109,7 @@ export interface BodyLogSubscriptionStore {
 }
 
 export interface BodyLogGrowthStore {
+  applyGrowthDailyAggregate(planId: string, day: number, input: UpsertGrowthDailyAggregateInput, completed: boolean, completedAt: string): MaybePromise<ApplyGrowthDailyAggregateResult>;
   createGrowthPlan(input: CreateGrowthPlanInput): MaybePromise<BodyLogGrowthPlan>;
   findGrowthPlanById(planId: string): MaybePromise<BodyLogGrowthPlan | null>;
   findLatestGrowthPlan(userId: string): MaybePromise<BodyLogGrowthPlan | null>;
@@ -188,6 +195,7 @@ export interface BodyLogAdminStore {
 }
 
 export interface BodyLogStores {
+  retention: BodyLogRetentionStore;
   jobs: { runOnce(key: string, job: () => Promise<void>): Promise<boolean> };
   buddy: BodyLogBuddyStore;
   group: BodyLogGroupStore;

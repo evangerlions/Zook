@@ -4,13 +4,8 @@ import type {
   LLMUsage,
 } from "./llm-manager-types.ts";
 
-const CHARS_PER_TOKEN = 3;
-
 function estimateTokens(text: string): number {
-  if (!text) {
-    return 0;
-  }
-  return Math.max(1, Math.ceil([...text].length / CHARS_PER_TOKEN));
+  return estimateLlmContextTextTokens(text);
 }
 
 export function estimateLlmContextTextTokens(text: string): number {

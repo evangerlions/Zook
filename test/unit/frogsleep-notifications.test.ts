@@ -6,9 +6,10 @@ import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.m
 import { buildFrogSleepNotificationPayload } from "../../src/modules/frogsleep/frogsleep-notifications.ts";
 import { NotificationService, type PushDispatchRequest } from "../../src/services/notification.service.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
+import { BuddyNotificationPreferenceService } from "../../src/modules/frogsleep/buddy-growth/buddy-notification-preference.service.ts";
 
 test("FrogSleep push notifications dispatch to active app-scoped devices", async () => {
-  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const database = await notificationDatabase();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const dispatched: PushDispatchRequest[] = [];
@@ -50,7 +51,7 @@ test("FrogSleep push notifications dispatch to active app-scoped devices", async
 });
 
 test("FrogSleep push notifications with no devices do not block worker processing", async () => {
-  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const database = await notificationDatabase();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const service = new NotificationService(database, queue, logger, {
@@ -64,19 +65,21 @@ test("FrogSleep push notifications with no devices do not block worker processin
     recipientUserId: "user_alice",
     channel: "push",
     payload: buildFrogSleepNotificationPayload({
-      type: "morning_summary",
-      sessionId: "session_1",
+      type: "sleep_buddy_invite",
+      entityId: "invite_1",
     }),
   });
 
   await queue.processDueJobs((job) => service.processQueueJob(job));
 
-  assert.equal((await database.findNotificationJob(result.notificationJobId))?.status, "SENT");
+  const job = await database.findNotificationJob(result.notificationJobId);
+  assert.equal(job?.status, "SENT");
+  assert.equal((job?.payload._frogsleep_delivery as { outcome: string }).outcome, "NO_ACTIVE_DEVICES");
   assert.equal((await database.listFailedEvents("frogsleep")).length, 0);
 });
 
 test("FrogSleep push provider failures preserve failed event behavior", async () => {
-  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const database = await notificationDatabase();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const service = new NotificationService(database, queue, logger, {
@@ -111,3 +114,15 @@ test("FrogSleep push provider failures preserve failed event behavior", async ()
   assert.equal((await database.findNotificationJob(result.notificationJobId))?.status, "FAILED");
   assert.equal((await database.listFailedEvents("frogsleep")).length, 1);
 });
+
+async function notificationDatabase() {
+  process.env.FROGSLEEP_BUDDY_PUSH_ENABLED = "true";
+  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const now = new Date().toISOString();
+  await database.insertAppUser({ id: "notification_alice", appId: "frogsleep", userId: "user_alice", status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: now });
+  await database.insertFrogSleepEntity({ id: "invite_1", appId: "frogsleep", kind: "sleep_invite", ownerUserId: "user_bob",
+    partnerUserId: "user_alice", status: "pending", payload: {}, createdAt: now, updatedAt: now });
+  await new BuddyNotificationPreferenceService(database).update("user_alice",
+    { quiet_start_minute: 0, quiet_end_minute: 0, cooldown_minutes: 0, daily_budget: 100 });
+  return database;
+}

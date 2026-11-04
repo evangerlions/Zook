@@ -54,6 +54,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/auth/login/email:
     post:
       operationId: loginByEmailCode
@@ -175,6 +177,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/auth/password/email-code:
     post:
       operationId: sendPasswordEmailCode
@@ -193,6 +197,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/auth/password/sms-code:
     post:
       operationId: sendPasswordSmsCode
@@ -211,10 +217,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/auth/password/set:
     post:
       operationId: setPassword
       summary: Set password for logged-in email-code-only account
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       security:
         - bearerAuth: []
@@ -243,6 +252,7 @@ paths:
     post:
       operationId: resetPassword
       summary: Reset password with email code
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       requestBody:
         required: true
@@ -263,6 +273,7 @@ paths:
     post:
       operationId: resetPasswordBySms
       summary: Reset password with SMS code
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       requestBody:
         required: true
@@ -283,6 +294,7 @@ paths:
     post:
       operationId: changePassword
       summary: Change password for current user
+      description: Updates the shared Zook password, invalidates prior access and refresh tokens across all apps, and issues a new session for this app.
       tags: [common, auth]
       security:
         - bearerAuth: []
@@ -319,6 +331,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/auth/register:
     post:
       operationId: registerByEmail
@@ -409,6 +423,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/QrLoginCreateResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/auth/qr-logins/{loginId}/confirm:
     post:
       operationId: confirmQrLogin
@@ -489,6 +505,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AcceptedResponse"
+        '401':
+          description: Missing, invalid or expired bearer credentials.
 components:
   responses:
     AccountRegionLoginForbidden:
@@ -501,7 +519,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     LoginId:
       name: loginId
@@ -653,9 +671,11 @@ components:
         clientType: { type: string, enum: [app, web] }
     LogoutRequest:
       type: object
+      description: App current-session logout supplies refreshToken; web clients may use their HttpOnly refresh cookie. All-session logout does not require a refresh token.
       properties:
         appId: { type: string }
         scope: { type: string, enum: [current, all], default: current }
+        refreshToken: { type: string, minLength: 1, description: Opaque current-session refresh credential for app clients. }
     AcceptedResponse:
       type: object
       required: [code, message]

@@ -15,6 +15,7 @@ export interface LightTickPublicConfiguration {
     sync: boolean;
     notifications: boolean;
     ai_coach: boolean;
+    conversational_planning: boolean;
   };
   privacy_policy_url: string;
   terms_of_service_url: string;
@@ -65,6 +66,7 @@ export function buildLightTickPublicConfiguration(
   runtimeEnabled: boolean,
   record?: AppConfigRecord,
   environment = resolveLightTickEnvironment(),
+  planningEnabled = false,
 ): LightTickPublicConfiguration {
   let raw: JsonObject = {};
   if (record) {
@@ -95,6 +97,7 @@ export function buildLightTickPublicConfiguration(
       sync: enabled && flags.offlineSync === true,
       notifications: enabled && flags.notifications === true,
       ai_coach: enabled && flags.aiPlanning === true,
+      conversational_planning: enabled && planningEnabled && flags.conversationalPlanning === true,
     },
     privacy_policy_url: httpsUrl(legal.privacyPolicyUrl, DEFAULT_URLS.privacyPolicyUrl),
     terms_of_service_url: httpsUrl(legal.termsOfServiceUrl, DEFAULT_URLS.termsOfServiceUrl),

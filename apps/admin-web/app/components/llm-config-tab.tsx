@@ -246,7 +246,7 @@ function LlmFormConfigEditor({
 
         <ToggleField
           checked={draft.routeCircuitBreaker.enabled}
-          hint="只统计流式请求首个有效 chunk 前的失败：2 分钟内至少 2 位用户连续失败 4 次才封路由。关闭会立即解除既有熔断。"
+          hint="只统计流式请求首个有效 chunk 前的失败：24 小时内累计失败 4 次，或 BAI/OpenRouter 明确余额不足 2 次触发后台确认，不限用户数；确认探测遇到明确余额不足立即熔断。OpenRouter 仅识别 credits 来源，排除请求超预算和未知原因。首个有效 chunk 会清零未熔断计数。关闭会立即解除既有熔断。"
           label="启用上游路由熔断"
           onChange={(value) => onDraftChange((current) => ({
             ...current,

@@ -1,3 +1,11 @@
+import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
+import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
+import { tryHandleYaoheziV1Routes, ownsYaoheziHealthTransaction } from "./yaohezi-v1-routes.ts";
+import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
+import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
+
+import { billingRequestEnvironment, billingDeploymentEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { bindBillingResponseEnvironment } from "../modules/billing/billing-response-environment.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -74,6 +82,7 @@ import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
+import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
 import { tryHandleBodyLogManagementRoutes } from "./bodylog-admin-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
@@ -81,6 +90,13 @@ const DEFAULT_RUNTIME_VERSION = "0.1.0";
 function resolveRuntimeVersion(rawVersion = process.env.APP_VERSION): string {
   const normalized = rawVersion?.trim();
   return normalized || DEFAULT_RUNTIME_VERSION;
+}
+
+function isRevenueCatBillingRequest(method: string, path: string): boolean {
+  return method === "POST" && (
+    path === "/api/v1/ai_novel/billing/sync" ||
+    path === "/api/v1/ai_novel/billing/webhooks/revenuecat"
+  );
 }
 
 /**
@@ -144,9 +160,13 @@ export class BackendApplication extends BackendRouteContext {
     private readonly validationPipe: ValidationPipe,
     private readonly commonTestAccountService: CommonTestAccountService,
     private readonly kvManager: KVManager,
+    private readonly aiNovelBillingService: AiNovelBillingService,
     private readonly frogsleepEnabled = false,
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
+    private readonly billingDeployment = billingDeploymentEnvironment(),
+    private readonly yaoheziEnabled = false,
+    private readonly yaoheziHealthEnabled = false,
   ) {
     super(
       database,
@@ -169,7 +189,10 @@ export class BackendApplication extends BackendRouteContext {
       kvManager,
       auditInterceptor,
       adminSensitiveOperationService,
+      aiNovelBillingService,
     );
+    this.resolveNetworkCountry = (request) =>
+      requestEmailContextService.resolveNetworkCountry(request);
   }
 
   async handle(request: HttpRequest): Promise<HttpResponse<unknown>> {
@@ -177,37 +200,24 @@ export class BackendApplication extends BackendRouteContext {
     request.cookies ??= parseCookies(request.headers.cookie);
     const execute = async () => {
       request.adminSession = await this.resolveAdminSession(request);
-      const startedAt = Date.now();
-
-      try {
-        const response = await this.dispatch(request);
-        this.requestLoggingInterceptor.log(
-          request,
-          response,
-          Date.now() - startedAt,
-        );
-        return response;
-      } catch (error) {
-        const response = this.httpExceptionFilter.catch(
-          error,
-          request,
-          request.requestId,
-        );
-        this.requestLoggingInterceptor.log(
-          request,
-          response,
-          Date.now() - startedAt,
-          error,
-        );
-        return response;
-      }
+      const environment = billingRequestEnvironment(request, this.billingDeployment);
+      const response = await inBillingEnvironment(environment, () => this.dispatch(request));
+      return bindBillingResponseEnvironment(response, environment);
     };
-
-    if (request.method === "GET" && request.path === "/api/health") {
-      return execute();
+    const startedAt = Date.now();
+    try {
+      const ownsTransaction = ownsYaoheziHealthTransaction(request,this.yaoheziEnabled && this.yaoheziHealthEnabled) ||
+        isAuthCodeDeliveryRequest(request) || isRevenueCatBillingRequest(request.method, request.path) ||
+        (request.method === "GET" && request.path === "/api/health") ||
+        (this.frogsleepEnabled && ownsPrivateSleepTransaction(request));
+      const response = ownsTransaction ? await execute() : await this.database.withExclusiveSession(execute);
+      this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
+      return response;
+    } catch (error) {
+      const response = this.httpExceptionFilter.catch(error, request, request.requestId);
+      this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
+      return response;
     }
-
-    return this.database.withExclusiveSession(execute);
   }
 
   get runtimeServices() {
@@ -251,6 +261,8 @@ export class BackendApplication extends BackendRouteContext {
       );
     }
 
+    const yaoheziResponse = await tryHandleYaoheziV1Routes(this, this.yaoheziEnabled, request, this.yaoheziHealthEnabled);
+    if (yaoheziResponse) return yaoheziResponse;
     const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
     if (lightTickAdminResponse) return lightTickAdminResponse;
     const bodyLogAdminResponse = await tryHandleBodyLogManagementRoutes(this, true, this.bodyLogAdminService, request);
@@ -321,6 +333,10 @@ export class BackendApplication extends BackendRouteContext {
       }
     }
 
+    const recordTransferResponse=await tryHandleRecordTransferRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(recordTransferResponse)return recordTransferResponse;
+    const actionResponse=await tryHandleLightTickActionRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(actionResponse)return actionResponse;
     const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if (planningResponse) return planningResponse;
     const lightTickResponse = await tryHandleLightTickV1Routes(

@@ -1,3 +1,4 @@
+import { lockLegacyInvitationSlots } from "../buddy-growth/buddy-invitation-slot-compatibility.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
@@ -267,6 +268,7 @@ async function acceptInvite(
     }
     await assertInviteEmailOwner(database, currentInvite, userId);
     await assertBuddyPairNotBlocked(database, currentInvite.ownerUserId as string, userId);
+    await lockLegacyInvitationSlots(database, currentInvite.id, "sleep", currentInvite.ownerUserId as string, userId);
 
     await assertNoConflict(database, currentInvite.ownerUserId as string, userId);
     const createdAt = nowIso();

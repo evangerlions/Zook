@@ -17,6 +17,7 @@ import {
 
 const METRICS: Array<{ label: string; value: MatrixMetric }> = [
   { label: "调用次数", value: "calls" },
+  { label: "消耗点数", value: "points" },
   { label: "总 Token", value: "tokens" },
   { label: "成功率", value: "success" },
   { label: "P50 总延迟", value: "p50" },
@@ -45,7 +46,7 @@ export function CrossMatrixSection({
       <header className="card-header">
         <div>
           <h2>Provider × Provider Model 交叉矩阵</h2>
-          <p>快速发现同一模型在不同 Provider 的调用量、Token、可靠性和长尾延迟差异；点击单元格进入深度分析。</p>
+          <p>快速发现同一模型在不同 Provider 的点数消耗、Token、可靠性和长尾延迟差异；点击单元格进入深度分析。</p>
         </div>
         <Segmented
           onChange={(value) => setMetric(value as MatrixMetric)}

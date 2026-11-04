@@ -22,7 +22,12 @@ export async function enqueueBuddyGrowthEvent(
     targetType: input.targetType, targetId: input.targetId,
     deduplicationKey: input.deduplicationKey,
     safeRoute: sanitizeBuddySafeRoute({ type: input.targetType,
-      relationship_id: input.relationshipId, interaction_id: input.targetId }),
+      relationship_id: input.relationshipId, [routeIdentifierKey(input.targetType)]: input.targetId }),
     status: "pending", attemptCount: 0, availableAt: now, createdAt: now, updatedAt: now,
   });
+}
+
+function routeIdentifierKey(type: string) {
+  return type === "buddy_weekly_report" ? "report_id" : type === "buddy_milestone" ? "milestone_id"
+    : ["buddy_goal", "buddy_joint_goal"].includes(type) ? "goal_id" : "interaction_id";
 }

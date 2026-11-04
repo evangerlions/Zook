@@ -5,6 +5,8 @@ import { transitionGoal } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 
+import { assertManagedGoalFieldsUnchanged } from './goal-context/confirmed-conditions.ts';
+
 export interface LightTickGoalInput {
   title: string; description?: string; targetDate?: string; constraints: Record<string, unknown>;
   reviewCadence?: LightTickReviewCadencePreference;
@@ -26,6 +28,7 @@ export class LightTickGoalService {
     return goal;
   }
   async create(owner: LightTickOwner, input: LightTickGoalInput): Promise<LightTickGoalRow> {
+    assertManagedGoalFieldsUnchanged({}, input.constraints);
     const timestamp = this.clock().toISOString(); const title = this.validateTitle(input.title);
     const row: LightTickGoalRow = { ...owner, id: randomId("lighttick_goal"), title,
       description: input.description?.trim() || undefined, targetDate: input.targetDate,
@@ -36,6 +39,7 @@ export class LightTickGoalService {
   }
   async update(owner: LightTickOwner, id: string, baseVersion: number, patch: Partial<LightTickGoalInput>): Promise<LightTickGoalRow> {
     const current = await this.get(owner, id); const timestamp = this.clock().toISOString();
+    if (patch.constraints !== undefined) assertManagedGoalFieldsUnchanged(current.constraints, patch.constraints);
     const next = { ...current, title: patch.title === undefined ? current.title : this.validateTitle(patch.title),
       description: patch.description === undefined ? current.description : patch.description.trim() || undefined,
       targetDate: patch.targetDate === undefined ? current.targetDate : patch.targetDate,
@@ -46,7 +50,15 @@ export class LightTickGoalService {
   }
   async transition(owner: LightTickOwner, id: string, baseVersion: number,
     action: "pause" | "resume" | "complete" | "archive", options: LightTickGoalLifecycleOptions = {}): Promise<LightTickGoalRow> {
+    return this.repository.transaction(owner, async () => {
+    await this.repository.lockPlanningOwner(owner);
     const current = await this.get(owner, id); const timestamp = this.clock().toISOString();
+    if (current.version !== baseVersion) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Goal changed; review it again.");
+    if (action === "resume" && options.resumeMode !== "adjust_goal") {
+      const manual = (await this.repository.listPlans(owner, id)).some(p => ["manual_native", "local_adoption"].includes(p.source));
+      const outstanding = (await this.repository.listTasks(owner)).some(t => t.goalId === id && ["pending", "in_progress"].includes(t.status));
+      if (manual && outstanding) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Review remaining tasks and confirm a new arrangement before resuming.");
+    }
     if (options.notificationPolicy !== undefined && !["suppress", "light_only"].includes(options.notificationPolicy))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Notification policy is invalid.");
     if (options.resumeMode !== undefined && !["original_pace", "recovery_mode", "adjust_goal"].includes(options.resumeMode))
@@ -60,6 +72,7 @@ export class LightTickGoalService {
     if (options.expectedResumeAt && Number.isNaN(Date.parse(options.expectedResumeAt)))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Expected resume time is invalid.");
     const next: LightTickGoalRow = { ...current, status,
+      constraints: action === "complete" || action === "archive" ? {...current.constraints,closure_outcome:action === "complete" || current.status === "completed" || current.constraints.closure_outcome === "achieved" ? "achieved" : "ended_without_achievement"} : current.constraints,
       pauseMetadata: action === "pause" ? { reason: options.reason?.trim() || "unspecified", pausedAt: timestamp,
         expectedResumeAt: options.expectedResumeAt, keepLightTasks: options.keepLightTasks === true,
         notificationPolicy: options.notificationPolicy ?? "suppress" } : current.pauseMetadata,
@@ -68,6 +81,7 @@ export class LightTickGoalService {
     return await this.repository.saveGoal(next,
       this.write(next, action === "resume" && status === "recovering" ? "goal_recovery_started" : `goal_${action}d`,
         baseVersion + 1, timestamp), baseVersion);
+    });
   }
   private validateTitle(value: string): string {
     const title = value.trim();

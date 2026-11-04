@@ -66,8 +66,13 @@ test("Postgres persists purpose and excludes it in every monitoring aggregate, b
     return { rows: [] };
   });
   await store.recordObservation({ ...normal, callPurpose: "content_safety" });
-  assert.match(queries[0].sql, /routing_config_revision, call_purpose/);
-  assert.equal(queries[0].values?.[20], "content_safety");
+  const columns = queries[0].sql.match(/INSERT INTO [^(]+\(([^)]+)\)/)?.[1]
+    .split(",").map((column) => column.trim());
+  assert.equal(columns?.length, 27);
+  assert.equal(queries[0].values?.length, 27);
+  assert.equal(queries[0].values?.[columns!.indexOf("call_purpose")], "content_safety");
+  for (const column of ["point_micros", "cached_input_tokens", "point_pricing"])
+    assert.ok(columns!.includes(column), `merged observation must retain ${column}`);
   queries.length = 0;
   await store.queryMetrics({ occurredAtFrom: "2026-10-08T00:00:00Z", occurredAtTo: now.toISOString(),
     granularity: "hour", excludeContentSafety: true });

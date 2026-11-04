@@ -1,0 +1,130 @@
+import type {
+  BillingPlatform,
+  BillingProduct,
+  CatalogData,
+  DistributionChannel,
+} from "../../generated/openapi/public-contracts.generated.ts";
+import type { AccountRegion } from "../../shared/types.ts";
+import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
+import { billingStoreProductId } from "./ainovel-store-products.ts";
+import { billingBenefits } from "./ainovel-billing-benefits.ts";
+import { billingPurchaseSubtitle, billingPurchaseTitle } from "./ainovel-billing-purchase-copy.ts";
+import { LOCAL_CREDIT_QUOTAS } from "../ai-novel/credits/ai-novel-credits-model.ts";
+import { billingDisplay, billingAmountText } from "./ainovel-billing-display.ts";
+
+export interface AiNovelBillingCatalogInput {
+  accountRegion: AccountRegion;
+  platform: BillingPlatform;
+  distribution: DistributionChannel;
+  alipayAvailable?: boolean;
+  alipayPrices?: Record<string, number>;
+  locale?: string;
+  benefitsConfig?: string;
+}
+
+type ProductDefinition = Pick<
+  BillingProduct,
+  "productKey" | "tier" | "billingPeriod"
+>;
+type ProductProvider = BillingProduct["providers"][number];
+
+const PRODUCT_DEFINITIONS: readonly ProductDefinition[] = [
+  { productKey: "plus_monthly", tier: "plus", billingPeriod: "P1M" },
+  { productKey: "plus_quarterly", tier: "plus", billingPeriod: "P3M" },
+  { productKey: "plus_yearly", tier: "plus", billingPeriod: "P1Y" },
+  { productKey: "pro_monthly", tier: "pro", billingPeriod: "P1M" },
+  { productKey: "pro_quarterly", tier: "pro", billingPeriod: "P3M" },
+  { productKey: "pro_yearly", tier: "pro", billingPeriod: "P1Y" },
+];
+
+export function buildAiNovelBillingCatalog(
+  input: AiNovelBillingCatalogInput,
+): CatalogData {
+  const display = billingDisplay(input.locale, input.benefitsConfig);
+  return {
+    accountRegion: input.accountRegion,
+    platform: input.platform,
+    distribution: input.distribution,
+    display: display.page,
+    products: PRODUCT_DEFINITIONS.map((product) => ({
+      ...product,
+      ...display.product(product.productKey),
+      purchaseSubtitle: billingPurchaseSubtitle(input.locale, input.benefitsConfig),
+      purchaseTitle: billingPurchaseTitle(input.locale, input.benefitsConfig),
+      benefits: billingBenefits(product.tier, input.locale, input.benefitsConfig),
+      usage: { credits: LOCAL_CREDIT_QUOTAS[product.tier], resetPeriod: "P7D" },
+      providers: [resolveProvider(input, product)],
+    })),
+  };
+}
+
+export function isAiNovelBillingChannelSupported(
+  input: AiNovelBillingCatalogInput,
+): boolean {
+  if (input.platform === "ios" || input.platform === "macos") {
+    return input.distribution === "app_store";
+  }
+  if (input.platform === "web") {
+    return input.distribution === "web";
+  }
+  if (input.platform === "windows") {
+    return input.distribution === "windows";
+  }
+  if (input.accountRegion === "CN") {
+    return (
+      input.distribution === "china_android_store" ||
+      input.distribution === "direct_android"
+    );
+  }
+  if (input.accountRegion === "GLOBAL") {
+    return (
+      input.distribution === "google_play" ||
+      input.distribution === "direct_android"
+    );
+  }
+  return false;
+}
+
+function resolveProvider(
+  input: AiNovelBillingCatalogInput,
+  product: ProductDefinition,
+): ProductProvider {
+  if (isRevenueCatDistribution(input)) {
+    return {
+      provider: "revenuecat",
+      available: true,
+      blockedReason: null,
+      providerProductId: billingStoreProductId(product.productKey, input.distribution === "google_play"),
+      providerPackageId: null,
+      providerEntitlementId: REVENUECAT_ENTITLEMENT_IDS[product.tier],
+      price: null,
+    };
+  }
+
+  if (input.accountRegion === "CN" && input.alipayAvailable) {
+    return { provider: "alipay", available: true, blockedReason: null,
+      providerProductId: product.productKey, providerPackageId: null, providerEntitlementId: product.tier,
+      price: { amountMinor: input.alipayPrices![product.productKey], currency: "CNY",
+        localizedDisplay: billingAmountText(input.alipayPrices![product.productKey], input.locale) } };
+  }
+
+  return {
+    provider: input.accountRegion === "GLOBAL" ? "revenuecat" : "alipay",
+    available: false,
+    blockedReason: "provider_unavailable",
+    providerProductId: null,
+    providerPackageId: null,
+    providerEntitlementId: REVENUECAT_ENTITLEMENT_IDS[product.tier],
+    price: null,
+  };
+}
+
+function isRevenueCatDistribution(input: AiNovelBillingCatalogInput): boolean {
+  return (
+    ((input.platform === "ios" || input.platform === "macos") &&
+      input.distribution === "app_store") ||
+    (input.accountRegion === "GLOBAL" &&
+      input.platform === "android" &&
+      input.distribution === "google_play")
+  );
+}

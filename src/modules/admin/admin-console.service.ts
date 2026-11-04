@@ -4,6 +4,7 @@ import { VersionedAppConfigService } from "../../services/versioned-app-config.s
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
 import { AppAiRoutingConfigService } from "../../services/app-ai-routing-config.service.ts";
 import { AiNovelModelSelectionConfigService } from "../ai-novel/ai-novel-model-selection-config.service.ts";
+import { AiNovelModelPointPricingConfigService } from "../ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
@@ -26,6 +27,7 @@ import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import type {
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
+  AdminAiNovelModelPointPricingDocument,
   AdminAppSummary,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
@@ -59,6 +61,8 @@ import {
 import { createDefaultRoles } from "./admin-console-roles.ts";
 import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
 import { AiNovelConversationRecordService } from "../ai-novel/ai-novel-conversation-record.service.ts";
+import { cleanAiNovelRevenueCatConfig } from "./ainovel-revenuecat-config.ts";
+import { validateAiNovelAlipayPricing } from "../billing/ainovel-alipay-pricing.ts";
 
 export class AdminConsoleService extends AdminConsoleCommonFacade {
   constructor(
@@ -67,6 +71,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     private readonly appI18nConfigService: AppI18nConfigService,
     private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
     private readonly aiNovelModelSelectionConfigService: AiNovelModelSelectionConfigService,
+    private readonly aiNovelModelPointPricingConfigService: AiNovelModelPointPricingConfigService,
     private readonly appRemoteLogPullService: AppRemoteLogPullService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
@@ -127,7 +132,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     if (revision && !record) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    const rawJson = record ? normalizeConfig(record.content) : await this.readNormalizedConfig(app.id);
+    const rawJson = cleanAiNovelRevenueCatConfig(app.id, record ? normalizeConfig(record.content) : await this.readNormalizedConfig(app.id));
 
     return {
       app: await this.toSummary(app),
@@ -171,7 +176,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     }
 
     const rawJson = await this.readNormalizedConfig(app.id);
-    const appConfig = JSON.parse(rawJson) as Record<string, unknown>;
+    const appConfig = JSON.parse(cleanAiNovelRevenueCatConfig(app.id, rawJson)) as Record<string, unknown>;
     const releaseUpdate = app.id === "ai_novel"
       ? await this.commonReleaseUpdateConfigService.getPublicConfig(app.id)
       : undefined;
@@ -225,7 +230,8 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
 
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
     const app = await this.requireConfigApp(appId);
-    const normalized = normalizeConfig(rawJson);
+    const normalized = cleanAiNovelRevenueCatConfig(app.id, normalizeConfig(rawJson));
+    validateAiNovelAlipayPricing(app.id, normalized);
 
     await this.appConfigService.setValue(
       app.id,
@@ -244,6 +250,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
+    validateAiNovelAlipayPricing(app.id, existing.content);
     await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);
@@ -450,6 +457,17 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     };
   }
 
+  async getAiNovelModelPointPricing(
+    revision?: number,
+  ): Promise<AdminAiNovelModelPointPricingDocument> {
+    const app = await this.requireConfigApp("ai_novel");
+    const document = await this.aiNovelModelPointPricingConfigService.getDocument(revision);
+    return {
+      app: await this.toSummary(app),
+      ...document,
+    };
+  }
+
   async getAiNovelConversationRecords(input: {
     uid?: string;
     did?: string;
@@ -464,10 +482,28 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     return this.getAiNovelModelSelection();
   }
 
+  async updateAiNovelModelPointPricing(
+    input: unknown,
+    desc?: string,
+  ): Promise<AdminAiNovelModelPointPricingDocument> {
+    await this.aiNovelModelPointPricingConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getAiNovelModelPointPricing();
+  }
+
   async restoreAiNovelModelSelection(revision: number, desc?: string): Promise<AdminAiNovelModelSelectionDocument> {
     await this.aiNovelModelSelectionConfigService.restoreConfig(revision, desc);
     await this.managedStateStore.save(this.database);
     return this.getAiNovelModelSelection();
+  }
+
+  async restoreAiNovelModelPointPricing(
+    revision: number,
+    desc?: string,
+  ): Promise<AdminAiNovelModelPointPricingDocument> {
+    await this.aiNovelModelPointPricingConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getAiNovelModelPointPricing();
   }
 
   async updateRemoteLogPullSettings(

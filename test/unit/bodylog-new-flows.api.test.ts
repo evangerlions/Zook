@@ -10,6 +10,10 @@ async function setup() {
   seed.apps!.push({ id: 'bodylog', code: 'bodylog', name: 'BodyLog', nameI18n: { 'zh-CN': 'BodyLog', 'en-US': 'BodyLog' }, status: 'ACTIVE', apiDomain: 'bodylog.example.com', joinMode: 'AUTO', createdAt: new Date().toISOString() });
   for (const userId of ['user_alice', 'user_bob']) seed.appUsers!.push({ id: `bodylog_${userId}`, appId: 'bodylog', userId, status: 'ACTIVE', joinedAt: new Date().toISOString() });
   const runtime = await createApplication({ seed });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  for (const feature of ['accountSocial', 'friends', 'competition', 'challengeCreation']) {
+    await flags.updateBodyLogFeatureFlag(feature, true);
+  }
   const call = (userId: string, method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown) => runtime.app.handle({ method, path: `/api/v1/bodylog/${path}`, body, headers: { authorization: `Bearer ${runtime.services.tokenService.issueAccessToken(userId, 'bodylog')}` } });
   for (const userId of ['user_alice', 'user_bob']) assert.equal((await call(userId, 'GET', 'profile')).statusCode, 200);
   return { runtime, call };
@@ -35,7 +39,8 @@ test('BodyLog group create, invite, join, detail, and leadership transfer stay c
   assert.ok(group.id);
   assert.equal(new URL(invitationUrl).pathname, `/g/${group.id}`);
   const invited = await call('user_alice', 'POST', `groups/${group.id}/invite`, { userId: 'user_bob' });
-  assert.deepEqual(invited.body.data, { invited: true });
+  assert.equal(invited.body.data.invited, true);
+  assert.match(invited.body.data.code, /^[A-HJ-NP-Z2-9]{6}$/);
   const accepted = await call('user_bob', 'POST', `groups/${group.id}/accept`, { token: new URL(invitationUrl).searchParams.get('token') });
   assert.equal(accepted.statusCode, 200);
   const detail = await call('user_bob', 'GET', `groups/${group.id}`);

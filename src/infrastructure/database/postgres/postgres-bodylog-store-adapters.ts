@@ -1,3 +1,4 @@
+import { PostgresBodyLogRetentionStore } from "./postgres-bodylog-retention.ts";
 import type { Pool } from "pg";
 import type {
   BodyLogAdminStore,
@@ -11,6 +12,7 @@ import type {
 } from "../../bodylog-store-ports.ts";
 import * as buddySql from "./postgres-bodylog-buddy.ts";
 import * as groupSql from "./postgres-bodylog-group.ts";
+import { activateGroupMember } from "./postgres-bodylog-group-admission.ts";
 import * as growthSql from "./postgres-bodylog-growth.ts";
 import { PostgresBodyLogNotificationStore } from "./postgres-bodylog-notification.ts";
 import { PostgresBodyLogFeatureFlagStore } from "./postgres-bodylog-feature-flags.ts";
@@ -33,6 +35,8 @@ const buddyStore = (pool: Pool): BodyLogBuddyStore => ({
 });
 
 const groupStore = (pool: Pool): BodyLogGroupStore => ({
+  listGroupInvitations: (appId, userId) => groupSql.listGroupInvitations(pool, appId, userId),
+  activateGroupMember: (record, token, groupLimit) => activateGroupMember(pool, record, token, groupLimit),
   insertCheckInGroup: (record) => groupSql.insertCheckInGroup(pool, record),
   findCheckInGroup: (groupId) => groupSql.findCheckInGroup(pool, groupId),
   updateCheckInGroup: (record) => groupSql.updateCheckInGroup(pool, record),
@@ -51,7 +55,8 @@ const groupStore = (pool: Pool): BodyLogGroupStore => ({
   listGroupActivities: (groupId, limit) => groupSql.listGroupActivities(pool, groupId, limit),
 });
 
-const growthStore = (pool: Pool): BodyLogGrowthStore => ({
+const growthStore = (pool: Pool, execute: <T>(operation: () => Promise<T>) => Promise<T>): BodyLogGrowthStore => ({
+  applyGrowthDailyAggregate: (planId, day, input, completed, completedAt) => growthSql.applyPostgresGrowthDailyAggregate(pool, planId, day, input, completed, completedAt, execute),
   createGrowthPlan: (input) => growthSql.createPostgresGrowthPlan(pool, input),
   findGrowthPlanById: (planId) => growthSql.findPostgresGrowthPlanById(pool, planId),
   findLatestGrowthPlan: (userId) => growthSql.findPostgresLatestGrowthPlan(pool, userId),
@@ -67,7 +72,7 @@ const growthStore = (pool: Pool): BodyLogGrowthStore => ({
   findGrowthRewardById: (rewardId) => growthSql.findPostgresGrowthRewardById(pool, rewardId),
   findGrowthRewardsByPlanId: (planId) => growthSql.findPostgresGrowthRewardsByPlanId(pool, planId),
   updateGrowthReward: (rewardId, input) => growthSql.updatePostgresGrowthReward(pool, rewardId, input),
-  claimGrowthReward: (rewardId, claimedAt) => growthSql.claimPostgresGrowthReward(pool, rewardId, claimedAt),
+  claimGrowthReward: (rewardId, claimedAt) => growthSql.claimPostgresGrowthReward(pool, rewardId, claimedAt, execute),
 });
 
 const notificationStore = (store: PostgresBodyLogNotificationStore): BodyLogNotificationStore => ({
@@ -98,6 +103,7 @@ export function createBodyLogPostgresStores(
   // functional stores. Binding the raw pool would commit partial operations.
   const scopedPool = { query } as unknown as Pool;
   return {
+    retention: new PostgresBodyLogRetentionStore(query),
     jobs: {
       runOnce: (key, job) => execute(async () => {
         const claimed = await query('INSERT INTO bodylog_settlement_jobs (key) VALUES ($1) ON CONFLICT DO NOTHING RETURNING key', [key]);
@@ -109,7 +115,7 @@ export function createBodyLogPostgresStores(
     buddy: buddyStore(scopedPool),
     group: groupStore(scopedPool),
     subscription: new PostgresSubscriptionStore(query),
-    growth: growthStore(scopedPool),
+    growth: growthStore(scopedPool, execute),
     notification: notificationStore(new PostgresBodyLogNotificationStore(query)),
     flags: featureFlagStore(new PostgresBodyLogFeatureFlagStore(query)),
     admin: new PostgresBodyLogAdminStore(query),

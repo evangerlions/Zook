@@ -1,0 +1,62 @@
+(node:4270) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ v2 preflight is read-only; complete/reversal/nullable/running and receipts survive exact replay (44.59075ms)
+✔ invalid graph/hash/identity/colliding receipts/stale preflight leaves staged workspace untouched (54.64625ms)
+✔ receipt persistence failure rolls back graph; retry after service restart imports once (32.907666ms)
+✔ imported unconsumed evidence maps owner and reconciles exactly once; forged consumption is rejected (62.185375ms)
+✔ v1 raw facts and archived parent relationships survive mixed-version import unchanged (11.364875ms)
+✔ arbitrary old request keys remain exact own properties, without prototype receipts (42.85ms)
+(node:4271) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ two-account pairing, exact idempotent import receipt and no double writer (5.581292ms)
+✔ expired/replaced code, source collisions and invalid import roll back (1.397708ms)
+✔ v1 importer rejects v2 facts and events without freezing or modifying either workspace (2.41425ms)
+(node:4272) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ canonical P0 input schemas cover null/modes, conditional dates and explicit operations (16.045541ms)
+✔ stable P0 errors preserve only safe recovery metadata in the Zook envelope (15.269292ms)
+✔ canonical output fixtures include nullable schedules and v2 facts without private inventory (38.523208ms)
+(node:4273) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ registered API and signed bridge remain closed independently of old enable flag and schema2 (268.696125ms)
+(node:4274) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ v2 nullable check fields and validation are atomic, with no fabricated time (33.555334ms)
+✔ time accumulates confirmed sessions, actual and planned dates stay distinct (4.7525ms)
+✔ interrupted threshold requires a zero-minute explicit completion, replayed atomically (1.484333ms)
+✔ check completion reversal preserves audit and counts the effective action once (0.96125ms)
+✔ running, stale versions, ancestor blocks and immutable fact configuration (2.648875ms)
+✔ content requires owner-scoped durable evidence and preserves a running timer (28.429709ms)
+✔ schedule deduplication, null bucket and conflicting reschedule do not overwrite (3.316792ms)
+✔ calendar and claims never fabricate a time or use a completion threshold for content (3.292125ms)
+✔ article evidence is private, date scoped, one-use and cannot bypass rescheduling (2.311333ms)
+✔ plan evidence is private, date scoped, one-use and cannot bypass rescheduling (25.174792ms)
+✔ cross-midnight sessions, zero interruption, confirmation date and legacy read preservation (23.349333ms)
+✔ concurrent check completion and dedup keep one effect with transactional receipts (4.813125ms)
+✔ read-only receipt lookup and review preview never persist report recovery (1.081125ms)
+(node:4275) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ source contract requires explicit normalized proof, binding, version and signed origin context (11.369875ms)
+(node:4276) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ verified source event is durable, deduplicated and reconciles after a running session (270.56775ms)
+✔ unscoped confirmation consumes one matching occurrence only and private proof cannot be injected (233.902709ms)
+(node:4277) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ summary requires exact consent, keeps secrets out of storage and replays without another AI call (29.082125ms)
+(node:4278) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ action API authenticates, isolates accounts and matches populated canonical workspace fixtures (293.6855ms)
+(node:4279) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ four periods share actual facts; minimum and interruption do not invent completion (35.158041ms)
+✔ tenant isolation, concurrent start, stale revisions and idempotent retries (2.183375ms)
+✔ parent pause, date boundaries, reminder and calendar semantics (6.972084ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2207.17875

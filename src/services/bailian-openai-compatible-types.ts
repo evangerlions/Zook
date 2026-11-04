@@ -54,14 +54,18 @@ export interface OpenAICompatibleResponsePayload {
     prompt_tokens?: number;
     completion_tokens?: number;
     total_tokens?: number;
+    prompt_tokens_details?: {
+      cached_tokens?: number;
+    } | null;
     completion_tokens_details?: {
       reasoning_tokens?: number;
     } | null;
   } | null;
   error?: {
     message?: string;
-    code?: string;
+    code?: string | number;
     type?: string;
+    metadata?: { limit_source?: unknown; reason?: unknown };
   };
   message?: string;
 }

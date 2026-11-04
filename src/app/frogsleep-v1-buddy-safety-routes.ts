@@ -1,3 +1,4 @@
+import { tryHandleBuddyRelationshipRoutes } from "./frogsleep-v1-buddy-relationship-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { BuddyDomainInvitationSafetyCommandService } from "../modules/frogsleep/buddy-growth/buddy-domain-invitation-safety-command.service.ts";
@@ -12,6 +13,8 @@ export async function tryHandleBuddySafetyRoutes(
   context: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  const relationshipResponse = await tryHandleBuddyRelationshipRoutes(context, request);
+  if (relationshipResponse) return relationshipResponse;
   const blockMatch = request.path.match(/^\/v1\/buddy\/users\/([^/]+)\/(block|unblock)$/);
   if (request.method === "POST" && blockMatch) {
     return await handleBuddyBlockCommand(context, request, blockMatch);

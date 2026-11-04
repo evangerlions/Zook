@@ -1,0 +1,14 @@
+.frogsleep-page-shell,
+.frogsleep-operations > .ant-card {
+  min-width: 0;
+}
+
+.frogsleep-record-filters {
+  width: 100%;
+  margin-block: 16px;
+}
+
+.frogsleep-record-filters .ant-space-item {
+  min-width: 0;
+  max-width: 100%;
+}

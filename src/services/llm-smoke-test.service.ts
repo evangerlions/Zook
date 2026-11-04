@@ -26,15 +26,20 @@ const DEFAULT_COOLDOWN_MS = 10_000;
 const RESPONSE_PREVIEW_LIMIT = 120;
 const ERROR_STACK_PREVIEW_LIMIT = 6;
 const VECTOR_PREVIEW_LIMIT = 8;
-const SMOKE_CHAT_MAX_TOKENS = 64;
+const SMOKE_CHAT_MAX_TOKENS = 32768;
+// B.AI measured 9,845 input tokens for 47,900 context characters. Scale the
+// shared probe to approximately 15k tokens; tokenizers vary between providers.
+const SMOKE_CONTEXT = Array.from({ length: 900 }, (_, index) =>
+  `Scene ${index + 1}: The travelers review their plans, recall earlier events, and discuss their next steps.\n`,
+).join("").slice(0, 72_900);
 const SMOKE_MESSAGES = [
   {
     role: "system" as const,
-    content: "You are a smoke test assistant. Reply with OK only.",
+    content: "You are a smoke test assistant. Follow the user's requested response length.",
   },
   {
     role: "user" as const,
-    content: "Please reply with OK.",
+    content: `${SMOKE_CONTEXT}\nWrite a coherent English summary of approximately 1,000 characters.`,
   },
 ];
 const SMOKE_EMBEDDING_INPUT = [

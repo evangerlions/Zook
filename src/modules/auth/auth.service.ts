@@ -121,8 +121,6 @@ export class AuthService {
       this.verificationLimiter,
       async (userId, appId, now) =>
         await this.sessionManager.issueSession(userId, appId, now),
-      async (appId, userId, now) =>
-        await this.sessionManager.revokeAllSessions(appId, userId, now),
       registrationCodeGenerator,
       publicSmsTestBypassEnabled,
     );
@@ -259,6 +257,12 @@ export class AuthService {
     return await this.sessionManager.refresh(command, now);
   }
 
+  async refreshWithPayload<T>(command: RefreshCommand, prepare: (session: AuthSession) => Promise<T>, now = new Date()) {
+    let payload!: T;
+    const session = await this.sessionManager.refresh(command, now, async candidate => { payload = await prepare(candidate); });
+    return { session, payload };
+  }
+
   async logout(
     command: LogoutCommand,
     auth: AuthContext,
@@ -391,7 +395,6 @@ export class AuthService {
       this.passwordHasher.hash(command.newPassword),
       this.passwordHasher.algorithm,
     );
-    await this.sessionManager.revokeAllSessions(app.id, user.id, now);
 
     return this.sessionManager.issueSession(user.id, app.id, now);
   }
@@ -426,7 +429,6 @@ export class AuthService {
       this.passwordHasher.hash(command.password),
       this.passwordHasher.algorithm,
     );
-    await this.sessionManager.revokeAllSessions(app.id, user.id, now);
 
     return this.sessionManager.issueSession(user.id, app.id, now);
   }

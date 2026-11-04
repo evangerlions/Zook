@@ -24,13 +24,14 @@ function createHarness() {
   return { events, values, transaction };
 }
 
-test("postgres decision safety transaction locks one decision without any slot write", async () => {
+test("postgres decision safety transaction locks bundle before decision without any slot write", async () => {
   const harness = createHarness();
   const result = await harness.transaction.run(key, () => { harness.events.push("CALLBACK"); return "done"; });
 
   assert.equal(result, "done");
-  assert.deepEqual(harness.events, ["BEGIN", "SELECT app_id, invitation_id, domain", "CONTEXT", "CALLBACK", "COMMIT", "RELEASE"]);
-  assert.deepEqual(harness.values[1], ["frogsleep", "invite_1", "sleep"]);
+  assert.deepEqual(harness.events, ["BEGIN", "SELECT id FROM zook_frogsleep_buddy_invitation_bundles", "SELECT app_id, invitation_id, domain", "CONTEXT", "CALLBACK", "COMMIT", "RELEASE"]);
+  assert.deepEqual(harness.values[1], ["frogsleep", "invite_1"]);
+  assert.deepEqual(harness.values[2], ["frogsleep", "invite_1", "sleep"]);
   assert.equal(harness.events.some((event) => event.includes("slots") || event.includes("advisory")), false);
 });
 

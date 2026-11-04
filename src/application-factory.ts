@@ -1,3 +1,7 @@
+import { createApplicationVerificationServices } from "./application-verification-services.ts";
+import { createApplicationInfrastructure } from './application-infrastructure.ts';
+
+import { billingDeploymentEnvironment } from "./modules/billing/billing-environment.ts";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -6,27 +10,26 @@ import { RbacGuard } from "./core/guards/rbac.guard.ts";
 import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
-import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
-import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
+
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
-import { InMemoryKVBackend, KVManager } from "./infrastructure/kv/kv-manager.ts";
-import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
+
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { createLocalRunFileLogSink } from "./infrastructure/logging/local-run-file-log-sink.ts";
-import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
-import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
-import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
-import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
+import { AiNovelCreditsService } from "./modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { createCreditsMembershipReader } from "./modules/ai-novel/credits/credits-membership-reader.ts";
+import { AiNovelCreditsRequestFlow } from "./modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
 import { AiNovelSkillService } from "./modules/ai-novel/ai-novel-skill.service.ts";
 import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
+import { AiNovelModelPointPricingConfigService } from "./modules/ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -57,7 +60,6 @@ import { JevContentSafetyClient } from "./services/jev-content-safety-client.ts"
 import { createOpenRouterTransparentProxyFetch } from "./services/openrouter-transparent-proxy.ts";
 import { ContentSafetyCounters } from "./services/content-safety-counters.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
-import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
@@ -67,7 +69,7 @@ import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
 import { LlmEmailAlertService } from "./services/llm-email-alert.service.ts";
 import { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
-import { NotificationService } from "./services/notification.service.ts";
+
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -77,11 +79,9 @@ import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
 import { SmsVerificationRecordService } from "./services/sms-verification-record.service.ts";
-import { NoopCaptchaVerificationService, TencentCaptchaVerificationService } from "./services/tencent-captcha-verification.service.ts";
 import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-callback.service.ts";
-import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
-import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { createApplicationBillingService } from "./application-billing-runtime.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
@@ -90,71 +90,17 @@ import { createApplicationTelemetryGateway } from "./application-telemetry-runti
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { resolveLightTickEnabled, resolveLightTickSeedEnabled } from "./application-lighttick-runtime-config.ts";
-import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
+import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime } from "./application-lighttick-services.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
-import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
+  const yaoheziEnabled = options.yaoheziEnabled ?? process.env.YAOHEZI_ENABLED?.trim().toLowerCase() === "true";
   const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
   const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
-  const kvManager =
-    options.kvManager ??
-    (options.kvBackend
-      ? await KVManager.create({ backend: options.kvBackend })
-      : resolveRuntimeRedisUrl()
-        ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
-        : await KVManager.create({ backend: new InMemoryKVBackend() }));
-  const shouldLoadManagedState = Boolean(
-    options.database || options.databaseFactory,
-  );
-  const managedStateStore = new ManagedStateStore(kvManager, {
-    enabled: shouldLoadManagedState,
-  });
-  const seed = shouldLoadManagedState
-    ? applyManagedState(baseSeed, await managedStateStore.load())
-    : baseSeed;
-  const database =
-    options.database ??
-    (options.databaseFactory
-      ? await options.databaseFactory(seed)
-      : await PostgresDatabase.create(
-          options.databaseUrl?.trim() ||
-            resolveRuntimeDatabaseUrl() ||
-            (() => {
-              throw new Error(
-                "DATABASE_URL must be configured before starting PostgreSQL.",
-              );
-            })(),
-          seed,
-          {
-            migrationConnectionString:
-              options.migrationDatabaseUrl?.trim() ||
-              resolveRuntimeMigrationDatabaseUrl(),
-          },
-        ));
-  const lighttickRepository = resolveApplicationLightTickRepository(database, options.lighttickRepository);
-  const cache = new InMemoryCache();
-  const defaultQueueBackend =
-    options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl()
-      ? "redis"
-      : "memory";
-  const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
-  const queue =
-    options.queue ??
-    (resolvedQueueBackend === "redis"
-      ? new RedisJobQueue(
-          options.queueRedisUrl?.trim() ||
-            resolveRuntimeRedisUrl() ||
-            (() => {
-              throw new Error(
-                "REDIS_URL must be configured before starting the Redis job queue backend.",
-              );
-            })(),
-        )
-      : new InMemoryJobQueue());
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled, includeYaohezi: yaoheziEnabled });
+  const {kvManager,managedStateStore,seed,database,lighttickRepository,cache,queue}=await createApplicationInfrastructure(options,baseSeed);
   const lighttickRuntime = createApplicationLightTickRuntime(lighttickRepository, queue);
   const localRunFileLogSink = createLocalRunFileLogSink({
     service: options.serviceName ?? "api",
@@ -176,6 +122,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     cache,
     kvManager,
   );
+  const aiNovelBillingService = createApplicationBillingService(database, appConfigService, options, logger);
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const appAiRoutingConfigService = new AppAiRoutingConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
@@ -266,11 +213,17 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
   const llmModelHealthService = new LlmModelHealthService(commonLlmConfigService, llmHealthService);
+  const aiNovelModelPointPricingConfigService = new AiNovelModelPointPricingConfigService(
+    appConfigService,
+    commonLlmConfigService,
+    logger,
+  );
   const aiNovelModelSelectionConfigService = new AiNovelModelSelectionConfigService(
     appConfigService,
     commonLlmConfigService,
     llmModelHealthService,
     logger,
+    aiNovelModelPointPricingConfigService,
   );
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
@@ -279,46 +232,14 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const tokenService = new TokenService(accessTokenSecrets.current, {
     previousSecrets: accessTokenSecrets.previous,
   });
-  const tencentCloudCommonCredentials =
-    await resolveTencentCloudCommonCredentials(commonPasswordConfigService);
-  const baseTencentSmsVerificationConfig = resolveTencentSmsVerificationConfig(
-    options,
-    tencentCloudCommonCredentials,
-  );
-  const registrationEmailSender =
-    options.registrationEmailSender ??
-    (options.serviceName === "api" || options.serviceName === "worker"
-      ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
-      : new NoopRegistrationEmailSender());
-  const smsVerificationSender =
-    options.smsVerificationSender ??
-    (options.serviceName === "api"
-      ? ({
-          async sendVerificationCode(command) {
-            const config = await commonSmsConfigService.getRuntimeConfig(
-              baseTencentSmsVerificationConfig,
-            );
-            return new TencentSmsVerificationSender(
-              config,
-            ).sendVerificationCode(command);
-          },
-        } satisfies SmsVerificationSender)
-      : new NoopSmsVerificationSender());
-  const captchaVerificationService =
-    options.captchaVerificationService ??
-    (options.serviceName === "api"
-      ? new TencentCaptchaVerificationService(
-          resolveTencentCaptchaVerificationConfig(
-            options,
-            tencentCloudCommonCredentials,
-          ),
-        )
-      : new NoopCaptchaVerificationService());
-  const emailTestSendService = new EmailTestSendService(
-    commonEmailConfigService,
-    kvManager,
-    registrationEmailSender,
-  );
+  const { registrationEmailSender, smsVerificationSender, captchaVerificationService, emailTestSendService } =
+    await createApplicationVerificationServices({
+      options,
+      kvManager,
+      commonPasswordConfigService,
+      commonEmailConfigService,
+      commonSmsConfigService,
+    });
   const llmEmailAlertService = new LlmEmailAlertService(
     database.llmObservabilityStore,
     kvManager,
@@ -390,6 +311,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   } = createApplicationAiRuntime({
     database,
     commonLlmConfigService,
+    aiNovelModelPointPricingConfigService,
     commonPasswordConfigService,
     llmHealthService,
     llmMetricsService,
@@ -406,12 +328,20 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
   );
   const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
+  const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore,
+    createCreditsMembershipReader(aiNovelBillingService), logger);
+  const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
+    aiNovelCreditsService,
+    aiNovelConversationRecordService,
+    async () => (await aiNovelModelSelectionConfigService.getAutoFree()).active,
+  );
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
     appI18nConfigService,
     appAiRoutingConfigService,
     aiNovelModelSelectionConfigService,
+    aiNovelModelPointPricingConfigService,
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
@@ -448,6 +378,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     })),
   );
   const aiNovelLlmService = new AiNovelLlmService(
+    aiNovelCreditsFlow,
     llmManager,
     embeddingManager,
     aiNovelModelSelectionConfigService,
@@ -553,8 +484,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     validationPipe,
     commonTestAccountService,
     kvManager,
+    aiNovelBillingService,
     frogsleepEnabled,
-    lighttickEnabled, lighttickRuntime,
+    lighttickEnabled, lighttickRuntime, options.appEnvironment ?? billingDeploymentEnvironment(),
+    yaoheziEnabled,
+    options.yaoheziHealthEnabled ?? process.env.YAOHEZI_HEALTH_DEVICES_ENABLED?.trim().toLowerCase() === "true",
   );
   app.analyticsService = analyticsService;
   return {
@@ -589,11 +523,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       userService,
       appAiRoutingConfigService,
       aiNovelModelSelectionConfigService,
+      aiNovelModelPointPricingConfigService,
       tokenService,
       authService,
       getuiGyOneClickLoginService,
       qrLoginService,
       analyticsService,
+      aiNovelBillingService,
       adminConsoleService,
       llmManager,
       embeddingManager,

@@ -1,0 +1,45 @@
+{
+  "base": "53cf8d3d2559531a6a4b6a07ec033f928d519496",
+  "existing_gate_failures": [
+    {
+      "path": "src/modules/bodylog/bodylog-group.service.ts",
+      "lines": 873,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "src/infrastructure/database/postgres/postgres-bodylog-admin.ts",
+      "lines": 820,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "src/infrastructure/database/application-database.ts",
+      "lines": 746,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "src/infrastructure/database/postgres/postgres-database.ts",
+      "lines": 712,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "apps/admin-web/app/lib/admin-api.ts",
+      "lines": 669,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "src/application-factory.ts",
+      "lines": 646,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "src/infrastructure/database/postgres/postgres-bodylog-checkin.ts",
+      "lines": 644,
+      "unchanged_from_base": true
+    },
+    {
+      "path": "src/app/lighttick-v1-routes.ts",
+      "lines": 605,
+      "unchanged_from_base": true
+    }
+  ]
+}

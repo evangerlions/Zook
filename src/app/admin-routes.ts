@@ -1,7 +1,9 @@
+import { tryHandleFrogSleepAdminRoutes } from "./frogsleep-admin-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { tryHandleAdminAppSettingsRoutes } from "./admin-app-settings-routes.ts";
 import { tryHandleAdminAiNovelModelSelectionRoutes } from "./admin-ai-novel-model-selection-routes.ts";
+import { tryHandleAdminAiNovelModelPointPricingRoutes } from "./admin-ai-novel-model-point-pricing-routes.ts";
 import { tryHandleAdminAiNovelConversationRoutes } from "./admin-ai-novel-conversation-routes.ts";
 import { tryHandleAdminAuthGetuiRoutes } from "./admin-auth-getui-routes.ts";
 import { tryHandleAdminCoreRoutes } from "./admin-core-routes.ts";
@@ -11,9 +13,12 @@ import { tryHandleAdminRemoteLogRoutes } from "./admin-remote-log-routes.ts";
 import { tryHandleAdminReleaseUpdateRoutes } from "./admin-release-update-routes.ts";
 import { tryHandleAdminSecurityRoutes } from "./admin-security-routes.ts";
 import { tryHandleAdminTestAccountRoutes } from "./admin-test-account-routes.ts";
+import { tryHandleAdminBillingRoutes } from "./admin-billing-routes.ts";
+import { tryHandleAdminAiNovelUsageRoutes } from "./admin-ai-novel-usage-routes.ts";
 import { tryHandleBodyLogCheckinAdminRoutes } from "./bodylog-admin-checkin-routes.ts";
 
 const adminRouteHandlers = [
+  tryHandleFrogSleepAdminRoutes,
   tryHandleAdminCoreRoutes,
   tryHandleAdminEmailSmsRoutes,
   tryHandleAdminAuthGetuiRoutes,
@@ -21,10 +26,13 @@ const adminRouteHandlers = [
   tryHandleAdminTestAccountRoutes,
   tryHandleAdminLlmRoutes,
   tryHandleAdminAiNovelModelSelectionRoutes,
+  tryHandleAdminAiNovelModelPointPricingRoutes,
   tryHandleAdminAiNovelConversationRoutes,
   tryHandleAdminAppSettingsRoutes,
   tryHandleAdminRemoteLogRoutes,
   tryHandleAdminReleaseUpdateRoutes,
+  tryHandleAdminBillingRoutes,
+  tryHandleAdminAiNovelUsageRoutes,
   tryHandleBodyLogCheckinAdminRoutes,
 ];
 

@@ -55,12 +55,18 @@ export class LightTickNotificationService {
     const notification = job.payload.notification as LightTickPushPayload;
     if (notification.type === "review_ready" && profile?.notificationPreferences.review_reminders === false)
       return await this.suppress(owner, job, "review_disabled");
-    if (notification.type === "daily_tasks" || notification.type === "unfinished_task") {
-      const goals = await this.repository.listGoals(owner);
-      const target = notification.resource_id ? goals.find(goal => goal.id === notification.resource_id) : undefined;
-      if (target?.status === "paused" || (!target && goals.length > 0 && goals.every(goal => goal.status === "paused")))
-        return await this.suppress(owner, job, "goal_paused");
+    const goals = await this.repository.listGoals(owner);
+    let target = notification.resource_id ? goals.find(goal => goal.id === notification.resource_id) : undefined;
+    if (!target && notification.resource_id) {
+      const task = await this.repository.getTask(owner, notification.resource_id);
+      const plan = task ? undefined : await this.repository.getPlan(owner, notification.resource_id);
+      const review = !task && !plan ? (await this.repository.listReviews(owner)).find(r => r.id === notification.resource_id) : undefined;
+      const proposal = !task && !plan && !review ? await this.repository.getProposal(owner, notification.resource_id) : undefined;
+      const proposalPlan = proposal ? await this.repository.getPlan(owner, proposal.planId) : undefined;
+      target = goals.find(g => g.id === (task?.goalId ?? plan?.goalId ?? review?.goalId ?? proposalPlan?.goalId));
     }
+    if (target && ["paused", "completed", "archived"].includes(target.status) || !target && goals.length > 0 && goals.every(g => ["paused", "completed", "archived"].includes(g.status)))
+      return await this.suppress(owner, job, "goal_stopped");
     if (profile && isQuietHour(this.clock(), profile.timezone, profile.notificationPreferences))
       return await this.suppress(owner, job, "quiet_hours");
     const devices = (await this.repository.listDevices(owner)).filter(device => device.active && device.notificationsEnabled);

@@ -3,13 +3,17 @@ import test from "node:test";
 
 import {
   buildCallsOption,
+  buildPointOption,
+  buildPointRankingOption,
   buildTokenOption,
   buildTokenRankingOption,
   formatLatency,
+  formatPointNumber,
   formatTokenNumber,
   formatPercent,
   successRateTone,
   tokenCoverage,
+  pointCoverage,
 } from "../../apps/admin-web/app/components/llm-monitor/llm-monitor-view-model.ts";
 import { buildRoutingComparisonOption } from "../../apps/admin-web/app/components/llm-monitor/routing-comparison-view-model.ts";
 import {
@@ -52,6 +56,39 @@ test("LLM token trend defaults to one canonical total series while retaining bre
   const option = buildTokenOption([item]) as { series: Array<{ name: string; data: number[] }>; tooltip: { formatter: (params: Array<{ dataIndex: number }>) => string } };
   assert.deepEqual(option.series.map(({ name, data }) => ({ name, data })), [{ name: "总 Token", data: [1_500_000] }]);
   assert.match(option.tooltip.formatter([{ dataIndex: 0 }]), /Prompt 1M/);
+});
+
+test("LLM points are the priced usage metric while unpriced calls stay explicit", () => {
+  const summary = {
+    ...emptySummary(),
+    requestCount: 4,
+    totalPoints: 2.125,
+    pointPricedRequestCount: 2,
+    pointUnpricedRequestCount: 2,
+    providerUsageCount: 2,
+    estimatedUsageCount: 1,
+    missingUsageCount: 1,
+  };
+  const item: LlmHourlySeriesItem = {
+    bucket: "2026-08-25T10",
+    available: true,
+    ...summary,
+  };
+  const trend = buildPointOption([item]) as {
+    series: Array<{ name: string; data: number[] }>;
+    tooltip: { formatter: (params: Array<{ dataIndex: number }>) => string };
+  };
+  assert.deepEqual(trend.series.map(({ name, data }) => ({ name, data })), [
+    { name: "消耗点数", data: [2.125] },
+  ]);
+  assert.match(trend.tooltip.formatter([{ dataIndex: 0 }]), /未计价 2 次/);
+  assert.equal(formatPointNumber(2.125), "2.125 点");
+  assert.equal(formatPointNumber(0.000001), "0.000001 点");
+  assert.match(pointCoverage(summary), /Provider 2 \/ 估算 1 \/ 缺失 1/);
+  const ranking = buildPointRankingOption([{ label: "model-a", summary }]) as {
+    series: Array<{ data: number[] }>;
+  };
+  assert.deepEqual(ranking.series[0]?.data, [2.125]);
 });
 
 test("LLM call trend omits reliability points with no reliability samples", () => {
@@ -102,6 +139,19 @@ test("LLM cross-matrix keeps missing Token values distinct from zero", () => {
   assert.equal(getCrossMatrixMetricValue(route, "tokens"), undefined);
   assert.equal(formatCrossMatrixMetricValue(undefined, "tokens"), "—");
   assert.equal(formatCrossMatrixMetricValue(1_500_000, "tokens"), "1.5M");
+});
+
+test("LLM cross-matrix can compare point consumption without inventing missing values", () => {
+  const route = {
+    provider: "provider-a",
+    providerModel: "model-a",
+    operation: "chat" as const,
+    summary: { ...emptySummary(), totalPoints: 1.5 },
+  };
+  assert.equal(getCrossMatrixMetricValue(route, "points"), 1.5);
+  assert.equal(formatCrossMatrixMetricValue(1.5, "points"), "1.5");
+  assert.equal(getCrossMatrixMetricValue({ ...route, summary: emptySummary() }, "points"), undefined);
+  assert.equal(formatCrossMatrixMetricValue(undefined, "points"), "—");
 });
 
 test("LLM routing share keeps exactly one row per model without current-target markers", () => {

@@ -1,3 +1,4 @@
+import { encourageBodyLogBuddy } from "./bodylog-buddy-encouragement.ts";
 import { createHash, randomBytes } from "node:crypto";
 import type { BodyLogBuddyStore, BodyLogSocialAccess } from "../../infrastructure/bodylog-store-ports.ts";
 import { ApplicationError } from "../../shared/errors.ts";
@@ -168,6 +169,7 @@ export class BodyLogBuddyService {
       lastActiveDate: null,
       createdAt: now.toISOString(),
       acceptedAt: null,
+      canAcceptInvitation: false,
     };
 
     return { pair, invitationUrl: `https://bodylog.app/b/${pairId}?token=${invitationToken}` };
@@ -245,6 +247,7 @@ export class BodyLogBuddyService {
       lastActiveDate: pair.lastActiveDate,
       createdAt: pair.createdAt,
       acceptedAt: now.toISOString(),
+      canAcceptInvitation: false,
     };
 
     return buddyPair;
@@ -292,6 +295,7 @@ export class BodyLogBuddyService {
       if (pair.status === "pending" && (!pair.inviterUserId || Date.now() - new Date(pair.createdAt).getTime() > 14 * DAY_MS)) continue;
 
       const partnerUserId = pair.userId === userId ? pair.partnerUserId : pair.userId;
+      if (await this.isBlocked(userId, partnerUserId)) continue;
       const partnerProfile = await this.social.findBodyLogProfile(BODYLOG_APP_ID, partnerUserId);
       if (!partnerProfile) continue;
 
@@ -308,6 +312,7 @@ export class BodyLogBuddyService {
         lastActiveDate: pair.lastActiveDate,
         createdAt: pair.createdAt,
         acceptedAt: pair.acceptedAt,
+        canAcceptInvitation: pair.status === "pending" && Boolean(pair.inviterUserId) && pair.inviterUserId !== userId && Date.now() <= Date.parse(pair.createdAt) + 14 * DAY_MS,
       });
     }
 
@@ -328,6 +333,7 @@ export class BodyLogBuddyService {
     }
 
     const partnerUserId = pair.userId === userId ? pair.partnerUserId : pair.userId;
+    if (await this.isBlocked(userId, partnerUserId)) throw new ApplicationError(403, "BUDDY_NOT_AUTHORIZED", "Buddy relationship is unavailable.");
     const partnerProfile = await this.social.findBodyLogProfile(BODYLOG_APP_ID, partnerUserId);
     if (!partnerProfile) {
       throw new ApplicationError(404, "BUDDY_PARTNER_NOT_FOUND", "Partner user not found.");
@@ -346,6 +352,7 @@ export class BodyLogBuddyService {
       lastActiveDate: pair.lastActiveDate,
       createdAt: pair.createdAt,
       acceptedAt: pair.acceptedAt,
+      canAcceptInvitation: pair.status === "pending" && Boolean(pair.inviterUserId) && pair.inviterUserId !== userId && Date.now() <= Date.parse(pair.createdAt) + 14 * DAY_MS,
     };
 
     // 获取动态流
@@ -413,6 +420,8 @@ export class BodyLogBuddyService {
     const today = occurredAt.toISOString().split("T")[0];
 
     for (const pair of activePairs) {
+      const partnerId = pair.userId === userId ? pair.partnerUserId : pair.userId;
+      if (await this.isBlocked(userId, partnerId)) continue;
       // A retried local log keeps its ID and timestamp; old logs cannot enter a new pair.
       if (event && occurredAt < new Date(pair.acceptedAt ?? pair.createdAt)) continue;
       const activityId = event
@@ -438,7 +447,6 @@ export class BodyLogBuddyService {
       await this.store.insertBodyLogBuddyActivity(activity);
 
       // 发送打卡通知给搭子
-      const partnerId = pair.userId === userId ? pair.partnerUserId : pair.userId;
       await this.sendBuddyNotification(partnerId, "buddy_checked_in", pair.id, userId, habitId);
 
       // 更新最后活跃日期
@@ -456,73 +464,10 @@ export class BodyLogBuddyService {
    * 发送鼓励
    */
   async encourage(userId: string, req: EncourageBuddyRequest): Promise<BuddyEncouragement> {
-    const { pairId, emoji, isSameAction, targetHabitId } = req;
-    if (!["💪", "👏", "🔥", "😊"].includes(emoji)) {
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "Unsupported encouragement emoji.");
-    }
-
-    const pair = await this.store.findBodyLogBuddyPair(pairId);
-    if (!pair) {
-      throw new ApplicationError(404, "BUDDY_PAIR_NOT_FOUND", "Buddy pair not found.");
-    }
-
-    if (pair.userId !== userId && pair.partnerUserId !== userId) {
-      throw new ApplicationError(403, "BUDDY_NOT_AUTHORIZED", "Not authorized.");
-    }
-
-    if (pair.status !== "active") {
-      throw new ApplicationError(409, "BUDDY_NOT_ACTIVE", "Buddy pair is not active.");
-    }
-
-    const toUserId = pair.userId === userId ? pair.partnerUserId : pair.userId;
-    const now = new Date();
-
-    // 创建鼓励记录
-    const encouragement: BuddyEncouragementRecord = {
-      id: randomId("buddy_encouragement"),
-      pairId,
-      fromUserId: userId,
-      toUserId,
-      emoji,
-      isSameAction,
-      createdAt: now.toISOString(),
-    };
-
-    await this.store.insertBodyLogBuddyEncouragement(encouragement);
-
-    // 发送鼓励通知
-    await this.sendBuddyNotification(toUserId, "buddy_encouraged", pairId, userId, targetHabitId);
-
-    // 如果是"同款"鼓励，自动完成打卡
-    if (isSameAction && targetHabitId) {
-      await this.recordCheckin(userId, targetHabitId, 1);
-    }
-
-    // 创建活动记录
-    const activity: BuddyActivityRecord = {
-      id: randomId("buddy_activity"),
-      pairId,
-      actorUserId: userId,
-      type: "encouraged",
-      targetHabitId: targetHabitId ?? null,
-      payload: { emoji, isSameAction },
-      createdAt: now.toISOString(),
-    };
-
-    await this.store.insertBodyLogBuddyActivity(activity);
-
-    const fromProfile = await this.social.findBodyLogProfile(BODYLOG_APP_ID, userId);
-
-    return {
-      id: encouragement.id,
-      pairId,
-      fromUserId: userId,
-      fromNickname: fromProfile?.nickname ?? "Unknown",
-      toUserId,
-      emoji,
-      isSameAction,
-      createdAt: now.toISOString(),
-    };
+    return encourageBodyLogBuddy({ store: this.store, social: this.social,
+      notify: (recipient, pairId, actor, habitId) => this.sendBuddyNotification(recipient, "buddy_encouraged", pairId, actor, habitId),
+      recordCheckin: (actor, habitId, count) => this.recordCheckin(actor, habitId, count),
+    }, userId, req);
   }
 
   async dailySettlement(): Promise<void> {
@@ -536,6 +481,12 @@ export class BodyLogBuddyService {
   /**
    * 辅助方法：查找已存在的配对
    */
+  private async isBlocked(userId: string, partnerId: string): Promise<boolean> {
+    return (await this.social.listBodyLogBlocks(BODYLOG_APP_ID)).some(item =>
+      (item.blockerUserId === userId && item.blockedUserId === partnerId) ||
+      (item.blockerUserId === partnerId && item.blockedUserId === userId));
+  }
+
   private async findExistingPair(userId: string, partnerUserId: string): Promise<BuddyPairRecord | null> {
     const [firstUserId, secondUserId] = userId < partnerUserId
       ? [userId, partnerUserId]

@@ -1,3 +1,4 @@
+import { revokeBlockedBuddyPair } from "./buddy-relationship-cleanup.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { badRequest, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -38,7 +39,10 @@ export async function recordBuddyBlock(
   if (blockerUserId === blockedUserId) {
     badRequest("REQ_INVALID_BODY", "Cannot block yourself.");
   }
-  // Idempotency: if an active block already exists from this blocker to this target, return it.
+  const keys = (["sleep", "focus"] as const).flatMap((domain) =>
+    [blockerUserId, blockedUserId].map((userId) => ({ appId: FROGSLEEP_APP_ID, userId, domain })));
+  return await database.withFrogSleepBuddyCommandTransaction(keys, async () => {
+  await revokeBlockedBuddyPair(database, blockerUserId, blockedUserId);
   const existing = await database.listFrogSleepEntities({
     appId: FROGSLEEP_APP_ID,
     kind: "focus_match_feedback",
@@ -49,7 +53,7 @@ export async function recordBuddyBlock(
   });
   if (existing.length > 0) {
     const row = existing[0] as FrogSleepEntityRecord;
-    return { id: row.id, blocked_user_id: blockedUserId, status: "blocked", created_at: row.createdAt };
+    return { id: row.id, blocked_user_id: blockedUserId, status: "blocked" as const, created_at: row.createdAt };
   }
   const createdAt = new Date().toISOString();
   const record: FrogSleepEntityRecord = {
@@ -64,7 +68,8 @@ export async function recordBuddyBlock(
     updatedAt: createdAt,
   };
   await database.insertFrogSleepEntity(record);
-  return { id: record.id, blocked_user_id: blockedUserId, status: "blocked", created_at: record.createdAt };
+  return { id: record.id, blocked_user_id: blockedUserId, status: "blocked" as const, created_at: record.createdAt };
+  });
 }
 
 /** Removes an active block from blocker to blocked. Returns whether a block was removed. */

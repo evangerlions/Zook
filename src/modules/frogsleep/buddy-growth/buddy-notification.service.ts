@@ -1,3 +1,5 @@
+import { sanitizeBuddySafeRoute } from "./buddy-privacy.ts";
+import { authorizeBuddyNotificationTarget } from "./buddy-notification-target.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
@@ -36,17 +38,12 @@ export class BuddyNotificationService {
     const notification = await this.database.findFrogSleepBuddyNotification(
       FROGSLEEP_APP_ID, userId, notificationId,
     );
-    if (!notification || !(await this.targetExists(notification.targetId))) throw unavailable();
-    return { notification_id: notification.id, route: notification.safeRoute };
+    if (!notification) throw unavailable();
+    await authorizeBuddyNotificationTarget(this.database, userId, notification);
+    return { notification_id: notification.id, route: sanitizeBuddySafeRoute(notification.safeRoute) };
   }
 
-  private async targetExists(targetId: string): Promise<boolean> {
-    if (await this.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, targetId)) return true;
-    for (const kind of ["sleep_invite", "focus_invite", "buddy_share", "buddy_interaction", "buddy_joint_activity"] as const) {
-      if (await this.database.findFrogSleepEntity(kind, FROGSLEEP_APP_ID, targetId)) return true;
-    }
-    return false;
-  }
+
 }
 
 function unavailable() {

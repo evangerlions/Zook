@@ -1,3 +1,4 @@
+import { replayFrogSleepNotificationFailure } from "./frogsleep-notification-replay.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
@@ -21,6 +22,10 @@ export class FailedEventRetryService {
 
     for (const failedEvent of dueEvents) {
       try {
+        if (failedEvent.appId === "frogsleep" && failedEvent.eventType === "notification.send") {
+          if (await replayFrogSleepNotificationFailure(this.database, this.queue, failedEvent, now)) replayed += 1;
+          continue;
+        }
         await this.queue.add(failedEvent.eventType, failedEvent.payload, {
           attempts: 5,
           backoffMs: 1000,

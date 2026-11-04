@@ -4,13 +4,13 @@ import type { AdminLlmMetricsDocument } from "../../lib/types";
 import { LlmChart } from "./llm-chart";
 import {
   buildCallsOption,
-  buildTokenOption,
+  buildPointOption,
   formatLatency,
   formatMetricNumber,
-  formatTokenNumber,
+  formatPointNumber,
   formatPercent,
   successRateTone,
-  tokenCoverage,
+  pointCoverage,
 } from "./llm-monitor-view-model";
 
 export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument }) {
@@ -46,9 +46,9 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
             value={formatMetricNumber(summary.requestCount)}
           />
           <MetricCard
-            hint={tokenCoverage(summary)}
-            label="总 Token 消耗"
-            value={formatTokenNumber(summary.totalTokens)}
+            hint={pointCoverage(summary)}
+            label="消耗点数"
+            value={formatPointNumber(summary.totalPoints)}
           />
           <MetricCard
             hint={`仅 Streaming Chat · ${summary.firstResponseSampleCount} 个样本`}
@@ -84,14 +84,15 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
         <section className="surface-card llm-chart-card">
           <header className="card-header compact-card-header">
             <div>
-              <h2>Token 增长趋势</h2>
-              <p>默认查看 canonical 总 Token；悬浮查看 Prompt、可见输出、Reasoning 与未分类构成。</p>
+              <h2>点数消耗趋势</h2>
+              <p>按调用发生时保存的模型积分单价计算；历史或未配置单价的请求不回算。</p>
             </div>
           </header>
           <LlmChart
-            option={(width) => buildTokenOption(metrics.items, width)}
-            summary={`${metrics.range} canonical 总 Token 趋势；悬浮查看结构明细`}
+            option={(width) => buildPointOption(metrics.items, width)}
+            summary={`${metrics.range} 点数消耗趋势`}
           />
+          <p className="llm-point-coverage">{pointCoverage(summary)}</p>
         </section>
       </div> : (
         <section className="surface-card"><Empty description="当前筛选范围没有调用数据；路由快照仍可在下方查看。" /></section>

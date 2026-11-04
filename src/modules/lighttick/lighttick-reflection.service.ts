@@ -28,6 +28,7 @@ export class LightTickReflectionService {
       throw new ApplicationError(400, 'REQ_FIELD_INVALID', 'Reflection content or version is invalid.');
     assertReviewDates(input.period_start, input.period_end);
     return this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
       await this.requireGoal(owner, input.goal_id);
       if (input.plan_id) {
         const plan = await this.repository.getPlan(owner, input.plan_id);

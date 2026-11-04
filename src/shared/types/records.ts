@@ -33,6 +33,7 @@ export interface AppNameI18n {
 }
 
 export interface UserRecord {
+  credentialVersion?: number;
   id: string;
   email?: string;
   phone?: string;
@@ -49,6 +50,7 @@ export interface AppUserRecord {
   status: AppUserStatus;
   accountRegion: AccountRegion;
   joinedAt: string;
+  updatedAt?: string;
 }
 
 export interface RoleRecord {
@@ -80,6 +82,7 @@ export interface UserRoleRecord {
 }
 
 export interface RefreshTokenRecord {
+  credentialVersion?: number;
   id: string;
   appId: string;
   userId: string;
@@ -179,23 +182,7 @@ export interface FrogSleepEntityRecord {
   deletedAt?: string;
 }
 
-export interface FrogSleepEntityFilter {
-  appId: string;
-  kind?: FrogSleepEntityKind;
-  ownerUserId?: string;
-  partnerUserId?: string;
-  relationshipId?: string;
-  sessionId?: string;
-  status?: string;
-  code?: string;
-  token?: string;
-  startsAtFromIso?: string;
-  startsAtToIso?: string;
-  occurredAtFromIso?: string;
-  occurredAtToIso?: string;
-  includeDeleted?: boolean;
-  limit?: number;
-}
+export type { FrogSleepEntityFilter } from "./frogsleep-entity-filter.ts";
 
 export interface FrogSleepBuddySharingGrantRecord {
   id: string;
@@ -220,6 +207,8 @@ export interface FrogSleepBuddyInvitationBundleRecord {
   inviteeUserId?: string;
   recipientEmail?: string;
   recipientEmailHash?: string;
+  inviterReadAt?: string;
+  inviteeReadAt?: string;
   shareCode: string;
   handoffToken: string;
   shareLink: string;
@@ -284,19 +273,7 @@ export interface FrogSleepBuddyInvitationEmailAttemptRecord {
   completedAt?: string;
 }
 
-export interface FrogSleepBuddyInvitationDomainDecisionRecord {
-  appId: string;
-  invitationId: string;
-  domain: "sleep" | "focus";
-  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
-  version: number;
-  decidedByUserId?: string;
-  decidedAt?: string;
-  idempotencyKeyHash?: string;
-  terminalReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { FrogSleepBuddyInvitationDomainDecisionRecord } from "./buddy-invitation-domain-decision.ts";
 
 export interface FrogSleepBuddyDomainSlotRecord {
   appId: string;
@@ -375,7 +352,7 @@ export interface FrogSleepBuddyNotificationDeliveryRecord {
   appId: string;
   notificationId: string;
   channel: "in_app" | "apns";
-  status: "pending" | "delivered" | "failed" | "suppressed";
+  status: "pending" | "provider_accepted" | "delivered" | "failed" | "suppressed";
   attempt: number;
   providerMessageId?: string;
   errorCode?: string;

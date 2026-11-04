@@ -22,6 +22,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicConfigResponse"
+        '400':
+          description: Invalid request fields, headers or app scope.
   /api/v1/ai_novel/public/update:
     get:
       operationId: getAiNovelPublicUpdate
@@ -321,6 +323,19 @@ components:
       type: object
       additionalProperties: true
       properties:
+        appReview:
+          type: object
+          description: Optional review invitation configuration; missing or disabled values turn the feature off.
+          properties:
+            enabled: { type: boolean }
+            markets:
+              type: object
+              description: Market IDs are app_store, google_play, xiaomi, vivo, oppo, huawei, and honor; domestic URLs must be verified before enabling.
+              additionalProperties:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  url: { type: string, description: Verified https or market URL for domestic app listing. }
         app:
           type: string
           example: make_ai_novel_great_again
@@ -328,11 +343,49 @@ components:
           $ref: "#/components/schemas/KickoffPublicConfig"
         releaseUpdate:
           $ref: "#/components/schemas/PublicReleaseUpdateConfig"
+        billing:
+          $ref: "#/components/schemas/BillingPublicConfig"
+    BillingPublicConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        revenueCat:
+          $ref: "#/components/schemas/RevenueCatPublicConfig"
+        alipay:
+          $ref: "#/components/schemas/AlipayPublicPricingConfig"
+    AlipayPublicPricingConfig:
+      type: object
+      additionalProperties: false
+      required: [prices]
+      properties:
+        prices:
+          type: object
+          description: Server-owned CNY prices in integer minor units, bounded to the settlement amount format. Changes apply to new orders; remove billing.alipay to stop new sales.
+          additionalProperties: false
+          required: [plus_monthly, plus_quarterly, plus_yearly, pro_monthly, pro_quarterly, pro_yearly]
+          properties:
+            plus_monthly: { type: integer, minimum: 1, maximum: 999999999999 }
+            plus_quarterly: { type: integer, minimum: 1, maximum: 999999999999 }
+            plus_yearly: { type: integer, minimum: 1, maximum: 999999999999 }
+            pro_monthly: { type: integer, minimum: 1, maximum: 999999999999 }
+            pro_quarterly: { type: integer, minimum: 1, maximum: 999999999999 }
+            pro_yearly: { type: integer, minimum: 1, maximum: 999999999999 }
+    RevenueCatPublicConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        proxyUrl:
+          type: [string, "null"]
+          format: uri
+          description: Optional RevenueCat SDK proxy URL. Must be applied before SDK setup.
     PublicConfigData:
       type: object
       required: [appId, config]
       properties:
         appId: { type: string, example: ai_novel }
+        countryCode:
+          type: string
+          description: Estimated country of the current request, when available (ISO 3166-1 alpha-2).
         config:
           $ref: "#/components/schemas/AINovelPublicConfig"
         updatedAt: { type: string, format: date-time }
@@ -344,11 +397,4 @@ components:
         message: { type: string, example: success }
         requestId: { type: string }
         data:
-          type: object
-          required: [appId, config]
-          properties:
-            appId: { type: string, example: ai_novel }
-            config:
-              type: object
-              additionalProperties: true
-            updatedAt: { type: string, format: date-time }
+          $ref: "#/components/schemas/PublicConfigData"

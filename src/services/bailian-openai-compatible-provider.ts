@@ -1,4 +1,6 @@
+import { parseBailianCompletionToolCalls } from "./bailian-openai-compatible-tool-calls.ts";
 import { ApplicationError } from "../shared/errors.ts";
+import { executeCancellableEmbedding } from "./embedding-cancellation.ts";
 import type {
   EmbeddingProvider,
   EmbeddingResult,
@@ -21,12 +23,10 @@ import {
   DEFAULT_BAILIAN_BASE_URL,
   ZOOK_LOG_BODY_MODE_OPTION,
   type BailianOpenAICompatibleProviderOptions,
-  type OpenAICompatibleChoice,
   type OpenAICompatibleEmbeddingPayload,
   type OpenAICompatibleResponsePayload,
 } from "./bailian-openai-compatible-types.ts";
 import {
-  buildFallbackToolCallId,
   isAbortError,
   isRecord,
   normalizeBaseUrl,
@@ -56,9 +56,11 @@ export class BailianOpenAICompatibleProvider
   private readonly fetchImplementation: typeof fetch;
   private readonly localLogger: BailianOpenAICompatibleLocalLogger;
   private readonly diagnostics?: BailianOpenAICompatibleProviderOptions["diagnostics"];
+  private readonly usageLogger: BailianOpenAICompatibleProviderOptions["logger"];
 
   constructor(options: BailianOpenAICompatibleProviderOptions = {}) {
     this.providerName = options.providerName ?? "bailian";
+    this.usageLogger = options.logger;
     this.baseUrl = normalizeBaseUrl(
       options.baseUrl ??
         process.env.BAILIAN_BASE_URL ??
@@ -130,9 +132,10 @@ export class BailianOpenAICompatibleProvider
     }
 
     const text = readOptionalString(choice.message.content);
-    const toolCalls = this.parseCompletionToolCalls(
+    const toolCalls = parseBailianCompletionToolCalls(
       choice.message.tool_calls,
       request.model.modelKey,
+      this.providerName,
     );
     if (text === undefined && toolCalls.length === 0) {
       throwProviderResponseInvalid(
@@ -153,7 +156,7 @@ export class BailianOpenAICompatibleProvider
         readOptionalString(choice.message.reasoning_content) ??
         readReasoningDetailsText(choice.message.reasoning_details),
       finishReason: readOptionalString(choice.finish_reason),
-      usage: parseOpenAICompatibleChatUsage(payload.usage, this.providerName),
+      usage: parseOpenAICompatibleChatUsage(payload.usage, this.providerName, this.usageLogger),
       providerRequestId:
         readOptionalString(payload.id) ??
         readOptionalNonBlankString(response.headers.get("x-generation-id")),
@@ -161,18 +164,24 @@ export class BailianOpenAICompatibleProvider
   }
 
   async embed(request: ResolvedEmbeddingRequest): Promise<EmbeddingResult> {
+    return executeCancellableEmbedding(request.signal,
+      request.model.providerConfig?.timeoutMs ?? 0,
+      (signal) => this.executeEmbedding(request, signal));
+  }
+
+  private async executeEmbedding(request: ResolvedEmbeddingRequest, signal: AbortSignal): Promise<EmbeddingResult> {
     const response = await this.execute(
       this.buildEmbeddingsUrl(
         request.model.providerConfig?.baseUrl ?? this.baseUrl,
       ),
-      this.buildCompletionRequestInit(
+      this.buildRequestInit(
         request.model.providerConfig?.apiKey ?? this.apiKey,
-        request.model.providerConfig?.timeoutMs ?? 0,
         {
           ...this.getForwardedProviderOptions(request.providerOptions),
           model: request.model.providerModel,
           input: request.input,
         },
+        signal,
       ),
     );
     const payload = await this.readEmbeddingPayload(response, !response.ok);
@@ -217,7 +226,7 @@ export class BailianOpenAICompatibleProvider
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       vectors,
-      usage: parseOpenAICompatibleEmbeddingUsage(payload.usage, this.providerName),
+      usage: parseOpenAICompatibleEmbeddingUsage(payload.usage, this.providerName, this.usageLogger),
       providerRequestId: readOptionalString(payload.id),
     };
   }
@@ -301,7 +310,7 @@ export class BailianOpenAICompatibleProvider
           modelKey: request.model.modelKey,
           providerName: this.providerName,
           parseChatUsage: (usage) =>
-            parseOpenAICompatibleChatUsage(usage, this.providerName),
+            parseOpenAICompatibleChatUsage(usage, this.providerName, this.usageLogger),
           logRawChunk: (chunk) => streamLog.rawStreamChunk({ chunk }),
           onBodyBytes: requestDiagnostics.onBodyBytes,
           onSseEvent: requestDiagnostics.onSseEvent,
@@ -542,56 +551,4 @@ export class BailianOpenAICompatibleProvider
     return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted";
   }
 
-  private parseCompletionToolCalls(
-    toolCalls: NonNullable<OpenAICompatibleChoice["message"]>["tool_calls"],
-    modelKey: string,
-  ): NonNullable<LLMCompletionResult["toolCalls"]> {
-    if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
-      return [];
-    }
-
-    return toolCalls.map((toolCall, index) => {
-      const name = readOptionalNonBlankString(toolCall.function?.name);
-      if (!name) {
-        throwProviderResponseInvalid(
-          "Completion response tool call is missing a function name.",
-          undefined,
-          this.providerName,
-        );
-      }
-
-      let input: Record<string, unknown>;
-      try {
-        const parsed = JSON.parse(toolCall.function?.arguments || "{}");
-        if (!isRecord(parsed)) {
-          throwProviderResponseInvalid(
-            "Completion response tool call arguments must be a JSON object.",
-            undefined,
-            this.providerName,
-          );
-        }
-        input = parsed;
-      } catch (error) {
-        if (error instanceof ApplicationError) {
-          throw error;
-        }
-        throwProviderResponseInvalid(
-          "Completion response tool call arguments are not valid JSON.",
-          {
-            cause: error instanceof Error ? error.message : String(error),
-            toolName: name,
-          },
-          this.providerName,
-        );
-      }
-
-      return {
-        id:
-          readOptionalNonBlankString(toolCall.id) ??
-          buildFallbackToolCallId(modelKey, index),
-        name,
-        input,
-      };
-    });
-  }
 }

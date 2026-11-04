@@ -56,6 +56,9 @@ import type {
   UpdateGrowthMissionInput,
   UpdateGrowthPlanInput,
   UpdateGrowthRewardInput,
+  BodyLogGrowthDailyAggregate,
+  UpsertGrowthDailyAggregateInput,
+  ApplyGrowthDailyAggregateResult,
 } from "./bodylog-growth.types.ts";
 import type {
   NotificationPreferencesRecord,
@@ -114,6 +117,28 @@ export class InMemoryBodyLogGroupStore implements BodyLogGroupStore {
   private readonly dailyRecords: GroupDailyRecordRecord[] = [];
   private readonly activities: GroupActivityRecord[] = [];
 
+  listGroupInvitations(appId: string, userId: string): GroupMemberRecord[] {
+    return cloneList(this.members.filter(m => m.userId === userId && m.invitationToken &&
+      (m.status === "pending" || m.status === "active") && this.groups.some(g => g.id === m.groupId && g.appId === appId))
+      .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt)).slice(0, 1001));
+  }
+
+  // Synchronous memory-store mutation mirrors the PostgreSQL admission transaction.
+  activateGroupMember(record: GroupMemberRecord, token: string, groupLimit: number): "joined" | "alreadyMember" | "full" | "limit" | "invalid" {
+    const group = this.groups.find(g => g.id === record.groupId);
+    const current = this.members.find(m => m.groupId === record.groupId && m.userId === record.userId);
+    if (!group || group.status !== "active") return "invalid";
+    if (current?.status === "active") return "alreadyMember";
+    const shared = group.invitationToken === token;
+    if ((current && current.status !== "pending") || (!shared && current?.invitationToken !== token)) return "invalid";
+    const invitedAt = shared ? group.createdAt : current?.joinedAt;
+    if (!invitedAt || Date.now() - Date.parse(invitedAt) > 7 * 86400000) return "invalid";
+    if (this.members.filter(m => m.groupId === record.groupId && m.status === "active").length >= group.maxMembers) return "full";
+    if (this.listCheckInGroupsByUser(group.appId, record.userId).length >= groupLimit) return "limit";
+    if (current) this.updateGroupMember(record); else this.insertGroupMember(record);
+    return "joined";
+  }
+
   insertCheckInGroup(record: CheckInGroupRecord): void { this.groups.push(clone(record)); }
   findCheckInGroup(groupId: string): CheckInGroupRecord | undefined { return this.cloneGroup(this.groups.find((r) => r.id === groupId)); }
   updateCheckInGroup(record: CheckInGroupRecord): void {
@@ -135,6 +160,7 @@ export class InMemoryBodyLogGroupStore implements BodyLogGroupStore {
   }
   updateGroupMember(record: GroupMemberRecord): void {
     const index = this.members.findIndex((r) => r.id === record.id);
+    if (record.status === "pending" && this.members[index]?.status === "active") return;
     if (index >= 0) { this.members[index] = clone(record); }
   }
   listGroupMembers(groupId: string): GroupMemberRecord[] {
@@ -202,6 +228,25 @@ export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {
   private readonly plans: BodyLogGrowthPlan[] = [];
   private readonly missions: BodyLogGrowthMission[] = [];
   private readonly rewards: BodyLogGrowthReward[] = [];
+  private readonly dailyAggregates: BodyLogGrowthDailyAggregate[] = [];
+
+  applyGrowthDailyAggregate(planId: string, day: number, input: UpsertGrowthDailyAggregateInput, completed: boolean, completedAt: string): ApplyGrowthDailyAggregateResult {
+    const plan = this.plans.find((item) => item.id === planId);
+    const mission = this.missions.find((item) => item.planId === planId && item.day === day && item.type === "localGoal");
+    if (!plan || !["active", "completed"].includes(plan.status) || !mission) return { aggregate: null, locked: false };
+    if (mission.completed !== completed && this.rewards.some((reward) => reward.planId === planId && reward.claimed)) return { aggregate: null, locked: true };
+    const index = this.dailyAggregates.findIndex((item) => item.userId === input.userId && item.localDate === input.localDate);
+    const record = { ...input, updatedAt: new Date().toISOString() };
+    if (index < 0) this.dailyAggregates.push(clone(record));
+    else this.dailyAggregates[index] = clone(record);
+    mission.completed = completed;
+    mission.completedAt = completed ? completedAt : null;
+    const completedMissions = this.missions.filter((item) => item.planId === planId && item.completed).length;
+    plan.completedMissions = completedMissions;
+    plan.status = completedMissions === plan.totalMissions ? "completed" : "active";
+    plan.updatedAt = new Date().toISOString();
+    return { aggregate: clone(record), locked: false };
+  }
 
   createGrowthPlan(input: CreateGrowthPlanInput): BodyLogGrowthPlan {
     const now = new Date().toISOString();
@@ -272,7 +317,8 @@ export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {
   }
   claimGrowthReward(rewardId: string, claimedAt: string): BodyLogGrowthReward | null {
     const existing = this.rewards.find((r) => r.id === rewardId);
-    if (!existing || existing.claimed) return null;
+    if (!existing) return null;
+    if (existing.claimed) return clone(existing);
     const updated = { ...existing, claimed: true, claimedAt };
     this.rewards[this.rewards.indexOf(existing)] = clone(updated);
     return updated;
@@ -337,7 +383,7 @@ export class InMemoryBodyLogNotificationStore implements BodyLogNotificationStor
 }
 
 export class InMemoryBodyLogFeatureFlagStore implements BodyLogFeatureFlagStore {
-  private readonly flags: FeatureFlagRecord[] = ['growth', 'friends', 'competition', 'challengeCreation'].map(key => ({
+  private readonly flags: FeatureFlagRecord[] = ['accountSocial', 'growth', 'friends', 'competition', 'challengeCreation'].map(key => ({
     id: `bodylog_flag_${key}`, key, enabled: false, description: null,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   }));

@@ -13,6 +13,11 @@ import type { DatabaseSeed } from "./shared/types.ts";
 import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
+  alipay?: import("./modules/billing/alipay-models.ts").AlipayEnvironmentOptions;
+  /** Independent Yaohezi account routes; health/cloud capabilities remain gated. */
+  yaoheziEnabled?: boolean;
+  /** M2 trust API rollout, independent from account-only access. Defaults off. */
+  yaoheziHealthEnabled?: boolean;
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;
@@ -45,6 +50,8 @@ export interface CreateApplicationOptions {
   publicSmsTestBypassEnabled?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
+  /** Deployment identity injection for deterministic application tests. */
+  appEnvironment?: string;
   databaseUrl?: string;
   migrationDatabaseUrl?: string;
   /**
@@ -78,4 +85,15 @@ export interface CreateApplicationOptions {
   lighttickSeedEnabled?: boolean;
   /** Optional product-owned persistence adapter, primarily for deterministic tests. */
   lighttickRepository?: LightTickRepository;
+  /** RevenueCat server credentials; never returned to clients or included in logs. */
+  revenueCat?: {
+    secretApiKey?: string;
+    projectId?: string;
+    webhookAuthorization?: string;
+    appId?: string;
+    googleAppId?: string;
+    fetcher?: typeof fetch;
+    timeoutMs?: number;
+    now?: () => Date;
+  };
 }

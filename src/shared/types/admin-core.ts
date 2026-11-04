@@ -1,5 +1,6 @@
 import type { AppStatus } from "./enums.ts";
 import type { AppNameI18n, ConfigRevisionMeta } from "./records.ts";
+export type { ConfigRevisionMeta } from "./records.ts";
 
 export interface AdminAppLogSecretSummary {
   keyId: string;

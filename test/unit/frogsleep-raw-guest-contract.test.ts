@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+import { createApplication } from '../../src/app.module.ts';
+import { InMemoryDatabase } from '../../src/testing/in-memory-database.ts';
+import { FrogSleepRawSleepResponseSchema,FrogSleepPersonalPageResponseSchema,FrogSleepGuestSessionResponseSchema,FrogSleepGuestUpgradeResponseSchema } from '../../src/generated/openapi/public-contracts.generated.ts';
+test('raw and guest responses conform to generated public contracts through create, restore, delete and upgrade',async()=>{
+  const runtime=await createApplication({frogsleepEnabled:true,queueBackend:'memory',databaseFactory:s=>new InMemoryDatabase(s)});
+  const ajv=new Ajv({strict:false});addFormats(ajv);
+  const validates=[FrogSleepRawSleepResponseSchema,FrogSleepPersonalPageResponseSchema,FrogSleepGuestSessionResponseSchema,FrogSleepGuestUpgradeResponseSchema].map(s=>ajv.compile(s));
+  const check=(index:number,response:any)=>{assert.equal(response.statusCode,200);assert.ok(validates[index](response.body),JSON.stringify(validates[index].errors));};
+  const call=(method:string,path:string,body?:unknown,token?:string,headers:Record<string,string>={})=>runtime.app.handle({method,path:'/api/v1/frogsleep'+path,body,headers:{...(token?{authorization:`Bearer ${token}`} : {}),...headers}} as never);
+  const created=await call('POST','/account/guest-sessions',{device_id:'contract-device',device_secret:'V8mj1og82uEzWvW4tyyl1_rhxumT9J5GhB1o_Yo0c5I',platform:'android'},undefined,{'idempotency-key':'contract-create'});check(2,created);
+  const g=created.body.data,token=g.access_token,guestState=await call('GET','/product-data/personal-sync/state',undefined,token);
+  const headers={'x-sync-epoch':guestState.body.data.sync_epoch,'idempotency-key':'contract-raw'};
+  const raw={session_id:'raw-contract',schema_version:'1',status:'interrupted',started_at:'2026-10-18T00:00:00.123456Z',ended_at:'2026-10-18T01:00:00Z',sleep_intent:'catch_up_sleep',timezone:'UTC',data:{notes:'private'}};
+  check(0,await call('POST','/product-data/sleep-sessions',raw,token,headers));
+  check(1,await call('GET','/product-data/sleep-sessions',undefined,token));
+  check(0,await call('DELETE','/product-data/sleep-sessions/raw-contract',undefined,token,{...headers,'idempotency-key':'contract-delete','if-match':'1'}));
+  const login=await runtime.services.authService.login({appId:'frogsleep',account:'alice@example.com',password:'Password1234'});
+  const targetState=await call('GET','/product-data/personal-sync/state',undefined,login.accessToken);
+  check(3,await call('POST','/account/upgrade',{guest_user_id:g.guest_user_id,guest_upgrade_token:g.guest_upgrade_token,device_id:'contract-device',confirmed:true},login.accessToken,{'x-sync-epoch':targetState.body.data.sync_epoch,'idempotency-key':'contract-upgrade'}));
+});

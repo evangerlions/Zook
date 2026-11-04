@@ -3,6 +3,7 @@ import type { FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyInvitationDoma
 import { ApplicationError, conflict } from "../../../shared/errors.ts";
 import { sha256 } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
+import { assertLegacyInvitationPending, bindInvitationRecipient, consumeLegacyInvitation, invitationCommandIdentity } from "./buddy-invitation-command-identity.ts";
 import { enqueueBuddyInvitationEvent } from "./buddy-invitation-events.ts";
 
 type Domain = FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
@@ -22,6 +23,7 @@ export class BuddyDomainInvitationSafetyCommandService {
       return this.payload(decision);
     }
     this.assertActionable(bundle, decision, input.expectedVersion);
+    await assertLegacyInvitationPending(this.database, bundle, domain);
     return await this.database.withFrogSleepBuddyInvitationDecisionSafetyTransaction({
       appId: FROGSLEEP_APP_ID, invitationId, domain,
     }, async () =>
@@ -38,6 +40,7 @@ export class BuddyDomainInvitationSafetyCommandService {
       return this.payload(decision);
     }
     this.assertActionable(bundle, decision, input.expectedVersion);
+    await assertLegacyInvitationPending(this.database, bundle, domain);
     const now = new Date().toISOString();
     const updated = await this.database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({
       appId: FROGSLEEP_APP_ID, invitationId, domain, expectedVersion: decision.version,
@@ -46,6 +49,8 @@ export class BuddyDomainInvitationSafetyCommandService {
       terminalReason: action === "decline" ? "declined_by_invitee" : "cancelled_by_inviter", updatedAt: now,
     });
     if (!updated) conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
+    if (action === "decline") await bindInvitationRecipient(this.database, bundle);
+    await consumeLegacyInvitation(this.database, bundle, domain, action === "decline" ? "declined" : "cancelled");
     await enqueueBuddyInvitationEvent(this.database, { invitationId, domain,
       recipientUserId: action === "decline" ? bundle.inviterUserId : bundle.inviteeUserId,
       eventType: action === "decline" ? "invitation_declined" : "invitation_cancelled" });
@@ -53,10 +58,7 @@ export class BuddyDomainInvitationSafetyCommandService {
   }
 
   private async requireBundleIdentity(invitationId: string, actorUserId: string, domain: Domain, action: SafetyAction) {
-    const bundle = await this.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, invitationId);
-    const expectedActor = action === "decline" ? bundle?.inviteeUserId : bundle?.inviterUserId;
-    if (!bundle || expectedActor !== actorUserId || !bundle.inviteeUserId || !bundle.domains.includes(domain)) throw unavailable();
-    return bundle;
+    return await invitationCommandIdentity(this.database, invitationId, actorUserId, domain, action);
   }
 
   private async requireDecision(invitationId: string, domain: Domain) {

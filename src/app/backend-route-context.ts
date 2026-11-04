@@ -1,3 +1,5 @@
+import { assertSleepGuestRequest } from "../modules/frogsleep/guest/guest-access.ts";
+import { retryFrogSleepAdminNotification, type FrogSleepAdminRetryCommand } from "../modules/frogsleep/admin/frogsleep-admin-retry.ts";
 import { timingSafeEqual } from "node:crypto";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
@@ -20,6 +22,9 @@ import { AiOutputReportingService } from "../services/ai-output-reporting.servic
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
+import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
+import { BillingAdminService } from "../services/billing-admin.service.ts";
+import { AiNovelUsageAdminService } from "../services/ai-novel-usage-admin.service.ts";
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import type { AccountRegion, AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -64,8 +69,12 @@ function parseBasicAuthorization(
 }
 
 export class BackendRouteContext {
+  resolveNetworkCountry: (request: HttpRequest) => Promise<string | undefined> =
+    async () => undefined;
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
+  public readonly billingAdminService: BillingAdminService;
+  public readonly aiNovelUsageAdminService: AiNovelUsageAdminService;
 
   constructor(
     protected readonly database: ApplicationDatabase,
@@ -88,7 +97,11 @@ export class BackendRouteContext {
     protected readonly kvManager: KVManager,
     protected readonly routeAuditInterceptor: AuditInterceptor,
     protected readonly adminSensitiveOperationService: AdminSensitiveOperationService,
-  ) {}
+    protected readonly aiNovelBillingService: AiNovelBillingService,
+  ) {
+    this.billingAdminService = new BillingAdminService(database);
+    this.aiNovelUsageAdminService = new AiNovelUsageAdminService(database.aiNovelCreditsStore);
+  }
 
   public async authenticate(
     request: HttpRequest,
@@ -102,9 +115,10 @@ export class BackendRouteContext {
     }
 
     await this.authService.assertAccessTokenActive(auth);
+    const user = await this.userService.getById(auth.userId);
+    await assertSleepGuestRequest(this.database, user, auth.appId, request);
 
     if (options.requireActiveMembership !== false) {
-      await this.userService.getById(auth.userId);
       await this.appRegistryService.getAppOrThrow(auth.appId);
       await this.appRegistryService.ensureExistingMembership(
         auth.appId,
@@ -124,7 +138,8 @@ export class BackendRouteContext {
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     this.appAccessGuard.assertScope(appId, auth.appId);
     await this.authService.assertAccessTokenActive(auth);
-    await this.userService.getById(auth.userId);
+    const user = await this.userService.getById(auth.userId);
+    await assertSleepGuestRequest(this.database, user, auth.appId, request);
     await this.appRegistryService.getAppOrThrow(appId);
     await this.appRegistryService.ensureExistingMembership(appId, auth.userId);
     return auth;
@@ -174,14 +189,48 @@ export class BackendRouteContext {
     return request.adminSession;
   }
 
+  public getFrogSleepAdminStore() { return this.database.getFrogSleepAdminStore(); }
+  public getYaoheziHealthStore() { return this.database.getYaoheziHealthStore(); }
+  public getPersonalSyncRepository() { return this.database.getPersonalSyncRepository(); }
+  public retryFrogSleepAdminNotification(command: FrogSleepAdminRetryCommand) {
+    return retryFrogSleepAdminNotification(this.database, this.notificationService, command);
+  }
+
   public async assertAdminSensitiveOperation(session: AdminSessionRecord, operation: string): Promise<void> {
     await this.adminSensitiveOperationService.assertGranted(session, operation);
   }
 
+  public async recordAdminMutationAudit(entry: Parameters<AuditInterceptor["record"]>[0]): Promise<void> {
+    await this.routeAuditInterceptor.record(entry);
+  }
+
   public async recordAdminReadAudit(adminUser: string, action: string, resourceType: string,
-    resourceId: string, requestId?: string): Promise<void> {
+    resourceId: string, requestId?: string, privacy: "aggregates_only" | "metadata_only" = "aggregates_only"): Promise<void> {
     await this.routeAuditInterceptor.record({ appId: resourceId, actorUserId: adminUser, action, resourceType,
-      resourceId, payload: { requestId, privacy: "aggregates_only" } });
+      resourceId, payload: { requestId, privacy } });
+  }
+
+  public async recordAdminBillingReadAudit(input: {
+    adminUser: string;
+    action: string;
+    appId: string;
+    resourceId: string;
+    resourceOwnerUserId?: string;
+    requestId?: string;
+    filterNames?: string[];
+  }): Promise<void> {
+    await this.routeAuditInterceptor.record({
+      appId: input.appId,
+      actorUserId: input.adminUser,
+      action: input.action,
+      resourceType: "billing_order",
+      resourceId: input.resourceId,
+      resourceOwnerUserId: input.resourceOwnerUserId,
+      payload: {
+        requestId: input.requestId,
+        filterNames: input.filterNames,
+      },
+    });
   }
 
   public validateAdminCredentials(username: string, password: string): string {

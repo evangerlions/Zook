@@ -1,0 +1,12 @@
+{
+  "baseline": null,
+  "trial": null,
+  "control": null,
+  "guardrails": {
+    "push_opt_out_rate": null,
+    "revoke_rate": null,
+    "block_rate": null,
+    "report_rate": null,
+    "complaint_rate": null
+  }
+}

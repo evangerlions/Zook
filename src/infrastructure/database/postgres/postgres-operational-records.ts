@@ -269,7 +269,7 @@ export class PostgresOperationalRecordsStore {
 
   async updateNotificationJob(
     jobId: string,
-    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
+    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount" | "payload">>,
   ): Promise<NotificationJobRecord | undefined> {
     const fields: string[] = [];
     const values: unknown[] = [jobId];
@@ -282,6 +282,7 @@ export class PostgresOperationalRecordsStore {
       fields.push(`retry_count = $${index++}`);
       values.push(patch.retryCount);
     }
+    if (patch.payload !== undefined) { fields.push(`payload = $${index++}::jsonb`); values.push(JSON.stringify(patch.payload)); }
     if (fields.length === 0) {
       return await this.findNotificationJob(jobId);
     }

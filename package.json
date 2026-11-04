@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --experimental-transform-types --env-file-if-exists=.env.local src/main.ts",
+    "dev": "node --experimental-transform-types --env-file-if-exists=.env.local scripts/dev.ts",
     "dev:stack": "bash ./scripts/dev-stack.sh",
-    "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts",
-    "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts",
+    "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts && python3 build_scripts/generate_action_clients.py",
+    "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts && python3 build_scripts/generate_action_clients.py --check",
     "lint:api-contracts": "npm --prefix api-contracts run openapi:lint",
     "generate:public-i18n": "python3 build_scripts/generate_public_i18n.py --out src/generated/i18n/public-api-messages.generated.ts",
     "admin": "node --experimental-transform-types apps/admin-web/server.ts",
@@ -15,7 +15,9 @@
     "admin:dev": "npm --prefix apps/admin-web run dev",
     "admin:install": "npm --prefix apps/admin-web install --include=optional",
     "admin:typecheck": "npm --prefix apps/admin-web run typecheck",
+    "check:lighttick-actions-types": "node apps/admin-web/node_modules/typescript/bin/tsc --project tsconfig.lighttick-actions.json",
     "check:line-count": "node scripts/check-source-line-count.mjs",
+    "acceptance:frogsleep-dev": "node scripts/frogsleep-dev-acceptance.mjs",
     "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",
     "smoke:frogsleep-buddy-invitation": "node scripts/frogsleep-buddy-invitation-smoke.mjs",
     "smoke:lighttick-dev": "node scripts/lighttick-dev-acceptance.mjs",
@@ -23,22 +25,40 @@
     "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts",
+    "test:postgres:account-data": "node --experimental-transform-types --test test/integration/frogsleep-account-data-postgres.test.ts",
     "test:postgres:buddy": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-concurrency.test.ts",
     "test:postgres:buddy-migration": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-migration-upgrade.test.ts",
     "test:postgres:lighttick": "node --experimental-transform-types --test test/integration/lighttick-postgres.test.ts",
-    "test:lighttick-ai-evals": "node --experimental-transform-types --test test/unit/lighttick-ai-platform.test.ts test/unit/lighttick-planning-prompts.test.ts"
+    "test:lighttick-ai-evals": "node --experimental-transform-types --test test/unit/lighttick-ai-platform.test.ts test/unit/lighttick-planning-prompts.test.ts",
+    "acceptance:bodylog-dev": "node scripts/bodylog-dev-acceptance.mjs",
+    "check:bodylog-links": "node scripts/check-bodylog-links.mjs",
+    "gate:bodylog-release": "node scripts/bodylog-release-gate.mjs",
+    "dev:bodylog-acceptance": "node --experimental-transform-types scripts/bodylog-local-acceptance.ts",
+    "dev:yaohezi-local": "node --experimental-transform-types scripts/yaohezi-local-server.ts",
+    "verify:yaohezi-local": "node scripts/yaohezi-local-verify.mjs",
+    "test:postgres:yaohezi-local": "node --experimental-transform-types --test test/integration/yaohezi-local-postgres.test.ts",
+    "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json"
   },
   "devDependencies": {
+    "@hpke/core": "1.9.0",
     "@types/node": "^25.3.5",
-    "@types/nodemailer": "^6.4.24"
+    "@types/nodemailer": "^6.4.24",
+    "@types/pg": "8.15.6",
+    "typescript": "5.9.3"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",
     "@node-rs/argon2": "^2.2.1",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
-    "nodemailer": "^6.10.1",
+    "alipay-sdk": "4.14.0",
+    "nodemailer": "10.1.4",
     "pg": "^8.20.0",
     "redis": "^5.11.0"
+  },
+  "overrides": {
+    "alipay-sdk": {
+      "urllib": "4.9.1"
+    }
   }
 }

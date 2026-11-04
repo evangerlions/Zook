@@ -3,8 +3,11 @@ import { stat } from "node:fs/promises";
 import { createReadStream, readFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { localLoginDefaults } from "./local-login-defaults.ts";
+import { proxyGrow } from "./grow-proxy.ts";
 
 interface AdminServerOptions {
+  growProxyTarget?: string;
   proxyTarget?: string;
   brandName?: string;
   defaultAppId?: string;
@@ -31,6 +34,9 @@ const DEFAULT_PORT = 3110;
 const DEFAULT_STATIC_ROOT = fileURLToPath(new URL("./build/client", import.meta.url));
 const INTERNAL_HEALTH_PATH = "/_admin/health";
 const RUNTIME_CONFIG_PATH = "/_admin/runtime-config.js";
+const FROGSLEEP_HANDOFF_PATHS = new Set([
+  "/frogsleep/buddy-invitation", "/frogsleep/sleep-buddy-invite", "/frogsleep/focus-invite",
+]);
 const ROOT_PACKAGE_VERSION = JSON.parse(
   readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8"),
 ).version as string;
@@ -68,6 +74,7 @@ function createRuntimeConfig(options: AdminServerOptions) {
     analyticsUrl: process.env.ADMIN_ANALYTICS_URL ?? "https://analytics.youwoai.net",
     logsUrl: process.env.ADMIN_LOG_URL ?? "https://logs.youwoai.net/",
     traceConsoleEnabled: !onlineOrProduction,
+    localLoginDefaults: localLoginDefaults(),
   };
 }
 
@@ -122,14 +129,21 @@ async function proxyApiRequest(
   request: IncomingMessage,
   response: ServerResponse,
   proxyTarget: string,
+  publicHandoff = false,
 ): Promise<void> {
-  const upstreamUrl = new URL(request.url ?? "/", proxyTarget);
+  // Incoming absolute-form URLs must never replace the configured upstream origin.
+  const incoming = new URL(request.url ?? "/", "http://admin.local");
+  const upstreamUrl = new URL(proxyTarget);
+  upstreamUrl.pathname = incoming.pathname;
+  upstreamUrl.search = incoming.search;
+  upstreamUrl.hash = "";
   const method = request.method ?? "GET";
   const body = await readRequestBody(request);
   const init: RequestInit = {
     method,
     headers: sanitizeProxyHeaders(request),
     redirect: "manual",
+    ...(publicHandoff ? { signal: AbortSignal.timeout(15_000) } : {}),
   };
 
   if (body !== undefined) {
@@ -152,6 +166,10 @@ async function proxyApiRequest(
     const setCookies = upstreamResponse.headers.getSetCookie?.() ?? [];
     if (setCookies.length > 0) {
       response.setHeader("Set-Cookie", setCookies);
+    }
+    if (publicHandoff) {
+      response.setHeader("Cache-Control", "no-store");
+      response.setHeader("Referrer-Policy", "no-referrer");
     }
 
     if (contentType.toLowerCase().includes("text/event-stream") && upstreamResponse.body) {
@@ -193,7 +211,7 @@ async function proxyApiRequest(
     response.end(
       JSON.stringify({
         code: "ADMIN_UPSTREAM_UNAVAILABLE",
-        message: error instanceof Error ? error.message : "Admin upstream is unavailable.",
+        message: !publicHandoff && error instanceof Error ? error.message : "Admin upstream is unavailable.",
         data: null,
         requestId: "admin_proxy_error",
       }),
@@ -351,16 +369,33 @@ async function handleRequest(
   const url = new URL(request.url ?? "/", "http://admin.local");
   const pathname = url.pathname;
 
+  if (pathname === "/grow" || pathname.startsWith("/grow/")) {
+    proxyGrow(request, response, options.growProxyTarget ?? process.env.ADMIN_GROW_PROXY_TARGET);
+    return;
+  }
+
   if (pathname === INTERNAL_HEALTH_PATH) {
     serveInternalHealth(response);
     return;
   }
 
-  if (pathname.startsWith("/api/")) {
+  const publicHandoff = FROGSLEEP_HANDOFF_PATHS.has(pathname);
+  if (publicHandoff) {
+    response.setHeader("Cache-Control", "no-store");
+    response.setHeader("Referrer-Policy", "no-referrer");
+    if (request.method !== "GET") {
+      response.statusCode = 405;
+      response.setHeader("Allow", "GET");
+      response.end("Method not allowed.");
+      return;
+    }
+  }
+  if (pathname.startsWith("/api/") || publicHandoff) {
     await proxyApiRequest(
       request,
       response,
       options.proxyTarget ?? process.env.ADMIN_API_PROXY_TARGET ?? DEFAULT_PROXY_TARGET,
+      publicHandoff,
     );
     return;
   }

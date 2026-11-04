@@ -1,3 +1,6 @@
+import { resolveBuddyGrowthCapabilities } from "./buddy-growth-capabilities.ts";
+import { BuddyNotificationPreferenceService } from "./buddy-notification-preference.service.ts";
+import { assertBuddyPairNotBlocked } from "./buddy-safety.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import type {
@@ -38,11 +41,12 @@ export class BuddyInvitationEmailWorkerService {
     );
     const attempt = delivery.attemptCount;
     const startedAt = new Date().toISOString();
-    if (!invitation || invitation.status !== "pending" || invitation.expiresAt <= startedAt) {
+    const suppressed = invitation ? await this.suppression(invitation) : "TARGET_REVOKED";
+    if (!invitation || invitation.status !== "pending" || invitation.expiresAt <= startedAt || suppressed) {
       await this.database.updateFrogSleepBuddyInvitationEmailDelivery(delivery.id, {
         status: "suppressed",
         attemptCount: delivery.attemptCount,
-        lastErrorCode: !invitation ? "TARGET_REVOKED" : "TARGET_TERMINAL",
+        lastErrorCode: suppressed ?? "TARGET_TERMINAL",
         suppressedAt: startedAt,
         updatedAt: startedAt,
       });
@@ -113,13 +117,29 @@ export class BuddyInvitationEmailWorkerService {
     }
   }
 
+  private async suppression(invitation: import("../../../shared/types.ts").FrogSleepBuddyInvitationBundleRecord) {
+    if (!resolveBuddyGrowthCapabilities().emailDelivery) return "CAPABILITY_DISABLED";
+    if ((await this.database.findAppUser(FROGSLEEP_APP_ID, invitation.inviterUserId))?.status !== "ACTIVE") return "TARGET_REVOKED";
+    if (!invitation.inviteeUserId) return undefined;
+    try { await assertBuddyPairNotBlocked(this.database, invitation.inviterUserId, invitation.inviteeUserId); }
+    catch (error) { if (error instanceof ApplicationError && [403, 404].includes(error.statusCode)) return "TARGET_BLOCKED"; throw error; }
+    const preferences = await new BuddyNotificationPreferenceService(this.database).get(invitation.inviteeUserId);
+    return !preferences.enabled || preferences.disabledCategories.includes("invitations") ? "PREFERENCE_DISABLED" : undefined;
+  }
+
+  private isUnknown(error: unknown) {
+    return error instanceof TypeError || error instanceof SyntaxError || error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name);
+  }
+
   private isRetryable(error: unknown) {
+    if (this.isUnknown(error)) return false;
     if (!(error instanceof ApplicationError)) return true;
     if (error.code === "EMAIL_SERVICE_NOT_CONFIGURED") return false;
     return error.statusCode >= 500 || error.statusCode === 429;
   }
 
   private errorCode(error: unknown) {
+    if (this.isUnknown(error)) return "PROVIDER_OUTCOME_UNKNOWN";
     return error instanceof ApplicationError ? error.code : "EMAIL_PROVIDER_REQUEST_FAILED";
   }
 

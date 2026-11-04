@@ -1,0 +1,4605 @@
+{
+  "baseline_zook_commit": "aae6160",
+  "status": "candidate grouping only; every operation still needs semantic review",
+  "entries": [
+    {
+      "method": "GET",
+      "legacy_path": "/api/account/github",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/account/github",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/account/github/test",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/account/invitations",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/account/invitations",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/account/invitations/{invitation_id}",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-link",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-link/confirm",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-link/preview",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-link/retry",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-link/source-deliveries",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-link/source-deliveries/retry",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/goals",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/goals",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/goals/{pid}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/goals/{pid}/operations",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/goals/{pid}/result",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/planning-drafts",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/planning-drafts/generate",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/planning-drafts/preview",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/planning-drafts/{did}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/planning-drafts/{did}/adopt",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/planning-drafts/{did}/edit",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/records",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/requests/{key}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/reviews",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/reviews",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/reviews/generate",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/reviews/preview",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/capabilities",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/enrollment",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/events",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/executions/{execution_id}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/executions/{execution_id}/recap",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/export",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/focus",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/focus/{focus_id}/mode",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/preferences",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/reminder-claim",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/source-receipts/{event_id}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/steps",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/survey",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/today",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/trial",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/rhythm/weeks/{week_start}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/rhythm/weeks/{week_start}/confirm",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/schedules",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/templates",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/templates",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/action-plans/templates/{tid}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/week-plans/{week}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/week-plans/{week}",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/workspace",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/action-plans/{pid}/calendar.ics",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/{pid}/operations",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/action-plans/{pid}/reminder-claim",
+      "capability_group": "actions-goals-rhythm",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/ai/evidence",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/ai/evidence/{snapshot_id}",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/ai/settings",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/ai/test",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/auth/login",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/auth/logout",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/auth/me",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/auth/register",
+      "capability_group": "accounts",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior-report",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/behavior-report/generate",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/behavior-report/jobs",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior-report/jobs",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior-report/jobs/by-request/{request_key}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior-report/jobs/{job_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/behavior-report/jobs/{job_id}/cancel",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior-report/{report_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/behavior-report/{report_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior/applications",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/behavior/applications",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior/applications/concepts",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior/applications/{app_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/behavior/applications/{app_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/behavior/applications/{app_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/behavior/stats",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/coach-facts",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/background-jobs",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/background-jobs/{id}",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/background-jobs/{id}/cancel",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/backups",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/drafts",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/drafts/{draft_id}",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PATCH",
+      "legacy_path": "/api/copilot/drafts/{draft_id}",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/generations",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/generations/{draft_id}/cancel",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/learning-history",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/learning-history/by-date",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/learning-history/months",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/lessons",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/lessons/archived",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/lessons/{number}",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/lessons/{number}/archive",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/lessons/{number}/complete",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/lessons/{number}/feedback",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/lessons/{number}/feedback",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/lessons/{number}/learning-record",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PATCH",
+      "legacy_path": "/api/copilot/lessons/{number}/learning-state",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/lessons/{number}/review",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/lessons/{number}/review-questions",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/lessons/{number}/summary",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/lessons/{number}/unarchive",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/operations",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/operations/{op_id}",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/operations/{op_id}/recover",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/plan",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/plan/confirm",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/publications",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/scan",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/summaries",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/summaries/generate",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/summaries/generate-advanced",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/summaries/{summary_id}",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/copilot/today-task",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/copilot/writer-session",
+      "capability_group": "courses-and-copilot",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/course-continuations",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/course-continuations/jobs",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/course-continuations/jobs/{id}",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations/jobs/{id}/cancel",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations/next",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations/{id}/adopt",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations/{id}/first-lesson",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations/{id}/plan",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/course-continuations/{id}/suggest",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/data",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/data",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PATCH",
+      "legacy_path": "/api/data",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/errors/",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/errors/",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/errors/repeated",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/errors/stats",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/errors/types",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/errors/types",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/errors/types/{type_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/errors/{error_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/errors/{error_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/errors/{error_id}",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/health",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts/opening-preview",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts/{account_id}/baseline",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts/{account_id}/baseline/preview",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{account_id}/briefing",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{account_id}/campaigns/{campaign_id}/replay",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{account_id}/forecast-calibration",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts/{account_id}/forecasts/evaluate",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{account_id}/performance",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts/{account_id}/valuations",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{account_id}/valuations",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/accounts/{account_id}/valuations/preview",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{account_id}/valuations/{valuation_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}/balance",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}/campaigns",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}/campaigns/{campaign_id}/review",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}/policy-status",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/accounts/{object_id}/summary",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/ai-relay",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/ai-relay/calls/{call_key}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/ai-relay/config",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/ai-relay/jobs/{job_id}/recover",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/analysis/jobs",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/analysis/jobs",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/analysis/jobs/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/analysis/jobs/{object_id}/cancel",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/analysis/jobs/{object_id}/scenarios/{index}/policy-draft",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/analysis/jobs/{object_id}/suggestions/{index}/decision",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/analysis/preview",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/analysis/previews/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/briefing",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/calendar",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/capabilities",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/cash-events",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/cash-events",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/cash-events/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/cash-events/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/condition-drills",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/condition-drills",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/condition-drills/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/data-health",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/data-sources",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/dossiers",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/dossiers",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/dossiers/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/dossiers/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/dossiers/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/execution-studies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/execution-studies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/execution-studies/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/experiments",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/experiments",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/experiments/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/experiments/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/experiments/{object_id}/evaluation",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/experiments/{object_id}/finish",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/experiments/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/experiments/{object_id}/register",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/export",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/fills",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/fills",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/fills/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/fills/{object_id}/corrections",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/fills/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/forecast-baseline",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/forecast-calibration",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/forecast-evaluations",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/forecasts",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/forecasts",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/forecasts/evaluate",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/fund-nav",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/fund-orders",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/fund-orders",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/fund-orders/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/fund-orders/{object_id}/confirm",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/fund-orders/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/fund-orders/{object_id}/settle",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/imports/commit",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/imports/preview",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/instruments",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/instruments",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/instruments/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/instruments/{object_id}/data-status",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/instruments/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/instruments/{object_id}/rules",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/knowledge",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/knowledge/seed",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/knowledge/tip",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/ledger-notices",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/ledger-notices",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/ledger-notices/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/ledger-notices/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/ledger-notices/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/legacy-links",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/legacy-records",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/local-jobs/{job_id}/input",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-jobs/{job_id}/pause",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-jobs/{job_id}/{stage}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-runs",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/local-runs",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/local-runs/{run_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-runs/{run_id}/analysis-selection",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-runs/{run_id}/cancel",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-runs/{run_id}/candidates/{instrument_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/local-runs/{run_id}/inputs",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/local-runs/{run_id}/screening",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/market-snapshots/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/market/import",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/monitor-events",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/monitor-events/{event_id}/read",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/monitors",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/monitors",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/monitors/source-policy",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/monitors/{monitor_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/monitors/{monitor_id}/check",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/monitors/{monitor_id}/stop",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/overview",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/paths",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/paths/import",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/paths/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/period-plans",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/period-plans",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/period-plans/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/period-plans/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/period-plans/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/period-plans/{object_id}/state",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/plan-checks",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/plan-checks",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/plan-checks/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/plan-checks/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/policies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/policies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/policies/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/policies/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/policies/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/policies/{object_id}/state",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/principles",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/principles",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/principles/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/principles/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/principles/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/principles/{object_id}/state",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/provider/akshare/daily",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/provider/daily",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/readiness",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/recommendations",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/alerts",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/alerts/check",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/alerts/{identity}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/archives",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/archives",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/archives/verify",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/archives/{identity}/download",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/backtests",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/candidate",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/catalog",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/comparisons",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/comparisons/{identity}/export",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/datasets",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/datasets/csv",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/export",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/interface",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/objects",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/objects/{identity}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/presets",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/presets/{identity}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/provider/akshare/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/provider/akshare/market",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/screens",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/series",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/research/series/csv",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/research/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/reviews",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/reviews",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/reviews/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/reviews/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/reviews/{object_id}/actions",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/reviews/{object_id}/actions",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/reviews/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/rule-recipes",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/screen",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/screening-catalog",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/screening-templates",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/screening-templates",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/screening-templates/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/screening-templates/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/screening-templates/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/screening-templates/{template_id}/evaluate",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/search",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/security-status",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/strategies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/strategies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/strategies/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/strategies/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/strategies/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/strategies/{object_id}/state",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/strategy-templates",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/strategy/extract-params",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/strategy/grid-search",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/strategy/run",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/strategy/series",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/template-evaluations",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/template-experiments",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/template-experiments",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/trade-plans",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/trade-plans",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/trade-plans/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/trade-plans/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/trade-plans/{object_id}/assessment",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/trade-plans/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/trade-plans/{object_id}/state",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/user-strategies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/user-strategies",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/investments/watchlist",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/watchlist",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/watchlist/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/investments/watchlist/{object_id}",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/watchlist/{object_id}/history",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/investments/workspace",
+      "capability_group": "investment-and-research",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/knowledge",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/knowledge/by-stable-id/{stable_id}",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/knowledge/by-stable-id/{stable_id}/related",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/knowledge/graph",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/knowledge/scan",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/knowledge/scan-links",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/knowledge/stats",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/knowledge/upsert",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/learning-checkins",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/migrations",
+      "capability_group": "legacy-migration",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/migrations/files/apply",
+      "capability_group": "legacy-migration",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/migrations/files/preview",
+      "capability_group": "legacy-migration",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/migrations/recover",
+      "capability_group": "legacy-migration",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/mobile-learning",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/mobile-learning/connect",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/mobile-learning/consent",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/mobile-learning/preview",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/mobile-learning/private-consent",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/mobile-learning/source/{lesson_id}",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plan-actions",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/attempts/{aid}",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/attempts/{aid}/cancel",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/attempts/{aid}/progress",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/backup",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/budget",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/drafts",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/drafts/{did}",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/drafts/{did}/adopt",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/drafts/{did}/edit-course",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/drafts/{did}/history",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/drafts/{did}/publish",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/drafts/{did}/redate",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/drafts/{did}/refine",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/generate",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/recover",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/{pid}",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/{pid}/actions",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/actions",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/archive",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/{pid}/lessons/{number}",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/lessons/{number}/feedback",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/metadata",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/pause",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/resume",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/plans/{pid}/sources",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/{pid}/sources",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/plans/{pid}/status-history",
+      "capability_group": "planning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/predictions/calibration",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/predictions/investment-calibration",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/predictions/overconfident",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/predictions/stats",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/predictions/trend",
+      "capability_group": "cognition",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/articles/{aid}",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/archive",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/english",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/english-draft",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/english-draft/adopt",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/feedback",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/fetch_full",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/guide",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/personal",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/articles/{aid}/position",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/position",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/restore",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/summary",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/summary-draft",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/summary-draft/adopt",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/articles/{aid}/translation",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/translation",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/articles/{aid}/translation/adopt",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/collect",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/import-paste",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/import-url",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/jobs/{jid}",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/jobs/{jid}/cancel",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/jobs/{jid}/save",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/library",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/preferences",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/scheduled-run",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/scheduled-run",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/setup",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/sources",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/reading/sources/{sid}",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/vocabulary",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/vocabulary",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/vocabulary/due",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/vocabulary/stats",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reading/vocabulary/{vid}",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/reading/vocabulary/{vid}",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/vocabulary/{vid}/archive",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/vocabulary/{vid}/pause",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reading/vocabulary/{vid}/review",
+      "capability_group": "reading",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/record-link",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/record-link/cancel",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/record-link/confirm",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/record-link/export",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/record-link/preview",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/record-link/retry",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reflections",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reflections/attempts/{attempt_key}",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections/attempts/{attempt_key}/answers",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections/attempts/{attempt_key}/cancel",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reflections/export",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reflections/{entry_id}",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/reflections/{entry_id}",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections/{entry_id}/adopt",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections/{entry_id}/archive",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections/{entry_id}/assist",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reflections/{entry_id}/file-status",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/reflections/{entry_id}/restore",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/reflections/{entry_id}/versions",
+      "capability_group": "records-and-reflections",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/report",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/search",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/search/stats",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/stocks",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/stocks",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/stocks/statistics",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/stocks/{record_id}",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/stocks/{record_id}",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "DELETE",
+      "legacy_path": "/api/stocks/{record_id}",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/stocks/{record_id}/outcome",
+      "capability_group": "stocks",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/storage-status",
+      "capability_group": "cross-module-and-compatibility",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-materials",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-materials/learning-history",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-materials/library/activity",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/study-materials/library/activity",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/study-materials/{module}/generations",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-materials/{module}/generations/{key}",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/study-materials/{module}/generations/{key}/cancel",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/study-materials/{module}/generations/{key}/publish",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-materials/{module}/{filename}",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-materials/{module}/{filename}/learning-record",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "POST",
+      "legacy_path": "/api/study-materials/{module}/{filename}/learning-record",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-notes",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "PUT",
+      "legacy_path": "/api/study-notes/{kind}/{course}",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/study-notes/{kind}/{course}",
+      "capability_group": "learning",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/timeline",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    },
+    {
+      "method": "GET",
+      "legacy_path": "/api/timeline/stats",
+      "capability_group": "knowledge-search-timeline",
+      "target_contract": null,
+      "disposition": "unreviewed",
+      "semantic_differences": [],
+      "acceptance_evidence": []
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { enableFrogSleepBuddyCapabilities } from "../helpers/enable-frogsleep-buddy-capabilities.ts";
 
 enableFrogSleepBuddyCapabilities();
+process.env.FROGSLEEP_BUDDY_EMAIL_ENABLED = "true";
 
 async function runtime() {
   return await createApplication({

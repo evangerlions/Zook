@@ -1,0 +1,137 @@
+import { billingMarket } from "../modules/billing/billing-market.ts";
+import { billingEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
+import { ALIPAY_ORDER_ID_PATTERN, createAlipayOrderId } from "../modules/billing/alipay-order-id.ts";
+import { ApplicationError } from "../shared/errors.ts";
+import type { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
+import type { AiNovelBillingMembershipInfo } from "../shared/types.ts";
+import type { AlipayCreateInput, AlipayOptions, AlipayOrder } from "../modules/billing/alipay-models.ts";
+import { alipayConfigured, assertAlipayChannel, membershipConflict, publicAlipayOrder } from "../modules/billing/alipay-policy.ts";
+import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
+import { parseAlipayNotify } from "../modules/billing/alipay-notify.ts";
+import { OfficialAlipayGateway } from "./ainovel-alipay-gateway.ts";
+import { confirmAlipayOrder } from "./ainovel-alipay-confirmation.ts";
+import { syncAlipayMembership } from "./ainovel-alipay-membership-sync.ts";
+import type { MembershipSyncInput } from "../modules/billing/membership-sync.ts";
+import { alipayTransaction } from "./ainovel-alipay-projection.ts";
+import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
+
+export class AiNovelAlipayService {
+  private readonly gateway;
+  private readonly now;
+  constructor(private readonly database: ApplicationDatabase, private readonly options: AlipayOptions,
+    private readonly getMembership: (user: string) => Promise<AiNovelBillingMembershipInfo>, private readonly logger: StructuredLogger,
+    private readonly readPrices: () => Promise<AlipayPrices | undefined>) {
+    this.gateway = options.gateway ?? new OfficialAlipayGateway(options);
+    this.now = options.now ?? (() => new Date());
+  }
+  get available() { return alipayConfigured(this.options) && this.options.environment === billingEnvironment(); }
+  async checkoutCatalog() {
+    const prices = this.available ? await this.readPrices() : undefined;
+    return { available: !!prices, prices };
+  }
+  private configured() { if (!this.available) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay is not fully configured."); }
+  async create(userId: string, region: string, input: AlipayCreateInput, requestId?: string) {
+    const log = (status: string, order?: AlipayOrder) => this.log(status, order, userId, undefined, requestId);
+    log("create_start");
+    this.configured(); assertAlipayChannel(region, input.platform, input.distribution);
+    const now = this.now();
+    const order = await this.database.withExclusiveSession(async () => {
+      const account = await this.database.findAppUser("ai_novel", userId);
+      if (!account || account.status === "DELETED") throw new ApplicationError(403, "BILLING_ACCOUNT_UNAVAILABLE", "Account is unavailable.");
+      const existing = await this.database.findAiNovelAlipayIdempotency(userId, input.idempotencyKey);
+      if (existing) {
+        log("create_replay", existing);
+        if (billingMarket(existing) !== billingMarket(input) || existing.productKey !== input.productKey || existing.platform !== input.platform || existing.distribution !== input.distribution ||
+          existing.checkoutMode !== input.checkoutMode ||
+          existing.merchantAppId !== this.options.appId || existing.sellerId !== (this.options.sellerId?.trim() || "") || existing.environment !== this.options.environment)
+          throw new ApplicationError(409, "BILLING_IDEMPOTENCY_CONFLICT", "Idempotency key belongs to different order inputs.");
+        return existing;
+      }
+      if (membershipConflict(await this.database.findAiNovelBillingMembership("ai_novel", userId), input.productKey, now))
+        throw new ApplicationError(409, "BILLING_PROVIDER_CONFLICT", "An active store membership prevents Alipay checkout.");
+      const prices = await this.readPrices();
+      if (!prices) throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay price is not configured.");
+      const amountMinor = prices[input.productKey];
+      const created: AlipayOrder = { ...input, market: billingMarket(input), orderId: createAlipayOrderId(input.platform, input.productKey, userId), appId: "ai_novel", userId,
+        provider: "alipay", merchantAppId: this.options.appId!, sellerId: this.options.sellerId?.trim() || "", environment: this.options.environment!,
+        status: "pending", amountMinor, currency: "CNY", createdAt: now.toISOString(), expiresAt: new Date(now.getTime() + 30 * 60_000).toISOString(),
+        paidAt: null, providerTransactionId: null, membershipApplied: false, membershipExpiresAt: null, conflict: null, accountDeletedAt: null };
+      await this.database.saveAiNovelAlipayOrder(created);
+      await this.database.upsertAiNovelBillingTransaction(alipayTransaction(created, now.toISOString()));
+      log("order_persisted", created);
+      return created;
+    });
+    if (order.status !== "pending" || order.expiresAt <= now.toISOString()) return { order: publicAlipayOrder(order), payment: null };
+    try { const payment = await this.gateway.payment(order); log("checkout_prepared", order); return { order: publicAlipayOrder(order), payment }; }
+    catch {
+      log("checkout_preparation_failed", order);
+      // Checkout preparation failure is not evidence of provider cancellation.
+      // Retain identity and pending state for idempotent recovery and queries.
+      if (order.platform !== "android") throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay checkout could not be prepared.");
+      await this.database.withExclusiveSession(async () => {
+        const current = await this.database.findAiNovelAlipayOrder(order.orderId);
+        if (current?.status === "pending") { current.status = "failed"; await this.database.saveAiNovelAlipayOrder(current);
+          await this.database.upsertAiNovelBillingTransaction(alipayTransaction(current, this.now().toISOString())); }
+      });
+      throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay checkout could not be prepared.");
+    }
+  }
+  async readOrder(userId: string, orderId: string) {
+    return { order: publicAlipayOrder(await this.ownedOrder(userId, orderId)), membership: await this.getMembership(userId) };
+  }
+  syncAlipayMembership(input: MembershipSyncInput, candidates?: string[]) {
+    return syncAlipayMembership(input, { database: this.database, options: this.options, logger: this.logger,
+      query: (id, signal) => this.gateway.query(id, signal), getMembership: this.getMembership, now: this.now, available: this.available }, candidates);
+  }
+  async recoverOrders(limit = 20): Promise<void> {
+    return inBillingEnvironment(this.options.environment ?? "production", async () => {
+      if (!this.available) return;
+      const orders = await this.database.listAiNovelAlipayRecovery(this.options.environment!, this.options.appId!, this.options.sellerId?.trim() || "", limit);
+      const users = new Map<string, string[]>();
+      for (const order of orders) users.set(order.userId, [...(users.get(order.userId) ?? []), order.orderId]);
+      for (const [userId, candidates] of users) {
+        try { await this.syncAlipayMembership({ userId, provider: "alipay", requestId: "alipay-recovery", reason: "retry" }, candidates); }
+        catch { this.logger.warn("alipay recovery user pending", { userId }); }
+      }
+    });
+  }
+  private async ownedOrder(user: string, id: string) {
+    const order = ALIPAY_ORDER_ID_PATTERN.test(id) ? await this.database.findAiNovelAlipayOrder(id) : undefined;
+    if (!order || order.userId !== user || order.environment !== billingEnvironment()) throw new ApplicationError(404, "BILLING_ORDER_NOT_FOUND", "Alipay order not found.");
+    return order;
+  }
+  async notify(body: unknown, requestId?: string): Promise<string> {
+    return inBillingEnvironment(this.options.environment ?? "production", () => this.notifyScoped(body, requestId));
+  }
+  private async notifyScoped(body: unknown, requestId?: string) {
+    const log = (status: string, order?: AlipayOrder) => this.log(status, order, undefined, undefined, requestId);
+    this.configured();
+    let fields: Record<string, string>;
+    try { fields = parseAlipayNotify(body); }
+    catch (error) { log("notify_form_rejected"); throw error; }
+    let verified = false;
+    try { verified = await this.gateway.verifyNotify(fields); } catch { /* SDK/key errors are deliberately not exposed or logged. */ }
+    if (!verified) { log("notify_signature_rejected"); throw new ApplicationError(401, "BILLING_NOTIFY_UNAUTHORIZED", "Alipay signature verification failed."); }
+    log("notify_verified");
+    let order: AlipayOrder;
+    try { order = await this.database.withExclusiveSession(async () => {
+      const settled = await confirmAlipayOrder(this.database, this.options, fields, "notify", this.now());
+      const account = await this.database.findAppUser("ai_novel", settled.userId);
+      const persisted = await this.database.findAiNovelAlipayOrder(settled.orderId);
+      const deletedAt = persisted?.accountDeletedAt ?? (account?.status === "DELETED" ? account.updatedAt ?? this.now().toISOString() : null);
+      await this.database.insertAiNovelBillingWebhookEvent({ appId: "ai_novel", eventId: `alipay:${fields.notify_id || `${settled.orderId}:${fields.trade_status}`}`,
+        eventType: `ALIPAY_${fields.trade_status}`, userId: settled.userId, affectedUserIds: [settled.userId], productId: settled.productKey,
+        providerTransactionId: settled.orderId, status: "processed", occurredAt: settled.paidAt, processedAt: this.now().toISOString(), accountDeletedAt: deletedAt });
+      return settled;
+    }); }
+    catch (error) { log("notify_settlement_rejected"); throw error; }
+    log("notify_settled", order);
+    return "success";
+  }
+  private log(status: string, order?: AlipayOrder, userId?: string, orderId?: string, requestId?: string) {
+    this.logger.info("ainovel alipay billing", { appId: "ai_novel", provider: "alipay", status,
+      userId: order?.userId ?? userId, orderId: order?.orderId ?? orderId,
+      requestId,
+      paymentStatus: order?.status, membershipApplied: order?.membershipApplied, conflict: order?.conflict });
+  }
+}

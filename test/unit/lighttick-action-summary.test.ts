@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {ActionService} from '../../src/modules/lighttick/actions/action.service.ts';
+import {InMemoryLightTickRepository} from '../../src/testing/in-memory-lighttick-repository.ts';
+test('summary requires exact consent, keeps secrets out of storage and replays without another AI call',async()=>{
+ const repository=new InMemoryLightTickRepository(),owner={appId:'lighttick',userId:'summary-alice'};let calls=0;
+ const service=new ActionService(repository,()=>new Date('2026-10-20T12:00:00Z'),async()=>{calls++;return '根据记录，先读五分钟。';});
+ const plan=(await service.request(owner,'POST','',{key:'summary-create',title:'读书',period:'day',start_date:'2026-10-20',end_date:'2026-10-20'}) as any).plans[0];
+ const scope={plan_id:plan.id,start_date:plan.start_date,end_date:plan.end_date,include_notes:false,include_review:false};
+ const preview=await service.request(owner,'POST','/reviews/preview',scope) as any;
+ const body={...scope,key:'summary-generate',snapshot_hash:preview.snapshot_hash,ai_config:{api_key:'TEST_ONLY_PRIVATE_KEY',model_name:'test-model',api_base_url:'https://example.invalid/v1'},consent:true};
+ await assert.rejects(service.request(owner,'POST','/reviews/generate',{...body,consent:false}),/确认/);
+ await assert.rejects(service.request(owner,'POST','/reviews/generate',{...body,snapshot_hash:'changed'}),/重新确认/);
+ const accepted=await service.request(owner,'POST','/reviews/generate',body);assert.deepEqual(await service.request(owner,'POST','/reviews/generate',body),accepted);
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,1);
+ const history=await service.request(owner,'GET','/reviews',{}, {plan_id:plan.id}) as any;
+ assert.equal(history.reports[0].state,'ready');assert.equal(history.reports[0].snapshot,undefined);
+ const stored=JSON.stringify([await repository.getActionWorkspace(owner),await repository.getOperation(owner,'action:summary-generate')]);
+ assert.ok(!stored.includes('TEST_ONLY_PRIVATE_KEY'));assert.ok(!stored.includes('example.invalid'));
+ const bob=await service.request({...owner,userId:'summary-bob'},'GET','') as any;assert.deepEqual(bob.plans,[]);
+});

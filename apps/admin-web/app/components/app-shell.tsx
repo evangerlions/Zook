@@ -9,6 +9,7 @@ import { loadSidebarCollapsed, saveSidebarCollapsed } from "../lib/storage";
 import type { AdminAppSummary } from "../lib/types";
 
 const SERVER_WORKSPACES = [
+  { to: "/billing", label: "会员与支付", code: "BIL", description: "跨应用会员、支付记录与收入概览" },
   { to: "/apps", label: "应用", code: "APP", description: "管理项目空间与接入状态" },
   { to: "/auth-rate-limits", label: "Auth Limits", code: "ARL", description: "维护邮箱 / 短信验证码共用的公共风控阈值" },
   { to: "/mail", label: "邮件服务", code: "MAIL", description: "统一维护公共邮件配置" },
@@ -21,14 +22,17 @@ const SERVER_WORKSPACES = [
 ];
 
 const APP_WORKSPACES = [
+  { to: "/ainovel-usage", label: "付费与用量", code: "USG", description: "观察支付、创作点消耗与每周额度" },
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
   { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
   { to: "/conversation-records", label: "对话追踪", code: "TRC", description: "local/dev 查看具体会话与上下文" },
   { to: "/conversation-history", label: "历史聊天", code: "HST", description: "查询已完成的用户聊天记录" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
+  { to: "/frogsleep", label: "Sleep 运营", code: "SLP", description: "查看账号、邀请、方向授权与通知投递" },
   { to: "/lighttick", label: "LightTick Ops", code: "LTK", description: "查看 LightTick 功能、AI 场景与隐私安全指标" },
   { to: "/bodylog", label: "BodyLog 打卡", code: "BLG", description: "查看打卡数据、群组活跃度与习惯模板" },
+  { to: "/bodylog/retention", label: "留存与邀请", code: "RET", description: "核对邀请账本、成熟留存和实验准备" },
   { to: "/bodylog/records", label: "打卡记录", code: "REC", description: "查询用户级打卡记录" },
   { to: "/bodylog/groups", label: "群组监控", code: "GRP", description: "查看群组健康度与成员贡献" },
   { to: "/bodylog/habit-templates", label: "习惯模板", code: "TPL", description: "维护 BodyLog 习惯模板" },
@@ -61,9 +65,11 @@ function formatAdminVersion(rawVersion: string): string {
 function isAppProjectSpace(pathname: string) {
   return pathname === "/config"
     || pathname === "/ai-routing"
+    || pathname === "/ainovel-usage"
     || pathname === "/feedback"
     || pathname === "/conversation-records"
     || pathname === "/conversation-history"
+    || pathname === "/frogsleep"
     || pathname === "/lighttick"
     || pathname === "/bodylog"
     || pathname.startsWith("/bodylog/")
@@ -116,8 +122,10 @@ export function AppShell() {
   const workspaceItems = appProjectSpace
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/ainovel-usage" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/frogsleep" || selectedApp?.appId === "frogsleep")
       .filter((item) => item.to !== "/lighttick" || selectedApp?.appId === "lighttick")
       .filter((item) => !item.to.startsWith("/bodylog") || selectedApp?.appId === "bodylog")
     : SERVER_WORKSPACES;
@@ -279,7 +287,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className={`page-shell${workspaceTransitionLabel ? " has-workspace-overlay" : ""}`}>
+        <main className={`page-shell${location.pathname === "/frogsleep" ? " frogsleep-page-shell" : ""}${workspaceTransitionLabel ? " has-workspace-overlay" : ""}`}>
           <NoticeBanner notice={notice} onDismiss={clearNotice} />
           <Outlet />
           {workspaceTransitionLabel ? (
