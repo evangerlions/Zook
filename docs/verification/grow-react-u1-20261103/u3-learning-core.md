@@ -1,3 +1,5 @@
+> 2026-11-04 更新：下文为前一切片的历史边界。正式路线/阶段/进度与 worker 已完成本地工程验收，见 [后续证据](u3-courses-worker.md)，不再以 progress=null 作为当前正式课程行为。真实迁移/发布仍未执行。
+
 # U3 原生学习与合成迁移核心
 
 本地候选，默认关闭。唯一后端 Zook；课程正文不可变，私人数据按 owner/lesson/contentVersion 隔离，笔记/位置/明确学完分开 CAS 和回执。新增 085/086 不改已应用迁移。原有 binding 或镜像保留 legacy，不自动迁移；旧终态回执和原请求 body/hash 保留。旧 draft_version 不因新正文自动重写。

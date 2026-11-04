@@ -1,32 +1,32 @@
 {
   "status": "engineering-slice-only-not-release-ready",
-  "completed_tasks": "17/27",
-  "zook_candidate_sha": "066102efb7a846940a82841a4743c822e43f72f1",
+  "completed_tasks": "19/27",
+  "zook_candidate_sha": "020f9a0dd9722592692bc8cce2a7f079f07f56fa",
   "grow_manifest": {
     "schema_version": 1,
     "product": "lighttick",
-    "source_revision": "d6bf677f134de8f87ab8609abca4eff4e196fb5a",
-    "contract_revision": "071c0015fe4cb426285e6ab0fea5901b2ce5bf06",
+    "source_revision": "afaef9a10ea7927e842ee1dd45614d138eb2be63",
+    "contract_revision": "65d87adbf4b32449fef92f58b6580d9f2d60950d",
     "source_dirty": false,
     "files": {
-      "index.html": "43f84066074b50b75882afbd3d5006b78091dab2c2dbe9fe103951a62c367644",
-      "assets/ActionsPage-DsuvdkBe.js": "b5b8117906e7ae0c6d9d448c908e3c9f3f012b66d54fddf6e16a1ed4e59cde55",
-      "assets/GoalsPage-vptB7pW7.js": "2d79043eacd2d36376a7fe59a2062d41ac0d8b969f8a6f40cabbdc7f9a11dccf",
-      "assets/LearningPage-BrF4DBiz.js": "80de5c0d9b4357b5cebd2cf7b60cf79459ab13ac0218048c2bdc70fff7d5ddf0",
-      "assets/PendingNotice-BhlakzTk.js": "45fab9ef596a212a9516e83fc8db8fc17d351819da7e1526b5a53447fee9198b",
-      "assets/PlanningPage-DaNu2eD5.js": "a25aa72f0dff10ccc74f6e6d406e00f704672dee47ed05f4685d8750146fb8a8",
-      "assets/PlansPage-CPD5he0d.js": "28dd9d48812f944e396da4fc2b13200fa0da51f77972be242bbd3a0131ff6a08",
-      "assets/PracticePage-Cyy4Xcek.js": "841ddbc9d795b4b847582070d6e0a4f12198a8a5711a373780b748867a96910d",
-      "assets/RecordsPage-BVFYTqR2.js": "bc0668be50c42719838533f4cfecca4447a40bfd96618f3e66beb40af0a641e5",
-      "assets/TodayPage-DzTCC2G9.js": "3bebe049c8a5ff75b16a95adbb9b0463ca39d3a975d55414030474f21af6e61f",
+      "index.html": "155415d3cde9825a6ebcb4a7819f67e61381125a76e2830d3cb5d302d79d58d1",
+      "assets/ActionsPage-BnbbRKQl.js": "2428ed0decd74aaa6b15a1682e01c761da4fa934055058ed1be8288692670e2b",
+      "assets/GoalsPage-9IEaDYw2.js": "8d1f6e1096214c5c77a14cfaec6e918b6df0da8260ec57b86716d1f098e39c6f",
+      "assets/LearningPage-BW8FdRvj.js": "8b14c49c1290b780a945639c9d9d0788de4d0142ba930b2f7fbe469610260364",
+      "assets/PendingNotice-ctOtqm1_.js": "827ee7e3d1e96b1f295fdbe6fd1327448ebf71f646743215a598549a455249fb",
+      "assets/PlanningPage-550RdFl-.js": "b690f9666a7b02ecd7361b1caa0450c4c69912b4d2b1deb7c7e25ca0e44f6c9d",
+      "assets/PlansPage-x7BxTyjp.js": "1e89ffe1d11c846bf29d60451e83e420767241516e47c45e6173dd0a6aef3db9",
+      "assets/PracticePage-D6GaKQIJ.js": "07f64d61c94f4dfa1f14d2b2703d446e467e0164c3f8a57d9bddd1d152ccf63f",
+      "assets/RecordsPage-BO4Lx2qn.js": "fecaa00ddf16f000370cf014ad8906546e9173a640cab3f212d1c4186fb13623",
+      "assets/TodayPage-BDMqXK14.js": "e5890555722ac3f069f772391098b7eecb2da48476a461f948a8065a9917edf2",
       "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
       "assets/index--08vjXGf.css": "229933c47f88d2d9c163f03333ecdb15a19d5254b7f9da6962d571e2951fbe60",
-      "assets/index-ChsRK5vZ.js": "c8556a86a129adfb4c939679470f098e22e2cf474831ad26c4c44f61ad00c35c",
+      "assets/index-C0gXYLl_.js": "a15ac8066dc2b3c9ce071eb81369aa39da163b4f4d7a3655fc030c2ecb1cc74a",
       "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
     }
   },
-  "ios_candidate_sha": "570494ed478186607dc08e3c850329f9b84b4c08",
-  "android_candidate_sha": "e77d4594414e9a98164cca36425e51eeb3c16b22",
+  "ios_candidate_sha": "91a664618cf5212362ad1ec63713b12320cf0cfe",
+  "android_candidate_sha": "cbaca32ab7c1023866189a56b392da595c6564c4",
   "database_migrations": [
     {
       "file": "src/infrastructure/database/postgres/migrations/085_lighttick_native_learning.sql",
@@ -39,6 +39,14 @@
     {
       "file": "src/infrastructure/database/postgres/migrations/087_lighttick_source_completion_version.sql",
       "sha256": "a00826caff8e28e04917061e66fdbe91a17d01364ca39e588827ebd46acac5f7"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/088_lighttick_learning_routes.sql",
+      "sha256": "4976aeb991aacee8590eadd65a5ed204c8f109cfac65284dbe9c597fb88800c7"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/089_lighttick_learning_work.sql",
+      "sha256": "556960f9168f12325f7fbc05c732293d71c2879bee532c33b2b44effb7629382"
     }
   ],
   "enabled_only_in_synthetic_fixture": [
@@ -48,8 +56,8 @@
   ],
   "release_gates": {
     "legacy_operation_parity": "blocked:516 operations need reviewed parity evidence",
-    "formal_course_routes_stages_progress": "pending",
-    "learning_worker_budget_cancel_lease_restart_publish": "pending",
+    "formal_course_routes_stages_progress": "local-engineering-verified; native editing via trusted Grow Web entry",
+    "learning_worker_budget_cancel_lease_restart_publish": "synthetic-provider-and-PostgreSQL-verified; real-model-quality-separate",
     "knowledge_growth_export_cleanup": "pending",
     "investment_research_node_adapters_decimal_calendar_backtests": "pending",
     "all_module_incremental_migration_compensation": "pending",
@@ -59,5 +67,36 @@
     "long_observation": "independent-not-executed",
     "real_private_migration": "independent-not-authorized-this-round",
     "dev_online_release": "not-authorized-this-round"
+  },
+  "native_worktree_scope": "Selected learning tests run with preserved pre-existing UI modifications; commits contain only current course files. Not clean native release binaries.",
+  "verification": {
+    "backend_full_unit": {
+      "pass": 2316,
+      "skip": 1,
+      "fail": 0
+    },
+    "cli_follow_up": {
+      "pass": 2,
+      "fail": 0
+    },
+    "postgres_learning_course_work_migration": {
+      "pass": 5,
+      "skip": 0
+    },
+    "postgres_owner_order_snapshot": {
+      "pass": 2,
+      "skip": 0
+    },
+    "grow_unit": {
+      "pass": 14
+    },
+    "ios_selected_simulator": {
+      "pass": 25
+    },
+    "android_selected_jvm": {
+      "pass": 21
+    },
+    "chrome_results": "u3-course-browser-results.json",
+    "logs_directory": ".artifacts/grow-u3-20261104"
   }
 }
