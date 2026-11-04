@@ -17,7 +17,7 @@ export async function handleKnowledgeRequest(
   const root = "/api/v1/lighttick/";
   if (
     !r.path.startsWith(root + "knowledge/") &&
-    !r.path.startsWith(root + "review")
+    r.path !== root + "review" && !r.path.startsWith(root + "review/")
   )
     return;
   if (r.path === root + "review/export" && r.method === "GET")
