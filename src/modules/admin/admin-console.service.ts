@@ -62,7 +62,6 @@ import { createDefaultRoles } from "./admin-console-roles.ts";
 import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
 import { AiNovelConversationRecordService } from "../ai-novel/ai-novel-conversation-record.service.ts";
 import { cleanAiNovelRevenueCatConfig } from "./ainovel-revenuecat-config.ts";
-import { appleSandboxUserIds, publicAppleSandboxConfig } from "../billing/apple-sandbox-access.ts";
 import { validateAiNovelAlipayPricing } from "../billing/ainovel-alipay-pricing.ts";
 
 export class AdminConsoleService extends AdminConsoleCommonFacade {
@@ -177,8 +176,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     }
 
     const rawJson = await this.readNormalizedConfig(app.id);
-    const parsedConfig = JSON.parse(cleanAiNovelRevenueCatConfig(app.id, rawJson)) as Record<string, unknown>;
-    const appConfig = app.id === "ai_novel" ? publicAppleSandboxConfig(parsedConfig) : parsedConfig;
+    const appConfig = JSON.parse(cleanAiNovelRevenueCatConfig(app.id, rawJson)) as Record<string, unknown>;
     const releaseUpdate = app.id === "ai_novel"
       ? await this.commonReleaseUpdateConfigService.getPublicConfig(app.id)
       : undefined;
@@ -234,7 +232,6 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     const app = await this.requireConfigApp(appId);
     const normalized = cleanAiNovelRevenueCatConfig(app.id, normalizeConfig(rawJson));
     validateAiNovelAlipayPricing(app.id, normalized);
-    if (app.id === "ai_novel") appleSandboxUserIds(JSON.parse(normalized));
 
     await this.appConfigService.setValue(
       app.id,
@@ -254,7 +251,6 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
     validateAiNovelAlipayPricing(app.id, existing.content);
-    if (app.id === "ai_novel") appleSandboxUserIds(JSON.parse(existing.content));
     await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);

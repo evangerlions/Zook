@@ -54,7 +54,7 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 export interface AiNovelBillingServiceOptions {
   alipay?: AlipayEnvironmentOptions;
   readAlipayPrices?: () => Promise<AlipayPrices | undefined>;
-  readAppleSandboxUserIds?: () => Promise<readonly string[]>;
+  isAppleSandboxTestAccount?: (userId: string) => Promise<boolean>;
   secretApiKey?: string;
   revenueCatProjectId?: string;
   webhookAuthorization?: string;
@@ -93,7 +93,7 @@ export class AiNovelBillingService {
     const deployment = options.appEnvironment ?? billingDeploymentEnvironment();
     this.allowSandbox = billingSandboxAllowed(deployment);
     this.now = options.now ?? (() => new Date());
-    this.appleSandbox = new AppleSandboxAccess(database, deployment, options.readAppleSandboxUserIds ?? (async () => []), this.now);
+    this.appleSandbox = new AppleSandboxAccess(database, deployment, options.isAppleSandboxTestAccount ?? (async () => false), this.now);
     this.alipay = new AiNovelAlipayEnvironments(database, options.alipay ?? {}, deployment, user => this.getMembership(user), logger,
       options.readAlipayPrices ?? (async () => undefined));
   }

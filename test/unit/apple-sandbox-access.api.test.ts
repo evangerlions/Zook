@@ -13,6 +13,7 @@ function unexpired(evidence: ReturnType<typeof snapshot>) {
 
 async function fixture(t: TestContext, listed = true, deployment = "online") {
   const seed = buildDefaultSeed();
+  seed.users!.find(user => user.id === "user_alice")!.phone = "+8618710100901";
   seed.appUsers!.push({ id: "review_user", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion: "GLOBAL", joinedAt: "2026-09-23T00:00:00Z" });
   let evidence = unexpired(snapshot());
   const provider = fixtureFetcher(async () => Response.json(evidence), "app_test");
@@ -28,14 +29,13 @@ async function fixture(t: TestContext, listed = true, deployment = "online") {
         return Response.json(data);
       } } });
   t.after(() => runtime.close());
-  const admin = runtime.services.adminConsoleService;
-  const configure = async (ids: string[]) => {
-    const config = JSON.parse((await admin.getConfig("ai_novel")).rawJson);
-    config.billing ??= {};
-    config.billing.revenueCat = { ...config.billing.revenueCat, sandboxAppUserIds: ids };
-    return admin.updateConfig("ai_novel", JSON.stringify(config));
+  const registry = runtime.services.commonTestAccountService;
+  const configure = async (enabled: boolean, appId = "ai_novel") => {
+    const existing = (await registry.getDocument()).items.find(item => item.appId === appId && item.phone === "+8618710100901");
+    const input = { appId, phoneNa: "+86", phone: "18710100901", label: "Review fixture", enabled };
+    return existing ? registry.update(existing.id, input) : registry.create(input);
   };
-  if (listed) await configure(["user_alice"]);
+  if (listed) await configure(true);
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const request = (path: string, platform = "ios", body?: unknown, extra = {}) => runtime.app.handle({
     method: body ? "POST" : "GET", path, body,
@@ -76,7 +76,7 @@ test("Web and Android never inherit an Apple account's sandbox membership", asyn
 test("removing an allowed user immediately stops sandbox admission", async t => {
   const f = await fixture(t);
   await f.sync();
-  await f.configure([]);
+  await f.configure(false);
   assert.equal((await f.request("/api/v1/users/me")).body.data.membership.active, false);
 });
 
@@ -134,9 +134,9 @@ test("active production membership takes priority for an allowed Apple account",
   evidence.subscriptions.plus_monthly.sandbox = false;
   f.setEvidence(evidence);
   // Establish production through the same sync path before enabling test access.
-  await f.configure([]);
+  await f.configure(false);
   await f.sync();
-  await f.configure(["user_alice"]);
+  await f.configure(true);
   assert.equal((await f.request("/api/v1/users/me")).body.data.membership.active, true);
   assert.equal((await f.database.findAiNovelBillingMembership("ai_novel", "user_alice"))?.active, true);
   assert.equal(await inBillingEnvironment("sandbox", () => f.database.findAiNovelBillingMembership("ai_novel", "user_alice")), undefined);
@@ -154,14 +154,40 @@ test("a listed tester's first real App Store purchase is still synchronized into
   assert.equal(await inBillingEnvironment("sandbox", () => f.database.findAiNovelBillingMembership("ai_novel", "user_alice")), undefined);
 });
 
-test("allowlist remains private and Admin validates its shape", async t => {
-  const f = await fixture(t);
+test("an obsolete user-ID list cannot grant access and is removed from saved/public config", async t => {
+  const f = await fixture(t, false);
+  const admin = f.services.adminConsoleService;
+  const saved = await admin.updateConfig("ai_novel", JSON.stringify({ billing: { revenueCat: { sandboxAppUserIds: ["user_alice"] } } }));
+  assert.equal(saved.rawJson.includes("sandboxAppUserIds"), false);
+  assert.equal((await f.sync()).body.data.membership.active, false);
   const response = await f.request("/api/v1/ai_novel/public/config", "web");
-  assert.equal(JSON.stringify(response.body.data).includes("sandboxAppUserIds"), false);
+  assert.equal(JSON.stringify(response.body.data).includes("18710100901"), false);
   assert.equal(JSON.stringify(response.body.data).includes("user_alice"), false);
-  for (const ids of [true, [""], ["user_alice", "user_alice"], [3]]) {
-    await assert.rejects(() => f.services.adminConsoleService.updateConfig("ai_novel", JSON.stringify({ billing: { revenueCat: { sandboxAppUserIds: ids } } })));
-  }
+});
+
+test("SMS registry additions and deletions apply without copying user IDs", async t => {
+  const f = await fixture(t, false);
+  assert.equal((await f.sync()).body.data.membership.active, false);
+  const document = await f.configure(true);
+  assert.equal((await f.sync()).body.data.membership.active, true);
+  await f.services.commonTestAccountService.delete(document.items[0].id);
+  assert.equal((await f.request("/api/v1/users/me")).body.data.membership.active, false);
+});
+
+test("another application's SMS test account never grants AINovel sandbox access", async t => {
+  const f = await fixture(t, false);
+  await f.configure(true, "app_a");
+  assert.equal((await f.sync()).body.data.membership.active, false);
+});
+
+test("only the authenticated user's server-side phone is matched", async t => {
+  const f = await fixture(t);
+  const token = f.services.tokenService.issueAccessToken("user_bob", "ai_novel");
+  await f.services.appRegistryService.ensureMembership("ai_novel", "user_bob");
+  const response = await f.request("/api/v1/users/me", "ios", undefined, {
+    authorization: `Bearer ${token}`, "x-phone": "+8618710100901",
+  });
+  assert.equal(response.body.data.membership.active, false);
 });
 
 test("unknown deployments never enable Apple sandbox access", async t => {

@@ -2,20 +2,22 @@
 
 ## AINovel Apple sandbox admission
 
-The existing versioned `GET/PUT /api/v1/admin/apps/ai_novel/config` and revision
-restore flow owns `billing.revenueCat.sandboxAppUserIds`, an optional list of at
-most 100 distinct non-empty authenticated Zook user IDs (not emails or Apple IDs).
-Missing/empty means no online Apple testing admission. Validation also applies on
-restore. The field is visible only in the authenticated Admin document and is
-omitted from public configuration; it never contains passwords or provider keys.
+Server → SMS → Test Account is the sole admission source. Its existing
+`GET/POST/PUT/DELETE /api/v1/admin/apps/common/test-accounts[/id]` operations and
+versioned `common.test_accounts` configuration are reused. An enabled `ai_novel`
+test account authorizes the active Zook user whose stored normalized phone matches
+that record. Client-supplied phones/IDs cannot authorize access, and another app's
+test records do not qualify. Adding, editing, disabling and deleting records takes
+effect on the next request; no copied user-ID list or code reveal is necessary.
 
-Use the same IDs in RevenueCat General → Sandbox Testing Access → Allowed App
-User IDs only. Both admission and a verified active Apple entitlement are required;
-the list does not grant membership. Online ios/macos requests automatically select
+RevenueCat Sandbox Testing Access can remain Anybody; Zook checks the SMS registry
+before allowing any sandbox membership/credits use. A verified active Apple
+entitlement is still required. Legacy `billing.revenueCat.sandboxAppUserIds` is
+obsolete, ignored by admission and removed by delivery-config normalization.
+Online ios/macos requests automatically select
 the isolated sandbox records for allowed accounts unless active production
 membership exists. Web/other platforms and ordinary accounts keep production.
-Explicit online sandbox headers remain forbidden. Removing an ID takes effect on
-the next request without deployment; sandbox financial history remains isolated.
+Explicit online sandbox headers remain forbidden; sandbox financial history remains isolated.
 Google/Alipay sandbox and unknown deployments receive no new permission.
 
 Grow H5 承载：Admin HTTP server 将 `/grow` 和 `/grow/*` 转交同槽位

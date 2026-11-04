@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { createApplication } from "./create-test-application.ts";
+import type { CreateApplicationOptions } from "./create-test-application.ts";
 import type { LLMProvider } from "../../src/services/llm-manager.ts";
 
 const keyId = "logk_d5872ff066b8450b9aeed1c53f0df7f1";
@@ -22,7 +23,7 @@ export function decodeCreditsFixture(envelope: Record<string, unknown>): Record<
 }
 
 /** Real HTTP/encryption/business routes; only upstream LLM and storage are deterministic doubles. */
-export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test") {
+export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test", seed?: CreateApplicationOptions["seed"]) {
   let calls = 0;
   const observedModels: string[] = [];
   const provider: LLMProvider = {
@@ -44,7 +45,7 @@ export async function startCreditsHttpRuntime(port = 0, appEnvironment = "test")
       yield { type: "done", finishReason: "stop" };
     },
   };
-  const runtime = await createApplication({ appEnvironment, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: key.toString("base64") }, llmProviders: { bailian: provider } });
+  const runtime = await createApplication({ seed, appEnvironment, serviceName: "api", accessTokenSecret: "credits-http-fixture-only-secret-32-characters", logEncryptionKeys: { [keyId]: key.toString("base64") }, llmProviders: { bailian: provider } });
   await runtime.services.appRegistryService.ensureMembership("ai_novel", "user_alice");
   await runtime.services.commonLlmConfigService.updateConfig({ enabled: true, defaultModelKey: "qwen3.6-plus", providers: [{ key: "bailian", label: "Fixture", enabled: true, apiKey: "fixture-only", baseUrl: "https://fixture.invalid", timeoutMs: 1000 }], models: ["qwen3.6-plus", "manual-fixture"].map((modelKey) => ({ key: modelKey, label: modelKey, kind: "chat", strategy: "fixed", routes: [{ provider: "bailian", providerModel: modelKey, enabled: true, weight: 100 }] })) });
   await runtime.services.aiNovelModelPointPricingConfigService.updateConfig({ schemaVersion: 1, models: [{ modelKey: "qwen3.6-plus", inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 }, { modelKey: "manual-fixture", inputPointsPerMillionTokens: 200, cachedInputPointsPerMillionTokens: 20, outputPointsPerMillionTokens: 800 }] });

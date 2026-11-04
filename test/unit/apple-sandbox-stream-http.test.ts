@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import { inBillingEnvironment } from "../../src/modules/billing/billing-environment.ts";
 import { startCreditsHttpRuntime, encryptCreditsFixture, decodeCreditsFixture } from "../support/credits-http-runtime.ts";
 
 test("online review streams settle in sandbox while a concurrent Web request uses production", async () => {
-  const f = await startCreditsHttpRuntime(0, "online");
+  const seed = buildDefaultSeed();
+  seed.users!.find(user => user.id === "user_alice")!.phone = "+8618710100901";
+  const f = await startCreditsHttpRuntime(0, "online", seed);
   try {
-    const admin = f.runtime.services.adminConsoleService;
-    const config = JSON.parse((await admin.getConfig("ai_novel")).rawJson);
-    config.billing = { ...config.billing, revenueCat: { sandboxAppUserIds: ["user_alice"] } };
-    await admin.updateConfig("ai_novel", JSON.stringify(config));
+    await f.runtime.services.commonTestAccountService.create({ appId: "ai_novel", phoneNa: "+86", phone: "18710100901", enabled: true });
     await inBillingEnvironment("sandbox", () => f.runtime.database.upsertAiNovelBillingMembership({
       appId: "ai_novel", userId: "user_alice", active: true, state: "active", tier: "plus", planKey: "plus_yearly",
       expiresAt: "2099-01-01T00:00:00Z", autoRenew: true, source: "app_store", managementUrl: null,

@@ -1650,18 +1650,19 @@ credits records; omitted means production. Only a trusted deployment identity of
 `development` or `test` permits sandbox (`DEPLOY_SLOT` takes precedence over `APP_ENV`).
 Online/unknown environments reject explicit sandbox overrides with `403 BILLING_ENVIRONMENT_FORBIDDEN`.
 On known online/production deployments, authenticated Apple clients (`X-Platform: ios|macos`)
-whose user IDs appear in the private Admin `billing.revenueCat.sandboxAppUserIds` list
+whose server-bound phones match enabled `ai_novel` accounts in Server → SMS → Test Account
 are automatically scoped to sandbox for AINovel business requests and `users/me`, unless
-they already have active production membership. Empty/missing lists admit nobody.
+they already have active production membership. Empty/missing test-account registries admit nobody.
 The platform header selects the channel, not permission; the server authenticates and
-checks the account list. Web/Android/Windows continue to use production. No client
+checks the existing app-scoped SMS test-account registry. Web/Android/Windows continue to use production. No client
 sandbox switch or provider-specific sandbox environment variable is introduced.
-Keep the configured IDs synchronized with RevenueCat Project Settings → General →
-Sandbox Testing Access → Allowed App User IDs only. The server list is the local
-admission policy; RevenueCat must additionally verify the Apple purchase and grant
-an active entitlement. Allowlisting alone never creates membership. Removal from the
-server list immediately stops sandbox admission; signed Apple callbacks also check
-the list and use the existing isolated snapshot/projection path. Google/Alipay
+`common.test_accounts` is the only admission source; no second user-ID list is
+maintained in app delivery config or RevenueCat. RevenueCat Sandbox Testing Access
+may remain Anybody for purchase verification; Zook authorizes use of sandbox
+membership/credits through the SMS registry. A verified active Apple entitlement
+is still required: test-account status alone never creates membership. Disabling,
+deleting or changing the matching test phone/app stops admission on the next request.
+Signed Apple callbacks check the same registry and use the existing isolated projection path. Google/Alipay
 sandbox access is not enabled online. Unknown deployment identities have no exception.
 Alipay order ownership/access/renewals and RevenueCat snapshots/callbacks retain
 their verified environment. Migration 076 separates existing sandbox projections,
