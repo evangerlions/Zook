@@ -9,6 +9,7 @@ import type { AlipayEnvironmentOptions } from "../modules/billing/alipay-models.
 import type { AlipayPrices } from "../modules/billing/ainovel-alipay-pricing.ts";
 import { syncMembership } from "./ainovel-billing-sync.ts";
 import { syncRevenueCatMembership } from "./ainovel-revenuecat-membership-sync.ts";
+import { syncAppleReviewMembership } from "./ainovel-apple-review-sync.ts";
 import { persistRevenueCatSnapshot } from "./ainovel-revenuecat-snapshot-persistence.ts";
 import type { MembershipSyncInput, MembershipSyncResult } from "../modules/billing/membership-sync.ts";
 import { ApplicationError } from "../shared/errors.ts";
@@ -21,7 +22,8 @@ import type {
 } from "../shared/types.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
-import { buildEmptyMembershipInfo } from "../modules/billing/billing-membership.ts";
+import { buildEmptyMembershipInfo, billingMembershipInfo } from "../modules/billing/billing-membership.ts";
+import { AppleSandboxAccess, appleSandboxPayload } from "../modules/billing/apple-sandbox-access.ts";
 import {
   normalizeRevenueCatSnapshot,
   type NormalizedRevenueCatSnapshot,
@@ -52,6 +54,7 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 export interface AiNovelBillingServiceOptions {
   alipay?: AlipayEnvironmentOptions;
   readAlipayPrices?: () => Promise<AlipayPrices | undefined>;
+  readAppleSandboxUserIds?: () => Promise<readonly string[]>;
   secretApiKey?: string;
   revenueCatProjectId?: string;
   webhookAuthorization?: string;
@@ -65,6 +68,7 @@ export interface AiNovelBillingServiceOptions {
 
 export class AiNovelBillingService {
   readonly alipay: AiNovelAlipayEnvironments;
+  readonly appleSandbox: AppleSandboxAccess;
   private readonly customerApi: RevenueCatCustomerApi;
   private readonly now: () => Date;
 
@@ -89,6 +93,7 @@ export class AiNovelBillingService {
     const deployment = options.appEnvironment ?? billingDeploymentEnvironment();
     this.allowSandbox = billingSandboxAllowed(deployment);
     this.now = options.now ?? (() => new Date());
+    this.appleSandbox = new AppleSandboxAccess(database, deployment, options.readAppleSandboxUserIds ?? (async () => []), this.now);
     this.alipay = new AiNovelAlipayEnvironments(database, options.alipay ?? {}, deployment, user => this.getMembership(user), logger,
       options.readAlipayPrices ?? (async () => undefined));
   }
@@ -101,7 +106,7 @@ export class AiNovelBillingService {
   async getMembership(userId: string): Promise<AiNovelBillingMembershipInfo> {
     const record = await this.getMembershipRecord(userId);
     if (!record || record.accountDeletedAt) return buildEmptyMembershipInfo();
-    return toMembershipInfo(record, this.now());
+    return billingMembershipInfo(record, this.now());
   }
 
   /** Internal consistent entitlement snapshot, including billing-owned credit anchor. */
@@ -112,14 +117,19 @@ export class AiNovelBillingService {
   async syncMembership(input: MembershipSyncInput): Promise<MembershipSyncResult> {
     return syncMembership(input, {
       alipay: () => this.alipay.syncAlipayMembership(input),
-      revenuecat: () => syncRevenueCatMembership(input, {
-      logger: this.logger,
-      fetchSnapshot: () => this.fetchSnapshot(input.userId, input.signal, input.requestId),
-      persistSnapshot: (snapshot, transactionId) => persistRevenueCatSnapshot(this.database, snapshot,
-        () => this.writeSnapshot(snapshot), transactionId),
-      getMembership: () => this.getMembership(input.userId),
-      now: this.now,
-    }),
+      revenuecat: async () => {
+        const dependencies = {
+          logger: this.logger,
+          fetchSnapshot: () => this.fetchSnapshot(input.userId, input.signal, input.requestId),
+          persistSnapshot: (snapshot: NormalizedRevenueCatSnapshot, transactionId?: string) => persistRevenueCatSnapshot(this.database, snapshot,
+            () => this.writeSnapshot(snapshot), transactionId),
+          getMembership: () => this.getMembership(input.userId),
+          now: this.now,
+        };
+        return !this.allowSandbox && billingEnvironment() === "sandbox" && await this.appleSandbox.allows(input.userId)
+          ? syncAppleReviewMembership(input, dependencies, () => this.customerApi.getSnapshot(input.userId, input.signal, input.requestId), this.now)
+          : syncRevenueCatMembership(input, dependencies);
+      },
     });
   }
 
@@ -157,7 +167,7 @@ export class AiNovelBillingService {
       return { status: "duplicate" };
     }
 
-    if (event.environment === "SANDBOX" && !this.allowSandbox) {
+    if (event.environment === "SANDBOX" && !this.allowSandbox && !await this.appleSandbox.allowsEvent(event)) {
       await this.persistWebhookOnly(event, event.appUserId, "ignored");
       this.logWebhook(input.requestId, event, "ignored");
       return { status: "ignored" };
@@ -297,11 +307,16 @@ export class AiNovelBillingService {
     try {
       for (const user of knownUsers) {
         if (user.status === "ACTIVE") {
-          const environments = event.environment === null && this.allowSandbox
+          const allowSandbox = this.allowSandbox || (await this.appleSandbox.allowsEvent(event) && await this.appleSandbox.allows(user.userId));
+          const environments = event.environment === null && allowSandbox
             ? ["production", "sandbox"] as const : [billingEnvironment()];
           const payload = await this.customerApi.getSnapshot(user.userId, signal, requestId);
-          for (const environment of environments) snapshots.push(inBillingEnvironment(environment,
-            () => normalizeRevenueCatSnapshot(payload, user.userId, this.now(), { allowSandbox: this.allowSandbox })));
+          for (const environment of environments) {
+            if (environment === "sandbox" && !allowSandbox) continue;
+            snapshots.push(inBillingEnvironment(environment, () => normalizeRevenueCatSnapshot(
+              environment === "sandbox" && !this.allowSandbox ? appleSandboxPayload(payload) : payload,
+              user.userId, this.now(), { allowSandbox })));
+          }
         }
       }
     } catch (error) {
@@ -380,9 +395,9 @@ export class AiNovelBillingService {
 
   private async fetchSnapshot(userId: string, signal?: AbortSignal, requestId?: string): Promise<NormalizedRevenueCatSnapshot> {
     const payload = await this.customerApi.getSnapshot(userId, signal, requestId);
-    return normalizeRevenueCatSnapshot(payload, userId, this.now(), {
-      allowSandbox: this.allowSandbox,
-    });
+    const appleSandbox = !this.allowSandbox && billingEnvironment() === "sandbox" && await this.appleSandbox.allows(userId);
+    return normalizeRevenueCatSnapshot(appleSandbox ? appleSandboxPayload(payload) : payload,
+      userId, this.now(), { allowSandbox: this.allowSandbox || appleSandbox });
   }
 
   private async writeSnapshot(snapshot: NormalizedRevenueCatSnapshot, transferredAway = false): Promise<void> {
@@ -470,22 +485,4 @@ function constantTimeEqual(left: string, right: string): boolean {
   const leftBytes = Buffer.from(left, "utf8");
   const rightBytes = Buffer.from(right, "utf8");
   return leftBytes.length === rightBytes.length && timingSafeEqual(leftBytes, rightBytes);
-}
-
-function toMembershipInfo(
-  record: AiNovelBillingMembershipRecord,
-  now: Date,
-): AiNovelBillingMembershipInfo {
-  const expired = record.active && record.expiresAt !== null &&
-    Date.parse(record.expiresAt) <= now.getTime();
-  return {
-    active: record.active && !expired,
-    state: expired ? "expired" : record.state,
-    tier: record.tier,
-    planKey: record.planKey,
-    expiresAt: record.expiresAt,
-    autoRenew: record.autoRenew,
-    source: record.source,
-    managementUrl: record.managementUrl,
-  };
 }

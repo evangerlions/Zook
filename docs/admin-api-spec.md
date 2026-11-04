@@ -1,5 +1,23 @@
 # Admin API Spec
 
+## AINovel Apple sandbox admission
+
+The existing versioned `GET/PUT /api/v1/admin/apps/ai_novel/config` and revision
+restore flow owns `billing.revenueCat.sandboxAppUserIds`, an optional list of at
+most 100 distinct non-empty authenticated Zook user IDs (not emails or Apple IDs).
+Missing/empty means no online Apple testing admission. Validation also applies on
+restore. The field is visible only in the authenticated Admin document and is
+omitted from public configuration; it never contains passwords or provider keys.
+
+Use the same IDs in RevenueCat General → Sandbox Testing Access → Allowed App
+User IDs only. Both admission and a verified active Apple entitlement are required;
+the list does not grant membership. Online ios/macos requests automatically select
+the isolated sandbox records for allowed accounts unless active production
+membership exists. Web/other platforms and ordinary accounts keep production.
+Explicit online sandbox headers remain forbidden. Removing an ID takes effect on
+the next request without deployment; sandbox financial history remains isolated.
+Google/Alipay sandbox and unknown deployments receive no new permission.
+
 Grow H5 承载：Admin HTTP server 将 `/grow` 和 `/grow/*` 转交同槽位
 `ADMIN_GROW_PROXY_TARGET`，其鉴权由 Grow 独立处理，不使用 Admin session。
 未配置该私有目标时返回503；配置后保留方法、查询参数、状态码、多条 Cookie、
