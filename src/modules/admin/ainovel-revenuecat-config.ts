@@ -10,5 +10,6 @@ export function cleanAiNovelRevenueCatConfig(appId: string, rawJson: string): st
   delete values.enabled;
   delete values.configVersion;
   delete values.publicSdkKeys;
+  delete values.sandboxAppUserIds;
   return JSON.stringify(config, null, 2);
 }

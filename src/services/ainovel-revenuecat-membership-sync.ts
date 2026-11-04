@@ -5,14 +5,14 @@ import { revenueCatTargetPurchase, type PersistedRevenueCatPurchase } from "../m
 import type { MembershipSyncInput, MembershipSyncResult, TargetPurchase } from "../modules/billing/membership-sync.ts";
 import { storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
 import { RevenueCatApiError } from "./ainovel-revenuecat-client.ts";
-interface Dependencies {
+export interface RevenueCatMembershipSyncDependencies {
   logger: StructuredLogger;
   fetchSnapshot: () => Promise<NormalizedRevenueCatSnapshot>;
   persistSnapshot: (snapshot: NormalizedRevenueCatSnapshot, transactionId?: string) => Promise<PersistedRevenueCatPurchase | undefined>;
   getMembership: () => Promise<AiNovelBillingMembershipInfo>;
   now: () => Date;
 }
-export async function syncRevenueCatMembership(input: MembershipSyncInput, d: Dependencies): Promise<MembershipSyncResult> {
+export async function syncRevenueCatMembership(input: MembershipSyncInput, d: RevenueCatMembershipSyncDependencies): Promise<MembershipSyncResult> {
   const context = { requestId: input.requestId, userId: input.userId, provider: "revenuecat" };
   let snapshot: NormalizedRevenueCatSnapshot | undefined;
   try { snapshot = await d.fetchSnapshot(); }

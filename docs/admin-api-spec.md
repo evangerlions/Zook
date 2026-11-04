@@ -1,5 +1,25 @@
 # Admin API Spec
 
+## AINovel Apple sandbox admission
+
+Server → SMS → Test Account is the sole admission source. Its existing
+`GET/POST/PUT/DELETE /api/v1/admin/apps/common/test-accounts[/id]` operations and
+versioned `common.test_accounts` configuration are reused. An enabled `ai_novel`
+test account authorizes the active Zook user whose stored normalized phone matches
+that record. Client-supplied phones/IDs cannot authorize access, and another app's
+test records do not qualify. Adding, editing, disabling and deleting records takes
+effect on the next request; no copied user-ID list or code reveal is necessary.
+
+RevenueCat Sandbox Testing Access can remain Anybody; Zook checks the SMS registry
+before allowing any sandbox membership/credits use. A verified active Apple
+entitlement is still required. Legacy `billing.revenueCat.sandboxAppUserIds` is
+obsolete, ignored by admission and removed by delivery-config normalization.
+Online ios/macos requests automatically select
+the isolated sandbox records for allowed accounts unless active production
+membership exists. Web/other platforms and ordinary accounts keep production.
+Explicit online sandbox headers remain forbidden; sandbox financial history remains isolated.
+Google/Alipay sandbox and unknown deployments receive no new permission.
+
 Grow H5 承载：Admin HTTP server 将 `/grow` 和 `/grow/*` 转交同槽位
 `ADMIN_GROW_PROXY_TARGET`，其鉴权由 Grow 独立处理，不使用 Admin session。
 未配置该私有目标时返回503；配置后保留方法、查询参数、状态码、多条 Cookie、
