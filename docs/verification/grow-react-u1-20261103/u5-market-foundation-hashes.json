@@ -1,0 +1,37 @@
+[
+  {
+    "file": ".artifacts/grow-u5-20261104/market-unit-final.log",
+    "bytes": 5200,
+    "sha256": "015131a014b9439f709975765dddb9769a2472debbb6eede9dbb8e68e044e0da"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/market-types-final.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/market-lines-final.log",
+    "bytes": 172,
+    "sha256": "ba5f9dc59e55190bce775ab87e1a63e4dc51c9df2b12200508c1414fee9cb54e"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/generate-indicator-golden.py",
+    "bytes": 1917,
+    "sha256": "461db732de32e1b9fc80b04787110e7038fcbe663bb6323a9dfed4b9b0d13798"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/generate-backtest-golden.py",
+    "bytes": 4327,
+    "sha256": "25811501a913506b7fb19ce27860bc4116be5f3f558362f6b7feb6b429ef7736"
+  },
+  {
+    "file": "test/fixtures/lighttick/market-backtest-golden.json",
+    "bytes": 197761,
+    "sha256": "3b2a7010e05d9deb8853bce428470f7db80851e9109faa80a76762c436ed97b2"
+  },
+  {
+    "file": "test/fixtures/lighttick/market-indicators-golden.json",
+    "bytes": 59931,
+    "sha256": "5aa336b678a5ba9658efab7bcee75bad454a0bd4f091a9859d3a006e9b7038a5"
+  }
+]
