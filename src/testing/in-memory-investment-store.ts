@@ -1,0 +1,89 @@
+import type {
+  InvestmentRepository,
+  InvestmentAccount,
+  InvestmentInstrument,
+} from "../modules/lighttick/investments/investment.types.ts";
+import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
+import { ApplicationError } from "../shared/errors.ts";
+const key = (o: LightTickOwner, id: string) =>
+    JSON.stringify([o.appId, o.userId, id]),
+  prefix = (o: LightTickOwner) =>
+    JSON.stringify([o.appId, o.userId]).slice(0, -1) + ",";
+export class InMemoryInvestmentStore implements InvestmentRepository {
+  private symbols = new Map<string, InvestmentInstrument>();
+  private wallets = new Map<string, InvestmentAccount>();
+  async instrument(o: LightTickOwner, id: string) {
+    return structuredClone(this.symbols.get(key(o, id)));
+  }
+  async instrumentByCode(o: LightTickOwner, market: string, code: string) {
+    return (await this.instruments(o)).find(
+      (i) => i.market === market && i.code === code,
+    );
+  }
+  async instruments(o: LightTickOwner) {
+    return structuredClone(
+      [...this.symbols]
+        .filter(([k]) => k.startsWith(prefix(o)))
+        .map(([, v]) => v)
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .slice(0, 1001),
+    );
+  }
+  async saveInstrument(
+    o: LightTickOwner,
+    i: InvestmentInstrument,
+    base: number,
+  ) {
+    if (
+      (this.symbols.get(key(o, i.id))?.revision ?? 0) !== base ||
+      (base === 0 && (await this.instrumentByCode(o, i.market, i.code)))
+    )
+      throw new ApplicationError(
+        409,
+        "LIGHTTICK_VERSION_CONFLICT",
+        "Instrument changed.",
+      );
+    this.symbols.set(key(o, i.id), structuredClone(i));
+  }
+  async account(o: LightTickOwner, id: string) {
+    const row = this.wallets.get(key(o, id));
+    if (!row) return;
+    return structuredClone({
+      ...row,
+      opening_instruments: row.opening_positions
+        .map((p) => this.symbols.get(key(o, p.instrument_id)))
+        .filter((i): i is InvestmentInstrument => !!i),
+    });
+  }
+  async accounts(o: LightTickOwner) {
+    const rows = [...this.wallets]
+      .filter(([k]) => k.startsWith(prefix(o)))
+      .map(([, v]) => v)
+      .sort((a, b) => (a.id < b.id ? -1 : 1))
+      .slice(0, 1001);
+    return Promise.all(rows.map((r) => this.account(o, r.id).then((v) => v!)));
+  }
+  async saveAccount(o: LightTickOwner, a: InvestmentAccount, base: number) {
+    if ((this.wallets.get(key(o, a.id))?.revision ?? 0) !== base)
+      throw new ApplicationError(
+        409,
+        "LIGHTTICK_VERSION_CONFLICT",
+        "Account changed.",
+      );
+    this.wallets.set(key(o, a.id), structuredClone(a));
+  }
+  snapshot() {
+    return structuredClone({
+      symbols: [...this.symbols],
+      wallets: [...this.wallets],
+    });
+  }
+  restore(v: ReturnType<InMemoryInvestmentStore["snapshot"]>) {
+    this.symbols = new Map(v.symbols);
+    this.wallets = new Map(v.wallets);
+  }
+  deleteOwner(o: LightTickOwner) {
+    for (const map of [this.symbols, this.wallets])
+      for (const k of map.keys()) if (k.startsWith(prefix(o))) map.delete(k);
+  }
+}

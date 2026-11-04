@@ -38,11 +38,15 @@ test("decimal boundary rejects binary floats, nonfinite values, too much precisi
     "1000000000000000000",
     "0.00000000001",
     "-1",
+    "1e-99999999999999999999",
+    "1e99999999999999999999",
+    "0e-99999999999999999999",
     {},
     null,
   ])
     assert.throws(() => decimalInput(value), { statusCode: 422 });
   assert.equal(decimalInput("0.1000000000"), "0.1");
+  assert.equal(decimalInput(" 0.1 "), "0.1");
   assert.equal(decimalInput("1e-10"), "0.0000000001");
   assert.equal(
     decimalInput("999999999999999999.9999999999"),

@@ -14,3 +14,9 @@
 `test/fixtures/lighttick/investment-accounting-golden.json` 固定 11 组完全合成输入/旧纯算法结果及源码 SHA256。生成时只隔离载入仅依赖 stdlib decimal 的 accounting.py，没有启动 Python 服务、导入 DB/tenancy 或读取任何账号历史。Node 实现使用锁定 decimal.js 10.6.0 的独立 60 位/ROUND_HALF_EVEN 上下文；API 边界仍只接受字符串、非负 28 位/10 小数，严格拒绝 JSON 浮点、非有限值与过量精度。测试共 13 项，另覆盖跨平台 Decimal 默认值污染和对象原型键缺行情。
 
 官方构造器/clone/precision/rounding 参考：https://mikemcl.github.io/decimal.js/ 。依赖精确锁定到 package-lock；本轮 npm install --ignore-scripts。该切片只有算法/fixture/类型证据，尚无资产 REST/仓储/页面，不更新 U0/U5 原整项勾选。
+
+## 标的与期初仓储切片
+
+092 将账户期初、份额与成本落为 NUMERIC(28,10)，未知成本 null；账户/期初/持仓引用在同一 owner 事务提交，原回执失败全部回滚。账户归档不改期初；标的市场/代码/品种保持身份，名称/归档 CAS。当前标的标签与期初金额分开读取，不把期初当作余额/净收益。新表纳入共用账号/全 App 删除清单和 schema 自动检查。
+
+新增 `/api/v1/lighttick/investments` 下的标的/账户合同，原子原请求回执、owner/目录修订游标，未进旧 sync。对应精度/账户/HTTP/静态深链专项 19 项、真实 PG 账户及共用清理 2 项通过；React 提供实际表单，不用 JSON 编辑器代替。成交/现金流、行情、研究和计算 worker 尚在后续切片，不能据此勾选整个投资任务。

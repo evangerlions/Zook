@@ -1777,3 +1777,12 @@ AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上
 回看来源核对：`GET /api/v1/lighttick/review/source?kind=record|lesson&id=...&version=...` 返回明确引用的原版正文与 current_version；授权失效为 403，不替换成新版。`GET /api/v1/lighttick/review/export` 导出本人当前授权的记录及版本、知识/认知及可读历史、课程历版/私人状态和历史、任务/目标/复盘与执行反馈。学习撤权后不导出该部分；私人授权关闭时不导出私人状态/历史。来源撤权的知识及相应旧版本不导出。归档记录属于本人，保留在记录导出；归档课节正文按阅读授权边界排除。导出不含操作回执、队列/内部任务输入、平台配置/文件凭据。限每域 5000 行及总 8 MiB，超限明确 413；缺分块协议时不得称为完整备份。导出不负责跨账号恢复或生产迁移。
 
 账号删除边界：LightTick 专属与平台通用删除均清理当前云端领域与版本/回执，拒绝旧会话继续读取。文件元数据与删除 outbox 一起提交，物理文件由既有 worker 带租约恢复、幂等清理；不保证立即物理擦除或远程擦除离线设备。Grow 回看在刷新/重新联网/返回页面时重查授权，收起失效云端正文和来源，只读投影可重建；本人显式输入的本机草稿与未决原请求继续按账号/环境隔离，不自动上传或交给其他账号。云端删除不等于取消平台备份保留策略。
+
+
+### LightTick 投资标的与期初账户（工程切片）
+
+新增 canonical `/api/v1/lighttick/investments/...`，沿用注册 LightTick owner，通用 task-only sync 不新增投资实体。`POST instruments` 提交 code/market/kind/name，规范化后同 owner、市场、代码返回既有稳定 ID（existing=true），品种冲突 409；不因新名称改写已有标的。`PUT instruments/{resourceId}` 仅 base_revision/name/archived，市场代码与品种不可偷偷改写。GET instruments 及 /{resourceId} 读取。
+
+`PUT accounts/{resourceId}` 仅创建 base_revision=0 的账户期初，字段 name/currency（当前 CNY）/baseline_date/opening_cash/opening_positions。份额、金额、成本必须十进制字符串，最多 18 整数/10 小数，不收 JSON 浮点，超精度明确 422，不静默舍入；未知成本为 null。每项期初标的必须属于本人且可用，不能重复。数据库金额/份额/成本使用 NUMERIC(28,10)，期初与位置关系不可变；本阶段不允许直接改写期初。POST accounts/{resourceId}/status 仅 base_revision/archived，归档/恢复只改状态。GET accounts 及 /{resourceId} 读取。
+
+所有写入绑定资源/版本与原 Idempotency-Key；终态重试保持原结果，冲突保留本机/基线/云端。列表 limit 1–100，游标绑定 owner/类别/事实摘要，变化后显式重建且保留草稿；每目录 1000 项及 8 MiB，上限外拒绝不截断。账户/标的初始保存不计算盈亏或交易建议。本阶段尚未开放成交/现金流水、行情、研究/回测接口，不把期初字段当作完整持仓/净收益。后续基准修订必须经预览、理由、当前事实核对与显式确认，不开放通用覆盖。

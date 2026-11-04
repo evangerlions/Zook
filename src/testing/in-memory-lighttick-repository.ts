@@ -1,3 +1,4 @@
+import {InMemoryInvestmentStore} from "./in-memory-investment-store.ts";
 import {sourceAvailable} from "../modules/lighttick/knowledge/knowledge.service.ts";
 import {InMemoryKnowledgeStore} from "./in-memory-knowledge-store.ts";
 import {InMemoryNativeLearningStore} from "./in-memory-native-learning-store.ts";
@@ -25,6 +26,7 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly investments=new InMemoryInvestmentStore();
   readonly knowledge=new InMemoryKnowledgeStore(async o=>{
     const facts=[];for(const lesson of await this.listNativeLessons(o,'',5001)){
       if(lesson.archived||!lesson.publishedVersion||(await this.getLearningCollection(o,lesson.collectionId))?.archived)continue;
@@ -109,7 +111,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -118,7 +120,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     try { return await operation(); }
     catch (error) {
       this.nativeLearning.restore(snapshot.nativeLearning);
-      this.knowledge.restore(snapshot.knowledge); this.learningRoutes.restore(snapshot.learningRoutes);
+      this.investments.restore(snapshot.investments); this.knowledge.restore(snapshot.knowledge); this.learningRoutes.restore(snapshot.learningRoutes);
       this.localClaims=new Map(snapshot.localClaims);
       this.recordTransfers=new Map(snapshot.recordTransfers);this.recordTickets=new Map(snapshot.recordTickets);this.sourceHistories=new Map(snapshot.sourceHistories);
       this.records=new Map(snapshot.records);this.recordHistory=new Map(snapshot.recordHistory);
@@ -423,7 +425,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
   async deleteOwnerData(owner: LightTickOwner) {
     this.nativeLearning.deleteOwner(owner);
-    this.knowledge.deleteOwner(owner); this.learningRoutes.deleteOwner(owner);
+    this.investments.deleteOwner(owner); this.knowledge.deleteOwner(owner); this.learningRoutes.deleteOwner(owner);
     for(const [key,r] of this.localClaims)if(r.userId===owner.userId)this.localClaims.set(key,{...r,userId:null,cloudId:null,payloadHash:null,sourcePayload:{},deleted:true});
     for(const [key,row] of this.recordTransfers)if(ownerKey(row)===ownerKey(owner))this.recordTransfers.delete(key);
     for(const [key,row] of this.recordTickets)if(ownerKey(row)===ownerKey(owner))this.recordTickets.delete(key);

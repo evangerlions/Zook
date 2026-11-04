@@ -1,3 +1,5 @@
+import {PostgresInvestmentStore} from "./postgres-investment-store.ts";
+import {PostgresLightTickDeviceStore} from "./postgres-lighttick-device-store.ts";
 import {PostgresKnowledgeStore} from "./postgres-knowledge-store.ts";
 import {deleteLightTickOwnerData} from './postgres-lighttick-owner-deletion.ts';
 import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
@@ -24,6 +26,7 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));
   readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
@@ -571,29 +574,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return result.rows.map(mapRow<LightTickChangeRow>);
   }
 
-  async upsertDevice(row: LightTickDeviceRow): Promise<LightTickDeviceRow> {
-    if (!this.transactions.active) return this.transaction(row, () => this.upsertDevice(row));
-    const result = await this.query(`INSERT INTO zook_lighttick_devices
-      (id,app_id,user_id,platform,push_provider,push_token,timezone,locale,app_version,notifications_enabled,active,deleted_at,created_at,updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-      ON CONFLICT (app_id,user_id,id) DO UPDATE SET platform=EXCLUDED.platform,push_provider=EXCLUDED.push_provider,
-      push_token=EXCLUDED.push_token,timezone=EXCLUDED.timezone,locale=EXCLUDED.locale,app_version=EXCLUDED.app_version,
-      notifications_enabled=EXCLUDED.notifications_enabled,active=EXCLUDED.active,deleted_at=EXCLUDED.deleted_at,updated_at=EXCLUDED.updated_at RETURNING *`,
-      [row.id,row.appId,row.userId,row.platform,row.pushProvider,row.pushToken,row.timezone,row.locale,row.appVersion,
-        row.notificationsEnabled,row.active,row.deletedAt ?? null,row.createdAt,row.updatedAt]);
-    return mapRow<LightTickDeviceRow>(result.rows[0]!);
-  }
-  async listDevices(owner: LightTickOwner): Promise<LightTickDeviceRow[]> {
-    const result = await this.query(`SELECT * FROM zook_lighttick_devices WHERE app_id=$1 AND user_id=$2 ORDER BY created_at ASC`,
-      [owner.appId, owner.userId]);
-    return result.rows.map(mapRow<LightTickDeviceRow>);
-  }
-  async deleteDevice(owner: LightTickOwner, id: string, deletedAt: string): Promise<boolean> {
-    if (!this.transactions.active) return this.transaction(owner, () => this.deleteDevice(owner, id, deletedAt));
-    const result = await this.query(`UPDATE zook_lighttick_devices SET active=FALSE,deleted_at=$1,updated_at=$1
-      WHERE app_id=$2 AND user_id=$3 AND id=$4 AND active=TRUE`, [deletedAt,owner.appId,owner.userId,id]);
-    return Boolean(result.rowCount);
-  }
+  private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));
+  upsertDevice=(row:LightTickDeviceRow)=>this.transaction(row,()=>this.devices.upsertDevice(row));
+  listDevices=(owner:LightTickOwner)=>this.devices.listDevices(owner);
+  deleteDevice=(owner:LightTickOwner,id:string,deletedAt:string)=>this.transaction(owner,()=>this.devices.deleteDevice(owner,id,deletedAt));
   async deleteOwnerData(owner:LightTickOwner):Promise<void>{await deleteLightTickOwnerData(this,this.query.bind(this),owner);}
   async getAdminOperationalSummary():Promise<Record<string,number>> {return readLightTickOperationalSummary((sql,values=[])=>this.query(sql,values));}
 }

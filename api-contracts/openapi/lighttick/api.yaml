@@ -42,6 +42,352 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/investments/instruments:
+    get:
+      operationId: listInvestmentInstruments
+      tags:
+      - lighttick-investments
+      summary: listInvestmentInstruments
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentInstrumentsEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createInvestmentInstrument
+      tags:
+      - lighttick-investments
+      summary: createInvestmentInstrument
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentInstrumentCreateEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentInstrumentWrite'
+  /api/v1/lighttick/investments/instruments/{resourceId}:
+    get:
+      operationId: readInvestmentInstrument
+      tags:
+      - lighttick-investments
+      summary: readInvestmentInstrument
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentInstrumentEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: updateInvestmentInstrument
+      tags:
+      - lighttick-investments
+      summary: updateInvestmentInstrument
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentInstrumentEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentInstrumentUpdate'
+  /api/v1/lighttick/investments/accounts:
+    get:
+      operationId: listInvestmentAccounts
+      tags:
+      - lighttick-investments
+      summary: listInvestmentAccounts
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentAccountsEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/accounts/{resourceId}:
+    get:
+      operationId: readInvestmentAccount
+      tags:
+      - lighttick-investments
+      summary: readInvestmentAccount
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentAccountEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: createInvestmentAccount
+      tags:
+      - lighttick-investments
+      summary: createInvestmentAccount
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentAccountEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentAccountWrite'
+  /api/v1/lighttick/investments/accounts/{resourceId}/status:
+    post:
+      operationId: investmentAccountStatus
+      tags:
+      - lighttick-investments
+      summary: investmentAccountStatus
+      description: Registered owner only; exact decimal strings and owner-scoped original
+        request receipts. Account baseline is immutable; status edits do not rewrite
+        money. New entities never enter old generic sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentAccountEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentAccountStatus'
   /api/v1/lighttick/review/export:
     get:
       operationId: exportAuthorizedReview
@@ -5445,6 +5791,380 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickInvestmentOpening:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - quantity
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        quantity:
+          type: string
+          maxLength: 120
+          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional
+            places; numeric JSON and nonfinite values are rejected. Scientific notation
+            is normalized, not rounded.
+        cost:
+          type:
+          - string
+          - 'null'
+          maxLength: 120
+    LightTickInvestmentInstrumentWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - market
+      - kind
+      - name
+      properties:
+        code:
+          type: string
+          maxLength: 32
+        market:
+          type: string
+          enum:
+          - SSE
+          - SZSE
+          - BSE
+          - FUND
+        kind:
+          type: string
+          enum:
+          - stock
+          - etf
+          - fund
+        name:
+          type: string
+          maxLength: 100
+    LightTickInvestmentInstrument:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - market
+      - kind
+      - name
+      - id
+      - revision
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        code:
+          type: string
+          maxLength: 32
+        market:
+          type: string
+          enum:
+          - SSE
+          - SZSE
+          - BSE
+          - FUND
+        kind:
+          type: string
+          enum:
+          - stock
+          - etf
+          - fund
+        name:
+          type: string
+          maxLength: 100
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentInstrumentCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument
+      - existing
+      properties:
+        instrument:
+          $ref: '#/components/schemas/LightTickInvestmentInstrument'
+        existing:
+          type: boolean
+    LightTickInvestmentInstrumentUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - name
+      - archived
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        name:
+          type: string
+          maxLength: 100
+        archived:
+          type: boolean
+    LightTickInvestmentAccountWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - name
+      - currency
+      - baseline_date
+      - opening_cash
+      - opening_positions
+      properties:
+        base_revision:
+          type: integer
+          enum:
+          - 0
+        name:
+          type: string
+          maxLength: 100
+        currency:
+          type: string
+          enum:
+          - CNY
+        baseline_date:
+          type: string
+          format: date
+        opening_cash:
+          type: string
+          maxLength: 120
+          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional
+            places; numeric JSON and nonfinite values are rejected. Scientific notation
+            is normalized, not rounded.
+        opening_positions:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentOpening'
+    LightTickInvestmentAccount:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - currency
+      - baseline_date
+      - opening_cash
+      - opening_positions
+      - id
+      - revision
+      - archived
+      - created_at
+      - updated_at
+      - opening_instruments
+      - baseline_version
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        currency:
+          type: string
+          enum:
+          - CNY
+        baseline_date:
+          type: string
+          format: date
+        opening_cash:
+          type: string
+          maxLength: 120
+          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional
+            places; numeric JSON and nonfinite values are rejected. Scientific notation
+            is normalized, not rounded.
+        opening_positions:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentOpening'
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        opening_instruments:
+          type: array
+          maxItems: 100
+          description: Current owner instrument labels; identity is immutable, labels do not rewrite opening quantities or costs.
+          items: {$ref: '#/components/schemas/LightTickInvestmentInstrument'}
+        baseline_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickInvestmentAccountStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - archived
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        archived:
+          type: boolean
+    LightTickInvestmentInstruments:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - items
+      - next_cursor
+      properties:
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentInstrument'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentAccounts:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - items
+      - next_cursor
+      properties:
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentAccount'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentInstrumentEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentInstrument'
+        requestId:
+          type: string
+    LightTickInvestmentInstrumentCreateEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentInstrumentCreate'
+        requestId:
+          type: string
+    LightTickInvestmentAccountEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentAccount'
+        requestId:
+          type: string
+    LightTickInvestmentInstrumentsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentInstruments'
+        requestId:
+          type: string
+    LightTickInvestmentAccountsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentAccounts'
+        requestId:
+          type: string
     LightTickReviewExport:
       type: object
       additionalProperties: false

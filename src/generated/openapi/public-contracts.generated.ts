@@ -38516,6 +38516,1774 @@ export type LightTickReviewSourceEnvelope = {
   "requestId": string;
 };
 
+export const LightTickInvestmentOpeningSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "quantity"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "quantity": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+    },
+    "cost": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 120
+    }
+  }
+} as const;
+
+export type LightTickInvestmentOpening = {
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+};
+
+export const LightTickInvestmentInstrumentWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "market",
+    "kind",
+    "name"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "SSE",
+        "SZSE",
+        "BSE",
+        "FUND"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "stock",
+        "etf",
+        "fund"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrumentWrite = {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+};
+
+export const LightTickInvestmentInstrumentSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "market",
+    "kind",
+    "name",
+    "id",
+    "revision",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "SSE",
+        "SZSE",
+        "BSE",
+        "FUND"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "stock",
+        "etf",
+        "fund"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrument = {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentInstrumentCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument",
+    "existing"
+  ],
+  "properties": {
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "market",
+        "kind",
+        "name",
+        "id",
+        "revision",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "market": {
+          "type": "string",
+          "enum": [
+            "SSE",
+            "SZSE",
+            "BSE",
+            "FUND"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stock",
+            "etf",
+            "fund"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "existing": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrumentCreate = {
+  "instrument": {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "existing": boolean;
+};
+
+export const LightTickInvestmentInstrumentUpdateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "name",
+    "archived"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrumentUpdate = {
+  "base_revision": number;
+  "name": string;
+  "archived": boolean;
+};
+
+export const LightTickInvestmentAccountWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "name",
+    "currency",
+    "baseline_date",
+    "opening_cash",
+    "opening_positions"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "enum": [
+        0
+      ]
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "CNY"
+      ]
+    },
+    "baseline_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "opening_cash": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+    },
+    "opening_positions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentAccountWrite = {
+  "base_revision": 0;
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+
+export const LightTickInvestmentAccountSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "currency",
+    "baseline_date",
+    "opening_cash",
+    "opening_positions",
+    "id",
+    "revision",
+    "archived",
+    "created_at",
+    "updated_at",
+    "opening_instruments",
+    "baseline_version"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "CNY"
+      ]
+    },
+    "baseline_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "opening_cash": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+    },
+    "opening_positions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          }
+        }
+      }
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "opening_instruments": {
+      "type": "array",
+      "maxItems": 100,
+      "description": "Current owner instrument labels; identity is immutable, labels do not rewrite opening quantities or costs.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "market",
+          "kind",
+          "name",
+          "id",
+          "revision",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "market": {
+            "type": "string",
+            "enum": [
+              "SSE",
+              "SZSE",
+              "BSE",
+              "FUND"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "stock",
+              "etf",
+              "fund"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "baseline_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickInvestmentAccount = {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "opening_instruments": (
+{
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "baseline_version": number;
+};
+
+export const LightTickInvestmentAccountStatusSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "archived"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "archived": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentAccountStatus = {
+  "base_revision": number;
+  "archived": boolean;
+};
+
+export const LightTickInvestmentInstrumentsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "market",
+          "kind",
+          "name",
+          "id",
+          "revision",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "market": {
+            "type": "string",
+            "enum": [
+              "SSE",
+              "SZSE",
+              "BSE",
+              "FUND"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "stock",
+              "etf",
+              "fund"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstruments = {
+  "revision": string;
+  "items": (
+{
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentAccountsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "currency",
+          "baseline_date",
+          "opening_cash",
+          "opening_positions",
+          "id",
+          "revision",
+          "archived",
+          "created_at",
+          "updated_at",
+          "opening_instruments",
+          "baseline_version"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "CNY"
+            ]
+          },
+          "baseline_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "opening_cash": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "opening_positions": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "instrument_id",
+                "quantity"
+              ],
+              "properties": {
+                "instrument_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "quantity": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                },
+                "cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 120
+                }
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "opening_instruments": {
+            "type": "array",
+            "maxItems": 100,
+            "description": "Current owner instrument labels; identity is immutable, labels do not rewrite opening quantities or costs.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "market",
+                "kind",
+                "name",
+                "id",
+                "revision",
+                "archived",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                "market": {
+                  "type": "string",
+                  "enum": [
+                    "SSE",
+                    "SZSE",
+                    "BSE",
+                    "FUND"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "stock",
+                    "etf",
+                    "fund"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "baseline_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentAccounts = {
+  "revision": string;
+  "items": (
+{
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "opening_instruments": (
+{
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "baseline_version": number;
+}
+)[];
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentInstrumentEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "market",
+        "kind",
+        "name",
+        "id",
+        "revision",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "market": {
+          "type": "string",
+          "enum": [
+            "SSE",
+            "SZSE",
+            "BSE",
+            "FUND"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stock",
+            "etf",
+            "fund"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrumentEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentInstrumentCreateEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument",
+        "existing"
+      ],
+      "properties": {
+        "instrument": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "market",
+            "kind",
+            "name",
+            "id",
+            "revision",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "market": {
+              "type": "string",
+              "enum": [
+                "SSE",
+                "SZSE",
+                "BSE",
+                "FUND"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "stock",
+                "etf",
+                "fund"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "existing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrumentCreateEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "instrument": {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "existing": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentAccountEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "currency",
+        "baseline_date",
+        "opening_cash",
+        "opening_positions",
+        "id",
+        "revision",
+        "archived",
+        "created_at",
+        "updated_at",
+        "opening_instruments",
+        "baseline_version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "CNY"
+          ]
+        },
+        "baseline_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "opening_cash": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+        },
+        "opening_positions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "quantity"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "quantity": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+              },
+              "cost": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 120
+              }
+            }
+          }
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "opening_instruments": {
+          "type": "array",
+          "maxItems": 100,
+          "description": "Current owner instrument labels; identity is immutable, labels do not rewrite opening quantities or costs.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "market",
+              "kind",
+              "name",
+              "id",
+              "revision",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "market": {
+                "type": "string",
+                "enum": [
+                  "SSE",
+                  "SZSE",
+                  "BSE",
+                  "FUND"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "stock",
+                  "etf",
+                  "fund"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "baseline_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentAccountEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "opening_instruments": (
+{
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "baseline_version": number;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentInstrumentsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "market",
+              "kind",
+              "name",
+              "id",
+              "revision",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "market": {
+                "type": "string",
+                "enum": [
+                  "SSE",
+                  "SZSE",
+                  "BSE",
+                  "FUND"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "stock",
+                  "etf",
+                  "fund"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentInstrumentsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": string;
+  "items": (
+{
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentAccountsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "currency",
+              "baseline_date",
+              "opening_cash",
+              "opening_positions",
+              "id",
+              "revision",
+              "archived",
+              "created_at",
+              "updated_at",
+              "opening_instruments",
+              "baseline_version"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "CNY"
+                ]
+              },
+              "baseline_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "opening_cash": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+              },
+              "opening_positions": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "instrument_id",
+                    "quantity"
+                  ],
+                  "properties": {
+                    "instrument_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "quantity": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "cost": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 120
+                    }
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "opening_instruments": {
+                "type": "array",
+                "maxItems": 100,
+                "description": "Current owner instrument labels; identity is immutable, labels do not rewrite opening quantities or costs.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "market",
+                    "kind",
+                    "name",
+                    "id",
+                    "revision",
+                    "archived",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "maxLength": 32
+                    },
+                    "market": {
+                      "type": "string",
+                      "enum": [
+                        "SSE",
+                        "SZSE",
+                        "BSE",
+                        "FUND"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "stock",
+                        "etf",
+                        "fund"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "baseline_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentAccountsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": string;
+  "items": (
+{
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "opening_instruments": (
+{
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "baseline_version": number;
+}
+)[];
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
 export const LightTickKnowledgeSourceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -71728,6 +73496,21 @@ export const GeneratedPublicContractNames = [
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",
   "LightTickId",
+  "LightTickInvestmentAccount",
+  "LightTickInvestmentAccountEnvelope",
+  "LightTickInvestmentAccountStatus",
+  "LightTickInvestmentAccountWrite",
+  "LightTickInvestmentAccounts",
+  "LightTickInvestmentAccountsEnvelope",
+  "LightTickInvestmentInstrument",
+  "LightTickInvestmentInstrumentCreate",
+  "LightTickInvestmentInstrumentCreateEnvelope",
+  "LightTickInvestmentInstrumentEnvelope",
+  "LightTickInvestmentInstrumentUpdate",
+  "LightTickInvestmentInstrumentWrite",
+  "LightTickInvestmentInstruments",
+  "LightTickInvestmentInstrumentsEnvelope",
+  "LightTickInvestmentOpening",
   "LightTickKnowledgeEntry",
   "LightTickKnowledgeEntryEnvelope",
   "LightTickKnowledgeHistory",
