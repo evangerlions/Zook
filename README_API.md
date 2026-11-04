@@ -1724,3 +1724,14 @@ Formal course-route/stage progress is not yet a native projection: activated nat
 `GET /api/v1/lighttick/public/config` adds optional nullable `grow_web_url`. It is the reviewed static Web base from the existing versioned delivery configuration; it must end in `/grow/`, contain no credentials/query/fragment, and use HTTPS (loopback HTTP only outside online). Missing/invalid configuration or a disabled app omits this optional field (clients treat absent/null as unavailable), retaining the default legacy public response. Native clients use this only after verifying owner learning authority/monotonic epoch; frozen migrations do not expose a writable Web link. Native practice follow-up links use `/grow/practice?plan_id=…&feedback_id=…` with no credential material. Legacy-authority links retain their existing source contract. An unmapped formal course-plan ID is not treated as a native goal or plan ID.
 
 For record practices, source text is also read from the immutable referenced record revision, with source_version and current_version separated. Missing original history yields available=false rather than substituting a later body. Creation/follow-up still rechecks the current record version and archive state; existing append-only practice feedback remains owner data.
+
+
+### LightTick 正式课程路线（原生学习）
+
+`/api/v1/lighttick/learning/routes` 是正式课程路线，区别于 goals/manual-plans。GET 分页（limit 1–100、owner/目录修订绑定 cursor）。`/{routeId}` GET/PUT 保存带 base_revision 的完整 brief/document 草稿；`/publish` POST 明确发布不可变路线版本；`/versions/{routeVersion}` GET 历史；`/status` POST 暂停/恢复/归档；`/progress` GET 按当前正文版本的显式完成事实聚合阶段和课次。
+
+brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏、每课 5–120 分钟。document 含 prerequisites、stages 和连续编号 lessons（topic/goal/exercise/assessment/minutes/stage/kind/requires），先修只指向之前课次，至少一次 review，自由节奏最后一课为 review。正式版本与后来草稿分别读取；已发布课次蓝图不能被新路线版本改写。
+
+`/{routeId}/lessons/{number}/publish` POST 原子发布顺序课次并关联稳定 lesson_id。请求包含 base_revision（路线）、base_lesson_revision（课节）、content/references/source_url；正文继续使用原生不可变版本及独立私人状态，不增加通用 sync 实体。正式路线的 collection/正文禁止绕过路线命令编辑。所有写入要求注册 owner、阅读授权、Idempotency-Key；原请求重试不重新构造，冲突为 409，撤权后缓存回执仍受授权约束。
+
+旧 `action-plans/learning-progress` 在原生权威且配置合法 grow_web_url 时投影已发布正式路线，保留旧 percent 四舍六入五取偶、100 路线/100 阶段/500 字名称容量；超限 409 要求使用分页路线接口，未配置地址或撤销阅读授权返回 progress=null。学完使进度修订增长；位置和笔记不推断完成，新正文不继承旧正文的完成。没有正式路线时不回退旧镜像进度。

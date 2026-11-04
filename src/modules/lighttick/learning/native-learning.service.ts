@@ -61,7 +61,7 @@ export class NativeLearningService {
     readonly clock = () => new Date(),
     private readonly cursorSecret = "native-learning-cursor-v1",
   ) {}
-  private cursor(
+  cursor(
     o: LightTickOwner,
     scope: string,
     position: string,
@@ -80,7 +80,7 @@ export class NativeLearningService {
       "base64url",
     );
   }
-  private position(
+  position(
     o: LightTickOwner,
     scope: string,
     cursor: string,
@@ -211,11 +211,13 @@ export class NativeLearningService {
       const authority = await this.requireActive(owner),
         result = await perform(authority),
         now = this.clock().toISOString();
-      if (!kind.startsWith("private:") && kind !== "consent")
+      if ((!kind.startsWith("private:") && kind !== "consent") || kind === "private:complete") {
+        const latest = (await this.repository.getLearningAuthority(owner))!;
         await this.repository.saveLearningAuthority(
-          { ...authority, revision: authority.revision + 1, updatedAt: now },
-          authority.revision,
+          { ...latest, revision: latest.revision + 1, updatedAt: now },
+          latest.revision,
         );
+      }
       await this.repository.saveOperation({
         ...owner,
         operationId,
@@ -323,6 +325,8 @@ export class NativeLearningService {
       id,
       b,
       async () => {
+        if (await this.repository.learningRoutes.getLearningRoute(owner, id))
+          fail(409, "Edit formal course metadata through its versioned route command.");
         const now = this.clock().toISOString();
         await this.repository.saveLearningCollection(
           {
@@ -352,6 +356,7 @@ export class NativeLearningService {
     b: Record<string, unknown>,
     key: string,
     authorize?: () => Promise<void>,
+    routeContext?: { routeId: string; number: number },
   ) {
     identity(id, "lesson-");
     keys(b, [
@@ -366,7 +371,7 @@ export class NativeLearningService {
     const base = integer(b.base_revision, 0, 2147483646),
       collectionId = collectionIdentity(b.collection_id),
       number = integer(b.number, 1, 100000),
-      title = text(b.title, 500, true),
+      title = text(b.title, 1000, true),
       content = text(b.content, 100000, true),
       references = text(b.references, 100000),
       sourceUrl = text(b.source_url ?? "", 1500),
@@ -388,6 +393,9 @@ export class NativeLearningService {
       id,
       b,
       async () => {
+        const formalRoute = await this.repository.learningRoutes.getLearningRoute(owner, collectionId);
+        if (formalRoute && (routeContext?.routeId !== collectionId || routeContext.number !== number))
+          fail(409, "Publish formal course lessons through their versioned route command.");
         const collection = await this.repository.getLearningCollection(
           owner,
           collectionId,

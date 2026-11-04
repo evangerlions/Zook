@@ -1,4 +1,6 @@
 import { learningQuestions } from "../modules/lighttick/learning/learning-questions.ts";
+import { LearningRouteService } from "../modules/lighttick/learning/learning-route.service.ts";
+import { routeProgress } from "../modules/lighttick/learning/learning-route.progress.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -101,7 +103,22 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    if (r.method === "GET" && path === "/authority")
+    if (path === "/routes" || path.startsWith("/routes/")) {
+      const routes = new LearningRouteService(service), match = /^\/routes\/(plan-[a-zA-Z0-9-]+)(?:\/(publish|status|progress|versions\/[1-9][0-9]*|lessons\/[1-9][0-9]*\/publish))?$/.exec(path);
+      if (path === "/routes" && r.method === "GET") result = await routes.list(owner, r.query?.cursor ?? "", r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 25);
+      else if (match) {
+        const id = match[1], action = match[2];
+        if (!action && r.method === "GET") result = await routes.read(owner, id);
+        else if (!action && r.method === "PUT") result = await routes.save(owner, id, body, key, assertActive);
+        else if (action === "publish" && r.method === "POST") result = await routes.publish(owner, id, body, key, assertActive);
+        else if (action === "status" && r.method === "POST") result = await routes.transition(owner, id, body, key, assertActive);
+        else if (action === "progress" && r.method === "GET") result = await routeProgress(service, owner, id);
+        else if (action?.startsWith("versions/") && r.method === "GET") result = await routes.read(owner, id, Number(action.split("/")[1]));
+        else if (action?.startsWith("lessons/") && r.method === "POST") result = await routes.publishLesson(owner, id, Number(action.split("/")[1]), body, key, assertActive);
+        else throw new ApplicationError(405, "VALIDATION_ERROR", "Unsupported course route method.");
+      } else throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Course route was not found.");
+    }
+    else if (r.method === "GET" && path === "/authority")
       result = {
         phase: authority?.phase ?? "unavailable",
         epoch: authority?.epoch ?? 0,

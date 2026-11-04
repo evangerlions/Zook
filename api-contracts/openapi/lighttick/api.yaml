@@ -48,19 +48,21 @@ paths:
       tags:
       - lighttick-planning
       summary: listLightTickManualPlans
-      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
-        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
-        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
-        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
-        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
-        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
-        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
-        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
-        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
-        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
-        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
-        Private source snapshots and condition reasons are excluded from implicit AI context.
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync
+        requests. Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans.
+        PATCH supports POST with X-HTTP-Method-Override set to PATCH on the same manual-plan resource.
+        Registered Zook owner only; independent of Grow, AI and web sessions. Drafts are inert. Unknown
+        effort remains null and undated manual tasks never enter Today. Mutations atomically persist the
+        immutable request receipt; retry the identical body and Idempotency-Key after a lost response.
+        Existing tasks are retained. Local adoption is a separately reviewed one-way transfer; source
+        proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version
+        pair and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation
+        checks the current source, consumes its revision once, preserves a readable source snapshot, atomically
+        cancels only reviewed pending replacements and creates linked work. resume_goal requires all outstanding
+        work to be explicitly reviewed; no automatic catch-up. Goal-version and current daily conditions
+        are checked at confirmation. Private source snapshots and condition reasons are excluded from
+        implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -89,19 +91,21 @@ paths:
       tags:
       - lighttick-planning
       summary: createLightTickManualPlan
-      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
-        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
-        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
-        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
-        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
-        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
-        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
-        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
-        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
-        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
-        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
-        Private source snapshots and condition reasons are excluded from implicit AI context.
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync
+        requests. Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans.
+        PATCH supports POST with X-HTTP-Method-Override set to PATCH on the same manual-plan resource.
+        Registered Zook owner only; independent of Grow, AI and web sessions. Drafts are inert. Unknown
+        effort remains null and undated manual tasks never enter Today. Mutations atomically persist the
+        immutable request receipt; retry the identical body and Idempotency-Key after a lost response.
+        Existing tasks are retained. Local adoption is a separately reviewed one-way transfer; source
+        proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version
+        pair and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation
+        checks the current source, consumes its revision once, preserves a readable source snapshot, atomically
+        cancels only reviewed pending replacements and creates linked work. resume_goal requires all outstanding
+        work to be explicitly reviewed; no automatic catch-up. Goal-version and current daily conditions
+        are checked at confirmation. Private source snapshots and condition reasons are excluded from
+        implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -139,19 +143,21 @@ paths:
       tags:
       - lighttick-planning
       summary: getLightTickManualPlan
-      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
-        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
-        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
-        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
-        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
-        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
-        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
-        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
-        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
-        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
-        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
-        Private source snapshots and condition reasons are excluded from implicit AI context.
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync
+        requests. Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans.
+        PATCH supports POST with X-HTTP-Method-Override set to PATCH on the same manual-plan resource.
+        Registered Zook owner only; independent of Grow, AI and web sessions. Drafts are inert. Unknown
+        effort remains null and undated manual tasks never enter Today. Mutations atomically persist the
+        immutable request receipt; retry the identical body and Idempotency-Key after a lost response.
+        Existing tasks are retained. Local adoption is a separately reviewed one-way transfer; source
+        proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version
+        pair and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation
+        checks the current source, consumes its revision once, preserves a readable source snapshot, atomically
+        cancels only reviewed pending replacements and creates linked work. resume_goal requires all outstanding
+        work to be explicitly reviewed; no automatic catch-up. Goal-version and current daily conditions
+        are checked at confirmation. Private source snapshots and condition reasons are excluded from
+        implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -187,19 +193,21 @@ paths:
       tags:
       - lighttick-planning
       summary: editLightTickManualPlan
-      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
-        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
-        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
-        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
-        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
-        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
-        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
-        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
-        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
-        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
-        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
-        Private source snapshots and condition reasons are excluded from implicit AI context.
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync
+        requests. Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans.
+        PATCH supports POST with X-HTTP-Method-Override set to PATCH on the same manual-plan resource.
+        Registered Zook owner only; independent of Grow, AI and web sessions. Drafts are inert. Unknown
+        effort remains null and undated manual tasks never enter Today. Mutations atomically persist the
+        immutable request receipt; retry the identical body and Idempotency-Key after a lost response.
+        Existing tasks are retained. Local adoption is a separately reviewed one-way transfer; source
+        proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version
+        pair and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation
+        checks the current source, consumes its revision once, preserves a readable source snapshot, atomically
+        cancels only reviewed pending replacements and creates linked work. resume_goal requires all outstanding
+        work to be explicitly reviewed; no automatic catch-up. Goal-version and current daily conditions
+        are checked at confirmation. Private source snapshots and condition reasons are excluded from
+        implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -243,19 +251,21 @@ paths:
       tags:
       - lighttick-planning
       summary: confirmLightTickManualPlan
-      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
-        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
-        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
-        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
-        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
-        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
-        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
-        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version pair
-        and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation checks the
-        current source, consumes its revision once, preserves a readable source snapshot, atomically cancels only
-        reviewed pending replacements and creates linked work. resume_goal requires all outstanding work to be explicitly
-        reviewed; no automatic catch-up. Goal-version and current daily conditions are checked at confirmation.
-        Private source snapshots and condition reasons are excluded from implicit AI context.
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync
+        requests. Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans.
+        PATCH supports POST with X-HTTP-Method-Override set to PATCH on the same manual-plan resource.
+        Registered Zook owner only; independent of Grow, AI and web sessions. Drafts are inert. Unknown
+        effort remains null and undated manual tasks never enter Today. Mutations atomically persist the
+        immutable request receipt; retry the identical body and Idempotency-Key after a lost response.
+        Existing tasks are retained. Local adoption is a separately reviewed one-way transfer; source
+        proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+        tombstones. Native continuation optionally identifies an owner-scoped source_reflection_id/version
+        pair and reviewed replacement task IDs/versions. Saved feedback alone creates no tasks. Confirmation
+        checks the current source, consumes its revision once, preserves a readable source snapshot, atomically
+        cancels only reviewed pending replacements and creates linked work. resume_goal requires all outstanding
+        work to be explicitly reviewed; no automatic catch-up. Goal-version and current daily conditions
+        are checked at confirmation. Private source snapshots and condition reasons are excluded from
+        implicit AI context.
       responses:
         '200':
           description: Owner-scoped result.
@@ -299,13 +309,14 @@ paths:
       tags:
       - lighttick-planning
       summary: adoptLightTickLocalWorkspace
-      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync requests.
-        Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans. PATCH supports POST
-        with X-HTTP-Method-Override set to PATCH on the same manual-plan resource. Registered Zook owner only; independent
-        of Grow, AI and web sessions. Drafts are inert. Unknown effort remains null and undated manual tasks never
-        enter Today. Mutations atomically persist the immutable request receipt; retry the identical body and Idempotency-Key
-        after a lost response. Existing tasks are retained. Local adoption is a separately reviewed one-way transfer;
-        source proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
+      description: New native clients send X-LightTick-Task-Schema set to 2 on task, plan, Today and sync
+        requests. Older clients receive 426 CONTRACT_UPGRADE_REQUIRED once this owner has manual plans.
+        PATCH supports POST with X-HTTP-Method-Override set to PATCH on the same manual-plan resource.
+        Registered Zook owner only; independent of Grow, AI and web sessions. Drafts are inert. Unknown
+        effort remains null and undated manual tasks never enter Today. Mutations atomically persist the
+        immutable request receipt; retry the identical body and Idempotency-Key after a lost response.
+        Existing tasks are retained. Local adoption is a separately reviewed one-way transfer; source
+        proof is never persisted, and account deletion scrubs mappings and retains only opaque anti-resurrection
         tombstones.
       responses:
         '200':
@@ -345,8 +356,9 @@ paths:
       - lighttick-records
       summary: listLightTickRecords
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -401,8 +413,9 @@ paths:
       - lighttick-records
       summary: exportLightTickRecords
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -427,8 +440,9 @@ paths:
       - lighttick-records
       summary: getLightTickRecord
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -461,8 +475,9 @@ paths:
       - lighttick-records
       summary: saveLightTickRecord
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -503,8 +518,9 @@ paths:
       - lighttick-records
       summary: getLightTickRecordHistory
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -538,8 +554,9 @@ paths:
       - lighttick-records
       summary: listLightTickRecordVersions
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -573,8 +590,9 @@ paths:
       - lighttick-records
       summary: archiveLightTickRecord
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -615,8 +633,9 @@ paths:
       - lighttick-records
       summary: restoreLightTickRecord
       description: Registered LightTick owner only. No goal or AI call. Writes require an immutable Idempotency-Key;
-        same key with another body or resource returns 409. base_version protects edits, archive and restore. Optional
-        adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar dates.
+        same key with another body or resource returns 409. base_version protects edits, archive and restore.
+        Optional adopted_summary requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
       responses:
         '200':
           description: Owner scoped result.
@@ -657,8 +676,8 @@ paths:
       - lighttick-planning
       summary: createLightTickPlanningSession
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -693,8 +712,8 @@ paths:
       - lighttick-planning
       summary: getLightTickPlanningSession
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -729,8 +748,8 @@ paths:
       - lighttick-planning
       summary: sendLightTickPlanningMessage
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -772,8 +791,8 @@ paths:
       - lighttick-planning
       summary: updateLightTickPlanningContext
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -814,8 +833,8 @@ paths:
       - lighttick-planning
       summary: Compatibility alias for context PATCH
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -864,8 +883,8 @@ paths:
       - lighttick-planning
       summary: generateLightTickPlanningDraft
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -907,8 +926,8 @@ paths:
       - lighttick-planning
       summary: confirmLightTickPlanningDraft
       description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
-        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new planning cycles
-        and do not rewrite existing active cycles.
+        enables it). Mutations require Idempotency-Key; stale versions require reload. Drafts are new
+        planning cycles and do not rewrite existing active cycles.
       parameters:
       - name: session_id
         in: path
@@ -949,9 +968,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Get windowed execution facts and feedback
-      description: Requires a registered LightTick membership; guest sessions receive 403. from is inclusive and
-        to exclusive; omitted bounds include all history. Valid completions interrupt skip streaks. Reads append
-        audit records.
+      description: Requires a registered LightTick membership; guest sessions receive 403. from is inclusive
+        and to exclusive; omitted bounds include all history. Valid completions interrupt skip streaks.
+        Reads append audit records.
       parameters:
       - in: query
         name: from
@@ -995,9 +1014,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Read recent chat history
-      description: Requires a registered LightTick membership; guest sessions receive 403. thread_id defaults to
-        goal_id. Messages are scoped by owner, goal_id and thread_id before applying limit, even when goals reuse
-        a thread_id. Returns the latest bounded messages in ascending created_at and id order.
+      description: Requires a registered LightTick membership; guest sessions receive 403. thread_id defaults
+        to goal_id. Messages are scoped by owner, goal_id and thread_id before applying limit, even when
+        goals reuse a thread_id. Returns the latest bounded messages in ascending created_at and id order.
       parameters:
       - in: query
         name: goal_id
@@ -1079,9 +1098,9 @@ paths:
       tags:
       - lighttick-phase2
       summary: Synchronize and list DNA insights
-      description: Requires a registered LightTick membership; guest sessions receive 403. Synchronizes deterministic
-        rule outputs. Newly synchronized insights have no goal_id; goal_id filters stored goal-specific insights
-        only.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Synchronizes
+        deterministic rule outputs. Newly synchronized insights have no goal_id; goal_id filters stored
+        goal-specific insights only.
       parameters:
       - in: query
         name: goal_id
@@ -1118,9 +1137,10 @@ paths:
       tags:
       - lighttick-phase2
       summary: Confirm, deny, correct or dismiss an insight
-      description: Requires a registered LightTick membership; guest sessions receive 403. Only proposed rules can
-        be confirmed; hypotheses return LIGHTTICK_INSIGHT_NOT_ACTIONABLE (409). correct requires 2–500 trimmed characters.
-        dismiss permits proposed or confirmed insights. Other decided states return 409.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Only proposed
+        rules can be confirmed; hypotheses return LIGHTTICK_INSIGHT_NOT_ACTIONABLE (409). correct requires
+        2–500 trimmed characters. dismiss permits proposed or confirmed insights. Other decided states
+        return 409.
       parameters:
       - in: path
         name: insightId
@@ -1163,8 +1183,8 @@ paths:
       tags:
       - lighttick-phase2
       summary: Propose adjustments from execution facts
-      description: Requires a registered LightTick membership; guest sessions receive 403. Does not apply a plan
-        change. An existing pending proposal or three rejections in seven days suppresses proposals.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Does not apply
+        a plan change. An existing pending proposal or three rejections in seven days suppresses proposals.
       parameters: []
       responses:
         '200':
@@ -1238,11 +1258,11 @@ paths:
       tags:
       - lighttick-phase2
       summary: Record a review decision atomically
-      description: Requires a registered LightTick membership; guest sessions receive 403. accept_partial requires
-        nonempty known recommendation_ids; ignore accepts an optional ignore_reason (up to 500 characters); blank
-        reasons are omitted. Acceptance creates a proposed plan, not an active plan. Concurrent or repeated decisions
-        return 409 LIGHTTICK_VERSION_CONFLICT or LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED; failed persistence rolls
-        back the plan. proposed_plan retains camelCase fields.
+      description: Requires a registered LightTick membership; guest sessions receive 403. accept_partial
+        requires nonempty known recommendation_ids; ignore accepts an optional ignore_reason (up to 500
+        characters); blank reasons are omitted. Acceptance creates a proposed plan, not an active plan.
+        Concurrent or repeated decisions return 409 LIGHTTICK_VERSION_CONFLICT or LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED;
+        failed persistence rolls back the plan. proposed_plan retains camelCase fields.
       parameters:
       - in: path
         name: reviewId
@@ -1285,10 +1305,10 @@ paths:
       tags:
       - lighttick-phase2
       summary: Get at most one direction-aware suggestion
-      description: Requires a registered LightTick membership; guest sessions receive 403. Uses confirmed insights
-        matching today's executable tasks. Positive numeric deviation suggests increasing duration, negative suggests
-        decreasing it; zero or absent numeric evidence produces no directional suggestion. Top-level suggestion
-        fields retain camelCase.
+      description: Requires a registered LightTick membership; guest sessions receive 403. Uses confirmed
+        insights matching today's executable tasks. Positive numeric deviation suggests increasing duration,
+        negative suggests decreasing it; zero or absent numeric evidence produces no directional suggestion.
+        Top-level suggestion fields retain camelCase.
       parameters:
       - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
@@ -1323,8 +1343,8 @@ paths:
       tags:
       - lighttick-phase2
       summary: Accept or dismiss a rhythm suggestion
-      description: Requires a registered LightTick membership; guest sessions receive 403. accept records intent
-        only and does not mutate tasks or plans; dismiss retires the insight from the feed.
+      description: Requires a registered LightTick membership; guest sessions receive 403. accept records
+        intent only and does not mutate tasks or plans; dismiss retires the insight from the feed.
       parameters:
       - $ref: '#/components/parameters/LightTickTaskSchema'
       responses:
@@ -1383,8 +1403,8 @@ paths:
       tags:
       - lighttick-account
       summary: Create or idempotently recover a device-bound restricted guest session
-      description: The returned upgrade token is an opaque, device-bound proof for a later account upgrade and must
-        be stored as securely as a refresh token.
+      description: The returned upgrade token is an opaque, device-bound proof for a later account upgrade
+        and must be stored as securely as a refresh token.
       security: []
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
@@ -1415,8 +1435,8 @@ paths:
       tags:
       - lighttick-account
       summary: Recover the current guest or registered LightTick session metadata
-      description: Native clients refresh access credentials through the common auth contract, then call this endpoint
-        to recover product-scoped state.
+      description: Native clients refresh access credentials through the common auth contract, then call
+        this endpoint to recover product-scoped state.
       responses:
         '200':
           description: Current product-scoped account session
@@ -1564,7 +1584,8 @@ paths:
       tags:
       - lighttick-profile
       - lighttick-tasks
-      summary: Create an action-first starter from a fuzzy wish using an always-available deterministic fallback
+      summary: Create an action-first starter from a fuzzy wish using an always-available deterministic
+        fallback
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1628,8 +1649,8 @@ paths:
       tags:
       - lighttick-profile
       summary: Read account-wide saved commitment and current eligibility
-      description: Read-only. No profile returns a null mode. Counts use the same effective-action rule as selection;
-        deep planning does not change eligibility.
+      description: Read-only. No profile returns a null mode. Counts use the same effective-action rule
+        as selection; deep planning does not change eligibility.
       responses:
         '200':
           description: Saved preference and live eligibility
@@ -1764,11 +1785,11 @@ paths:
       tags:
       - lighttick-goals
       summary: Pause, resume, complete, or archive a goal
-      description: Goal lifecycle and task mutations serialize on the same owner lock. Cached task commands cannot
-        execute a paused, completed or archived goal; legacy explicitly retained light tasks remain available while
-        paused. A manual goal with outstanding work requires a reviewed manual resumption instead of direct resume.
-        History remains readable. Delayed notifications for stopped goal, plan or task resources are suppressed
-        at delivery.
+      description: Goal lifecycle and task mutations serialize on the same owner lock. Cached task commands
+        cannot execute a paused, completed or archived goal; legacy explicitly retained light tasks remain
+        available while paused. A manual goal with outstanding work requires a reviewed manual resumption
+        instead of direct resume. History remains readable. Delayed notifications for stopped goal, plan
+        or task resources are suppressed at delivery.
       requestBody:
         required: true
         content:
@@ -1909,7 +1930,8 @@ paths:
       - name: date
         in: query
         required: false
-        description: Optional business date for deterministic refresh; defaults to the user's current local date.
+        description: Optional business date for deterministic refresh; defaults to the user's current
+          local date.
         schema:
           type: string
           format: date
@@ -2137,8 +2159,8 @@ paths:
       tags:
       - lighttick-reviews
       summary: List saved personal reflections for one goal without invoking AI
-      description: Registered account required. Owner-scoped journal; content is never implicitly included in AI
-        context.
+      description: Registered account required. Owner-scoped journal; content is never implicitly included
+        in AI context.
       parameters:
       - name: goal_id
         in: query
@@ -2174,9 +2196,9 @@ paths:
       tags:
       - lighttick-reviews
       summary: Create or edit a user-authored reflection with optimistic versioning
-      description: Registered account required. Client-generated stable ID. base_version=0 creates; edits require
-        current version. Identical lost-response replay returns saved version; stale edits return 409. Does not
-        invoke AI or change tasks.
+      description: Registered account required. Client-generated stable ID. base_version=0 creates; edits
+        require current version. Identical lost-response replay returns saved version; stale edits return
+        409. Does not invoke AI or change tasks.
       parameters:
       - name: reflectionId
         in: path
@@ -2215,9 +2237,9 @@ paths:
       - lighttick-reviews
       - lighttick-ai
       summary: Create a fresh daily, weekly or monthly review for selected dates or a whole plan
-      description: Optional plan_id restricts facts to that plan and requires its exact dates. Without it, dates
-        select this goal. Each new idempotency key creates an independent analysis; replay returns the same run.
-        Private journal content is not loaded automatically.
+      description: Optional plan_id restricts facts to that plan and requires its exact dates. Without
+        it, dates select this goal. Each new idempotency key creates an independent analysis; replay returns
+        the same run. Private journal content is not loaded automatically.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -2241,13 +2263,14 @@ paths:
       tags:
       - lighttick-ai
       summary: Create a recoverable bounded Coach or multi-turn chat run
-      description: For scene=chat, message is required (trimmed, 1–4000 characters); thread_id defaults to goal_id.
-        All referenced resources must belong to the requested goal; a task must also belong to plan_id when supplied.
-        Invalid or foreign-owner references return 404; same-owner goal or task-plan mismatches return 422 before
-        saving messages or queueing. Conversation and execution facts are isolated by goal; thread_id may be reused
-        across goals without sharing history. The user message is persisted before queueing, and the response adds
-        thread_id and message_id. Poll the run and read chat/messages for the assistant response. Registered accounts
-        only; guests receive 403. Reusing Idempotency-Key with a different body returns 409.
+      description: For scene=chat, message is required (trimmed, 1–4000 characters); thread_id defaults
+        to goal_id. All referenced resources must belong to the requested goal; a task must also belong
+        to plan_id when supplied. Invalid or foreign-owner references return 404; same-owner goal or task-plan
+        mismatches return 422 before saving messages or queueing. Conversation and execution facts are
+        isolated by goal; thread_id may be reused across goals without sharing history. The user message
+        is persisted before queueing, and the response adds thread_id and message_id. Poll the run and
+        read chat/messages for the assistant response. Registered accounts only; guests receive 403. Reusing
+        Idempotency-Key with a different body returns 409.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -2438,7 +2461,11 @@ paths:
       tags:
       - lighttick-sync
       summary: Apply an idempotent batch of offline client operations
-      description: Each supported task command, its change record and operation receipt commit atomically. Concurrent matching accepted operation IDs return duplicate without repeating the mutation; conflicts and rejections retain their original status on replay. A storage failure aborts the affected operation; earlier accepted batch members remain committed and clients retry the original IDs and payloads. Unsupported entity writes remain rejected.
+      description: Each supported task command, its change record and operation receipt commit atomically.
+        Concurrent matching accepted operation IDs return duplicate without repeating the mutation; conflicts
+        and rejections retain their original status on replay. A storage failure aborts the affected operation;
+        earlier accepted batch members remain committed and clients retry the original IDs and payloads.
+        Unsupported entity writes remain rejected.
       requestBody:
         required: true
         content:
@@ -2468,7 +2495,9 @@ paths:
   /api/v1/lighttick/sync/pull:
     get:
       operationId: pullLightTickSyncChanges
-      description: PostgreSQL owner writes acquire one transaction gate before domain locks and sequence allocation. A later write for the same owner cannot commit past an earlier uncommitted change. Sequence gaps across owners are allowed; the wire cursor format is unchanged.
+      description: PostgreSQL owner writes acquire one transaction gate before domain locks and sequence
+        allocation. A later write for the same owner cannot commit past an earlier uncommitted change.
+        Sequence gaps across owners are allowed; the wire cursor format is unchanged.
       tags:
       - lighttick-sync
       summary: Pull an ordered owner-scoped change feed
@@ -2573,9 +2602,9 @@ paths:
       tags:
       - lighttick-actions
       summary: getLightTickActionWorkspace
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters: []
       responses:
         '200':
@@ -2603,9 +2632,9 @@ paths:
       tags:
       - lighttick-actions
       summary: createLightTickActionPlans
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -2684,10 +2713,11 @@ paths:
       tags:
       - lighttick-actions
       summary: Create a reviewed single check practice from an owned current source
-      description: Registered LightTick membership or trusted active Grow action bridge, schema header 2 and opt-in
-        write gate are required. Current source is checked only for new commands; committed identical keys replay
-        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL
-        are not copied. No lesson completion, execution minutes or AI calls are created.
+      description: Registered LightTick membership or trusted active Grow action bridge, schema header
+        2 and opt-in write gate are required. Current source is checked only for new commands; committed
+        identical keys replay after source withdrawal. Reading-only links do not authorize action handoff.
+        Source text, title and URL are not copied. No lesson completion, execution minutes or AI calls
+        are created.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -2763,17 +2793,18 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-      description: Read-only review. Returns the selected feedback, source availability/version and current active
-        parents. It never creates or completes an action.
+      description: Read-only review. Returns the selected feedback, source availability/version and current
+        active parents. It never creates or completes an action.
     post:
       operationId: createLightTickPracticeFollowUp
       tags:
       - lighttick-actions
       summary: Confirm a reviewed follow-up from one owned practice feedback
-      description: Registered LightTick membership or trusted active Grow action bridge, schema header 2 and opt-in
-        write gate are required. Current source is checked only for new commands; committed identical keys replay
-        after source withdrawal. Reading-only links do not authorize action handoff. Source text, title and URL
-        are not copied. No lesson completion, execution minutes or AI calls are created.
+      description: Registered LightTick membership or trusted active Grow action bridge, schema header
+        2 and opt-in write gate are required. Current source is checked only for new commands; committed
+        identical keys replay after source withdrawal. Reading-only links do not authorize action handoff.
+        Source text, title and URL are not copied. No lesson completion, execution minutes or AI calls
+        are created.
       parameters:
       - name: planId
         in: path
@@ -2849,17 +2880,17 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-      description: Missing or withdrawn sources return available=false. A reading binding change never opens a different
-        source. No source text is retained in action receipts or AI context.
+      description: Missing or withdrawn sources return available=false. A reading binding change never
+        opens a different source. No source text is retained in action receipts or AI context.
   /api/v1/lighttick/action-plans/{planId}/operations:
     post:
       operationId: mutateLightTickActionPlan
       tags:
       - lighttick-actions
       summary: mutateLightTickActionPlan
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: planId
         in: path
@@ -2906,9 +2937,9 @@ paths:
       tags:
       - lighttick-actions
       summary: listLightTickActionExecutions
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: plan_id
         in: query
@@ -2948,9 +2979,9 @@ paths:
       tags:
       - lighttick-actions
       summary: getLightTickActionRequestReceipt
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: key
         in: path
@@ -2984,9 +3015,9 @@ paths:
       tags:
       - lighttick-actions
       summary: exportLightTickActionCalendar
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: planId
         in: path
@@ -3020,9 +3051,9 @@ paths:
       tags:
       - lighttick-actions
       summary: claimLightTickActionReminder
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: planId
         in: path
@@ -3069,9 +3100,9 @@ paths:
       tags:
       - lighttick-actions
       summary: previewLightTickActionReview
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -3113,9 +3144,9 @@ paths:
       tags:
       - lighttick-actions
       summary: saveLightTickActionReview
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -3156,9 +3187,9 @@ paths:
       tags:
       - lighttick-actions
       summary: listLightTickActionReviews
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: plan_id
         in: query
@@ -3198,9 +3229,9 @@ paths:
       tags:
       - lighttick-actions
       summary: generateLightTickActionSummary
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -3242,9 +3273,9 @@ paths:
       tags:
       - lighttick-actions
       summary: createLightTickGrowPairingTicket
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -3280,12 +3311,13 @@ paths:
       tags:
       - lighttick-actions
       summary: forwardVerifiedGrowActionCommand
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. Signed source-context/confirmation/receipt/reconcile infrastructure is available only to an existing
-        active binding and active registered membership. It does not enable action commands, new pairing or v2 import.
-        Same event ID with different canonical payload returns 409 SOURCE_EVENT_CONFLICT; retry transport failures
-        with the unchanged event payload and fresh transport signature.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. Signed source-context/confirmation/receipt/reconcile infrastructure
+        is available only to an existing active binding and active registered membership. It does not
+        enable action commands, new pairing or v2 import. Same event ID with different canonical payload
+        returns 409 SOURCE_EVENT_CONFLICT; retry transport failures with the unchanged event payload and
+        fresh transport signature.
       parameters:
       - name: X-Grow-Account-Id
         in: header
@@ -3352,8 +3384,8 @@ paths:
       tags:
       - lighttick-records
       summary: createRecordLinkTicket
-      description: Registered owner creates a five minute records-only connection code. Separate from action-plan
-        consent.
+      description: Registered owner creates a five minute records-only connection code. Separate from
+        action-plan consent.
       responses:
         '200':
           description: Owner result.
@@ -3397,8 +3429,8 @@ paths:
       tags:
       - lighttick-records
       summary: freezeRecordHandoffForRecovery
-      description: Sets an active handoff read-only and returns the latest full export. Source stays frozen; old
-        source snapshots must never overwrite newer edits.
+      description: Sets an active handoff read-only and returns the latest full export. Source stays frozen;
+        old source snapshots must never overwrite newer edits.
       responses:
         '200':
           description: Owner result.
@@ -3420,12 +3452,13 @@ paths:
       tags:
       - lighttick-records
       summary: bridgeGrowRecords
-      description: Trusted Grow instance and authenticated subject are attested with HMAC SHA256 over instance +
-        LF + subject + LF + timestamp + LF + nonce + LF + recursively key-sorted compact JSON body. Timestamp tolerance
-        120 seconds, nonce one-time per source, secret >=32 characters. preview/claim/stage/activate/status/request
-        are records-only. Stage is invisible; activate requires a matching signed frozen source receipt. Legacy
-        AI history is read-only. Disabled by default. cancel is allowed only before activation; its confirmed receipt
-        permits the source to resume local writes. A new operation requires a fresh ticket for the same target.
+      description: Trusted Grow instance and authenticated subject are attested with HMAC SHA256 over
+        instance + LF + subject + LF + timestamp + LF + nonce + LF + recursively key-sorted compact JSON
+        body. Timestamp tolerance 120 seconds, nonce one-time per source, secret >=32 characters. preview/claim/stage/activate/status/request
+        are records-only. Stage is invisible; activate requires a matching signed frozen source receipt.
+        Legacy AI history is read-only. Disabled by default. cancel is allowed only before activation;
+        its confirmed receipt permits the source to resume local writes. A new operation requires a fresh
+        ticket for the same target.
       security: []
       parameters:
       - in: header
@@ -3517,9 +3550,9 @@ paths:
       tags:
       - lighttick-actions
       summary: Arrange verified content by date
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
-        writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
+        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
+        review preview do not enable writes. No native or source-delivery capability is implied.
       parameters:
       - name: X-Grow-Action-Schema
         in: header
@@ -3637,8 +3670,8 @@ paths:
       tags:
       - LightTick
       summary: Read separately consented private learning state
-      description: Separately consented private state from Grow. Queued commands are pending until a source receipt;
-        reading and saving notes never imply completion.
+      description: Separately consented private state from Grow. Queued commands are pending until a source
+        receipt; reading and saving notes never imply completion.
       security:
       - bearerAuth: []
       parameters:
@@ -3670,8 +3703,8 @@ paths:
       tags:
       - LightTick
       summary: Queue explicit private learning command
-      description: Separately consented private state from Grow. Queued commands are pending until a source receipt;
-        reading and saving notes never imply completion.
+      description: Separately consented private state from Grow. Queued commands are pending until a source
+        receipt; reading and saving notes never imply completion.
       security:
       - bearerAuth: []
       parameters:
@@ -3718,11 +3751,12 @@ paths:
       tags:
       - lighttick-goals
       summary: Review basic goal continuation and applicable conditions
-      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal and condition
-        versions, explicit ongoing/temporary windows, and durable immutable request receipts. Invalidation preserves
-        the original window and cannot resurrect superseded budgets. Changing capacity never deletes existing work.
-        Context reads report excess known workload and unknown effort honestly. LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0
-        closes new continuation writes but retains reads and original accepted-request replay.
+      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal
+        and condition versions, explicit ongoing/temporary windows, and durable immutable request receipts.
+        Invalidation preserves the original window and cannot resurrect superseded budgets. Changing capacity
+        never deletes existing work. Context reads report excess known workload and unknown effort honestly.
+        LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0 closes new continuation writes but retains reads and original
+        accepted-request replay.
       parameters:
       - name: period_start
         in: query
@@ -3766,11 +3800,12 @@ paths:
       tags:
       - lighttick-goals
       summary: Confirm, correct or invalidate a scoped daily condition
-      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal and condition
-        versions, explicit ongoing/temporary windows, and durable immutable request receipts. Invalidation preserves
-        the original window and cannot resurrect superseded budgets. Changing capacity never deletes existing work.
-        Context reads report excess known workload and unknown effort honestly. LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0
-        closes new continuation writes but retains reads and original accepted-request replay.
+      description: Registered owner only, independent of Grow and AI. Confirmed daily conditions use goal
+        and condition versions, explicit ongoing/temporary windows, and durable immutable request receipts.
+        Invalidation preserves the original window and cannot resurrect superseded budgets. Changing capacity
+        never deletes existing work. Context reads report excess known workload and unknown effort honestly.
+        LIGHTTICK_NATIVE_CONTINUATION_ENABLED=0 closes new continuation writes but retains reads and original
+        accepted-request replay.
       requestBody:
         required: true
         content:
@@ -3804,9 +3839,11 @@ paths:
       tags:
       - lighttick-planning
       summary: Edit tasks in the same unconfirmed draft
-      description: Registered owner, explicit draft/session/context/plan versions and Idempotency-Key required.
-        Updates the same draft ID, never schedules work. Goal or existing-work changes require regeneration.
-        Disabled planning retains reads and accepted-request reconciliation. Android may use POST with X-HTTP-Method-Override set to PATCH on this same resource; other session actions reject method override.
+      description: Registered owner, explicit draft/session/context/plan versions and Idempotency-Key
+        required. Updates the same draft ID, never schedules work. Goal or existing-work changes require
+        regeneration. Disabled planning retains reads and accepted-request reconciliation. Android may
+        use POST with X-HTTP-Method-Override set to PATCH on this same resource; other session actions
+        reject method override.
       parameters:
       - name: session_id
         in: path
@@ -3849,9 +3886,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Authority
-      description: Read native learning authority and write availability. New owners
-        start in zook authority only when enabled; existing mirrors remain legacy until
-        verified migration.
+      description: Read native learning authority and write availability. New owners start in zook authority
+        only when enabled; existing mirrors remain legacy until verified migration.
       parameters: []
       responses:
         '200':
@@ -3880,8 +3916,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Consent
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -3917,8 +3953,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Collections
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: cursor
         in: query
@@ -3961,8 +3997,8 @@ paths:
       tags:
       - lighttick-learning
       summary: SaveCollection
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: collectionId
         in: path
@@ -4005,8 +4041,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Lessons
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: cursor
         in: query
@@ -4056,8 +4092,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Publish
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: lessonId
         in: path
@@ -4101,8 +4137,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Publication
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: lessonId
         in: path
@@ -4145,8 +4181,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Private
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: lessonId
         in: path
@@ -4188,10 +4224,9 @@ paths:
       tags:
       - lighttick-learning
       summary: SavePrivate
-      description: Separate CAS for notes, position and explicit completion. Position
-        may move backwards. Content versions retain independent private history. An
-        unchanged receipt replays the original result; a new request is rejected while
-        writes are disabled.
+      description: Separate CAS for notes, position and explicit completion. Position may move backwards.
+        Content versions retain independent private history. An unchanged receipt replays the original
+        result; a new request is rejected while writes are disabled.
       parameters:
       - name: lessonId
         in: path
@@ -4235,8 +4270,8 @@ paths:
       tags:
       - lighttick-learning
       summary: History
-      description: Registered LightTick owner only. Native authority is required. Writes
-        use immutable Idempotency-Key and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: lessonId
         in: path
@@ -4287,6 +4322,355 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/routes:
+    get:
+      operationId: nativeLearningRoutes
+      tags:
+      - lighttick-learning
+      summary: Routes
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRoutesEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/routes/{routeId}:
+    get:
+      operationId: nativeLearningRoute
+      tags:
+      - lighttick-learning
+      summary: Route
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: nativeLearningSaveRoute
+      tags:
+      - lighttick-learning
+      summary: SaveRoute
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningRouteWrite'
+  /api/v1/lighttick/learning/routes/{routeId}/publish:
+    post:
+      operationId: nativeLearningRoutePublish
+      tags:
+      - lighttick-learning
+      summary: RoutePublish
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningRoutePublishWrite'
+  /api/v1/lighttick/learning/routes/{routeId}/status:
+    post:
+      operationId: nativeLearningRouteStatus
+      tags:
+      - lighttick-learning
+      summary: RouteStatus
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningRouteStatusWrite'
+  /api/v1/lighttick/learning/routes/{routeId}/progress:
+    get:
+      operationId: nativeLearningRouteProgress
+      tags:
+      - lighttick-learning
+      summary: RouteProgress
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteProgressEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/routes/{routeId}/versions/{routeVersion}:
+    get:
+      operationId: nativeLearningRouteVersion
+      tags:
+      - lighttick-learning
+      summary: RouteVersion
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - name: routeVersion
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteVersionEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/routes/{routeId}/lessons/{number}/publish:
+    post:
+      operationId: nativeLearningRouteLessonPublish
+      tags:
+      - lighttick-learning
+      summary: RouteLessonPublish
+      description: Registered owner, native learning authority and reading consent required. Immutable
+        published route and lesson versions; draft CAS and original Idempotency-Key are preserved. New
+        resources never enter generic task sync.
+      parameters:
+      - name: routeId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+      - name: number
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 364
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped formal course result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublishEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningRouteLessonWrite'
 components:
   securitySchemes:
     bearerAuth:
@@ -4298,7 +4682,9 @@ components:
       name: Idempotency-Key
       in: header
       required: true
-      description: Client-generated stable operation key. Receipts are bound to the authenticated owner, resource type and ID, action, and canonical payload. Reuse for a different resource, action, or payload is rejected with LIGHTTICK_IDEMPOTENCY_MISMATCH.
+      description: Client-generated stable operation key. Receipts are bound to the authenticated owner,
+        resource type and ID, action, and canonical payload. Reuse for a different resource, action, or
+        payload is rejected with LIGHTTICK_IDEMPOTENCY_MISMATCH.
       schema:
         type: string
         minLength: 8
@@ -4367,8 +4753,8 @@ components:
       name: X-LightTick-Task-Schema
       in: header
       required: false
-      description: Use 2 for nullable effort and explicit manual task dates. Owners with manual/adopted plans require
-        2; older clients receive 426 and must upgrade. Existing data is retained.
+      description: Use 2 for nullable effort and explicit manual task dates. Owners with manual/adopted
+        plans require 2; older clients receive 426 and must upgrade. Existing data is retained.
       schema:
         type: string
         enum:
@@ -5179,8 +5565,8 @@ components:
                   source_history:
                     type: object
                     additionalProperties: true
-                    description: Owner-only immutable original source entry, observed versions, AI attempts and
-                      operation metadata; credentials are forbidden.
+                    description: Owner-only immutable original source entry, observed versions, AI attempts
+                      and operation metadata; credentials are forbidden.
                 required:
                 - record
                 - versions
@@ -6710,7 +7096,8 @@ components:
           - standard
           - sprint
           - null
-          description: Account-wide saved selection, or null if never selected or unrecognized legacy data.
+          description: Account-wide saved selection, or null if never selected or unrecognized legacy
+            data.
         valid_action_count:
           type: integer
           minimum: 0
@@ -7041,8 +7428,8 @@ components:
           description: ai, template, manual, or a provenance reference such as review:<id> or proposal:<id>.
         proposal:
           type: object
-          description: Persisted plan preview including proposed tasks and non-secret planning assumptions. Proposed
-            tasks use camelCase fields; confirmed task responses use snake_case.
+          description: Persisted plan preview including proposed tasks and non-secret planning assumptions.
+            Proposed tasks use camelCase fields; confirmed task responses use snake_case.
           properties:
             summary:
               type: string
@@ -8064,7 +8451,8 @@ components:
           type: boolean
         conversational_planning:
           type: boolean
-          description: Optional native PlanningSession entry; false unless runtime and delivery switches are both enabled. Missing on older servers means unavailable.
+          description: Optional native PlanningSession entry; false unless runtime and delivery switches
+            are both enabled. Missing on older servers means unavailable.
       additionalProperties: false
     LightTickMinimumClientVersions:
       type: object
@@ -8125,10 +8513,13 @@ components:
           type: string
           format: uri
         grow_web_url:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           format: uri
           maxLength: 2000
-          description: Reviewed native Grow static Web base from the existing versioned delivery settings, ending in /grow/. Null disables native Web links; never inferred from legacy source content.
+          description: Reviewed native Grow static Web base from the existing versioned delivery settings,
+            ending in /grow/. Null disables native Web links; never inferred from legacy source content.
         updated_at:
           $ref: '#/components/schemas/LightTickTimestamp'
       additionalProperties: false
@@ -8166,7 +8557,8 @@ components:
           type: string
           minLength: 32
           maxLength: 4096
-          description: Device-generated secret stored in Keychain or Keystore and never logged by the server.
+          description: Device-generated secret stored in Keychain or Keystore and never logged by the
+            server.
         platform:
           $ref: '#/components/schemas/LightTickDevicePlatform'
         timezone:
@@ -8632,9 +9024,9 @@ components:
       - title
       - period
       additionalProperties: false
-      description: P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional
-        values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes
-        cannot exceed target_minutes (runtime validation).
+      description: P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears
+        optional values. Non-time thresholds are normalized to null. Time estimates are normalized to
+        null. minimum_minutes cannot exceed target_minutes (runtime validation).
       allOf:
       - if:
           properties:
@@ -8825,9 +9217,9 @@ components:
       - period
       - key
       additionalProperties: false
-      description: P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears optional
-        values. Non-time thresholds are normalized to null. Time estimates are normalized to null. minimum_minutes
-        cannot exceed target_minutes (runtime validation).
+      description: P0 day actions may be unscheduled. Omission uses creation defaults; explicit null clears
+        optional values. Non-time thresholds are normalized to null. Time estimates are normalized to
+        null. minimum_minutes cannot exceed target_minutes (runtime validation).
       allOf:
       - if:
           properties:
@@ -9360,11 +9752,11 @@ components:
       - revision
       - action
       additionalProperties: false
-      description: Revision and stable key are required. Only check supports complete/reopen. Time completion sums
-        confirmed session minutes; interrupted threshold requires complete-time. Content requires a durable private
-        source receipt. Running actions reject other mutations. Completed/archived actions are read-only except
-        check reopen. HTTP writes remain closed in this stage. Practice feedback is append-only, allowed after completion,
-        and never completes an action or lesson.
+      description: Revision and stable key are required. Only check supports complete/reopen. Time completion
+        sums confirmed session minutes; interrupted threshold requires complete-time. Content requires
+        a durable private source receipt. Running actions reject other mutations. Completed/archived actions
+        are read-only except check reopen. HTTP writes remain closed in this stage. Practice feedback
+        is append-only, allowed after completion, and never completes an action or lesson.
       allOf:
       - if:
           properties:
@@ -9970,8 +10362,8 @@ components:
                       source_history:
                         type: object
                         additionalProperties: true
-                        description: Owner-only immutable original source entry, observed versions, AI attempts
-                          and operation metadata; credentials are forbidden.
+                        description: Owner-only immutable original source entry, observed versions, AI
+                          attempts and operation metadata; credentials are forbidden.
                     required:
                     - record
                     - versions
@@ -10010,8 +10402,8 @@ components:
         additionalProperties: false
     LightTickActionSourceEvent:
       type: object
-      description: Server-generated after explicit source success. Never accepts body, notes, browser read flags,
-        owner IDs or consumed_by.
+      description: Server-generated after explicit source success. Never accepts body, notes, browser
+        read flags, owner IDs or consumed_by.
       properties:
         event_id:
           type: string
@@ -10031,8 +10423,9 @@ components:
         origin_context:
           type: string
           maxLength: 6000
-          description: Zook HMAC context bound to active binding, source, action, planned date, timezone and issue/expiry
-            time. Confirmation must occur within seven days; delivery may be delayed indefinitely.
+          description: Zook HMAC context bound to active binding, source, action, planned date, timezone
+            and issue/expiry time. Confirmation must occur within seven days; delivery may be delayed
+            indefinitely.
         source_proof:
           type: object
           properties:
@@ -10230,7 +10623,8 @@ components:
           description: Enables explicitly reviewed follow-ups; feedback alone never creates one.
         learning_practice:
           type: boolean
-          description: Only permits practice writes when the separately configured connection write gate is enabled.
+          description: Only permits practice writes when the separately configured connection write gate
+            is enabled.
       additionalProperties: false
       required:
       - nullable_schedule
@@ -10285,9 +10679,9 @@ components:
       - date
       - key
       additionalProperties: false
-      description: Deduplicates non-archived content by normalized source, timezone and date (null uses its own
-        bucket). target_minutes is a legacy estimate alias only; conflicting estimates are rejected. Sources must
-        exist in the private verified owner inventory.
+      description: Deduplicates non-archived content by normalized source, timezone and date (null uses
+        its own bucket). target_minutes is a legacy estimate alias only; conflicting estimates are rejected.
+        Sources must exist in the private verified owner inventory.
     LightTickActionCreateResult:
       type: object
       properties:
@@ -10372,8 +10766,8 @@ components:
       additionalProperties: false
     LightTickActionHandoffEvent:
       type: object
-      description: Private Grow-attested migration inventory; never accepted as a public source-confirmation event.
-        Source result/private notes remain in Grow.
+      description: Private Grow-attested migration inventory; never accepted as a public source-confirmation
+        event. Source result/private notes remain in Grow.
       additionalProperties: false
       required:
       - event_id
@@ -10420,8 +10814,8 @@ components:
           pattern: ^[a-f0-9]{64}$
     LightTickActionHandoffSnapshot:
       type: object
-      description: C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This schema does
-        not open pairing or public import.
+      description: C3 internal snapshot v2. Full graph validation and owner mapping are mandatory. This
+        schema does not open pairing or public import.
       additionalProperties: false
       required:
       - snapshot_version
@@ -10563,8 +10957,8 @@ components:
             $ref: '#/components/schemas/LightTickActionHandoffEvent'
     LightTickActionHandoffReceipt:
       type: object
-      description: Internal C3 preflight/import acknowledgment. Public pairing and import remain disabled; defining
-        this shape does not enable a route.
+      description: Internal C3 preflight/import acknowledgment. Public pairing and import remain disabled;
+        defining this shape does not enable a route.
       additionalProperties: false
       required:
       - binding_id
@@ -11299,7 +11693,8 @@ components:
         source_version:
           type: string
           maxLength: 80
-          description: For native lessons and records, immutable version of the returned source text; current_version identifies the latest published version for reviewed follow-up.
+          description: For native lessons and records, immutable version of the returned source text;
+            current_version identifies the latest published version for reviewed follow-up.
       required:
       - available
       additionalProperties: false
@@ -11964,7 +12359,7 @@ components:
           maxLength: 100
         title:
           type: string
-          maxLength: 500
+          maxLength: 4000
         revision:
           type: integer
           minimum: 1
@@ -12002,7 +12397,7 @@ components:
           maximum: 100000
         title:
           type: string
-          maxLength: 500
+          maxLength: 1000
         revision:
           type: integer
           minimum: 1
@@ -12174,7 +12569,7 @@ components:
           maximum: 100000
         title:
           type: string
-          maxLength: 500
+          maxLength: 1000
           minLength: 1
         content:
           type: string
@@ -12215,7 +12610,7 @@ components:
           maximum: 100000
         title:
           type: string
-          maxLength: 500
+          maxLength: 1000
         revision:
           type: integer
           minimum: 1
@@ -12267,7 +12662,7 @@ components:
           maximum: 100000
         title:
           type: string
-          maxLength: 500
+          maxLength: 1000
         revision:
           type: integer
           minimum: 1
@@ -12653,5 +13048,565 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickNativeLearningHistory'
+        requestId:
+          type: string
+    LightTickNativeLearningCourseBrief:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - goal
+      - level
+      - minutes
+      - pacing
+      properties:
+        title:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        goal:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        level:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        minutes:
+          type: integer
+          minimum: 5
+          maximum: 120
+        pacing:
+          type: string
+          enum:
+          - weekly
+          - self_paced
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 52
+        sessions:
+          type: integer
+          minimum: 1
+          maximum: 7
+        lesson_count:
+          type: integer
+          minimum: 2
+          maximum: 364
+    LightTickNativeLearningCourseLessonSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - number
+      - topic
+      - goal
+      - exercise
+      - assessment
+      - minutes
+      - stage
+      - kind
+      - requires
+      properties:
+        number:
+          type: integer
+          minimum: 1
+          maximum: 364
+        topic:
+          type: string
+          maxLength: 1000
+          minLength: 1
+        goal:
+          type: string
+          maxLength: 1000
+          minLength: 1
+        exercise:
+          type: string
+          maxLength: 1000
+          minLength: 1
+        assessment:
+          type: string
+          maxLength: 1000
+          minLength: 1
+        minutes:
+          type: integer
+          minimum: 5
+          maximum: 120
+        stage:
+          type: integer
+          minimum: 1
+          maximum: 364
+        kind:
+          type: string
+          enum:
+          - lesson
+          - review
+        requires:
+          type: array
+          maxItems: 364
+          items:
+            type: integer
+            minimum: 1
+            maximum: 363
+    LightTickNativeLearningCourseDocument:
+      type: object
+      additionalProperties: false
+      required:
+      - prerequisites
+      - stages
+      - lessons
+      properties:
+        prerequisites:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        stages:
+          type: array
+          minItems: 1
+          maxItems: 364
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - title
+            - goal
+            properties:
+              title:
+                type: string
+                maxLength: 4000
+                minLength: 1
+              goal:
+                type: string
+                maxLength: 4000
+                minLength: 1
+        lessons:
+          type: array
+          minItems: 1
+          maxItems: 364
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningCourseLessonSpec'
+    LightTickNativeLearningRoute:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - published_version
+      - status
+      - brief
+      - document
+      - updated_at
+      properties:
+        id: &id001
+          type: string
+          pattern: ^plan-[a-zA-Z0-9-]+$
+          maxLength: 75
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        published_version:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        status:
+          type: string
+          enum:
+          - draft
+          - active
+          - paused
+          - archived
+        brief:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+        document:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseDocument'
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningRoutes:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningRoute'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickNativeLearningRouteWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - brief
+      - document
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        brief:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+        document:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseDocument'
+    LightTickNativeLearningRouteVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - brief
+      - document
+      - digest
+      - created_at
+      properties:
+        id: *id001
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        brief:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+        document:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseDocument'
+        digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        created_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningRoutePublishWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickNativeLearningRouteStatusWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - status
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        status:
+          type: string
+          enum:
+          - active
+          - paused
+          - archived
+    LightTickNativeLearningRouteLessonWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - base_lesson_revision
+      - lesson_id
+      - content
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        base_lesson_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        lesson_id:
+          type: string
+          pattern: ^lesson-[a-z0-9-]+$
+          minLength: 8
+          maxLength: 128
+        content:
+          type: string
+          maxLength: 100000
+          minLength: 1
+        references:
+          type: string
+          maxLength: 100000
+        source_url:
+          type: string
+          maxLength: 1500
+    LightTickNativeLearningRouteLessonPublish:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - collection_id
+      - number
+      - title
+      - revision
+      - published_version
+      - archived
+      - updated_at
+      - content_version
+      - route_id
+      - route_revision
+      properties:
+        id:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+        collection_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        number:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        title:
+          type: string
+          maxLength: 1000
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        published_version:
+          type:
+          - string
+          - 'null'
+          pattern: ^[a-f0-9]{64}$
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        route_id: *id001
+        route_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickNativeLearningRouteProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - version
+      - status
+      - total_lessons
+      - published_lessons
+      - completed_lessons
+      - percent
+      - stages
+      - lessons
+      properties:
+        id: *id001
+        name:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        status:
+          type: string
+          enum:
+          - active
+          - paused
+          - archived
+        total_lessons: &id002
+          type: integer
+          minimum: 0
+          maximum: 364
+        published_lessons: &id003
+          type: integer
+          minimum: 0
+          maximum: 364
+        completed_lessons: &id004
+          type: integer
+          minimum: 0
+          maximum: 364
+        percent: &id005
+          type: integer
+          minimum: 0
+          maximum: 100
+        stages:
+          type: array
+          maxItems: 364
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - number
+            - title
+            - total_lessons
+            - published_lessons
+            - completed_lessons
+            - percent
+            properties:
+              number:
+                type: integer
+                minimum: 1
+                maximum: 364
+              title:
+                type: string
+                maxLength: 4000
+                minLength: 1
+              total_lessons: *id002
+              published_lessons: *id003
+              completed_lessons: *id004
+              percent: *id005
+        lessons:
+          type: array
+          maxItems: 364
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - number
+            - stage
+            - topic
+            - requires
+            - kind
+            - lesson_id
+            - content_version
+            - completed
+            properties:
+              number:
+                type: integer
+                minimum: 1
+                maximum: 364
+              stage:
+                type: integer
+                minimum: 1
+                maximum: 364
+              topic:
+                type: string
+                maxLength: 1000
+                minLength: 1
+              requires:
+                type: array
+                maxItems: 364
+                items:
+                  type: integer
+                  minimum: 1
+                  maximum: 363
+              kind:
+                type: string
+                enum:
+                - lesson
+                - review
+              lesson_id:
+                type:
+                - string
+                - 'null'
+              content_version:
+                type:
+                - string
+                - 'null'
+              completed:
+                type: boolean
+    LightTickNativeLearningRouteEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningRoute'
+        requestId:
+          type: string
+    LightTickNativeLearningRoutesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningRoutes'
+        requestId:
+          type: string
+    LightTickNativeLearningRouteVersionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningRouteVersion'
+        requestId:
+          type: string
+    LightTickNativeLearningRouteLessonPublishEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+        requestId:
+          type: string
+    LightTickNativeLearningRouteProgressEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningRouteProgress'
         requestId:
           type: string

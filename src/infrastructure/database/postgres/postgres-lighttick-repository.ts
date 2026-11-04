@@ -1,4 +1,6 @@
 import {deleteLightTickOwnerData} from './postgres-lighttick-owner-deletion.ts';
+import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
+import {versionConflict} from './postgres-lighttick-conflicts.ts';
 import {PostgresNativeLearningStore} from "./postgres-lighttick-native-learning-store.ts";
 import {PostgresLocalAdoptionStore} from './postgres-lighttick-local-adoption-store.ts';
 import {mapRow,timestampString} from "./postgres-lighttick-row-mappers.ts";
@@ -20,10 +22,8 @@ import type {
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 
-function versionConflict(resourceId: string): never {
-  throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.", { resourceId });
-}
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
   getNativeLearningCounts=this.nativeLearning.getNativeLearningCounts.bind(this.nativeLearning);
   clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,()=>this.nativeLearning.clearNativeLearningStaging(owner));

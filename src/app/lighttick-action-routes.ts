@@ -1,4 +1,6 @@
 import {exchangePrivate,privateLearning} from '../modules/lighttick/learning/learning-private.ts';
+import {compatibleRouteProgress} from '../modules/lighttick/learning/learning-route.progress.ts';
+import {buildLightTickPublicConfiguration} from '../modules/lighttick/lighttick-public-config.ts';
 import {receiveLibrary,readLibrary} from '../modules/lighttick/learning/learning-library.ts';
 import type {BackendRouteContext} from './backend-route-context.ts';
 import type {LightTickRuntime} from '../modules/lighttick/lighttick-runtime.ts';
@@ -82,6 +84,9 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
    result=await privateLearning(runtime.actions,owner,privateMatch[1],r.method==='POST'?data:undefined,async()=>{await requireMember(context,owner.userId);if(r.method==='POST')await runtime.nativeLearning.assertLegacyWrite(owner);});
   }else if(r.method==='GET'&&(r.path===learningPrefix||r.path.startsWith(learningPrefix+'/'))){
    result=await readLibrary(runtime.actions,owner,r.path===learningPrefix?undefined:r.path.slice((learningPrefix+'/').length));
+  }else if(r.method==='GET'&&r.path===prefix+'/learning-progress'&&(await runtime.nativeLearning.authority(owner))?.phase==='zook'){
+   const config=buildLightTickPublicConfiguration(true,await context.database.findAppConfig('lighttick','admin.delivery_config'));
+   result={progress:await compatibleRouteProgress(runtime.nativeLearning,owner,config.grow_web_url??null)};
   }else result=await runtime.actions.request(owner,r.method,r.path.slice(prefix.length),data,r.query??{},()=>requireMember(context,owner.userId));
  }
  return context.ok(result,r.requestId as string,{'Cache-Control':'no-store'});
