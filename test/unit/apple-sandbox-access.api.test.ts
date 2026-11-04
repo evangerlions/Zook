@@ -11,10 +11,10 @@ function unexpired(evidence: ReturnType<typeof snapshot>) {
   return evidence;
 }
 
-async function fixture(t: TestContext, listed = true, deployment = "online") {
+async function fixture(t: TestContext, listed = true, deployment = "online", accountRegion: "GLOBAL" | "CN" = "GLOBAL") {
   const seed = buildDefaultSeed();
   seed.users!.find(user => user.id === "user_alice")!.phone = "+8618710100901";
-  seed.appUsers!.push({ id: "review_user", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion: "GLOBAL", joinedAt: "2026-09-23T00:00:00Z" });
+  seed.appUsers!.push({ id: "review_user", appId: "ai_novel", userId: "user_alice", status: "ACTIVE", accountRegion, joinedAt: "2026-09-23T00:00:00Z" });
   let evidence = unexpired(snapshot());
   const provider = fixtureFetcher(async () => Response.json(evidence), "app_test");
   const runtime = await createApplication({ seed, appEnvironment: deployment,
@@ -204,4 +204,23 @@ test("Apple sandbox webhook uses canonical projection only for allowed users", a
   assert.equal((await f.request("/api/v1/users/me")).body.data.membership.active, true);
   assert.equal((await send()).body.data.status, "duplicate");
   assert.equal(await f.database.findAiNovelBillingMembership("ai_novel", "user_alice"), undefined);
+});
+
+test("approved Apple sandbox users can load store catalog without Alipay sandbox credentials", async t => {
+  for (const region of ["CN", "GLOBAL"] as const) {
+    const f = await fixture(t, true, "online", region);
+    const token = f.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+    for (const platform of ["ios", "macos"]) {
+      const result = await f.app.handle({
+        method: "GET", path: "/api/v1/ai_novel/billing/catalog",
+        query: { platform, distribution: "app_store" },
+        headers: { authorization: `Bearer ${token}`, "x-app-id": "ai_novel", "x-platform": platform,
+          "x-billing-environment": "production" },
+      });
+      assert.equal(result.statusCode, 200);
+      assert.equal(result.body.data.products.length, 6);
+      assert.ok(result.body.data.products.every(product => product.providers.every(provider =>
+        provider.provider === "revenuecat" && provider.available)));
+    }
+  }
 });

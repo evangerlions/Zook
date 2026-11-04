@@ -1653,6 +1653,8 @@ On known online/production deployments, authenticated Apple clients (`X-Platform
 whose server-bound phones match enabled `ai_novel` accounts in Server → SMS → Test Account
 are automatically scoped to sandbox for AINovel business requests and `users/me`, unless
 they already have active production membership. Empty/missing test-account registries admit nobody.
+Apple App Store catalogs use the RevenueCat product definitions in either membership environment;
+loading them does not require an Alipay sandbox service or credentials.
 The platform header selects the channel, not permission; the server authenticates and
 checks the existing app-scoped SMS test-account registry. Web/Android/Windows continue to use production. No client
 sandbox switch or provider-specific sandbox environment variable is introduced.
