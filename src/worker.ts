@@ -26,6 +26,7 @@ async function runTick(): Promise<void> {
     const llmCircuitConfirmation = await runtime.services.llmRouteCircuitRecoveryService.runPendingConfirmations();
     const llmCircuitRecovery = await runtime.services.llmRouteCircuitRecoveryService.runDueRecoveries();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
+    const learningJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
     await runtime.queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
@@ -45,6 +46,7 @@ async function runTick(): Promise<void> {
     const bodyLogSettlement = await runtime.services.bodyLogWorkerService.processBatch();
 
     const context = {
+      learningJobsRecovered,
       jobName: "failed-events-replay",
       jobId: "scheduler",
       statusCode: 200,

@@ -4671,6 +4671,225 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickNativeLearningRouteLessonWrite'
+  /api/v1/lighttick/learning/work:
+    get:
+      operationId: nativeLearningWorkList
+      tags:
+      - lighttick-learning
+      summary: WorkList
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningWorkPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: nativeLearningWorkCreate
+      tags:
+      - lighttick-learning
+      summary: WorkCreate
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningWorkCreate'
+  /api/v1/lighttick/learning/work/{workId}:
+    get:
+      operationId: nativeLearningWorkRead
+      tags:
+      - lighttick-learning
+      summary: WorkRead
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/learning/work/{workId}/cancel:
+    post:
+      operationId: nativeLearningWorkCancel
+      tags:
+      - lighttick-learning
+      summary: WorkCancel
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningWorkCancel'
+  /api/v1/lighttick/learning/work/{workId}/adopt:
+    post:
+      operationId: nativeLearningWorkAdopt
+      tags:
+      - lighttick-learning
+      summary: WorkAdopt
+      description: Durable bounded learning work on the existing worker. Registered owner/native authority/reading
+        consent required; original keys and CAS preserved. AI output remains a draft until explicitly
+        adopted. Queue dispatch may be pending and is recovered from the database. Cancel aborts supported
+        providers and fences all late results.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner-scoped learning work state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickNativeLearningWorkAdoptionEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickNativeLearningWorkAdopt'
 components:
   securitySchemes:
     bearerAuth:
@@ -13608,5 +13827,482 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickNativeLearningRouteProgress'
+        requestId:
+          type: string
+    LightTickNativeLearningSourceInput:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - title
+      properties:
+        kind:
+          type: string
+          enum:
+          - text
+          - file
+          - url
+        title:
+          type: string
+          maxLength: 500
+          minLength: 1
+        text:
+          type: string
+          maxLength: 15000
+          minLength: 1
+        storage_key:
+          type: string
+          maxLength: 1500
+          minLength: 1
+        url:
+          type: string
+          maxLength: 1500
+          minLength: 1
+    LightTickNativeLearningCollectedSource:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - content
+      - digest
+      - source
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          minLength: 1
+        content:
+          type: string
+          maxLength: 15000
+          minLength: 1
+        digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        source:
+          type: object
+          additionalProperties: false
+          required:
+          - kind
+          properties:
+            kind:
+              type: string
+              enum:
+              - text
+              - file
+              - url
+            storage_key:
+              type: string
+              maxLength: 1500
+              minLength: 1
+            url:
+              type: string
+              maxLength: 1500
+              minLength: 1
+    LightTickNativeLearningWorkCreate:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        properties:
+          kind:
+            type: string
+            enum:
+            - route_draft
+          route_id: *id001
+          base_revision: &id006
+            type: integer
+            minimum: 0
+            maximum: 2147483647
+          brief:
+            $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - sources
+        properties:
+          kind:
+            type: string
+            enum:
+            - collect_sources
+          route_id: *id001
+          base_revision: *id006
+          sources:
+            type: array
+            minItems: 1
+            maxItems: 10
+            items:
+              $ref: '#/components/schemas/LightTickNativeLearningSourceInput'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - file_name
+        - content
+        properties:
+          kind:
+            type: string
+            enum:
+            - file_ingest
+          route_id: *id001
+          base_revision: *id006
+          file_name:
+            type: string
+            maxLength: 200
+            minLength: 1
+          content:
+            type: string
+            maxLength: 80000
+            minLength: 1
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - number
+        - sources
+        properties:
+          kind:
+            type: string
+            enum:
+            - lesson_draft
+          route_id: *id001
+          base_revision: *id006
+          number:
+            type: integer
+            minimum: 1
+            maximum: 364
+          sources:
+            type: array
+            minItems: 1
+            maxItems: 10
+            items:
+              $ref: '#/components/schemas/LightTickNativeLearningSourceInput'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - route_id
+        - base_revision
+        - number
+        - source_job_id
+        properties:
+          kind:
+            type: string
+            enum:
+            - lesson_draft
+          route_id: *id001
+          base_revision: *id006
+          number:
+            type: integer
+            minimum: 1
+            maximum: 364
+          source_job_id:
+            type: string
+            maxLength: 128
+            minLength: 1
+    LightTickNativeLearningRouteDraftOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - brief
+      - document
+      - prompt_version
+      - scene_key
+      - provider
+      - model
+      properties:
+        brief:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
+        document:
+          $ref: '#/components/schemas/LightTickNativeLearningCourseDocument'
+        prompt_version: &id007
+          type: string
+          maxLength: 40
+          minLength: 1
+        scene_key: &id008
+          type: string
+          maxLength: 80
+          minLength: 1
+        provider: &id009
+          type: string
+          maxLength: 100
+          minLength: 1
+        model: &id010
+          type: string
+          maxLength: 200
+          minLength: 1
+    LightTickNativeLearningLessonDraftOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - content
+      - references
+      - source_digests
+      - prompt_version
+      - scene_key
+      - provider
+      - model
+      properties:
+        content:
+          type: string
+          maxLength: 100000
+          minLength: 1
+        references:
+          type: string
+          maxLength: 100000
+          minLength: 1
+        source_digests:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+        prompt_version: *id007
+        scene_key: *id008
+        provider: *id009
+        model: *id010
+    LightTickNativeLearningWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - route_id
+      - revision
+      - kind
+      - status
+      - base_revision
+      - attempt
+      - error_code
+      - output
+      - output_digest
+      - adopted
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^work-[a-zA-Z0-9-]+$
+        route_id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        kind:
+          type: string
+          enum:
+          - route_draft
+          - lesson_draft
+          - collect_sources
+          - file_ingest
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          type:
+          - string
+          - 'null'
+        output:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/LightTickNativeLearningRouteDraftOutput'
+          - $ref: '#/components/schemas/LightTickNativeLearningLessonDraftOutput'
+          - type: object
+            additionalProperties: false
+            required:
+            - sources
+            properties:
+              sources:
+                type: array
+                minItems: 1
+                maxItems: 10
+                items:
+                  $ref: '#/components/schemas/LightTickNativeLearningCollectedSource'
+          - type: object
+            additionalProperties: false
+            required:
+            - file
+            - digest
+            properties:
+              file:
+                type: object
+                additionalProperties: false
+                required:
+                - storage_key
+                - file_name
+                - size_bytes
+                properties:
+                  storage_key:
+                    type: string
+                    maxLength: 1500
+                    minLength: 1
+                  file_name:
+                    type: string
+                    maxLength: 200
+                    minLength: 1
+                  size_bytes:
+                    type: integer
+                    minimum: 1
+                    maximum: 80000
+              digest:
+                type: string
+                maxLength: 64
+                minLength: 1
+        output_digest:
+          type:
+          - string
+          - 'null'
+        adopted:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/LightTickNativeLearningRoute'
+          - $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickNativeLearningWorkPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickNativeLearningWork'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickNativeLearningWorkCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickNativeLearningWorkAdopt:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - base_route_revision
+      - expected_digest
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        base_route_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        expected_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickNativeLearningWorkAdoption:
+      type: object
+      additionalProperties: false
+      required:
+      - work_id
+      - kind
+      - result
+      properties:
+        work_id:
+          type: string
+          maxLength: 128
+          minLength: 1
+        kind:
+          type: string
+          enum:
+          - route_draft
+          - lesson_draft
+        result:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickNativeLearningRoute'
+          - $ref: '#/components/schemas/LightTickNativeLearningRouteLessonPublish'
+    LightTickNativeLearningWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningWork'
+        requestId:
+          type: string
+    LightTickNativeLearningWorkPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningWorkPage'
+        requestId:
+          type: string
+    LightTickNativeLearningWorkAdoptionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickNativeLearningWorkAdoption'
         requestId:
           type: string

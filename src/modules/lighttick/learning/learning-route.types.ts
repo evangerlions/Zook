@@ -1,4 +1,5 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
+import type { LearningWorkRepository } from "./learning-work.types.ts";
 export interface CourseBrief {
   title: string; goal: string; level: string; minutes: number;
   pacing: "weekly" | "self_paced"; weeks?: number; sessions?: number; lesson_count?: number;
@@ -21,6 +22,7 @@ export interface RouteLessonLink extends LightTickOwner {
   routeId: string; number: number; lessonId: string; routeVersion: number; firstContentVersion: string;
 }
 export interface LearningRouteRepository {
+  readonly work: LearningWorkRepository;
   readRouteProgressFacts(owner: LightTickOwner, id: string): Promise<{ number: number; lessonId: string; contentVersion: string; completed: boolean; sourceCompleted: boolean }[]>;
   getLearningRoute(owner: LightTickOwner, id: string): Promise<LearningRoute | undefined>;
   listLearningRoutes(owner: LightTickOwner, after: string, limit: number, publishedOnly?: boolean): Promise<LearningRoute[]>;

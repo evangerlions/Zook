@@ -1,4 +1,5 @@
 import {NativeLearningService} from "./learning/native-learning.service.ts";
+import type {LearningWorkService} from "./learning/learning-work.service.ts";
 import {RecordTransferService} from './records/record-transfer.service.ts';
 import {ActionService} from './actions/action.service.ts';
 import {ActionLinkService} from './actions/action-link.service.ts';
@@ -23,6 +24,7 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  learningWork?:LearningWorkService;
   nativeLearning:NativeLearningService;
   recordHandoffEnabled:boolean;
   recordTransfers:RecordTransferService;

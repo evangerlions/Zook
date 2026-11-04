@@ -1,4 +1,11 @@
 import { LightTickPlanningService } from "./modules/lighttick/planning/planning.service.ts";
+import { LearningRouteService } from "./modules/lighttick/learning/learning-route.service.ts";
+import { LearningWorkService } from "./modules/lighttick/learning/learning-work.service.ts";
+import { LearningWorkRunner } from "./modules/lighttick/learning/learning-work.runner.ts";
+import { fetchLearningSource } from "./modules/lighttick/learning/learning-sources.ts";
+import type { StorageService } from "./infrastructure/files/storage.service.ts";
+import type { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
+import { ApplicationError } from "./shared/errors.ts";
 import type { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
@@ -44,10 +51,21 @@ export function attachApplicationLightTickAnalytics(runtime: LightTickRuntime, a
 
 export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
+  storageService: StorageService; fileStore: PersistentFileStore;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
+  const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),input.queue);
+  input.runtime.learningWork=work;
+  const learning=new LearningWorkRunner(work,input.llmManager,{
+    readFile:(o,key)=>input.storageService.readOwnerText(input.fileStore,o,key),
+    writeFile:(o,id,name,content)=>input.storageService.storeOwnerText(input.fileStore,o,name,content,id),
+    fetchUrl:fetchLearningSource,
+  },async owner=>{
+    const member=await input.database.findAppUser(owner.appId,owner.userId),user=await input.database.findUserById(owner.userId);
+    if(member?.status!=='ACTIVE'||user?.status!=='ACTIVE')throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
+  },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, input.llmManager, undefined,
     scene => input.appAiRoutingConfigService.resolveLightTickScene(scene)),
-    async job => await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id)));
+    async job => await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id)),learning);
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",

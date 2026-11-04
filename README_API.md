@@ -1735,3 +1735,14 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 `/{routeId}/lessons/{number}/publish` POST 原子发布顺序课次并关联稳定 lesson_id。请求包含 base_revision（路线）、base_lesson_revision（课节）、content/references/source_url；正文继续使用原生不可变版本及独立私人状态，不增加通用 sync 实体。正式路线的 collection/正文禁止绕过路线命令编辑。所有写入要求注册 owner、阅读授权、Idempotency-Key；原请求重试不重新构造，冲突为 409，撤权后缓存回执仍受授权约束。
 
 旧 `action-plans/learning-progress` 在原生权威且配置合法 grow_web_url 时投影已发布正式路线，保留旧 percent 四舍六入五取偶、100 路线/100 阶段/500 字名称容量；超限 409 要求使用分页路线接口，未配置地址或撤销阅读授权返回 progress=null。学完使进度修订增长；位置和笔记不推断完成，新正文不继承旧正文的完成。没有正式路线时不回退旧镜像进度。
+
+
+### LightTick 学习任务与资料 worker
+
+`POST /api/v1/lighttick/learning/work` 以原 Idempotency-Key 创建持久任务：route_draft（brief/路线草案）、lesson_draft（正式路线下一课）、collect_sources（审阅资料采集）、file_ingest（明确上传的 UTF-8 文本）。公共字段 kind、route_id、base_revision 固定课程上下文；route_draft 可为新 ID+0，其他涉及正式课程的操作校验当前路线。GET 同路径分页，GET /{workId} 读取状态；POST /{workId}/cancel 使用任务 base_revision，POST /{workId}/adopt 另含 base_route_revision、expected_digest。
+
+任务状态 queued/running/succeeded/failed/cancelled；共享队列只携带 owner/work ID。状态、输入、输出、预算及租约在 PostgreSQL，既有 worker 每轮扫描恢复待派发或过期租约任务。原请求重放保持原资源；进程恢复以 attempt/fence 阻止旧结果覆盖。取消、撤权、课程变更和账号删除阻止迟到发布；网络及模型调用在 owner 事务外。派发失败保留 queued/QUEUE_UNAVAILABLE，读状态可见并由恢复扫描重发。
+
+AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
+
+资料最多 10 项、合计 80000 UTF-8 字节、每项 15000 字符。text 是明确提交的材料；file 使用本 owner 的 CONFIRMED 平台 storage_key，当前支持 text/plain、text/markdown；file_ingest 接收 file_name/content 后在 worker 内用平台持久存储落盘，原任务幂等，不接受本机路径。PDF/二进制不伪作文本。url 只接受无凭据的 HTTPS 443，公共 DNS 地址固定到连接、保留 TLS 证书验证，拒绝内网/保留地址、跳转、非文本/HTML、超时和超限响应。来源记录摘要及原 file/url 归属，异常返回任务 error_code，无备用供应商隐式替换。

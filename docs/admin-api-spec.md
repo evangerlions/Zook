@@ -739,3 +739,8 @@ node --experimental-transform-types scripts/lighttick-learning-migration.ts --bu
 Default is offline dry-run: validates the manifest and prints digest/counts, without checking server watermarks. Add `--endpoint https://reviewed-origin --cookie-file /private/admin.cookie` for remote read-only preflight. Cookie file must have mode 600 and contain only adminSession=value. Use the existing admin sensitive verification flow beforehand; the CLI does not bypass it. To execute a reviewed transition, add `--apply --action freeze --expected-digest <reviewed SHA256> --base-revision <current revision> --request-id <original command ID>`. Reuse the exact manifest/base/request ID on lost-response retry. Repeat import/verify/activate with their own reviewed current revision and command identity. No script auto-activates or publishes.
 
 Local synthetic tests: `test/unit/lighttick-learning-migration*.test.ts` and `test/integration/lighttick-native-learning-postgres.test.ts`; the PG test requires a disposable localhost grow_web_u1_* database through LIGHTTICK_TEST_DATABASE_URL. Real historical data, production sessions, deployment and actual source shutdown were not exercised.
+
+
+### LightTick 学习场景补充
+
+现有 lighttick.ai_routing 增加 learning_route / learning_lesson；仍使用平台逻辑 modelAlias 与 routes，不新增 Provider 密钥或 env。旧版本化文档缺少这两个新增键时使用代码中的场景默认值，管理端明确保存后才写入版本化配置。运行时再将输入、输出和超时收紧到学习场景硬上限；既有 daily_review 的重复声明已删除被覆盖项，保留原本实际生效的值。学习任务的 owner 预算、最多三次租约尝试及取消/重启恢复不另开管理写接口；迁移控制仍走原 sensitive grant。没有在本轮改动真实运营配置或凭证。

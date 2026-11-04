@@ -5,6 +5,8 @@ import type { LightTickAiRunner } from "./ai/lighttick-ai-runner.ts";
 import type { LightTickAiSceneName } from "./ai/lighttick-ai-scenes.ts";
 import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner } from "./lighttick.types.ts";
+import type { LearningWorkRunner } from "./learning/learning-work.runner.ts";
+import { LEARNING_WORK_JOB } from "./learning/learning-work.service.ts";
 
 export const LIGHTTICK_JOB_NAMES = {
   aiRun: "lighttick.ai.run", notification: "lighttick.notification.schedule",
@@ -44,10 +46,17 @@ export class LightTickJobService {
 
 export class LightTickWorker {
   constructor(private readonly aiRunner: LightTickAiRunner,
-    private readonly recordTerminalFailure: (job: QueueJob, error: unknown) => Promise<void> = async () => undefined) {}
+    private readonly recordTerminalFailure: (job: QueueJob, error: unknown) => Promise<void> = async () => undefined,
+    readonly learning?:LearningWorkRunner) {}
+
+  async recover(){return await this.learning?.recover()??0;}
 
   async process(job: QueueJob): Promise<void> {
     try {
+      if(job.name===LEARNING_WORK_JOB){
+        if(!this.learning||job.payload.app_id!=='lighttick')throw Error('Learning worker is unavailable or has invalid app scope');
+        await this.learning.execute({appId:'lighttick',userId:String(job.payload.user_id)},String(job.payload.work_id));return;
+      }
       if (job.name === LIGHTTICK_JOB_NAMES.aiRun || job.name === LIGHTTICK_JOB_NAMES.retry) {
         const owner: LightTickOwner = { appId: "lighttick", userId: String(job.payload.user_id) };
         await this.aiRunner.execute(owner, String(job.payload.run_id), String(job.payload.scene) as LightTickAiSceneName);

@@ -103,7 +103,18 @@ export async function tryHandleNativeLearningRoutes(
         "REQ_INVALID_BODY",
         "Learning request is too large.",
       );
-    if (path === "/routes" || path.startsWith("/routes/")) {
+    if (path === "/work" || path.startsWith("/work/")) {
+      const work = runtime.learningWork;
+      if (!work) throw new ApplicationError(503,"LIGHTTICK_APP_DISABLED","Learning worker is unavailable.");
+      const match = /^\/work\/(work-[a-zA-Z0-9-]+)(?:\/(cancel|adopt))?$/.exec(path);
+      if (path === "/work" && r.method === "POST") result = await work.create(owner,body,key,assertActive);
+      else if (path === "/work" && r.method === "GET") result = await work.list(owner,r.query?.cursor??"",r.query?.limit?integer(Number(r.query.limit),1,50):20);
+      else if (match && !match[2] && r.method === "GET") result = await work.read(owner,match[1]);
+      else if (match && match[2] === "cancel" && r.method === "POST") result = await work.cancel(owner,match[1],body,key,assertActive);
+      else if (match && match[2] === "adopt" && r.method === "POST") result = await work.adopt(owner,match[1],body,key,assertActive);
+      else throw new ApplicationError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Learning work route was not found.");
+    }
+    else if (path === "/routes" || path.startsWith("/routes/")) {
       const routes = new LearningRouteService(service), match = /^\/routes\/(plan-[a-zA-Z0-9-]+)(?:\/(publish|status|progress|versions\/[1-9][0-9]*|lessons\/[1-9][0-9]*\/publish))?$/.exec(path);
       if (path === "/routes" && r.method === "GET") result = await routes.list(owner, r.query?.cursor ?? "", r.query?.limit ? integer(Number(r.query.limit), 1, 100) : 25);
       else if (match) {

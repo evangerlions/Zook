@@ -904,3 +904,6 @@ PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会�
 新增 `health/close-sessions` 和迁移 083，使用本设备签名关闭持久化创建 UUID；支持创建前取消及响应丢失后的撤销，已撤设备仍可关闭自己的会话。会话/关闭同账号→主体事务锁串行化，普通账号 Bearer 和不可变公钥绑定仍必需。协议变更详见 README_API；不新增医疗内容同步。iOS 已用原生 CryptoKit、Keychain 和真实本地 HTTP 联调，不等同于真机或发布批准。
 
 BodyLog group admission follow-up: deterministic stale-pending interleavings now recover the same-account membership after a peer reaches capacity/quota. The release gate invokes the isolated group PostgreSQL runner as its own step (requires initdb/pg_ctl/createdb), rather than passing the retention database connection into that suite.
+
+
+2026-11-04 LightTick U3 候选增量：正式课程路线/阶段/不可变发布版本与课次映射已新增；旧进度可从原生显式完成事实投影。学习 AI/授权文本文件/HTTPS 资料在现有 LightTick worker 和共享队列内执行，持久预算/租约/fencing/取消/重启扫描；AI 产物须显式采用/发布。此处为工程实现，联合客户端、浏览器及原任务表验收独立记录，不表示 U4/U5 或真实迁移/生产发布完成。

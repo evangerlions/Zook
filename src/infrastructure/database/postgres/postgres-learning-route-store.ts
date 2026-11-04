@@ -1,9 +1,11 @@
 import type { LearningRouteRepository, LearningRoute, LearningRouteVersion, RouteLessonLink } from "../../../modules/lighttick/learning/learning-route.types.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { PostgresLearningWorkStore } from "./postgres-learning-work-store.ts";
 type Query = (sql: string, args?: unknown[]) => Promise<{ rows: Record<string, any>[] }>;
 type Transaction = <T>(owner: LightTickOwner, callback: () => Promise<T>) => Promise<T>;
 export class PostgresLearningRouteStore implements LearningRouteRepository {
+  readonly work=new PostgresLearningWorkStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   constructor(private readonly query: Query, private readonly transaction: Transaction) {}
   async readRouteProgressFacts(o: LightTickOwner, id: string) {
     const r = await this.query(`SELECT l.number,l.lesson_id,n.published_version,p.completed,

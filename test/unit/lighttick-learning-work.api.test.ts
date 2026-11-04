@@ -1,0 +1,52 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import Ajv from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import * as schemas from '../../src/generated/openapi/public-contracts.generated.ts';
+import {createApplication} from '../support/create-test-application.ts';
+import {buildDefaultSeed} from '../../src/infrastructure/database/prisma/default-seed.ts';
+import {NativeLearningService} from '../../src/modules/lighttick/learning/native-learning.service.ts';
+import {LearningRouteService} from '../../src/modules/lighttick/learning/learning-route.service.ts';
+import {LearningWorkService} from '../../src/modules/lighttick/learning/learning-work.service.ts';
+import {LearningWorkRunner} from '../../src/modules/lighttick/learning/learning-work.runner.ts';
+import {PersistentFileStore} from '../../src/infrastructure/files/persistent-file-store.ts';
+import {routeFixture} from '../support/learning-route-fixture.ts';
+test('HTTP work/file/source/AI draft/explicit publication contracts preserve owner identity and pending requests',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'learning-work-http-'));
+ try{
+  const seed=buildDefaultSeed(undefined,{includeLightTick:true});for(const userId of ['user_alice','user_bob'])seed.appUsers.push({id:'work-http-'+userId,appId:'lighttick',userId,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
+  const app=await createApplication({seed,lighttickEnabled:true,fileStorageRoot:dir}),runtime=app.services.lighttickRuntime!;
+  runtime.nativeLearning=new NativeLearningService(runtime.repository,true);
+  const work=new LearningWorkService(new LearningRouteService(runtime.nativeLearning),app.queue);runtime.learningWork=work;
+  const llm={complete:async(input:any)=>({provider:'synthetic',providerModel:'fixture',text:JSON.stringify(input.messages[1].content.includes('Draft one complete lesson')?
+   {content:'# 合成课程\n## 引导问题\n问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n练习\n---\n## 参考分析\n分析\n## 自查\n自查\n## 记忆提示\n提示',references:'明确上传的合成资料'}:routeFixture().document)})} as any;
+  const store=new PersistentFileStore(dir),runner=new LearningWorkRunner(work,llm,{readFile:(o,k)=>app.services.storageService.readOwnerText(store,o,k),writeFile:(o,id,name,content)=>app.services.storageService.storeOwnerText(store,o,name,content,id),fetchUrl:async()=>{throw Error('No external request');}});
+  const headers=(id:string)=>({authorization:'Bearer '+app.services.tokenService.issueAccessToken(id,'lighttick'),'x-app-id':'lighttick'});
+  const call=(path:string,method='GET',body?:unknown,key='work-http-key',user='user_alice')=>app.app.handle({path:'/api/v1/lighttick/learning/'+path,method,body,headers:{...headers(user),'idempotency-key':key}});
+  const ajv=new Ajv({strict:false});addFormats(ajv);
+  const check=(name:string,r:any)=>{assert.equal(r.statusCode,200,JSON.stringify(r.body));const validate=ajv.compile((schemas as any)['LightTickNativeLearning'+name+'EnvelopeSchema']);assert.equal(validate(JSON.parse(JSON.stringify(r.body))),true,JSON.stringify(validate.errors));return r.body.data;};
+  const owner={appId:'lighttick' as const,userId:'user_alice'},id='plan-http-work';
+  const file=check('Work',await call('work','POST',{kind:'file_ingest',route_id:id,base_revision:0,file_name:'材料.txt',content:'明确上传的合成资料'},'work-http-file'));
+  await runner.execute(owner,file.id);const fileDone=check('Work',await call('work/'+file.id));assert.equal(fileDone.status,'succeeded');
+  const source=check('Work',await call('work','POST',{kind:'collect_sources',route_id:id,base_revision:0,sources:[{kind:'file',title:'合成资料',storage_key:fileDone.output.file.storage_key}]},'work-http-source'));
+  await runner.execute(owner,source.id);check('Work',await call('work/'+source.id));
+  const route=check('Work',await call('work','POST',{kind:'route_draft',route_id:id,base_revision:0,brief:routeFixture().brief},'work-http-route'));
+  await runner.execute(owner,route.id);const ready=check('Work',await call('work/'+route.id));
+  const adopt={base_revision:ready.revision,base_route_revision:0,expected_digest:ready.output_digest};
+  const adopted=check('WorkAdoption',await call('work/'+route.id+'/adopt','POST',adopt,'work-http-adopt'));
+  assert.equal(adopted.result.published_version,0);
+  assert.deepEqual(check('WorkAdoption',await call('work/'+route.id+'/adopt','POST',adopt,'work-http-adopt')),adopted);
+  check('Route',await call('routes/'+id+'/publish','POST',{base_revision:1},'work-http-route-publish'));
+  const lesson=check('Work',await call('work','POST',{kind:'lesson_draft',route_id:id,base_revision:2,number:1,sources:[{kind:'file',title:'合成资料',storage_key:fileDone.output.file.storage_key}]},'work-http-lesson'));
+  await runner.execute(owner,lesson.id);const lessonReady=check('Work',await call('work/'+lesson.id));assert.equal(lessonReady.status,'succeeded');
+  const published=check('WorkAdoption',await call('work/'+lesson.id+'/adopt','POST',{base_revision:lessonReady.revision,base_route_revision:2,expected_digest:lessonReady.output_digest},'work-http-lesson-publish'));
+  assert.equal(published.result.route_id,id);
+  check('WorkPage',await call('work'));
+  assert.equal((await call('work/'+route.id,'GET',undefined,'unused','user_bob')).statusCode,404);
+  const next=check('Work',await call('work','POST',{kind:'collect_sources',route_id:id,base_revision:3,sources:[{kind:'text',title:'新资料',text:'新合成资料'}]},'work-http-cancel-create'));
+  check('Work',await call('work/'+next.id+'/cancel','POST',{base_revision:next.revision},'work-http-cancel'));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

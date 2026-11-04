@@ -1,5 +1,6 @@
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, readFile, stat, writeFile, open, realpath } from "node:fs/promises";
+import { constants } from "node:fs";
+import { dirname, join, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 import { isContainerRuntime } from "../runtime/runtime-readiness.ts";
 
@@ -73,6 +74,27 @@ export class PersistentFileStore {
 
   async readBuffer(filePath: string): Promise<Buffer> {
     return await readFile(this.resolvePath(filePath));
+  }
+
+  /** Bounded UTF-8 text for authorized ingestion; never accepts paths outside this store. */
+  async readBoundedText(relativePath: string, maximumBytes: number): Promise<string> {
+    if (!Number.isInteger(maximumBytes) || maximumBytes < 1 || maximumBytes > 200000) throw Error("Invalid text capacity");
+    const root = await realpath(this.rootDir), path = await realpath(this.resolvePath(relativePath));
+    if (!path.startsWith(root + sep)) throw Error("File path is outside the persistent store");
+    const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const info = await handle.stat();
+      if (!info.isFile() || info.size > maximumBytes) throw Error("Text file exceeds capacity");
+      const buffer = Buffer.alloc(maximumBytes + 1);
+      let offset = 0;
+      while (offset < buffer.length) {
+        const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, null);
+        if (!bytesRead) break;
+        offset += bytesRead;
+      }
+      if (offset > maximumBytes) throw Error("Text file exceeds capacity");
+      return new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, offset));
+    } finally { await handle.close(); }
   }
 
   async stat(filePath: string) {

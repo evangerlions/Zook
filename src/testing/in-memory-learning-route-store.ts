@@ -1,16 +1,18 @@
 import type { LearningRouteRepository, LearningRoute, LearningRouteVersion, RouteLessonLink } from "../modules/lighttick/learning/learning-route.types.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
+import { InMemoryLearningWorkStore } from "./in-memory-learning-work-store.ts";
 const key = (o: LightTickOwner, ...ids: (string | number)[]) => JSON.stringify([o.appId,o.userId,...ids]);
 export class InMemoryLearningRouteStore implements LearningRouteRepository {
+  readonly work=new InMemoryLearningWorkStore();
   constructor(private readonly facts: LearningRouteRepository["readRouteProgressFacts"]) {}
   readRouteProgressFacts: LearningRouteRepository["readRouteProgressFacts"] = (o,id)=>this.facts(o,id);
   private routes = new Map<string,LearningRoute>();
   private versions = new Map<string,LearningRouteVersion>();
   private links = new Map<string,RouteLessonLink>();
-  snapshot() { return structuredClone({ routes: [...this.routes], versions: [...this.versions], links: [...this.links] }); }
-  restore(s: ReturnType<InMemoryLearningRouteStore["snapshot"]>) { this.routes=new Map(s.routes);this.versions=new Map(s.versions);this.links=new Map(s.links); }
-  deleteOwner(o: LightTickOwner) { for (const map of [this.routes,this.versions,this.links]) for (const [id,r] of map) if(r.appId===o.appId&&r.userId===o.userId)map.delete(id); }
+  snapshot() { return structuredClone({ routes: [...this.routes], versions: [...this.versions], links: [...this.links], work:this.work.snapshot() }); }
+  restore(s: ReturnType<InMemoryLearningRouteStore["snapshot"]>) { this.routes=new Map(s.routes);this.versions=new Map(s.versions);this.links=new Map(s.links);this.work.restore(s.work); }
+  deleteOwner(o: LightTickOwner) { this.work.deleteOwner(o);for (const map of [this.routes,this.versions,this.links]) for (const [id,r] of map) if(r.appId===o.appId&&r.userId===o.userId)map.delete(id); }
   async getLearningRoute(o: LightTickOwner,id: string) { return structuredClone(this.routes.get(key(o,id))); }
   async listLearningRoutes(o: LightTickOwner,after: string,limit: number,publishedOnly=false) {
     return structuredClone([...this.routes.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&(!publishedOnly||r.publishedVersion>0)&&Buffer.compare(Buffer.from(r.id),Buffer.from(after))>0).sort((a,b)=>Buffer.compare(Buffer.from(a.id),Buffer.from(b.id))).slice(0,limit));
