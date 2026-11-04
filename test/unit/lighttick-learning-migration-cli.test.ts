@@ -4,6 +4,7 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runLearningMigration } from "../../scripts/lighttick-learning-migration.ts";
+import {courseMigrationFixture} from "../support/learning-route-migration-fixture.ts";
 import { learningMigrationFixture } from "../support/native-learning-migration-fixture.ts";
 test("migration CLI defaults to offline validation, never sends an implicit write and preserves reviewed remote command identity", async () => {
   const dir = await mkdtemp(join(tmpdir(), "synthetic-learning-cli-"));
@@ -69,4 +70,13 @@ test("migration CLI defaults to offline validation, never sends an implicit writ
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test('offline CLI includes formal route relationship counts without any remote request',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'synthetic-course-cli-'));
+ try{
+  const bundle=join(dir,'course.json');await writeFile(bundle,JSON.stringify(courseMigrationFixture().bundle));
+  const result=await runLearningMigration(['--bundle',bundle],(async()=>{throw Error('Dry-run must stay offline');}) as typeof fetch);
+  assert.equal(result.counts?.routes,1);assert.equal(result.counts?.route_versions,2);assert.equal(result.counts?.route_links,1);assert.equal(result.counts?.work,0);
+ }finally{await rm(dir,{recursive:true,force:true});}
 });

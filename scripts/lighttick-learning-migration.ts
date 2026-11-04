@@ -75,6 +75,10 @@ export async function runLearningMigration(
       target_user_id: owner.userId,
       source_instance: manifest.source.instance,
       counts: {
+        routes: manifest.routes.routes.length,
+        route_versions: manifest.routes.versions.length,
+        route_links: manifest.routes.links.length,
+        work: 0,
         collections: manifest.collections.length,
         lessons: manifest.lessons.length,
         publications: manifest.publications.length,
