@@ -1,3 +1,4 @@
+import {buildDefaultSeed} from '../../src/infrastructure/database/prisma/default-seed.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,rm,symlink,writeFile} from 'node:fs/promises';
@@ -31,7 +32,7 @@ test('source addresses reject private, reserved, mapped IPv6 and unreviewed sche
 test('platform file identity is idempotent, owner authorization and bounded UTF-8 ingestion reject cross-owner paths',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'lighttick-source-fixture-'));
  try{
-  const app=await createApplication({fileStorageRoot:dir}),storage=app.services.storageService,store=new PersistentFileStore(dir),owner={appId:'lighttick',userId:'user_alice'};
+  const seed=buildDefaultSeed(undefined,{includeLightTick:true});seed.appUsers.push({id:'source-owner',appId:'lighttick',userId:'user_alice',status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});const app=await createApplication({fileStorageRoot:dir,seed}),storage=app.services.storageService,store=new PersistentFileStore(dir),owner={appId:'lighttick',userId:'user_alice'};
   const first=await storage.storeOwnerText(store,owner,'fixture.txt','Explicit synthetic file content','original-file-id');
   assert.deepEqual(await storage.storeOwnerText(store,owner,'fixture.txt','Explicit synthetic file content','original-file-id'),first);
   assert.equal(await storage.readOwnerText(store,owner,first.storage_key),'Explicit synthetic file content');
@@ -48,4 +49,18 @@ test('collected sources retain exact provenance and reject oversized or cancelle
  await assert.rejects(collectLearningSources(owner,sourceInputs([{kind:'file',title:'File',storage_key:'files/lighttick/fixture.txt'}]),adapters,new AbortController().signal));
  assert.equal(files,1);assert.equal(urls,0);
  const c=new AbortController();c.abort();await assert.rejects(collectLearningSources(owner,sourceInputs([{kind:'url',title:'URL',url:'https://example.com/'}]),adapters,c.signal));assert.equal(urls,0);
+});
+
+test('deleted owner cannot confirm a late source upload, and durable purge removes the late file',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'lighttick-late-source-'));const seed=buildDefaultSeed(undefined,{includeLightTick:true});seed.appUsers.push({id:'late-source-owner',appId:'lighttick',userId:'user_alice',status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
+ try{
+  const app=await createApplication({seed,fileStorageRoot:dir}),store=new PersistentFileStore(dir),owner={appId:'lighttick',userId:'user_alice'};
+  let release!:()=>void,started!:()=>void;const writing=new Promise<void>(r=>release=r),began=new Promise<void>(r=>started=r),write=store.writeText.bind(store);let key='';
+  store.writeText=async(path,content)=>{key=path;started();await writing;return write(path,content);};
+  const upload=app.services.storageService.storeOwnerText(store,owner,'late.txt','Synthetic late file','late-source-identity');const rejected=assert.rejects(upload,{code:'FILE_ACCESS_DENIED'});await began;
+  await app.database.withAppUserDataTransaction(owner.appId,owner.userId,async()=>{await app.database.deleteAppUserRuntimeData(owner.appId,owner.userId);await app.database.updateAppUserStatus(owner.appId,owner.userId,'DELETED');});
+  const {FilePurgeService}=await import('../../src/infrastructure/files/file-purge.service.ts');const purge=new FilePurgeService(app.database,store);
+  await purge.runBatch();release();await rejected;assert.equal(await app.database.findFileByOwnerAndStorageKey(owner.appId,owner.userId,key),undefined);
+  assert.equal((await purge.runBatch()).removed,1);await assert.rejects(store.readText(key),{code:'ENOENT'});
+ }finally{await rm(dir,{recursive:true,force:true});}
 });

@@ -1,3 +1,6 @@
+import type {LightTickRepository} from "../modules/lighttick/lighttick.repository.ts";
+import {randomUUID} from "node:crypto";
+import type {FilePurgeTask} from "../infrastructure/files/file-purge.types.ts";
 import { InMemoryBuddySupportRepository } from "./in-memory-buddy-support.ts";
 import type { SupportNote, SupportPermission, SupportOperation } from "../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import { InMemorySleepGuestStore } from "./in-memory-sleep-guest.ts";
@@ -266,8 +269,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
   getSleepGuestStore() { return this.sleepGuest; }
   getPersonalSyncRepository() { return this.personalSync; }
   getFrogSleepAdminStore() { return new InMemoryFrogSleepAdminStore(this); }
-  async withAppUserDataTransaction<T>(_appId: string, _userId: string, fn: () => Promise<T> | T): Promise<T> {
-    return await this.withExclusiveSession(fn);
+  private lightTickOwnerRepository?:LightTickRepository;
+  bindLightTickRepository(repository:LightTickRepository){this.lightTickOwnerRepository=repository;}
+  async withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T> {
+    const run=()=>this.withExclusiveSession(fn);
+    return appId==='lighttick'&&this.lightTickOwnerRepository?this.lightTickOwnerRepository.transaction({appId:'lighttick',userId},run):run();
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -528,11 +534,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(membership);
   }
 
-  deleteAppUserRuntimeData(
+  async deleteAppUserRuntimeData(
     appId: string,
     userId: string,
     deletedAt = new Date().toISOString(),
-  ): void {
+  ): Promise<void> {
     if (appId === "ai_novel") {
       this.softDeleteAiNovelBillingAccount(
         "ai_novel",
@@ -542,6 +548,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     }
     if (appId === "frogsleep") this.personalSync.invalidate(userId);
     if (appId === "frogsleep") deleteInMemoryFrogSleepBuddyUserData(this, appId, userId);
+    for(const file of this.files.filter(f=>f.appId===appId&&f.ownerUserId===userId))void this.enqueueFilePurge(appId,userId,file.storageKey);
     const uploadIds = this.clientLogUploads
       .filter((item) => item.appId === appId && item.userId === userId)
       .map((item) => item.id);
@@ -665,6 +672,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter(
       (item) => !removedNotificationIds.includes(item.notificationId),
     );
+    if(appId==='lighttick')await this.lightTickOwnerRepository?.deleteOwnerData({appId:'lighttick',userId});
   }
 
   findBodyLogProfile(
@@ -992,6 +1000,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return this.analyticsEvents.filter((item) => item.appId === appId);
   }
 
+  private filePurges:(FilePurgeTask&{due:number;leaseUntil:number})[]=[];
+  async enqueueFilePurge(appId:string,userId:string,storageKey:string){const old=this.filePurges.find(r=>r.appId===appId&&r.userId===userId&&r.storageKey===storageKey);if(old){old.due=0;return;}this.filePurges.push({id:JSON.stringify([appId,userId,storageKey]),appId,userId,storageKey,attempt:0,leaseToken:'',leaseUntil:0,due:0});}
+  async claimFilePurges(limit:number,now:Date){const result=[];for(const row of this.filePurges)if(row.due<=now.getTime()&&row.leaseUntil<=now.getTime()&&result.length<Math.min(20,limit)){row.attempt++;row.leaseToken=randomUUID();row.leaseUntil=now.getTime()+45000;result.push(structuredClone(row));}return result;}
+  async completeFilePurge(task:FilePurgeTask){this.filePurges=this.filePurges.filter(r=>r.id!==task.id||r.leaseToken!==task.leaseToken);}
+  async deferFilePurge(task:FilePurgeTask,now:Date){const row=this.filePurges.find(r=>r.id===task.id);if(row?.leaseToken===task.leaseToken){row.leaseToken='';row.leaseUntil=0;row.due=now.getTime()+Math.min(3600,2**Math.min(task.attempt,12))*1000;}}
   insertFile(record: FileRecord): void {
     this.files.push(structuredClone(record));
   }

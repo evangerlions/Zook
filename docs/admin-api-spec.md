@@ -766,3 +766,11 @@ Local synthetic tests: `test/unit/lighttick-learning-migration*.test.ts` and `te
 ### LightTick 学习场景补充
 
 现有 lighttick.ai_routing 增加 learning_route / learning_lesson；仍使用平台逻辑 modelAlias 与 routes，不新增 Provider 密钥或 env。旧版本化文档缺少这两个新增键时使用代码中的场景默认值，管理端明确保存后才写入版本化配置。运行时再将输入、输出和超时收紧到学习场景硬上限；既有 daily_review 的重复声明已删除被覆盖项，保留原本实际生效的值。学习任务的 owner 预算、最多三次租约尝试及取消/重启恢复不另开管理写接口；迁移控制仍走原 sensitive grant。没有在本轮改动真实运营配置或凭证。
+
+### 本人数据与文件清理（本地候选）
+
+LightTick 的专属与平台通用账号删除复用同一领域表清单，包含记录、行动/规划、课程/私人历史、知识/历史及任务回执。PostgreSQL 账号删除先取得现有 LightTick owner gate，再锁 membership；元数据、membership/session 处理及文件删除 outbox 在现有平台事务中提交。全 App 删除也复用同一清单，不遗漏新增领域表。local adoption claim 取消账号/云端映射，防止旧本机身份重新导入已删除数据。
+
+文件物理清理由既有 worker tick 处理 `zook_owner_file_purges`，每批最多 20、45 秒租约、fence、有限退避重试；不新增服务/队列凭据或 env。删除元数据时登记明确的 owner/storage_key，磁盘 IO 不占 owner 事务。仍有平台元数据引用的路径保留；只删除持久根内单个文件，不递归、不扫描其他历史、不跟随父目录逃逸。迟到学习文本上传必须重新核验有效 membership 与元数据，删除后不能确认上传；失败再次登记清理，防止先删后写遗留。平台文件只在 worker 恢复后最终清除，不能宣称事务提交瞬间物理擦除，也不覆盖数据库/文件备份的独立保留策略。
+
+验证只使用专用 localhost 数据库与临时合成文件；本轮未执行真实账号或真实文件清理。监控应观察 worker 聚合清理/重试/保留计数，不把正文、磁盘路径或凭据写入日志。

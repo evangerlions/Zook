@@ -1,3 +1,4 @@
+import {InMemoryDatabase} from "./testing/in-memory-database.ts";
 import { LightTickPlanningService } from "./modules/lighttick/planning/planning.service.ts";
 import { LearningRouteService } from "./modules/lighttick/learning/learning-route.service.ts";
 import { LearningWorkService } from "./modules/lighttick/learning/learning-work.service.ts";
@@ -28,9 +29,10 @@ import type { AnalyticsService } from "./modules/analytics/analytics.service.ts"
 import { LightTickAnalyticsService } from "./modules/lighttick/lighttick-analytics.ts";
 
 export function resolveApplicationLightTickRepository(database: ApplicationDatabase, override?: LightTickRepository) {
-  return override ?? (database instanceof PostgresDatabase
+  const repository=override ?? (database instanceof PostgresDatabase
     ? database.getLightTickRepository()
     : new InMemoryLightTickRepository());
+  if(database instanceof InMemoryDatabase)database.bindLightTickRepository(repository);return repository;
 }
 
 export function createApplicationLightTickRuntime(repository: LightTickRepository, queue: JobQueue) {

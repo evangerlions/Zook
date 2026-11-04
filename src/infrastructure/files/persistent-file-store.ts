@@ -1,4 +1,4 @@
-import { mkdir, readFile, stat, writeFile, open, realpath } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile, open, realpath, unlink, lstat } from "node:fs/promises";
 import { constants } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -97,6 +97,13 @@ export class PersistentFileStore {
     } finally { await handle.close(); }
   }
 
+  async removeOwnedFile(relativePath:string):Promise<void>{
+    const root=await realpath(this.rootDir),path=resolve(root,relativePath);
+    if(!path.startsWith(root+sep))throw Error('File purge path is outside the store');
+    try{const parent=await realpath(dirname(path));if(parent!==root&&!parent.startsWith(root+sep))throw Error('File purge parent is outside the store');
+      const entry=await lstat(path);if(!entry.isFile()&&!entry.isSymbolicLink())throw Error('File purge only removes a single file');await unlink(path);
+    }catch(error:any){if(error?.code!=='ENOENT')throw error;}
+  }
   async stat(filePath: string) {
     return await stat(this.resolvePath(filePath));
   }

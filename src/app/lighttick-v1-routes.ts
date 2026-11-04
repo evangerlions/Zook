@@ -225,7 +225,6 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     await context.authService.consumeReauthenticationProof(LIGHTTICK_APP_ID, auth.userId,
       stringOf(body.reauthentication_token, "reauthentication_token"));
     const result = await context.authService.deleteCurrentAppAccount({ appId: LIGHTTICK_APP_ID, userId: auth.userId, confirmation });
-    await runtime.repository.deleteOwnerData(owner);
     return context.ok({ app_id: LIGHTTICK_APP_ID, membership_status: "DELETED", sessions_revoked: true,
       product_data_deleted: result.deleted, platform_account_retained: true, other_memberships_retained: true },
       request.requestId as string, { "Set-Cookie": context.authService.buildClearRefreshCookie() });
