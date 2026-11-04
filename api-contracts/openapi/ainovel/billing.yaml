@@ -11,8 +11,13 @@ info:
     for store purchases. Explicitly configured Alipay supports CN one-off memberships.
     Membership and credits default to production. Non-online servers explicitly
     identified by DEPLOY_SLOT (otherwise APP_ENV) as local/dev/development/test accept X-Billing-Environment:
-    sandbox or production. Online (including missing/unknown deployment identity) rejects sandbox
-    with 403 BILLING_ENVIRONMENT_FORBIDDEN, irrespective of client or provider flags.
+    sandbox or production. Online (including missing/unknown deployment identity) rejects explicit sandbox
+    overrides with 403 BILLING_ENVIRONMENT_FORBIDDEN. Known online/production deployments automatically
+    scope authenticated ios/macos accounts whose server-bound phones match enabled ai_novel SMS test accounts
+    to sandbox, unless active production membership exists. The existing common.test_accounts registry
+    is the only admission source; no duplicate user-ID allowlist or client-supplied phone is used. Active store-verified
+    entitlements are still required. Web and other platforms stay in production. Unknown deployments
+    have no exception. No client field grants testing permission.
     Use the same header for users/me, billing, credits and AI requests. Cache and
     recovery state must be scoped by environment. Signed provider callbacks use
     verified provider evidence rather than the caller's header.

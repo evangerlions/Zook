@@ -119,7 +119,7 @@ function resolveProvider(
   };
 }
 
-function isRevenueCatDistribution(input: AiNovelBillingCatalogInput): boolean {
+export function isRevenueCatDistribution(input: AiNovelBillingCatalogInput): boolean {
   return (
     ((input.platform === "ios" || input.platform === "macos") &&
       input.distribution === "app_store") ||

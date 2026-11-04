@@ -6,6 +6,7 @@ import { isAuthCodeDeliveryRequest } from "./auth-code-delivery-paths.ts";
 
 import { billingRequestEnvironment, billingDeploymentEnvironment, inBillingEnvironment } from "../modules/billing/billing-environment.ts";
 import { bindBillingResponseEnvironment } from "../modules/billing/billing-response-environment.ts";
+import { isAppleSandboxCandidate } from "../modules/billing/apple-sandbox-access.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -200,7 +201,11 @@ export class BackendApplication extends BackendRouteContext {
     request.cookies ??= parseCookies(request.headers.cookie);
     const execute = async () => {
       request.adminSession = await this.resolveAdminSession(request);
-      const environment = billingRequestEnvironment(request, this.billingDeployment);
+      let environment = billingRequestEnvironment(request, this.billingDeployment);
+      if (environment === "production" && isAppleSandboxCandidate(request, this.billingDeployment)) {
+        const auth = await this.authenticateProductRequest(request, "ai_novel");
+        environment = await this.aiNovelBillingService.appleSandbox.environment(auth.userId);
+      }
       const response = await inBillingEnvironment(environment, () => this.dispatch(request));
       return bindBillingResponseEnvironment(response, environment);
     };
