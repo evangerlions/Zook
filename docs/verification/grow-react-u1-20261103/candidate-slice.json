@@ -1,32 +1,33 @@
 {
   "status": "engineering-slice-only-not-release-ready",
-  "completed_tasks": "19/27",
-  "zook_candidate_sha": "020f9a0dd9722592692bc8cce2a7f079f07f56fa",
+  "completed_tasks": "21/27",
+  "zook_candidate_sha": "a9723bdd8db70d40c16bfd545dd278ddabf27064",
   "grow_manifest": {
     "schema_version": 1,
     "product": "lighttick",
-    "source_revision": "afaef9a10ea7927e842ee1dd45614d138eb2be63",
-    "contract_revision": "65d87adbf4b32449fef92f58b6580d9f2d60950d",
+    "source_revision": "6fc85c65aeef77ff99f8d7e3016e19c3e42d309d",
+    "contract_revision": "a9723bdd8db70d40c16bfd545dd278ddabf27064",
     "source_dirty": false,
     "files": {
-      "index.html": "155415d3cde9825a6ebcb4a7819f67e61381125a76e2830d3cb5d302d79d58d1",
-      "assets/ActionsPage-BnbbRKQl.js": "2428ed0decd74aaa6b15a1682e01c761da4fa934055058ed1be8288692670e2b",
-      "assets/GoalsPage-9IEaDYw2.js": "8d1f6e1096214c5c77a14cfaec6e918b6df0da8260ec57b86716d1f098e39c6f",
-      "assets/LearningPage-BW8FdRvj.js": "8b14c49c1290b780a945639c9d9d0788de4d0142ba930b2f7fbe469610260364",
-      "assets/PendingNotice-ctOtqm1_.js": "827ee7e3d1e96b1f295fdbe6fd1327448ebf71f646743215a598549a455249fb",
-      "assets/PlanningPage-550RdFl-.js": "b690f9666a7b02ecd7361b1caa0450c4c69912b4d2b1deb7c7e25ca0e44f6c9d",
-      "assets/PlansPage-x7BxTyjp.js": "1e89ffe1d11c846bf29d60451e83e420767241516e47c45e6173dd0a6aef3db9",
-      "assets/PracticePage-D6GaKQIJ.js": "07f64d61c94f4dfa1f14d2b2703d446e467e0164c3f8a57d9bddd1d152ccf63f",
-      "assets/RecordsPage-BO4Lx2qn.js": "fecaa00ddf16f000370cf014ad8906546e9173a640cab3f212d1c4186fb13623",
-      "assets/TodayPage-BDMqXK14.js": "e5890555722ac3f069f772391098b7eecb2da48476a461f948a8065a9917edf2",
+      "index.html": "2aae3c5a683ecc85a1e3be2dfa95b188c33f3f241a8117d7b8d6ba7e48b109cf",
+      "assets/ActionsPage-_cv0kmFO.js": "c5db89d0dcd71ff059bbff12f896ac4b53ca2717dcfedf46de708e0b2e58a077",
+      "assets/GoalsPage-Z9cuisRq.js": "b2935a300bede1be0d1d55cd6fd1b19d5e8d7d4740d12cb21354773bf517e9dd",
+      "assets/LearningPage-DgnfTeTu.js": "243235a46f227ae0b247d5c8ae50b28de069333f44f9318c9b457e94ac89506c",
+      "assets/PendingNotice-C7lZd-Mf.js": "c4c5a40674a2aaeaace93a27457e59a578d9185a3738a032bde705a3698250fc",
+      "assets/PlanningPage-C87X1V7A.js": "9209f394a3b3abcf671f12fd710812d4453fda8ba834dcb78c757bbebf003a1b",
+      "assets/PlansPage-D03SfIHK.js": "000798b6f2bc677c08f05334e86e60dd39c988d369748e311819e7a10e95e308",
+      "assets/PracticePage-nUbaaBeg.js": "b1be97459d29da2bc82cb8cab2e41e69eb3ab6818118428065244bdb6b0e502e",
+      "assets/RecordsPage-ByS3xV6s.js": "a84fbb525f6c7c25778a4400d253ed202da84885fb699ba1fbd1c36afc11a35d",
+      "assets/ReviewPage-DWPtXAcr.js": "eb1ead555d26d93850088f4ecdda12c02c88f93f05dedbd7e2c0f0a092475c51",
+      "assets/TodayPage-B3QQcM5_.js": "81bd4695094e18cc933200e5b7b8731567e2d198f1bfe91b9ea44bb6306380e0",
       "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
       "assets/index--08vjXGf.css": "229933c47f88d2d9c163f03333ecdb15a19d5254b7f9da6962d571e2951fbe60",
-      "assets/index-C0gXYLl_.js": "a15ac8066dc2b3c9ce071eb81369aa39da163b4f4d7a3655fc030c2ecb1cc74a",
+      "assets/index-C_kXSIjh.js": "97a9a0b30c226b05864c0afff8e8d74d6c54a42b2044c87af43802fa45af845a",
       "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
     }
   },
-  "ios_candidate_sha": "91a664618cf5212362ad1ec63713b12320cf0cfe",
-  "android_candidate_sha": "cbaca32ab7c1023866189a56b392da595c6564c4",
+  "ios_candidate_sha": "d158764d16a7c4fb751440a97e7655e6b7db3e98",
+  "android_candidate_sha": "0332c725461f5b7576e3381d881b7cf5ff332b25",
   "database_migrations": [
     {
       "file": "src/infrastructure/database/postgres/migrations/085_lighttick_native_learning.sql",
@@ -47,6 +48,14 @@
     {
       "file": "src/infrastructure/database/postgres/migrations/089_lighttick_learning_work.sql",
       "sha256": "556960f9168f12325f7fbc05c732293d71c2879bee532c33b2b44effb7629382"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/090_lighttick_knowledge.sql",
+      "sha256": "a709245f3136e7148f0b8f7a423059b0ba60059cd80d9c7be9bc3cd9c39bffcd"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/091_owner_file_purge.sql",
+      "sha256": "8a2b0f427848166df3178d0a03455e70a4a0fcbcc65da67bea5a0fb1abd5497d"
     }
   ],
   "enabled_only_in_synthetic_fixture": [
@@ -58,7 +67,7 @@
     "legacy_operation_parity": "blocked:516 operations need reviewed parity evidence",
     "formal_course_routes_stages_progress": "local-engineering-verified; native editing via trusted Grow Web entry",
     "learning_worker_budget_cancel_lease_restart_publish": "synthetic-provider-and-PostgreSQL-verified; real-model-quality-separate",
-    "knowledge_growth_export_cleanup": "pending",
+    "knowledge_growth_export_cleanup": "local-engineering-verified; bounded authorized export; eventual durable file purge; backups/physical devices separate",
     "investment_research_node_adapters_decimal_calendar_backtests": "pending",
     "all_module_incremental_migration_compensation": "pending",
     "other_apps_toggle_mixed_load_p95_increase_max_10_percent": "pending",
@@ -71,32 +80,24 @@
   "native_worktree_scope": "Selected learning tests run with preserved pre-existing UI modifications; commits contain only current course files. Not clean native release binaries.",
   "verification": {
     "backend_full_unit": {
-      "pass": 2316,
+      "pass": 2346,
       "skip": 1,
       "fail": 0
     },
-    "cli_follow_up": {
-      "pass": 2,
-      "fail": 0
-    },
-    "postgres_learning_course_work_migration": {
-      "pass": 5,
-      "skip": 0
-    },
-    "postgres_owner_order_snapshot": {
-      "pass": 2,
+    "postgres_joint": {
+      "pass": 9,
       "skip": 0
     },
     "grow_unit": {
-      "pass": 14
+      "pass": 15
     },
     "ios_selected_simulator": {
-      "pass": 25
+      "pass": 6
     },
     "android_selected_jvm": {
-      "pass": 21
+      "pass": 8
     },
-    "chrome_results": "u3-course-browser-results.json",
-    "logs_directory": ".artifacts/grow-u3-20261104"
+    "chrome_results": "u4-review-browser-results.json",
+    "logs_directory": ".artifacts/grow-u4-20261104"
   }
 }
