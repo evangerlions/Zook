@@ -1644,8 +1644,24 @@ LightTick 通用领域 REST 回执必须匹配 owner、资源类型/ID、动作�
 `X-Billing-Environment: production|sandbox` selects independent membership and
 credits records; omitted means production. Only a trusted deployment identity of `local`, `dev`,
 `development` or `test` permits sandbox (`DEPLOY_SLOT` takes precedence over `APP_ENV`).
-Online/unknown environments reject sandbox with `403 BILLING_ENVIRONMENT_FORBIDDEN`.
-No provider-specific sandbox enable flags exist.
+Online/unknown environments reject explicit sandbox overrides with `403 BILLING_ENVIRONMENT_FORBIDDEN`.
+On known online/production deployments, authenticated Apple clients (`X-Platform: ios|macos`)
+whose server-bound phones match enabled `ai_novel` accounts in Server → SMS → Test Account
+are automatically scoped to sandbox for AINovel business requests and `users/me`, unless
+they already have active production membership. Empty/missing test-account registries admit nobody.
+Apple App Store catalogs use the RevenueCat product definitions in either membership environment;
+loading them does not require an Alipay sandbox service or credentials.
+The platform header selects the channel, not permission; the server authenticates and
+checks the existing app-scoped SMS test-account registry. Web/Android/Windows continue to use production. No client
+sandbox switch or provider-specific sandbox environment variable is introduced.
+`common.test_accounts` is the only admission source; no second user-ID list is
+maintained in app delivery config or RevenueCat. RevenueCat Sandbox Testing Access
+may remain Anybody for purchase verification; Zook authorizes use of sandbox
+membership/credits through the SMS registry. A verified active Apple entitlement
+is still required: test-account status alone never creates membership. Disabling,
+deleting or changing the matching test phone/app stops admission on the next request.
+Signed Apple callbacks check the same registry and use the existing isolated projection path. Google/Alipay
+sandbox access is not enabled online. Unknown deployment identities have no exception.
 Alipay order ownership/access/renewals and RevenueCat snapshots/callbacks retain
 their verified environment. Migration 076 separates existing sandbox projections,
 credits and financial receipt identities; legacy active membership without matching

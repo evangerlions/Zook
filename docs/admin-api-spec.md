@@ -3,6 +3,26 @@
 LightTick 原生 Web 地址复用既有版本化 `admin.delivery_config.settings.growWebUrl`，通过原管理配置写入/历史/回滚路径维护，不新增 env 或密钥字段。值为现有 Zook Web 进程的 `/grow/` 绝对基础地址；online 只允许 HTTPS，local/dev 可使用 loopback HTTP，禁止账号密码、query、fragment 和其他挂载路径。未配置/非法或 App 关闭时公开配置省略可选字段 `grow_web_url`（客户端将缺失/null 视为不可用），原生权威不得从旧来源进度回退取得地址。设置前必须核对目标静态产物 SHA/digest、同源 API 会话和实际部署 namespace；本轮只在 localhost fixture 配置，未配置或发布真实地址。
 
 Grow静态承载（2026-11-03本地候选）：既有Web进程在`GROW_WEB_ENABLED=1`时加载`GROW_WEB_ROOT`（默认static/grow）的固定manifest和白名单资源，仅在/grow命名空间分发页面/资源，运行配置仅含公开产品/版本。关闭时/grow返回503且无产物依赖；开启缺包/摘要不符在监听前失败。它不使用Admin会话，不代理到Python；用户业务沿用LightTick公共API。页面深链新增 `/grow/planning`（AI 规划）和 `/grow/goals`（目标续排），同样分发固定静态包。详见首批和 U2 验证报告。
+## AINovel Apple sandbox admission
+
+Server → SMS → Test Account is the sole admission source. Its existing
+`GET/POST/PUT/DELETE /api/v1/admin/apps/common/test-accounts[/id]` operations and
+versioned `common.test_accounts` configuration are reused. An enabled `ai_novel`
+test account authorizes the active Zook user whose stored normalized phone matches
+that record. Client-supplied phones/IDs cannot authorize access, and another app's
+test records do not qualify. Adding, editing, disabling and deleting records takes
+effect on the next request; no copied user-ID list or code reveal is necessary.
+
+RevenueCat Sandbox Testing Access can remain Anybody; Zook checks the SMS registry
+before allowing any sandbox membership/credits use. A verified active Apple
+entitlement is still required. Legacy `billing.revenueCat.sandboxAppUserIds` is
+obsolete, ignored by admission and removed by delivery-config normalization.
+Online ios/macos requests automatically select
+the isolated sandbox records for allowed accounts unless active production
+membership exists. Web/other platforms and ordinary accounts keep production.
+Explicit online sandbox headers remain forbidden; sandbox financial history remains isolated.
+Google/Alipay sandbox and unknown deployments receive no new permission.
+
 
 LLM monitoring aggregates (overview and model details) exclude upstream calls
 explicitly marked with internal `callPurpose: "content_safety"`. This applies to

@@ -152,6 +152,12 @@ export class CommonTestAccountService {
     return Boolean(await this.findEnabled(appId, phone));
   }
 
+  async hasEnabledUserAccount(appId: string, userId: string): Promise<boolean> {
+    const user = await this.database.findUserById(userId);
+    if (user?.status !== "ACTIVE" || !user.phone) return false;
+    return this.hasEnabledAccount(appId, user.phone);
+  }
+
   normalizePhone(phone: string, phoneNa?: string): { phone: string; phoneNa: string } {
     const rawPhone = phone.trim();
     const rawPhoneNa = phoneNa?.trim() || "+86";

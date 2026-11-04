@@ -122,7 +122,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     cache,
     kvManager,
   );
-  const aiNovelBillingService = createApplicationBillingService(database, appConfigService, options, logger);
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const appAiRoutingConfigService = new AppAiRoutingConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
@@ -165,6 +164,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     options.registrationCodeGenerator,
     async () => await managedStateStore.save(database),
   );
+  const aiNovelBillingService = createApplicationBillingService(database, appConfigService, options, logger, commonTestAccountService);
   const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
     appConfigService,
   );

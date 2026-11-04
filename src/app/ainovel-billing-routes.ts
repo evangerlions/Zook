@@ -9,6 +9,7 @@ import { BILLING_BENEFITS_CONFIG_KEY } from "../modules/billing/ainovel-billing-
 import {
   buildAiNovelBillingCatalog,
   isAiNovelBillingChannelSupported,
+  isRevenueCatDistribution,
   type AiNovelBillingCatalogInput,
 } from "../modules/billing/ainovel-billing-catalog.ts";
 
@@ -62,12 +63,9 @@ export async function tryHandleAiNovelBillingRoutes(
   if (!auth && regionHeader !== undefined && !guestRegion) {
     throw new ApplicationError(400, "REQ_INVALID_QUERY", "X-App-Region must be CN or GLOBAL.");
   }
-  const alipayCatalog = await this.aiNovelBillingService.alipay.checkoutCatalog();
   const input: AiNovelBillingCatalogInput = {
     locale: this.resolveRequestLocale(request),
     benefitsConfig: (await this.database.findAppConfig("ai_novel", BILLING_BENEFITS_CONFIG_KEY))?.configValue,
-    alipayAvailable: alipayCatalog.available,
-    alipayPrices: alipayCatalog.prices,
     accountRegion: auth ? await this.resolveAccountRegion(
       request,
       "ai_novel",
@@ -83,6 +81,12 @@ export async function tryHandleAiNovelBillingRoutes(
       "REQ_INVALID_QUERY",
       "platform and distribution are not supported for this account region.",
     );
+  }
+
+  if (input.accountRegion === "CN" && !isRevenueCatDistribution(input)) {
+    const alipayCatalog = await this.aiNovelBillingService.alipay.checkoutCatalog();
+    input.alipayAvailable = alipayCatalog.available;
+    input.alipayPrices = alipayCatalog.prices;
   }
 
   const response = this.ok(
