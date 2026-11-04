@@ -27,7 +27,7 @@ async function serve(t: any, options: any) {
 test('Grow serves fixed static assets, deep links and public runtime config in the existing Web server', async t => {
   const root = await fixture(t); const base = await serve(t, { growEnabled: true, growRoot: root });
   assert.equal((await fetch(base + '/grow', { redirect: 'manual' })).headers.get('location'), '/grow/');
-  for (const path of ['/grow/', '/grow/records', '/grow/records/record-1', '/grow/today', '/grow/planning', '/grow/goals', '/grow/actions', '/grow/learning', '/grow/practice']) {
+  for (const path of ['/grow/', '/grow/records', '/grow/records/record-1', '/grow/today', '/grow/planning', '/grow/goals', '/grow/actions', '/grow/learning', '/grow/practice','/grow/review']) {
     const response = await fetch(base + path); assert.equal(response.status, 200); assert.match(await response.text(), /Grow/);
   }
   const asset = await fetch(base + '/grow/assets/app-a1b2c3d4.js');
