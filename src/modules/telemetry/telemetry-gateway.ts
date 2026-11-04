@@ -11,7 +11,7 @@ import type {
 const GA4_PATH = "/telemetry/ga4";
 const GA4_MAX_BODY_BYTES = 130_000;
 // Native crash envelopes include minidump attachments and can exceed 1 MiB.
-const SENTRY_MAX_BODY_BYTES = 20 * 1024 * 1024;
+const SENTRY_MAX_BODY_BYTES = 8 * 1024 * 1024;
 const SENTRY_TIMEOUT_MS = 30_000;
 const MAX_UPSTREAM_RESPONSE_BYTES = 64 * 1024;
 const DEFAULT_TIMEOUT_MS = 3_000;
