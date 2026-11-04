@@ -1,0 +1,262 @@
+[
+  {
+    "file": ".artifacts/grow-u5-20261104/accounts-browser-ledger-clean/investment-metadata-desktop.png",
+    "bytes": 260678,
+    "sha256": "c0d6a6bac1ae559a004922b37ed5401129ec38be9c9fbe0e0902b87248cdb2ce"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/accounts-browser-ledger-clean/investment-metadata-mobile.png",
+    "bytes": 214873,
+    "sha256": "87675eb1b165bfe44d9a0fc06a3c693466c74c35ed1aea11f385b5a5be978dc8"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/accounts-browser-ledger-clean/result.json",
+    "bytes": 422,
+    "sha256": "d1ce3642a8d29aeb5ef3816d85bd6d0720dc8d4de8d739c048482ac69de06c79"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/actions-browser-final/actions-desktop.png",
+    "bytes": 1091181,
+    "sha256": "b125cc0cb617fa6a5286bfcdc021afbe16d43f326b1356eb2e616ce02377f1d7"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/actions-browser-final/actions-mobile.png",
+    "bytes": 48527,
+    "sha256": "1a1345ea179f79c5b38f43f471f87e2817c67852291f1707b51b980b8fbbce81"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/actions-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/actions-browser-final/result.json",
+    "bytes": 566,
+    "sha256": "51b6a5f12cb96bfe55a31dc248f9a172d317af9b4584f0f5112eef832c47125a"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/backend-full-final.log",
+    "bytes": 300086,
+    "sha256": "e8fc0ff1f1cc78510587457952d0dd8f0e2976bfbae547ac61f6347f32053a48"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/contracts-final.log",
+    "bytes": 231,
+    "sha256": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/contracts-lint-final.log",
+    "bytes": 6278,
+    "sha256": "7b32aec7af3d8609919505515c4faa4914834cd66926dd0800f788ac93ffaafa"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/course-browser-final/course-desktop.png",
+    "bytes": 474640,
+    "sha256": "47396a03803090c90850dc362ef5ccb8a8189c2dd327634eb2c0c10ac4798aee"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/course-browser-final/course-mobile.png",
+    "bytes": 413012,
+    "sha256": "485966efe84db0829e9b60fb9d6699dcb6ecadb8af7d943de1264e6a2d4579d1"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/course-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/course-browser-final/result.json",
+    "bytes": 404,
+    "sha256": "710897e943828a56ba2fab36985adc6d5cb96e9f3ef9600765b923589d4c24f0"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/frontend-unit-final.log",
+    "bytes": 3789,
+    "sha256": "ef5b0f71d44379310b8a30f17c6a16a9f208f58e96117870190ad077245ca894"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/grow-index-after.patch",
+    "bytes": 71438,
+    "sha256": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/investment-types-final.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/learning-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/learning-browser-final/learning-desktop.png",
+    "bytes": 262630,
+    "sha256": "068b953c4a7a3ecc03b4b031c939946491cdd020e1c8c5291f50f1d7b6b1ef49"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/learning-browser-final/learning-mobile.png",
+    "bytes": 212880,
+    "sha256": "55d3a9bdcaff40ec80f00dcf89db334d8d29d859093572f0ab50166d09983eb2"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/learning-browser-final/result.json",
+    "bytes": 366,
+    "sha256": "1c861e26d40b9dfc1419692a17def888c6b03d0f2afaf580112748949f5032b6"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-browser-fourth/investment-ledger-desktop.png",
+    "bytes": 407876,
+    "sha256": "9ecbf61333c6673b97c16e12f0c25525e5bb621222c5d1a1321d1c14fbda4de5"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-browser-fourth/investment-ledger-mobile.png",
+    "bytes": 355882,
+    "sha256": "d33a52d4c5b453f84eb27fc7483609f584da56c6472848ef1dfdb4b5c5430f66"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-browser-fourth/result.json",
+    "bytes": 538,
+    "sha256": "2f8d3a6313070d41744dc398e45b3a5c1e9a3e989ecd4685ead52dcc83142414"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-clean-build.log",
+    "bytes": 1662,
+    "sha256": "59fa7e01d4d4185bd4a0bb2657097b1c2ca1591308933000931a1ed6373ff66e"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-pg-final.log",
+    "bytes": 5435,
+    "sha256": "800bef0de195182bd026adff0b4679bd34cfa7406503b6d00bd668c15deadf31"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-pg-serial-final.log",
+    "bytes": 11021,
+    "sha256": "c6c234ac6d31c2533a3f9e09e3f807f57e4ef3eac7e933922b31e2d194adaff7"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/ledger-worker-final.log",
+    "bytes": 2037,
+    "sha256": "356ab51e1c77f938312b7fe98e1b07c5395d7f5a7e166888829ec7e4bf30a9e6"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/line-count-final.log",
+    "bytes": 172,
+    "sha256": "c530819fa9e40b3741595dc077b9ad95dee24ef9e398a5218d41d67a0513fcca"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/pg-joint-final.log",
+    "bytes": 13720,
+    "sha256": "81195130eaf154e253eb29011150d0fbff5cef5bcb63d12f5088c3169fe54c3a"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/plans-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/plans-browser-final/plan-desktop.png",
+    "bytes": 245616,
+    "sha256": "fdcbfae998570f2322aa18616de306cbbf29d0e782cf33e6a41ee4fb5c50cfc5"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/plans-browser-final/result.json",
+    "bytes": 447,
+    "sha256": "825c6463c5d64e687f52e18cc3693144b696ddab0b84c79d4e0535dd7448bba4"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/plans-browser-final/today-mobile.png",
+    "bytes": 51403,
+    "sha256": "1d18b906e5f126d10086fc6455f9317f284044438e70152880d61f226b2e7e5f"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/practice-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/practice-browser-final/practice-desktop.png",
+    "bytes": 1409698,
+    "sha256": "aeb42d85cde110a97c2f0db0437f2945687ea063a15f4f942b74e2d52c86157e"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/practice-browser-final/practice-mobile.png",
+    "bytes": 1253546,
+    "sha256": "95ddd34aebf8002db762f4c773fd919fa13ce1d46abe2b9dc8dd74ec44648205"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/practice-browser-final/result.json",
+    "bytes": 325,
+    "sha256": "3d656dde88fa17bf13eba5ab3c1da748eb6996bcdae658dbbffdbe59153c53bb"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/practice-pg-final.log",
+    "bytes": 410,
+    "sha256": "b31553d07fd25594ffd8b469d4082f27e30f2c86255d0d092a177a57f7dc5747"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/records-browser-final/conflict-desktop.png",
+    "bytes": 215499,
+    "sha256": "7f4d0d4ff7dc5e829f44e556adc2ecefd1013ac7470cbd436a8998e11cc3f4a6"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/records-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/records-browser-final/records-desktop.png",
+    "bytes": 196639,
+    "sha256": "b2da0bcb64940dc15188ab50aca980bbee9278c5e2df41001d06d6fcb9e41bce"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/records-browser-final/records-mobile.png",
+    "bytes": 81571,
+    "sha256": "8b5129777c98968f6c6424faec6aa0e4c6214de793b679eaa5a4e6347af2c74a"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/records-browser-final/result.json",
+    "bytes": 633,
+    "sha256": "906cd9e8ce0025cb500d2bad382f79e09e06efe8eb2446fd9144041eb5a85f0c"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/review-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/review-browser-final/result.json",
+    "bytes": 371,
+    "sha256": "ee7496e45fd516cd4fe1b46b6b0987e7773fb529ca54c99efca2578ddfb146a5"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/review-browser-final/review-desktop.png",
+    "bytes": 799843,
+    "sha256": "d05feb67be5d09836242b8cb31c11d3cc11ac406be031b626e2d883d32a95f71"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/review-browser-final/review-mobile.png",
+    "bytes": 689411,
+    "sha256": "c883b6bf404124270c2ab81687d2491671b2dc4080d784a2baf3d490156448ba"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/review-browser-final/synthetic-authorized-export.json",
+    "bytes": 40288,
+    "sha256": "5b9503e7412fa9f0f37a27f45238f740b1306b11c2cc78019f674f7e03f25f57"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/u2-browser-final/driver.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/u2-browser-final/result.json",
+    "bytes": 968,
+    "sha256": "f6e4f24cb22b5039e9b8bb95c193ef4dc17ff6be58638b79640d08a6884c3cdc"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/u2-browser-final/u2-mobile.png",
+    "bytes": 52245,
+    "sha256": "497a82ed793afebccfb656ba1b95fdb488f9231b84f39fd1c70443f46bb2c446"
+  }
+]

@@ -2807,7 +2807,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3058,7 +3084,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3094,7 +3146,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}/ledger"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3596,7 +3674,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}/ledger"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -4202,7 +4306,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}/ledger"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -4556,7 +4686,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/instruments"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -4591,7 +4747,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/instruments/{resourceId}"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -11900,7 +12082,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "PUT",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -12403,7 +12611,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}/events"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -12653,7 +12887,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/accounts/{resourceId}/events"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -13011,7 +13271,33 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/instruments"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+        "tests": [
+          "test/unit/lighttick-investment-accounts.api.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/unit/lighttick-investment-accounting.test.ts",
+          "test/integration/lighttick-investment-ledger-postgres.test.ts"
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including existing uncommitted legacy behavior.",
+          "Explicit opening/baseline preview and revisions, financial corrections/compensation and migration ID/body/receipt mapping.",
+          "Calendar, market valuation, adjusted data, historical reports and the complete U5 regression/rehearsal gates."
+        ],
+        "semantic_changes": [
+          "Account creation uses a client stable ID and immutable typed baseline; currency currently CNY.",
+          "Financial commands are asynchronous, owner/resource/base revision/original key bound; facts are appended only by the existing worker after calculation and CAS.",
+          "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
+          "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
+        ]
+      }
     },
     {
       "method": "POST",
