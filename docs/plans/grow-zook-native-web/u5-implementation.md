@@ -32,3 +32,10 @@
 ## 行情与计算依赖继续推进（未计入整项验收）
 
 2026-11-05：四种日线 Node adapter、明确选源/单位/失败、lossless JSON 数字、2026 沪深参考日历、固定指标及两种内置回测已实现为内部依赖；47 项专项、金融 tsc 与行数门禁通过。详见 [基础模块与来源边界](../../verification/grow-react-u1-20261103/u5-market-foundation.md)。尚未接 API/管理配置/持久快照/worker 与研究页面，没有假称供应商实测或完整专题交付；U0/U5 保持未勾选，下一切片继续该接线。
+
+
+### 下一切片的具体接线范围
+
+1. 复用 VersionedAppConfigService 的 LightTick admin.delivery_config 供应商配置、现有 KVManager 单值秘密路径和管理权限/audit；密钥不进入版本历史、公有配置或 worker 输入，管理 UI 沿用 Ant Design。配置读取以 provider＋修订为身份，切换不自动改源。
+2. 新增 owner＋instrument 的不可变行情数据集与持久 work，account 仅可选引用，保证无资产账本也可研究。新表加入共用删除/授权导出。接入现有 LightTickWorker，取得快照/租约后释放 owner 锁，再取数/计算；以 owner、标的版本、原请求、fence 再确认，取消与重启可恢复。不得把学习 route 或财务 account 当市场任务的必需外壳。
+3. 同切片提交 OpenAPI/生成合同、真实 CSV/选源/单位/历史快照/回测事实核对的 React 页面及 PG/Chrome 故障故事。只有明确公司行动、涨跌停/状态与时间线的输入才能完成回测；没有这些事实的普通日线显示 incomplete，不能自动补“正常”。完整市场快照、复权因子、筛选/研究/预测/监控/归档仍逐行为对照，不由基础模块代签。

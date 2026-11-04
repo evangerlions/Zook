@@ -1,8 +1,8 @@
 [
   {
     "file": ".artifacts/grow-u5-20261104/market-unit-final.log",
-    "bytes": 5200,
-    "sha256": "015131a014b9439f709975765dddb9769a2472debbb6eede9dbb8e68e044e0da"
+    "bytes": 5192,
+    "sha256": "2176f80acc08a3eb731bb3c6c7a0cbe8380054c739748f90e0c58a86574b9075"
   },
   {
     "file": ".artifacts/grow-u5-20261104/market-types-final.log",
@@ -33,5 +33,10 @@
     "file": "test/fixtures/lighttick/market-indicators-golden.json",
     "bytes": 59931,
     "sha256": "5aa336b678a5ba9658efab7bcee75bad454a0bd4f091a9859d3a006e9b7038a5"
+  },
+  {
+    "file": ".artifacts/grow-u5-20261104/market-backend-full-final.log",
+    "bytes": 305128,
+    "sha256": "717fb0533d5ad77f37ea4920236fbfb1f0362807b0ae6114174417ab27bc74b8"
   }
 ]

@@ -382,6 +382,53 @@ test("mutable server policy and credential rotation are fenced; availability is 
   await assert.rejects(a.read("eastmoney", input, signal()), {
     reason: "POLICY_CHANGED",
   });
+  const credential = {
+    enabled: true,
+    revision: "same-config",
+    tushare_token: "SYNTHETIC_TOKEN_NOT_REAL",
+  };
+  const rotated = new DailyMarketAdapter(
+    async () => credential,
+    fake((_url, init) => {
+      const b = JSON.parse(init.body as string);
+      if (b.api_name === "trade_cal")
+        return new Response(
+          JSON.stringify({
+            code: 0,
+            data: {
+              fields: ["exchange", "cal_date", "is_open"],
+              items: [["SSE", "20261030", 1]],
+            },
+          }),
+        );
+      credential.tushare_token = "SYNTHETIC_ROTATED_NOT_REAL";
+      return new Response(
+        JSON.stringify({
+          code: 0,
+          data: {
+            fields: [
+              "ts_code",
+              "trade_date",
+              "open",
+              "high",
+              "low",
+              "close",
+              "vol",
+              "amount",
+            ],
+            items: [
+              ["600000.SH", "20261030", "10", "12", "9", "11", "100", "1000"],
+            ],
+          },
+        }),
+      );
+    }),
+    now,
+  );
+  await assert.rejects(
+    rotated.read("tushare", { ...input, start: "2026-10-30" }, signal()),
+    { reason: "POLICY_CHANGED" },
+  );
   let current = now();
   const b = new DailyMarketAdapter(
     policy,

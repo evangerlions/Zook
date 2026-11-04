@@ -391,6 +391,7 @@ function simulate(
     ],
   };
 }
+/** Bounded CPU work: call from the existing worker with frozen inputs, outside owner transactions. */
 export function runBacktest(
   series: ExecutionSeries,
   config: unknown,
