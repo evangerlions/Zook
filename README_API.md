@@ -1763,3 +1763,15 @@ brief 保留 weekly（weeks×sessions）与 self_paced（lesson_count）节奏�
 AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上限、输入字节/输出 token 上限和每日每 owner 20 任务、2 美元等值预估预算（按最多 3 次尝试保守预留，非提供商实际账单保证），同时最多 2 个运行租约。上下文与输出超限明确失败，无静默换模型/换资料源/模板发布。私人笔记不自动进入模型。route_draft 的 adopt 只存路线草稿，须再 publish；lesson_draft 的 adopt 是明确核对后原子发布对应课次，同一任务不能再次采用。
 
 资料最多 10 项、合计 80000 UTF-8 字节、每项 15000 字符。text 是明确提交的材料；file 使用本 owner 的 CONFIRMED 平台 storage_key，当前支持 text/plain、text/markdown；file_ingest 接收 file_name/content 后在 worker 内用平台持久存储落盘，原任务幂等，不接受本机路径。PDF/二进制不伪作文本。url 只接受无凭据的 HTTPS 443，公共 DNS 地址固定到连接、保留 TLS 证书验证，拒绝内网/保留地址、跳转、非文本/HTML、超时和超限响应。来源记录摘要及原 file/url 归属，异常返回任务 error_code，无备用供应商隐式替换。
+
+
+### LightTick 知识、认知与回看
+
+`PUT /api/v1/lighttick/knowledge/{entryId}` 创建/保存本人知识或认知笔记（knowledge-/稳定 ID、base_revision、kind knowledge|cognition、title、body、tags、sources）。sources 只接受本人 record 或 lesson 的精确版本；不接受本机路径/任意外部账号。原 Idempotency-Key 和完整 body 保持不变重试；CAS 冲突 409 不覆盖正文。GET 同路径读取，GET /history 以 before/limit 分页不可变历史；POST /archive 和 /restore 仅 base_revision。归档内容保留历史，需恢复才能编辑。来源撤权/归档时内容、历史及旧回执均受当前授权约束。
+
+`GET /api/v1/lighttick/review` 统一搜索、时间线、来源关系和成长计数。可选 q（200 字符）、kind、start/end（包含边界日期）、timezone（默认 Asia/Shanghai）、limit 1–100、cursor。只聚合已保存记录/知识/认知、已发布当前正文和已授权私人笔记/明确学完、当前已完成 task/action、已结束执行、自述实践反馈、已保存复盘与明确确认的 insight。草稿/未决请求/模型候选不进入投影。来源关系来自明确 source kind/id/version，不从相同标题或词语推断知识关系；自述 applied 反馈不是客观成功证据，数量不是能力掌握度。
+
+同 owner 事务获取一致事实；游标绑定 owner、筛选及时区和事实摘要。数据或授权变化返回 409 LIGHTTICK_REVIEW_CURSOR_EXPIRED，客户端重新读取只读投影，保留本机草稿/未决请求。记录按 record_date、执行按 business_date，其他时间按指定时区；历史缺失日期明确 null，不伪造完成时间。各类计数分开，active_days 是这些日期的并集，未知日期另计。每域最多 5000 行、投影文本最多 8 MiB，超限 413，不能截断后宣称完整统计；大账号需后续索引投影协议。新增实体不进入通用 sync/push/pull。当前仅注册账号，沿用现有 app membership；新表随账号删除清理。
+
+
+回看来源核对：`GET /api/v1/lighttick/review/source?kind=record|lesson&id=...&version=...` 返回明确引用的原版正文与 current_version；授权失效为 403，不替换成新版。`GET /api/v1/lighttick/review/export` 导出本人当前授权的记录及版本、知识/认知及可读历史、课程历版/私人状态和历史、任务/目标/复盘与执行反馈。学习撤权后不导出该部分；私人授权关闭时不导出私人状态/历史。来源撤权的知识及相应旧版本不导出。归档记录属于本人，保留在记录导出；归档课节正文按阅读授权边界排除。导出不含操作回执、队列/内部任务输入、平台配置/文件凭据。限每域 5000 行及总 8 MiB，超限明确 413；缺分块协议时不得称为完整备份。导出不负责跨账号恢复或生产迁移。

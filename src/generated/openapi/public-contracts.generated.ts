@@ -38222,6 +38222,1768 @@ export type LightTickNativeLearningWorkAdoptionEnvelope = {
   "requestId": string;
 };
 
+export const LightTickReviewExportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "owner_id",
+    "exported_at",
+    "revision",
+    "sha256",
+    "content_type",
+    "content"
+  ],
+  "properties": {
+    "format_version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "owner_id": {
+      "type": "string"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "string"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "application/json"
+      ]
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 8388608,
+      "description": "UTF-8 JSON export format 1. Contains facts, authorized knowledge/history, learning publications/private/history, records/versions, action plans/executions, tasks, goals and reflections. No operations/jobs/configuration or credentials. Oversized exports fail with 413."
+    }
+  }
+} as const;
+
+export type LightTickReviewExport = {
+  "format_version": 1;
+  "owner_id": string;
+  "exported_at": string;
+  "revision": string;
+  "sha256": string;
+  "content_type": "application/json";
+  "content": string;
+};
+
+export const LightTickReviewExportEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "owner_id",
+        "exported_at",
+        "revision",
+        "sha256",
+        "content_type",
+        "content"
+      ],
+      "properties": {
+        "format_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "owner_id": {
+          "type": "string"
+        },
+        "exported_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "content_type": {
+          "type": "string",
+          "enum": [
+            "application/json"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 8388608,
+          "description": "UTF-8 JSON export format 1. Contains facts, authorized knowledge/history, learning publications/private/history, records/versions, action plans/executions, tasks, goals and reflections. No operations/jobs/configuration or credentials. Oversized exports fail with 413."
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickReviewExportEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "format_version": 1;
+  "owner_id": string;
+  "exported_at": string;
+  "revision": string;
+  "sha256": string;
+  "content_type": "application/json";
+  "content": string;
+};
+  "requestId": string;
+};
+
+export const LightTickReviewSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source",
+    "title",
+    "text",
+    "current_version"
+  ],
+  "properties": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "version"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "record",
+            "lesson"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 64
+        }
+      }
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "current_version": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickReviewSource = {
+  "source": {
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+};
+  "title": string;
+  "text": string;
+  "current_version": string;
+};
+
+export const LightTickReviewSourceEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "title",
+        "text",
+        "current_version"
+      ],
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "version"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "record",
+                "lesson"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "version": {
+              "type": "string",
+              "maxLength": 64
+            }
+          }
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "current_version": {
+          "type": "string"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickReviewSourceEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "source": {
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+};
+  "title": string;
+  "text": string;
+  "current_version": string;
+};
+  "requestId": string;
+};
+
+export const LightTickKnowledgeSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "version"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "record",
+        "lesson"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 64
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeSource = {
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+};
+
+export const LightTickKnowledgeWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "kind",
+    "title",
+    "body",
+    "tags",
+    "sources"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "knowledge",
+        "cognition"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100000
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 50
+      },
+      "maxItems": 20
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "version"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "record",
+              "lesson"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "maxItems": 20
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeWrite = {
+  "base_revision": number;
+  "kind": "knowledge" | "cognition";
+  "title": string;
+  "body": string;
+  "tags": string[];
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+};
+
+export const LightTickKnowledgeEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "kind",
+    "title",
+    "body",
+    "tags",
+    "sources",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^knowledge-[a-zA-Z0-9-]{1,75}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "knowledge",
+        "cognition"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100000
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 50
+      },
+      "maxItems": 20
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "version"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "record",
+              "lesson"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeEntry = {
+  "id": string;
+  "revision": number;
+  "kind": "knowledge" | "cognition";
+  "title": string;
+  "body": string;
+  "tags": string[];
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickKnowledgeHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_before"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "kind",
+          "title",
+          "body",
+          "tags",
+          "sources",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^knowledge-[a-zA-Z0-9-]{1,75}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "knowledge",
+              "cognition"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100000
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 50
+            },
+            "maxItems": 20
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "id",
+                "version"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "record",
+                    "lesson"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "version": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              }
+            },
+            "maxItems": 20
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "next_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeHistory = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "kind": "knowledge" | "cognition";
+  "title": string;
+  "body": string;
+  "tags": string[];
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_before": number | null;
+};
+
+export const LightTickReviewFactSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "key",
+    "kind",
+    "id",
+    "version",
+    "title",
+    "date",
+    "occurred_at",
+    "date_basis",
+    "sources",
+    "href",
+    "signal",
+    "excerpt"
+  ],
+  "properties": {
+    "key": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "record",
+        "knowledge",
+        "cognition",
+        "lesson",
+        "learning_notes",
+        "lesson_completed",
+        "task_completed",
+        "action_completed",
+        "action_execution",
+        "practice_feedback",
+        "reflection",
+        "confirmed_insight"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date_basis": {
+      "type": "string",
+      "enum": [
+        "record_date",
+        "business_date",
+        "timestamp",
+        "unknown"
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "version"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "record",
+              "lesson"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "href": {
+      "type": "string",
+      "pattern": "^/grow/"
+    },
+    "signal": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "excerpt": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+} as const;
+
+export type LightTickReviewFact = {
+  "key": string;
+  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight";
+  "id": string;
+  "version": string;
+  "title": string;
+  "date": string | null;
+  "occurred_at": string | null;
+  "date_basis": "record_date" | "business_date" | "timestamp" | "unknown";
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "href": string;
+  "signal": string | null;
+  "excerpt": string;
+};
+
+export const LightTickReviewSnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "timezone",
+    "items",
+    "next_cursor",
+    "total",
+    "counts",
+    "active_days",
+    "unknown_date_count",
+    "metrics_version",
+    "explanation"
+  ],
+  "properties": {
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timezone": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "kind",
+          "id",
+          "version",
+          "title",
+          "date",
+          "occurred_at",
+          "date_basis",
+          "sources",
+          "href",
+          "signal",
+          "excerpt"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "record",
+              "knowledge",
+              "cognition",
+              "lesson",
+              "learning_notes",
+              "lesson_completed",
+              "task_completed",
+              "action_completed",
+              "action_execution",
+              "practice_feedback",
+              "reflection",
+              "confirmed_insight"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurred_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_basis": {
+            "type": "string",
+            "enum": [
+              "record_date",
+              "business_date",
+              "timestamp",
+              "unknown"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "id",
+                "version"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "record",
+                    "lesson"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "version": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              }
+            },
+            "maxItems": 20
+          },
+          "href": {
+            "type": "string",
+            "pattern": "^/grow/"
+          },
+          "signal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "excerpt": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "maxItems": 100
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record",
+        "knowledge",
+        "cognition",
+        "lesson",
+        "learning_notes",
+        "lesson_completed",
+        "task_completed",
+        "action_completed",
+        "action_execution",
+        "practice_feedback",
+        "reflection",
+        "confirmed_insight"
+      ],
+      "properties": {
+        "record": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "knowledge": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "cognition": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "lesson": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "learning_notes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "lesson_completed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "task_completed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "action_completed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "action_execution": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "practice_feedback": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "reflection": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "confirmed_insight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "active_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "unknown_date_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "metrics_version": {
+      "type": "string",
+      "enum": [
+        "confirmed-facts-v1"
+      ]
+    },
+    "explanation": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  }
+} as const;
+
+export type LightTickReviewSnapshot = {
+  "revision": string;
+  "timezone": string;
+  "items": (
+{
+  "key": string;
+  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight";
+  "id": string;
+  "version": string;
+  "title": string;
+  "date": string | null;
+  "occurred_at": string | null;
+  "date_basis": "record_date" | "business_date" | "timestamp" | "unknown";
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "href": string;
+  "signal": string | null;
+  "excerpt": string;
+}
+)[];
+  "next_cursor": string | null;
+  "total": number;
+  "counts": {
+  "record": number;
+  "knowledge": number;
+  "cognition": number;
+  "lesson": number;
+  "learning_notes": number;
+  "lesson_completed": number;
+  "task_completed": number;
+  "action_completed": number;
+  "action_execution": number;
+  "practice_feedback": number;
+  "reflection": number;
+  "confirmed_insight": number;
+};
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics_version": "confirmed-facts-v1";
+  "explanation": string;
+};
+
+export const LightTickKnowledgeEntryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "kind",
+        "title",
+        "body",
+        "tags",
+        "sources",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^knowledge-[a-zA-Z0-9-]{1,75}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "knowledge",
+            "cognition"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "maxItems": 20
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "version"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "record",
+                  "lesson"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 64
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeEntryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "kind": "knowledge" | "cognition";
+  "title": string;
+  "body": string;
+  "tags": string[];
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickKnowledgeHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_before"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "kind",
+              "title",
+              "body",
+              "tags",
+              "sources",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^knowledge-[a-zA-Z0-9-]{1,75}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "knowledge",
+                  "cognition"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "body": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100000
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                "maxItems": 20
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "id",
+                    "version"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "record",
+                        "lesson"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "version": {
+                      "type": "string",
+                      "maxLength": 64
+                    }
+                  }
+                },
+                "maxItems": 20
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "next_before": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickKnowledgeHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "kind": "knowledge" | "cognition";
+  "title": string;
+  "body": string;
+  "tags": string[];
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_before": number | null;
+};
+  "requestId": string;
+};
+
+export const LightTickReviewSnapshotEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "timezone",
+        "items",
+        "next_cursor",
+        "total",
+        "counts",
+        "active_days",
+        "unknown_date_count",
+        "metrics_version",
+        "explanation"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "kind",
+              "id",
+              "version",
+              "title",
+              "date",
+              "occurred_at",
+              "date_basis",
+              "sources",
+              "href",
+              "signal",
+              "excerpt"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "record",
+                  "knowledge",
+                  "cognition",
+                  "lesson",
+                  "learning_notes",
+                  "lesson_completed",
+                  "task_completed",
+                  "action_completed",
+                  "action_execution",
+                  "practice_feedback",
+                  "reflection",
+                  "confirmed_insight"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "occurred_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "date_basis": {
+                "type": "string",
+                "enum": [
+                  "record_date",
+                  "business_date",
+                  "timestamp",
+                  "unknown"
+                ]
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "id",
+                    "version"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "record",
+                        "lesson"
+                      ]
+                    },
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "version": {
+                      "type": "string",
+                      "maxLength": 64
+                    }
+                  }
+                },
+                "maxItems": 20
+              },
+              "href": {
+                "type": "string",
+                "pattern": "^/grow/"
+              },
+              "signal": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "excerpt": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "record",
+            "knowledge",
+            "cognition",
+            "lesson",
+            "learning_notes",
+            "lesson_completed",
+            "task_completed",
+            "action_completed",
+            "action_execution",
+            "practice_feedback",
+            "reflection",
+            "confirmed_insight"
+          ],
+          "properties": {
+            "record": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "knowledge": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "cognition": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "lesson": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "learning_notes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "lesson_completed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "task_completed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "action_completed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "action_execution": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "practice_feedback": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "reflection": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "confirmed_insight": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "active_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "unknown_date_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "metrics_version": {
+          "type": "string",
+          "enum": [
+            "confirmed-facts-v1"
+          ]
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickReviewSnapshotEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": string;
+  "timezone": string;
+  "items": (
+{
+  "key": string;
+  "kind": "record" | "knowledge" | "cognition" | "lesson" | "learning_notes" | "lesson_completed" | "task_completed" | "action_completed" | "action_execution" | "practice_feedback" | "reflection" | "confirmed_insight";
+  "id": string;
+  "version": string;
+  "title": string;
+  "date": string | null;
+  "occurred_at": string | null;
+  "date_basis": "record_date" | "business_date" | "timestamp" | "unknown";
+  "sources": (
+{
+  "kind": "record" | "lesson";
+  "id": string;
+  "version": string;
+}
+)[];
+  "href": string;
+  "signal": string | null;
+  "excerpt": string;
+}
+)[];
+  "next_cursor": string | null;
+  "total": number;
+  "counts": {
+  "record": number;
+  "knowledge": number;
+  "cognition": number;
+  "lesson": number;
+  "learning_notes": number;
+  "lesson_completed": number;
+  "task_completed": number;
+  "action_completed": number;
+  "action_execution": number;
+  "practice_feedback": number;
+  "reflection": number;
+  "confirmed_insight": number;
+};
+  "active_days": number;
+  "unknown_date_count": number;
+  "metrics_version": "confirmed-facts-v1";
+  "explanation": string;
+};
+  "requestId": string;
+};
+
 export const LightTickNativeLearningCourseBriefSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -56775,6 +58537,7 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_RUN_NOT_READY",
             "LIGHTTICK_PROPOSAL_STALE",
             "LIGHTTICK_PROPOSAL_NOT_PENDING",
+            "LIGHTTICK_REVIEW_CURSOR_EXPIRED",
             "LIGHTTICK_SYNC_CURSOR_INVALID",
             "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
             "LIGHTTICK_SYNC_OPERATION_REJECTED",
@@ -56829,7 +58592,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -56888,6 +58651,7 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_RUN_NOT_READY",
         "LIGHTTICK_PROPOSAL_STALE",
         "LIGHTTICK_PROPOSAL_NOT_PENDING",
+        "LIGHTTICK_REVIEW_CURSOR_EXPIRED",
         "LIGHTTICK_SYNC_CURSOR_INVALID",
         "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
         "LIGHTTICK_SYNC_OPERATION_REJECTED",
@@ -57005,7 +58769,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "message": string;
   "data": (
 {
@@ -57074,6 +58838,7 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_RUN_NOT_READY",
     "LIGHTTICK_PROPOSAL_STALE",
     "LIGHTTICK_PROPOSAL_NOT_PENDING",
+    "LIGHTTICK_REVIEW_CURSOR_EXPIRED",
     "LIGHTTICK_SYNC_CURSOR_INVALID",
     "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
     "LIGHTTICK_SYNC_OPERATION_REJECTED",
@@ -57095,7 +58860,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -61824,6 +63589,7 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_RUN_NOT_READY",
         "LIGHTTICK_PROPOSAL_STALE",
         "LIGHTTICK_PROPOSAL_NOT_PENDING",
+        "LIGHTTICK_REVIEW_CURSOR_EXPIRED",
         "LIGHTTICK_SYNC_CURSOR_INVALID",
         "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
         "LIGHTTICK_SYNC_OPERATION_REJECTED",
@@ -61870,7 +63636,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -62223,6 +63989,7 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_RUN_NOT_READY",
         "LIGHTTICK_PROPOSAL_STALE",
         "LIGHTTICK_PROPOSAL_NOT_PENDING",
+        "LIGHTTICK_REVIEW_CURSOR_EXPIRED",
         "LIGHTTICK_SYNC_CURSOR_INVALID",
         "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
         "LIGHTTICK_SYNC_OPERATION_REJECTED",
@@ -62257,7 +64024,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -62371,6 +64138,7 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_RUN_NOT_READY",
               "LIGHTTICK_PROPOSAL_STALE",
               "LIGHTTICK_PROPOSAL_NOT_PENDING",
+              "LIGHTTICK_REVIEW_CURSOR_EXPIRED",
               "LIGHTTICK_SYNC_CURSOR_INVALID",
               "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
               "LIGHTTICK_SYNC_OPERATION_REJECTED",
@@ -62414,7 +64182,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
 }
 )[];
   "server_time": string;
@@ -69960,6 +71728,12 @@ export const GeneratedPublicContractNames = [
   "LightTickGuestSessionEnvelope",
   "LightTickGuestSessionRequest",
   "LightTickId",
+  "LightTickKnowledgeEntry",
+  "LightTickKnowledgeEntryEnvelope",
+  "LightTickKnowledgeHistory",
+  "LightTickKnowledgeHistoryEnvelope",
+  "LightTickKnowledgeSource",
+  "LightTickKnowledgeWrite",
   "LightTickLearningLessonEnvelope",
   "LightTickLearningLibraryEnvelope",
   "LightTickLearningPlanProgress",
@@ -70093,10 +71867,17 @@ export const GeneratedPublicContractNames = [
   "LightTickReviewActionView",
   "LightTickReviewActionsData",
   "LightTickReviewData",
+  "LightTickReviewExport",
+  "LightTickReviewExportEnvelope",
+  "LightTickReviewFact",
   "LightTickReviewPeriod",
   "LightTickReviewProposedPlan",
   "LightTickReviewRecommendation",
   "LightTickReviewRunRequest",
+  "LightTickReviewSnapshot",
+  "LightTickReviewSnapshotEnvelope",
+  "LightTickReviewSource",
+  "LightTickReviewSourceEnvelope",
   "LightTickReviewStatus",
   "LightTickRhythmData",
   "LightTickRhythmFeedbackData",

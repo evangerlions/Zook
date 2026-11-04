@@ -42,6 +42,409 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/review/export:
+    get:
+      operationId: exportAuthorizedReview
+      tags:
+      - lighttick-review
+      summary: Download authorized owner data
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReviewExportEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/review/source:
+    get:
+      operationId: reviewExactSource
+      tags:
+      - lighttick-review
+      summary: Read an exact authorized source version
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      - name: id
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReviewSourceEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/knowledge/{entryId}:
+    get:
+      operationId: readKnowledge
+      tags:
+      - lighttick-review
+      summary: readKnowledge
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^knowledge-[a-zA-Z0-9-]{1,75}$
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: saveKnowledge
+      tags:
+      - lighttick-review
+      summary: saveKnowledge
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^knowledge-[a-zA-Z0-9-]{1,75}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickKnowledgeWrite'
+  /api/v1/lighttick/knowledge/{entryId}/archive:
+    post:
+      operationId: archiveKnowledge
+      tags:
+      - lighttick-review
+      summary: archiveKnowledge
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^knowledge-[a-zA-Z0-9-]{1,75}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - base_revision
+              properties:
+                base_revision:
+                  type: integer
+                  minimum: 1
+                  maximum: 2147483647
+  /api/v1/lighttick/knowledge/{entryId}/restore:
+    post:
+      operationId: restoreKnowledge
+      tags:
+      - lighttick-review
+      summary: restoreKnowledge
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^knowledge-[a-zA-Z0-9-]{1,75}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - base_revision
+              properties:
+                base_revision:
+                  type: integer
+                  minimum: 1
+                  maximum: 2147483647
+  /api/v1/lighttick/knowledge/{entryId}/history:
+    get:
+      operationId: knowledgeHistory
+      tags:
+      - lighttick-review
+      summary: knowledgeHistory
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^knowledge-[a-zA-Z0-9-]{1,75}$
+      - name: before
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickKnowledgeHistoryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/review:
+    get:
+      operationId: reviewConfirmedFacts
+      tags:
+      - lighttick-review
+      summary: reviewConfirmedFacts
+      description: Registered LightTick owner only. Saved facts preserve source versions
+        and current grants. Read-only snapshots are rebuildable; never delete local
+        drafts or pending requests on cursor expiry. New entities do not enter generic
+        sync.
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: kind
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: start
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: end
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: timezone
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReviewSnapshotEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/manual-plans:
     get:
       operationId: listLightTickManualPlans
@@ -5042,6 +5445,474 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickReviewExport:
+      type: object
+      additionalProperties: false
+      required:
+      - format_version
+      - owner_id
+      - exported_at
+      - revision
+      - sha256
+      - content_type
+      - content
+      properties:
+        format_version:
+          type: integer
+          enum:
+          - 1
+        owner_id:
+          type: string
+        exported_at:
+          type: string
+          format: date-time
+        revision:
+          type: string
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        content_type:
+          type: string
+          enum:
+          - application/json
+        content:
+          type: string
+          maxLength: 8388608
+          description: UTF-8 JSON export format 1. Contains facts, authorized knowledge/history,
+            learning publications/private/history, records/versions, action plans/executions,
+            tasks, goals and reflections. No operations/jobs/configuration or credentials.
+            Oversized exports fail with 413.
+    LightTickReviewExportEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReviewExport'
+        requestId:
+          type: string
+    LightTickReviewSource:
+      type: object
+      additionalProperties: false
+      required:
+      - source
+      - title
+      - text
+      - current_version
+      properties:
+        source:
+          $ref: '#/components/schemas/LightTickKnowledgeSource'
+        title:
+          type: string
+          maxLength: 1000
+        text:
+          type: string
+          maxLength: 100000
+        current_version:
+          type: string
+    LightTickReviewSourceEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReviewSource'
+        requestId:
+          type: string
+    LightTickKnowledgeSource:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - version
+      properties:
+        kind:
+          type: string
+          enum:
+          - record
+          - lesson
+        id:
+          type: string
+          maxLength: 128
+        version:
+          type: string
+          maxLength: 64
+    LightTickKnowledgeWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - kind
+      - title
+      - body
+      - tags
+      - sources
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        kind:
+          type: string
+          enum:
+          - knowledge
+          - cognition
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        body:
+          type: string
+          minLength: 1
+          maxLength: 100000
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickKnowledgeSource'
+          maxItems: 20
+    LightTickKnowledgeEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - kind
+      - title
+      - body
+      - tags
+      - sources
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^knowledge-[a-zA-Z0-9-]{1,75}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        kind:
+          type: string
+          enum:
+          - knowledge
+          - cognition
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        body:
+          type: string
+          minLength: 1
+          maxLength: 100000
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickKnowledgeSource'
+          maxItems: 20
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickKnowledgeHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_before
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickKnowledgeEntry'
+          maxItems: 50
+        next_before:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+    LightTickReviewFact:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - kind
+      - id
+      - version
+      - title
+      - date
+      - occurred_at
+      - date_basis
+      - sources
+      - href
+      - signal
+      - excerpt
+      properties:
+        key:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        kind:
+          type: string
+          enum:
+          - record
+          - knowledge
+          - cognition
+          - lesson
+          - learning_notes
+          - lesson_completed
+          - task_completed
+          - action_completed
+          - action_execution
+          - practice_feedback
+          - reflection
+          - confirmed_insight
+        id:
+          type: string
+          maxLength: 128
+        version:
+          type: string
+          maxLength: 100
+        title:
+          type: string
+          maxLength: 1000
+        date:
+          type:
+          - string
+          - 'null'
+        occurred_at:
+          type:
+          - string
+          - 'null'
+        date_basis:
+          type: string
+          enum:
+          - record_date
+          - business_date
+          - timestamp
+          - unknown
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickKnowledgeSource'
+          maxItems: 20
+        href:
+          type: string
+          pattern: ^/grow/
+        signal:
+          type:
+          - string
+          - 'null'
+        excerpt:
+          type: string
+          maxLength: 500
+    LightTickReviewSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - timezone
+      - items
+      - next_cursor
+      - total
+      - counts
+      - active_days
+      - unknown_date_count
+      - metrics_version
+      - explanation
+      properties:
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        timezone:
+          type: string
+          maxLength: 100
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReviewFact'
+          maxItems: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        total:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        counts:
+          type: object
+          additionalProperties: false
+          required:
+          - record
+          - knowledge
+          - cognition
+          - lesson
+          - learning_notes
+          - lesson_completed
+          - task_completed
+          - action_completed
+          - action_execution
+          - practice_feedback
+          - reflection
+          - confirmed_insight
+          properties:
+            record:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            knowledge:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            cognition:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            lesson:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            learning_notes:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            lesson_completed:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            task_completed:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            action_completed:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            action_execution:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            practice_feedback:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            reflection:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            confirmed_insight:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        active_days:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        unknown_date_count:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        metrics_version:
+          type: string
+          enum:
+          - confirmed-facts-v1
+        explanation:
+          type: string
+          maxLength: 2000
+    LightTickKnowledgeEntryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickKnowledgeEntry'
+        requestId:
+          type: string
+    LightTickKnowledgeHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickKnowledgeHistory'
+        requestId:
+          type: string
+    LightTickReviewSnapshotEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReviewSnapshot'
+        requestId:
+          type: string
     LightTickManualAction:
       type: object
       additionalProperties: false
@@ -6957,6 +7828,7 @@ components:
       - LIGHTTICK_RUN_NOT_READY
       - LIGHTTICK_PROPOSAL_STALE
       - LIGHTTICK_PROPOSAL_NOT_PENDING
+      - LIGHTTICK_REVIEW_CURSOR_EXPIRED
       - LIGHTTICK_SYNC_CURSOR_INVALID
       - LIGHTTICK_SYNC_BATCH_TOO_LARGE
       - LIGHTTICK_SYNC_OPERATION_REJECTED

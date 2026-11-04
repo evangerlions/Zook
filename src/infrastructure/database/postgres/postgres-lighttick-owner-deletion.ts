@@ -10,6 +10,7 @@ export async function deleteLightTickOwnerData(
   owner: LightTickOwner,
 ): Promise<void> {
   const tables = [
+    "knowledge_versions", "knowledge",
     "learning_work",
     "learning_route_lessons",
     "learning_route_versions",

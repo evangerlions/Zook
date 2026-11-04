@@ -1,3 +1,4 @@
+import {PostgresKnowledgeStore} from "./postgres-knowledge-store.ts";
 import {deleteLightTickOwnerData} from './postgres-lighttick-owner-deletion.ts';
 import {PostgresLearningRouteStore} from './postgres-learning-route-store.ts';
 import {versionConflict} from './postgres-lighttick-conflicts.ts';
@@ -23,7 +24,7 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
-  readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
+  readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));
   getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
   clearNativeLearningStaging=(owner:LightTickOwner)=>this.transaction(owner,async()=>{await this.learningRoutes.clearStaging(owner);await this.nativeLearning.clearNativeLearningStaging(owner);});

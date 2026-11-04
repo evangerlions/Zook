@@ -1,3 +1,4 @@
+import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
@@ -166,6 +167,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);
+  if(knowledgeResult!==undefined)return response(context,request,knowledgeResult);
   const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
   if(continuationResult!==undefined)return response(context,request,continuationResult);
   const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);

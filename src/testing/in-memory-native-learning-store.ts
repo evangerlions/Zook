@@ -24,6 +24,11 @@ export class InMemoryNativeLearningStore implements Omit<
   private publications = new Map<string, LessonPublication>();
   private states = new Map<string, NativePrivateState>();
   private history = new Map<string, LearningHistoryEntry>();
+  async exportAuthorized(o:LightTickOwner,includePrivate:boolean){
+    const visible=(r:{appId:string;userId:string;lessonId:string})=>{const l=this.lessons.get(key(o,r.lessonId));return r.appId===o.appId&&r.userId===o.userId&&!!l&&!l.archived&&!this.collections.get(key(o,l.collectionId))?.archived;};
+    const result={publications:[...this.publications.values()].filter(visible),states:includePrivate?[...this.states.values()].filter(visible):[],history:includePrivate?[...this.history.values()].filter(visible):[]};
+    if(Object.values(result).some(rows=>rows.length>5000))throw new ApplicationError(413,'VALIDATION_ERROR','Learning export exceeds capacity.');return copy(result);
+  }
   async getNativeLearningCounts(o: LightTickOwner) {
     return Object.fromEntries(
       Object.entries({

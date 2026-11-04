@@ -22,6 +22,7 @@ export interface LightTickAtomicWrite {
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+  readonly knowledge: import("./knowledge/knowledge.types.ts").KnowledgeRepository;
   readonly learningRoutes: LearningRouteRepository;
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
