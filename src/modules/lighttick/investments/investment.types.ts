@@ -26,6 +26,7 @@ export interface InvestmentAccount {
   updated_at: string;
 }
 export interface InvestmentRepository {
+  readonly ledger: import("./ledger.types.ts").InvestmentLedgerRepository;
   instrument(
     o: LightTickOwner,
     id: string,

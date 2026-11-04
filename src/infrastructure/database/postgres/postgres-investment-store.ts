@@ -1,3 +1,4 @@
+import {PostgresInvestmentLedgerStore} from "./postgres-investment-ledger-store.ts";
 import type {
   InvestmentAccount,
   InvestmentInstrument,
@@ -18,7 +19,8 @@ const conflict = () => {
   );
 };
 export class PostgresInvestmentStore implements InvestmentRepository {
-  constructor(readonly query: Query) {}
+  readonly ledger:PostgresInvestmentLedgerStore;
+  constructor(readonly query: Query) {this.ledger=new PostgresInvestmentLedgerStore(query); }
   async instrument(o: LightTickOwner, id: string) {
     return (
       await this.query(

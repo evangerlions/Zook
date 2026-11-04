@@ -1,3 +1,5 @@
+import {InvestmentLedgerRunner} from "./investments/ledger.runner.ts";
+import {INVESTMENT_LEDGER_JOB} from "./investments/ledger.service.ts";
 import type { JobQueue } from "../../infrastructure/queue/job-queue.ts";
 import type { QueueJob } from "../../shared/types.ts";
 import { sha256 } from "../../shared/utils.ts";
@@ -47,12 +49,16 @@ export class LightTickJobService {
 export class LightTickWorker {
   constructor(private readonly aiRunner: LightTickAiRunner,
     private readonly recordTerminalFailure: (job: QueueJob, error: unknown) => Promise<void> = async () => undefined,
-    readonly learning?:LearningWorkRunner) {}
+    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner) {}
 
-  async recover(){return await this.learning?.recover()??0;}
+  async recover(){return (await this.learning?.recover()??0)+(await this.investments?.recover()??0);}
 
   async process(job: QueueJob): Promise<void> {
     try {
+      if(job.name===INVESTMENT_LEDGER_JOB){
+        if(!this.investments||job.payload.app_id!=='lighttick')throw Error('Investment worker is unavailable or has invalid app scope');
+        await this.investments.execute({appId:'lighttick',userId:String(job.payload.user_id)},String(job.payload.work_id));return;
+      }
       if(job.name===LEARNING_WORK_JOB){
         if(!this.learning||job.payload.app_id!=='lighttick')throw Error('Learning worker is unavailable or has invalid app scope');
         await this.learning.execute({appId:'lighttick',userId:String(job.payload.user_id)},String(job.payload.work_id));return;

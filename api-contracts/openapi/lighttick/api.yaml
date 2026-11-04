@@ -42,6 +42,195 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/investments/accounts/{resourceId}/events:
+    post:
+      operationId: appendInvestmentLedgerEvent
+      tags:
+      - lighttick-investments
+      summary: appendInvestmentLedgerEvent
+      description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
+        Existing worker calculates outside owner transactions and commits facts only after account CAS.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
+        not market valuations. No entities enter legacy sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentLedgerWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentLedgerWrite'
+  /api/v1/lighttick/investments/accounts/{resourceId}/ledger:
+    get:
+      operationId: readInvestmentLedger
+      tags:
+      - lighttick-investments
+      summary: readInvestmentLedger
+      description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
+        Existing worker calculates outside owner transactions and commits facts only after account CAS.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
+        not market valuations. No entities enter legacy sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentLedgerPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/work/{resourceId}:
+    get:
+      operationId: readInvestmentLedgerWork
+      tags:
+      - lighttick-investments
+      summary: readInvestmentLedgerWork
+      description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
+        Existing worker calculates outside owner transactions and commits facts only after account CAS.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
+        not market valuations. No entities enter legacy sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentLedgerWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/work/{resourceId}/cancel:
+    post:
+      operationId: cancelInvestmentLedgerWork
+      tags:
+      - lighttick-investments
+      summary: cancelInvestmentLedgerWork
+      description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
+        Existing worker calculates outside owner transactions and commits facts only after account CAS.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
+        not market valuations. No entities enter legacy sync.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentLedgerWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentLedgerCancel'
   /api/v1/lighttick/investments/instruments:
     get:
       operationId: listInvestmentInstruments
@@ -15936,5 +16125,383 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickNativeLearningWorkAdoption'
+        requestId:
+          type: string
+    LightTickInvestmentFill:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - side
+      - price
+      - quantity
+      - fee
+      - tax
+      - settlement_amount
+      - source
+      properties:
+        instrument_id: &ledger008
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+        price: &ledger001
+          type: string
+          maxLength: 120
+          pattern: ^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$
+        quantity: *ledger001
+        fee:
+          anyOf:
+          - *ledger001
+          - type: 'null'
+        tax:
+          anyOf:
+          - *ledger001
+          - type: 'null'
+        settlement_amount:
+          anyOf:
+          - *ledger001
+          - type: 'null'
+        source:
+          type: string
+          enum:
+          - manual
+          - csv
+          - broker
+          - fund_confirmation
+    LightTickInvestmentCash:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - amount
+      properties:
+        kind:
+          type: string
+          enum:
+          - deposit
+          - withdrawal
+          - dividend
+          - interest
+          - fee
+          - fund_receivable_hold
+          - fund_receivable_release
+        amount: *ledger001
+    LightTickInvestmentLedgerInput:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - business_date
+        - kind
+        - fill
+        properties:
+          business_date: &ledger002
+            type: string
+            format: date
+          kind: &ledger003
+            type: string
+            enum:
+            - fill
+          fill: &ledger004
+            $ref: '#/components/schemas/LightTickInvestmentFill'
+      - type: object
+        additionalProperties: false
+        required:
+        - business_date
+        - kind
+        - cash
+        properties:
+          business_date: *ledger002
+          kind: &ledger006
+            type: string
+            enum:
+            - cash
+          cash: &ledger007
+            $ref: '#/components/schemas/LightTickInvestmentCash'
+    LightTickInvestmentLedgerWrite:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - base_revision
+        - business_date
+        - kind
+        - fill
+        properties:
+          base_revision: &ledger005
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          business_date: *ledger002
+          kind: *ledger003
+          fill: *ledger004
+      - type: object
+        additionalProperties: false
+        required:
+        - base_revision
+        - business_date
+        - kind
+        - cash
+        properties:
+          base_revision: *ledger005
+          business_date: *ledger002
+          kind: *ledger006
+          cash: *ledger007
+    LightTickInvestmentLedgerPosition:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - quantity
+      - cost
+      - realized
+      - fees_complete
+      - settlements_complete
+      - market_value
+      - unrealized
+      - mark
+      properties:
+        instrument_id: *ledger008
+        quantity: &ledger009
+          type: string
+          maxLength: 240
+        cost:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        realized:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        fees_complete:
+          type: boolean
+        settlements_complete:
+          type: boolean
+        market_value:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        unrealized:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        mark:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+    LightTickInvestmentLedgerResult:
+      type: object
+      additionalProperties: false
+      required:
+      - cash
+      - cash_verified
+      - receivables
+      - positions
+      - realized
+      - fees_complete
+      - net_realized
+      - equity
+      - settlements_complete
+      - warnings
+      properties:
+        cash: *ledger009
+        cash_verified:
+          type: boolean
+        receivables: *ledger009
+        positions:
+          type: array
+          maxItems: 10100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentLedgerPosition'
+        realized:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        fees_complete:
+          type: boolean
+        net_realized:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        equity:
+          anyOf:
+          - *ledger009
+          - type: 'null'
+        settlements_complete:
+          type: boolean
+        warnings:
+          type: array
+          maxItems: 2
+          items:
+            type: string
+            maxLength: 1000
+    LightTickInvestmentLedgerReport:
+      type: object
+      additionalProperties: false
+      required:
+      - account_id
+      - account_revision
+      - baseline_version
+      - algorithm_version
+      - input_digest
+      - event_count
+      - valuation
+      - result
+      properties:
+        account_id: *ledger008
+        account_revision: *ledger005
+        baseline_version: *ledger005
+        algorithm_version:
+          type: string
+          enum:
+          - moving-average-decimal60-half-even-v1
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        event_count:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        valuation:
+          type: string
+          enum:
+          - unpriced
+        result:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerResult'
+    LightTickInvestmentLedgerWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - account_id
+      - revision
+      - base_revision
+      - status
+      - attempt
+      - error_code
+      - input
+      - output
+      - created_at
+      - updated_at
+      properties:
+        id: *ledger008
+        account_id: *ledger008
+        revision: *ledger005
+        base_revision: *ledger005
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        input:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerInput'
+        output:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentLedgerReport'
+          - type: 'null'
+        created_at: &ledger010
+          type: string
+          format: date-time
+        updated_at: *ledger010
+    LightTickInvestmentLedgerEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - account_id
+      - sequence
+      - input
+      - created_at
+      properties:
+        id: *ledger008
+        account_id: *ledger008
+        sequence: *ledger005
+        input:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerInput'
+        created_at: *ledger010
+    LightTickInvestmentLedgerPage:
+      type: object
+      additionalProperties: false
+      required:
+      - account_revision
+      - items
+      - report
+      - next_cursor
+      properties:
+        account_revision: *ledger005
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentLedgerEvent'
+        report:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentLedgerReport'
+          - type: 'null'
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentLedgerCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision: *ledger005
+    LightTickInvestmentLedgerWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerWork'
+        requestId:
+          type: string
+    LightTickInvestmentLedgerPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerPage'
         requestId:
           type: string

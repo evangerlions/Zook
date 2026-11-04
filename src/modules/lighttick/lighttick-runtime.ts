@@ -24,6 +24,7 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  investmentLedger?:import("./investments/ledger.service.ts").InvestmentLedgerService;
   learningWork?:LearningWorkService;
   nativeLearning:NativeLearningService;
   recordHandoffEnabled:boolean;

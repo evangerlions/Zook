@@ -1785,4 +1785,16 @@ AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上
 
 `PUT accounts/{resourceId}` 仅创建 base_revision=0 的账户期初，字段 name/currency（当前 CNY）/baseline_date/opening_cash/opening_positions。份额、金额、成本必须十进制字符串，最多 18 整数/10 小数，不收 JSON 浮点，超精度明确 422，不静默舍入；未知成本为 null。每项期初标的必须属于本人且可用，不能重复。数据库金额/份额/成本使用 NUMERIC(28,10)，期初与位置关系不可变；本阶段不允许直接改写期初。POST accounts/{resourceId}/status 仅 base_revision/archived，归档/恢复只改状态。GET accounts 及 /{resourceId} 读取。
 
-所有写入绑定资源/版本与原 Idempotency-Key；终态重试保持原结果，冲突保留本机/基线/云端。列表 limit 1–100，游标绑定 owner/类别/事实摘要，变化后显式重建且保留草稿；每目录 1000 项及 8 MiB，上限外拒绝不截断。账户/标的初始保存不计算盈亏或交易建议。本阶段尚未开放成交/现金流水、行情、研究/回测接口，不把期初字段当作完整持仓/净收益。后续基准修订必须经预览、理由、当前事实核对与显式确认，不开放通用覆盖。
+所有写入绑定资源/版本与原 Idempotency-Key；终态重试保持原结果，冲突保留本机/基线/云端。列表 limit 1–100，游标绑定 owner/类别/事实摘要，变化后显式重建且保留草稿；每目录 1000 项及 8 MiB，上限外拒绝不截断。账户/标的初始保存不计算盈亏或交易建议。成交/现金流水见下节；行情、研究/回测接口仍未开放，不把期初字段当作完整持仓/净收益。后续基准修订必须经预览、理由、当前事实核对与显式确认，不开放通用覆盖。
+
+
+### LightTick 成交、现金流水与账本 worker（工程切片）
+
+- `POST /api/v1/lighttick/investments/accounts/{resourceId}/events`：base_revision、business_date、kind=fill/cash 和对应 fill/cash。日期为真实日历日，不早于期初、不晚于上海当天；本切片尚未把交易所交易日校验作为已完成能力。fill 明确 instrument_id/side/price/quantity/fee/tax/source/settlement_amount，未知费税显式 null，不能省略。股票/ETF source=manual/csv/broker、settlement_amount=null；基金 source=fund_confirmation，实际结算可显式 null 但结果保持暂估。现金种类 deposit/withdrawal/dividend/interest/fee/fund_receivable_hold/fund_receivable_release，amount>0。金额/份额一律精确十进制字符串，正式事件列 NUMERIC(28,10)。
+- `GET .../investments/work/{resourceId}`：持久命令回执 queued/running/succeeded/failed/cancelled，revision、原账户 base_revision、input、output/error_code。Common operation 接受回执保持不可变；该领域工作行是终态真值。同一路径/资源/body/Idempotency-Key 重试返回同一 work 的当前回执，绝不新建请求。终态不自动重试/重基线。失败或取消不写正式事件、不递增账户版本。
+- `POST .../investments/work/{resourceId}/cancel`：base_revision 是**工作回执修订**；独立原 Idempotency-Key。只允许 queued/running 的当前修订，已终态/版本变化 409；租约 fence 阻止旧计算迟到提交。
+- `GET .../investments/accounts/{resourceId}/ledger?cursor=&limit=50`：仅成功事实，按业务日、提交序号排序。limit=1–100；游标绑定 owner/账户/账户修订/完整输入摘要，过期 409 需要重建只读页，不删除本机输入/未决命令。report 是最近成功命令的不可变计算快照（账户版本、期初版本、算法版本、输入摘要）；归档只改变当前账户状态，不伪造新财务估值。
+
+沿用现有 `lighttick.investment.ledger` worker。owner 事务内取得待办快照/2 分钟租约，60 位 half-even 移动平均计算在事务外；提交再次确认 membership、账户 CAS、标的可用、租约 fence。超额卖出失败；未知费用/基金实际结算/持仓成本与缺失价格保留未知，不能默认为零。当前 `valuation=unpriced`，不取实时行情、不声称当前净值；算法为 `moving-average-decimal60-half-even-v1`。每账户最多 10000 正式事件、1000 历史命令，超过明确 413；崩溃有界恢复 3 次，取消/失权/版本变化直接终态。无新服务、无任意策略执行。
+
+`GET /api/v1/lighttick/review/export` 的授权数据 JSON 新增 investments：本人标的、账户期初、正式流水和领域命令原 key/body/终态；不含 queue lease/fence、密钥或平台配置，投资部分最多 5000 行，全包仍有 8 MiB 门槛，超限明确拒绝而非截断。账号/应用删除共用清理清单同时覆盖事件、命令、期初和标的。

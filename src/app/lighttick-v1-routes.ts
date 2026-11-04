@@ -168,7 +168,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
-  const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive);
+  const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);
   if(investmentResult!==undefined)return response(context,request,investmentResult);
   const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);
   if(knowledgeResult!==undefined)return response(context,request,knowledgeResult);

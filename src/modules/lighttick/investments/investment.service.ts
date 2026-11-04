@@ -109,7 +109,7 @@ export class InvestmentService {
     readonly authorize: () => Promise<void> = async () => {},
     readonly clock = () => new Date(),
   ) {}
-  private command<T extends object>(
+  command<T extends object>(
     o: LightTickOwner,
     key: string,
     entity: string,

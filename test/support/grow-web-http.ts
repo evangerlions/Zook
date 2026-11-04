@@ -45,7 +45,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
    return { provider: 'synthetic', providerModel: 'synthetic', text: JSON.stringify(input.messages.some((m: any) => m.content.includes('"planning_action":"messages"')) ? {message: '请核对投入与日期，再审阅草案。',fields: {}} : {tasks: [{title:'合成规划步骤',estimated_minutes:5,scheduled_for:'2030-01-01T09:00:00Z',completion_criteria:'写下一条具体结论',steps:['打开笔记','写下结论']}]}) };
   }} as any;
   const learning=runtime.worker!.learning!;
-  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,llm),undefined,new LearningWorkRunner(runtime.learningWork!,llm,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner));
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,llm),undefined,new LearningWorkRunner(runtime.learningWork!,llm,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments);
   let running=false,lastRecovery=0;
   queueTimer=setInterval(()=>{if(running)return;running=true;void (async()=>{if(Date.now()-lastRecovery>1000){lastRecovery=Date.now();await runtime.worker!.recover();}await app.queue.processDueJobs(job=>runtime.worker!.process(job),new Date());})().catch(()=>{}).finally(()=>{running=false;});},100);
 

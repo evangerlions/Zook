@@ -1,3 +1,5 @@
+import {exportInvestments} from "../investments/ledger.export.ts";
+import {digest} from "../learning/native-learning.validation.ts";
 import { createHash } from "node:crypto";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -47,11 +49,13 @@ export async function exportReview(
             : {}),
         }),
       );
+    const investments=await exportInvestments(repo,o);
     const data = {
       format_version: 1,
       owner_id: o.userId,
       exported_at: clock().toISOString(),
-      revision: view.revision,
+      revision: digest({review:view.revision,investments}),
+      investments,
       metrics_version: "confirmed-facts-v1",
       facts: view.facts,
       knowledge,
@@ -85,7 +89,7 @@ export async function exportReview(
       format_version: 1,
       owner_id: o.userId,
       exported_at: data.exported_at,
-      revision: view.revision,
+      revision: data.revision,
       sha256: createHash("sha256").update(content).digest("hex"),
       content_type: "application/json",
       content,

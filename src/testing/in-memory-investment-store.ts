@@ -1,3 +1,4 @@
+import {InMemoryInvestmentLedgerStore} from "./in-memory-investment-ledger-store.ts";
 import type {
   InvestmentRepository,
   InvestmentAccount,
@@ -10,6 +11,7 @@ const key = (o: LightTickOwner, id: string) =>
   prefix = (o: LightTickOwner) =>
     JSON.stringify([o.appId, o.userId]).slice(0, -1) + ",";
 export class InMemoryInvestmentStore implements InvestmentRepository {
+  readonly ledger=new InMemoryInvestmentLedgerStore();
   private symbols = new Map<string, InvestmentInstrument>();
   private wallets = new Map<string, InvestmentAccount>();
   async instrument(o: LightTickOwner, id: string) {
@@ -74,15 +76,18 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
   }
   snapshot() {
     return structuredClone({
+      ledger:this.ledger.snapshot(),
       symbols: [...this.symbols],
       wallets: [...this.wallets],
     });
   }
   restore(v: ReturnType<InMemoryInvestmentStore["snapshot"]>) {
+    this.ledger.restore(v.ledger);
     this.symbols = new Map(v.symbols);
     this.wallets = new Map(v.wallets);
   }
   deleteOwner(o: LightTickOwner) {
+    this.ledger.deleteOwner(o);
     for (const map of [this.symbols, this.wallets])
       for (const k of map.keys()) if (k.startsWith(prefix(o))) map.delete(k);
   }
