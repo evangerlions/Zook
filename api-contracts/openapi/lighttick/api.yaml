@@ -5711,7 +5711,7 @@ components:
           maxLength: 100
         title:
           type: string
-          maxLength: 1000
+          maxLength: 1200
         date:
           type:
           - string

@@ -38940,7 +38940,7 @@ export const LightTickReviewFactSchema = {
     },
     "title": {
       "type": "string",
-      "maxLength": 1000
+      "maxLength": 1200
     },
     "date": {
       "type": [
@@ -39106,7 +39106,7 @@ export const LightTickReviewSnapshotSchema = {
           },
           "title": {
             "type": "string",
-            "maxLength": 1000
+            "maxLength": 1200
           },
           "date": {
             "type": [
@@ -39742,7 +39742,7 @@ export const LightTickReviewSnapshotEnvelopeSchema = {
               },
               "title": {
                 "type": "string",
-                "maxLength": 1000
+                "maxLength": 1200
               },
               "date": {
                 "type": [
