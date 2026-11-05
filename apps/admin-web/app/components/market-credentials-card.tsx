@@ -49,7 +49,7 @@ export function MarketCredentialsCard() {
           "Content-Type": "application/json",
           "Idempotency-Key": pending.key,
         },
-        body: JSON.stringify(pending.body),
+        body: pending.body,
       });
       if (alive.current) {
         setSummary(r);
@@ -74,8 +74,8 @@ export function MarketCredentialsCard() {
     }
   }
   function prepare(clear: boolean) {
-    sent.current = false;
     if (!summary || pending || busy || (!clear && !token.trim())) return;
+    sent.current = false;
     setPending({
       key: crypto.randomUUID(),
       body: { base_revision: summary.revision, token: clear ? null : token },
