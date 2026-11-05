@@ -13692,7 +13692,28 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/market/work"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "27361fd584ee5a88d3d15d13155b5e20cba6bebf",
+        "tests": [
+          "test/unit/lighttick-market-work.test.ts",
+          "test/unit/lighttick-market-work.api.test.ts",
+          "test/integration/lighttick-market-work-postgres.test.ts",
+          "test/support/grow_web_market_acceptance.py"
+        ],
+        "evidence": "docs/verification/grow-react-u1-20261103/u5-market-work.md",
+        "remaining": [
+          "Full original request/response and side-effect parity, including uncommitted legacy behavior.",
+          "Original account and dataset identity mapping, complete market/factor/corporate-action support.",
+          "Whole-module synthetic import/reconciliation/activation/compensation and compatibility/performance gates."
+        ]
+      }
     },
     {
       "method": "POST",

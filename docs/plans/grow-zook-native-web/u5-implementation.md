@@ -41,6 +41,6 @@
 3. 同切片提交 OpenAPI/生成合同、真实 CSV/选源/单位/历史快照/回测事实核对的 React 页面及 PG/Chrome 故障故事。只有明确公司行动、涨跌停/状态与时间线的输入才能完成回测；没有这些事实的普通日线显示 incomplete，不能自动补“正常”。完整市场快照、复权因子、筛选/研究/预测/监控/归档仍逐行为对照，不由基础模块代签。
 
 
-## 日线市场任务接线（本轮实施，待联合浏览器验收后留证）
+## 日线市场任务接线（已完成本地工程验收）
 
-094 建立 owner＋instrument 的持久 work、不可变数据集与 NUMERIC 日线；不强制 financial account。平台 delivery config 管供应商开关，KV 单值秘密/既有 adminSession＋敏感授权管理 Tushare 凭据，密钥不进历史与任务。原请求接受与任务原子保存，原回执可重放到同一终态；现有 worker 锁外取数/CSV/指标，45 秒上限、owner 两并发、公平恢复、lease/fence 重查后原子发布。Grow 使用实际选源/CSV/单位/日期表单、历史表格和回执，不用 JSON 编辑器代替。公共合同、管理合同与文档已同步；正式任务表仍待该切片联合验收。完整研究/筛选/回测/纠错与全模块迁移、性能门禁继续未完成。
+094 建立 owner＋instrument 的持久 work、不可变数据集与 NUMERIC 日线；不强制 financial account。平台 delivery config 管供应商开关，KV 单值秘密/既有 adminSession＋敏感授权管理 Tushare 凭据，密钥不进历史与任务。原请求接受与任务原子保存，原回执可重放到同一终态；现有 worker 锁外取数/CSV/指标，45 秒上限、owner 两并发、公平恢复、lease/fence 重查后原子发布。Grow 使用实际选源/CSV/单位/日期表单、历史表格和回执，不用 JSON 编辑器代替。公共合同、管理合同与文档已同步；合成 PG/Chrome 与旧功能联合回归见 [行情工作验收](../../verification/grow-react-u1-20261103/u5-market-work.md)，原整项任务仍为 21/27。完整研究/筛选/回测/纠错与全模块迁移、性能门禁继续未完成。
