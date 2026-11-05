@@ -1,0 +1,567 @@
+openapi: 3.1.1
+info:
+  title: LightTick Personal Model Settings
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-personal-model
+  description: Owner-selected OpenAI compatible service settings and bounded tests.
+paths:
+  /api/v1/lighttick/ai/model-settings:
+    get:
+      operationId: readPersonalModelSettings
+      tags:
+      - lighttick-personal-model
+      summary: readPersonalModelSettings
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters: []
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelSettingsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    put:
+      operationId: configurePersonalModelSettings
+      tags:
+      - lighttick-personal-model
+      summary: configurePersonalModelSettings
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelSettingsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPersonalModelWrite'
+  /api/v1/lighttick/ai/model-settings/receipts/{requestKey}:
+    get:
+      operationId: readPersonalModelSettingsReceipt
+      tags:
+      - lighttick-personal-model
+      summary: readPersonalModelSettingsReceipt
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters:
+      - name: requestKey
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelSettingsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/ai/model-settings/test-receipts/{requestKey}:
+    get:
+      operationId: readPersonalModelTestReceipt
+      tags:
+      - lighttick-personal-model
+      summary: readPersonalModelTestReceipt
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters:
+      - name: requestKey
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/ai/model-settings/tests:
+    post:
+      operationId: createPersonalModelConnectionTest
+      tags:
+      - lighttick-personal-model
+      summary: createPersonalModelConnectionTest
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPersonalModelTestWrite'
+  /api/v1/lighttick/ai/model-settings/tests/{testId}:
+    get:
+      operationId: readPersonalModelConnectionTest
+      tags:
+      - lighttick-personal-model
+      summary: readPersonalModelConnectionTest
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters:
+      - name: testId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^modeltest-[a-f0-9]{40}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/ai/model-settings/tests/{testId}/cancel:
+    post:
+      operationId: cancelPersonalModelConnectionTest
+      tags:
+      - lighttick-personal-model
+      summary: cancelPersonalModelConnectionTest
+      description: Registered owner only. Account encrypted credentials are never returned, exported or
+        logged. CAS and persistent original receipts. HTTPS public-address pinned completion, no redirects
+        or fallback model. Explicit save/test/clear; test uses bounded existing worker. A test success
+        is connectivity only, not model quality.
+      parameters:
+      - name: testId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^modeltest-[a-f0-9]{40}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPersonalModelTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPersonalModelCancel'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickPersonalModelSettings:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - mode
+      - base_url
+      - model_name
+      - configured
+      - updated_at
+      - storage
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        mode:
+          type: string
+          enum:
+          - platform
+          - personal
+        base_url:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+        model_name:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+        configured:
+          type: boolean
+        updated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        storage:
+          type: string
+          enum:
+          - account_encrypted
+    LightTickPersonalModelWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - mode
+      - base_url
+      - model_name
+      - api_key
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        mode:
+          type: string
+          enum:
+          - platform
+          - personal
+        base_url:
+          type:
+          - string
+          - 'null'
+          maxLength: 2048
+        model_name:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+        api_key:
+          type:
+          - string
+          - 'null'
+          maxLength: 4096
+          writeOnly: true
+      allOf:
+      - if:
+          properties:
+            mode:
+              const: personal
+          required:
+          - mode
+        then:
+          properties:
+            base_url:
+              type: string
+              pattern: ^https://
+              minLength: 1
+            model_name:
+              type: string
+              minLength: 1
+            api_key:
+              type: string
+              minLength: 1
+        else:
+          properties:
+            base_url:
+              type: 'null'
+            model_name:
+              type: 'null'
+            api_key:
+              type: 'null'
+    LightTickPersonalModelTestWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - settings_revision
+      properties:
+        settings_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        config:
+          type: object
+          additionalProperties: false
+          required:
+          - base_url
+          - model_name
+          - api_key
+          properties:
+            base_url:
+              type: string
+              maxLength: 2048
+              pattern: ^https://
+            model_name:
+              type: string
+              maxLength: 100
+              minLength: 1
+            api_key:
+              type: string
+              maxLength: 4096
+              minLength: 1
+              writeOnly: true
+    LightTickPersonalModelCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickPersonalModelTest:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - settings_revision
+      - target
+      - status
+      - error_code
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^modeltest-[a-f0-9]{40}$
+        revision:
+          type: integer
+          minimum: 1
+        settings_revision:
+          type: integer
+          minimum: 0
+        target:
+          type: string
+          enum:
+          - saved
+          - draft
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        error_code:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickPersonalModelSettingsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPersonalModelSettings'
+        requestId:
+          type: string
+    LightTickPersonalModelTestEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPersonalModelTest'
+        requestId:
+          type: string

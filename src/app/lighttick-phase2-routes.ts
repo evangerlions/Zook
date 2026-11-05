@@ -1,3 +1,4 @@
+import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
 import { loadChatResources } from "../modules/lighttick/ai/lighttick-ai-context.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
@@ -60,7 +61,7 @@ async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind:
   const now = new Date().toISOString(); const scene = LIGHTTICK_AI_SCENES[sceneName];
   return await runtime.repository.saveAiRun({ ...owner, id: randomId("lighttick_run"), kind, status: "queued",
     resourceId, sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
-    inputContext: input, usage: {}, createdAt: now, updatedAt: now });
+    inputContext: {...input,model_selection:await captureModel(runtime.repository,owner)}, usage: {}, createdAt: now, updatedAt: now });
 }
 
 export async function tryHandleLightTickPhase2Routes(context: BackendRouteContext, enabled: boolean,

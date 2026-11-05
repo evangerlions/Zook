@@ -117,6 +117,7 @@ export class InvestmentService {
     action: string,
     b: Record<string, unknown>,
     mutate: (now: string) => Promise<T>,
+    receiptPayload:Record<string,unknown> = b,
   ) {
     if (key.length < 8 || key.length > 128)
       fail(422, "Retain an original request identity.");
@@ -143,7 +144,7 @@ export class InvestmentService {
         entityType: entity,
         entityId: id,
         action,
-        requestPayload: b,
+        requestPayload: receiptPayload,
         resultPayload: result as Record<string, unknown>,
         status: "accepted",
         createdAt: now,

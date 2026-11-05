@@ -1,3 +1,4 @@
+import {PostgresPersonalModelStore} from "./postgres-personal-model-store.ts";
 import {PostgresInvestmentStore} from "./postgres-investment-store.ts";
 import {PostgresLightTickDeviceStore} from "./postgres-lighttick-device-store.ts";
 import {PostgresKnowledgeStore} from "./postgres-knowledge-store.ts";
@@ -26,6 +27,7 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly personalModels=new PostgresPersonalModelStore((sql,args)=>this.query(sql,args));
   readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));
   readonly knowledge=new PostgresKnowledgeStore((sql,args)=>this.query(sql,args)); readonly learningRoutes=new PostgresLearningRouteStore((sql,args)=>this.query(sql,args),(o,fn)=>this.transaction(o,fn));
   private readonly nativeLearning=new PostgresNativeLearningStore((sql,values)=>this.query(sql,values));

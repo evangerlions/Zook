@@ -1,3 +1,4 @@
+import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LearningWork, LearningWorkKind } from "./learning-work.types.ts";
@@ -26,7 +27,7 @@ export class LearningWorkService {
       const now=this.native.clock().toISOString(),today=now.slice(0,10)+'T00:00:00.000Z';
       const recent=await this.store.recent(owner,today),reserve=kind==='route_draft'?750000:kind==='lesson_draft'?450000:0;
       if(recent.length>=LEARNING_WORK_LIMITS.dailyJobs||recent.reduce((n,r)=>n+r.reservedMicros,0)+reserve>LEARNING_WORK_LIMITS.dailyEstimatedMicros)fail(429,"Daily learning work budget is exhausted.");
-      const input:Record<string,any>={};
+      const input:Record<string,any>={model_selection:await captureModel(this.native.repository,owner)};
       if(kind==='file_ingest'){
         input.file_name=text(b.file_name,200,true);input.content=text(b.content,80000,true);
         if(Buffer.byteLength(input.content)>80000)fail(422,"Text file exceeds UTF-8 source capacity.");

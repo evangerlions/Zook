@@ -1,3 +1,4 @@
+import {handlePersonalModelRequest} from "./lighttick-personal-model-routes.ts";import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
 import {handleResearchRequest} from "./lighttick-research-routes.ts";
 import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
@@ -18,10 +19,8 @@ import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttic
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickServerEvent } from "../modules/lighttick/lighttick-analytics.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
-
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
-
 function idempotencyKeyOf(request: HttpRequest): string {
   const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
   if (!key || key.length < 8 || key.length > 128)
@@ -119,7 +118,7 @@ async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind:
   const now = new Date().toISOString(); const scene = LIGHTTICK_AI_SCENES[sceneName];
   return await runtime.repository.saveAiRun({ ...owner, id: randomId("lighttick_run"), kind, status: "queued",
     resourceId, sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
-    inputContext: input, usage: {}, createdAt: now, updatedAt: now });
+    inputContext: {...input,model_selection:await captureModel(runtime.repository,owner)}, usage: {}, createdAt: now, updatedAt: now });
 }
 
 export async function tryHandleLightTickV1Routes(context: BackendRouteContext, enabled: boolean,
@@ -170,6 +169,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const modelResult=await handlePersonalModelRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const researchResult=await handleResearchRequest(runtime.repository,owner,request,assertActive);if(researchResult!==undefined){const result=response(context,request,researchResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const marketResult=await handleMarketRequest(runtime,owner,request,assertActive);if(marketResult!==undefined){const result=response(context,request,marketResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);

@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/personal-model.yaml": ['LightTickPersonalModelSettings', 'LightTickPersonalModelWrite', 'LightTickPersonalModelTestWrite', 'LightTickPersonalModelCancel', 'LightTickPersonalModelTest', 'LightTickPersonalModelSettingsEnvelope', 'LightTickPersonalModelTestEnvelope'],
     "common/lighttick-market-admin.yaml": ["LightTickMarketCredentialWrite", "LightTickMarketCredentialSummary", "LightTickMarketCredentialEnvelope"],
     "yaohezi/api.yaml": ['YaoheziMeData', 'YaoheziHealthChallengeRequest', 'YaoheziHealthRecoveryRequest', 'YaoheziHealthBootstrapRequest', 'YaoheziHealthSessionRequest', 'YaoheziHealthRecoverRequest', 'YaoheziHealthEnrollRequest', 'YaoheziHealthInspectRequest', 'YaoheziHealthRevokeDeviceRequest', 'YaoheziHealthRotateKeysRequest', 'YaoheziHealthLogoutRequest', 'YaoheziHealthKeyCapsulesRequest', 'YaoheziHealthVerifyOperationRequest', 'YaoheziHealthRevision', 'YaoheziHealthKeyCapsule', 'YaoheziHealthInspectData', 'YaoheziHealthChallengeData', 'YaoheziHealthSessionData', 'YaoheziHealthRecoveryData', 'YaoheziHealthCloseSessionsRequest', 'YaoheziHealthCloseSessionsData'],
     "common/auth.yaml": [

@@ -1,3 +1,5 @@
+import type {PersonalModelTestRunner} from "./personal-model/personal-model-test.runner.ts";
+import {MODEL_TEST_JOB} from "./personal-model/personal-model.service.ts";
 import type {MarketWorkRunner} from "./investments/market/market-work.runner.ts";
 import {MARKET_WORK_JOB} from "./investments/market/market-work.service.ts";
 import {InvestmentLedgerRunner} from "./investments/ledger.runner.ts";
@@ -51,12 +53,13 @@ export class LightTickJobService {
 export class LightTickWorker {
   constructor(private readonly aiRunner: LightTickAiRunner,
     private readonly recordTerminalFailure: (job: QueueJob, error: unknown) => Promise<void> = async () => undefined,
-    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner) {}
+    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner,readonly modelTests?:PersonalModelTestRunner) {}
 
-  async recover(){return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0);}
+  async recover(){return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0)+(await this.modelTests?.recover()??0);}
 
   async process(job: QueueJob): Promise<void> {
     try {
+      if(job.name===MODEL_TEST_JOB){if(!this.modelTests||job.payload.app_id!=='lighttick')throw Error('Personal model worker unavailable');await this.modelTests.execute({appId:'lighttick',userId:String(job.payload.user_id)},String(job.payload.work_id));return;}
       if(job.name===MARKET_WORK_JOB){if(!this.market||job.payload.app_id!=='lighttick')throw Error('Market worker unavailable or invalid scope');await this.market.execute({appId:'lighttick',userId:String(job.payload.user_id)},String(job.payload.work_id));return;}
       if(job.name===INVESTMENT_LEDGER_JOB){
         if(!this.investments||job.payload.app_id!=='lighttick')throw Error('Investment worker is unavailable or has invalid app scope');

@@ -1,3 +1,4 @@
+import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
@@ -43,7 +44,7 @@ export class LightTickPlanningAiRunner {
       const input = structuredClone(run.inputContext) as any;
       input.existing_tasks = (await this.repository.listTasks(owner)).filter(t => t.goalId === input.goal_id && t.status !== "cancelled")
         .slice(-100).map(t => ({ title: t.title, date: t.scheduledFor, status: t.status, estimated_minutes: t.estimatedMinutes }));
-      delete input.planning_session_id; delete input.snapshot;
+      delete input.model_selection; delete input.planning_session_id; delete input.snapshot;
       const context = input.context as PlanningSession["context"];
       const schema = clarify ? CLARIFY_SCHEMA : LIGHTTICK_OUTPUT_SCHEMAS.plan;
       const constraints = clarify ? "Fields are candidate assumptions requiring user review; message must ask at most two questions."
@@ -55,7 +56,7 @@ export class LightTickPlanningAiRunner {
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
         result = await Promise.race([this.llm.complete({ modelKey:scene.modelAlias, messages:[{role:"system",content:LIGHTTICK_SYSTEM_PROMPT},{role:"user",content:prefix+JSON.stringify(input)}],
-          maxTokens:scene.maxOutputTokens,temperature:0.2,providerOptions:{response_format:{type:"json_object"},enable_thinking:false},usageOwner:owner }),
+          maxTokens:scene.maxOutputTokens,temperature:0.2,providerOptions:{...selectionOption(run.inputContext.model_selection),response_format:{type:"json_object"},enable_thinking:false},usageOwner:owner }),
           new Promise((_,reject)=>{ timer=setTimeout(()=>reject(new Error("timeout")),scene.timeoutMs); })]);
       } finally { if (timer) clearTimeout(timer); }
       output = parseLightTickJson(result.text);

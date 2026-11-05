@@ -1,6 +1,522 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickPersonalModelSettingsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "mode",
+    "base_url",
+    "model_name",
+    "configured",
+    "updated_at",
+    "storage"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "personal"
+      ]
+    },
+    "base_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    },
+    "model_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "configured": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "storage": {
+      "type": "string",
+      "enum": [
+        "account_encrypted"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickPersonalModelSettings = {
+  "revision": number;
+  "mode": "platform" | "personal";
+  "base_url": string | null;
+  "model_name": string | null;
+  "configured": boolean;
+  "updated_at": string | null;
+  "storage": "account_encrypted";
+};
+
+export const LightTickPersonalModelWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "mode",
+    "base_url",
+    "model_name",
+    "api_key"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "personal"
+      ]
+    },
+    "base_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2048
+    },
+    "model_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "api_key": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 4096,
+      "writeOnly": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "personal"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "base_url": {
+            "type": "string",
+            "pattern": "^https://",
+            "minLength": 1
+          },
+          "model_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "api_key": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "base_url": {
+            "type": "null"
+          },
+          "model_name": {
+            "type": "null"
+          },
+          "api_key": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickPersonalModelWrite = (
+{
+  "base_revision": number;
+  "mode": "platform" | "personal";
+  "base_url": string | null;
+  "model_name": string | null;
+  "api_key": string | null;
+}
+) & (
+{
+  "base_revision": number;
+  "mode": "platform" | "personal";
+  "base_url": string | null;
+  "model_name": string | null;
+  "api_key": string | null;
+}
+);
+
+export const LightTickPersonalModelTestWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "settings_revision"
+  ],
+  "properties": {
+    "settings_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_url",
+        "model_name",
+        "api_key"
+      ],
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^https://"
+        },
+        "model_name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "api_key": {
+          "type": "string",
+          "maxLength": 4096,
+          "minLength": 1,
+          "writeOnly": true
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickPersonalModelTestWrite = {
+  "settings_revision": number;
+  "config"?: {
+  "base_url": string;
+  "model_name": string;
+  "api_key": string;
+};
+};
+
+export const LightTickPersonalModelCancelSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickPersonalModelCancel = {
+  "base_revision": number;
+};
+
+export const LightTickPersonalModelTestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "settings_revision",
+    "target",
+    "status",
+    "error_code",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^modeltest-[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "settings_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "draft"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickPersonalModelTest = {
+  "id": string;
+  "revision": number;
+  "settings_revision": number;
+  "target": "saved" | "draft";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "error_code": string | null;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickPersonalModelSettingsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "mode",
+        "base_url",
+        "model_name",
+        "configured",
+        "updated_at",
+        "storage"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "platform",
+            "personal"
+          ]
+        },
+        "base_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2048
+        },
+        "model_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "configured": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "storage": {
+          "type": "string",
+          "enum": [
+            "account_encrypted"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPersonalModelSettingsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": number;
+  "mode": "platform" | "personal";
+  "base_url": string | null;
+  "model_name": string | null;
+  "configured": boolean;
+  "updated_at": string | null;
+  "storage": "account_encrypted";
+};
+  "requestId": string;
+};
+
+export const LightTickPersonalModelTestEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "settings_revision",
+        "target",
+        "status",
+        "error_code",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^modeltest-[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "settings_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "saved",
+            "draft"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "error_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPersonalModelTestEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "settings_revision": number;
+  "target": "saved" | "draft";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "error_code": string | null;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
 export const LightTickMarketCredentialWriteSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -81329,6 +81845,13 @@ export const GeneratedPublicContractNames = [
   "LightTickNotificationPreferences",
   "LightTickOnboardingRequest",
   "LightTickPace",
+  "LightTickPersonalModelCancel",
+  "LightTickPersonalModelSettings",
+  "LightTickPersonalModelSettingsEnvelope",
+  "LightTickPersonalModelTest",
+  "LightTickPersonalModelTestEnvelope",
+  "LightTickPersonalModelTestWrite",
+  "LightTickPersonalModelWrite",
   "LightTickPlanData",
   "LightTickPlanDiffItem",
   "LightTickPlanGranularity",
