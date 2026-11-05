@@ -282,6 +282,7 @@ test("authorized export includes owned ledger original body and terminal receipt
     accounts: [],
     ledgers: [],
     market:{snapshots:[],receipts:[]},
+    research:{entries:[],versions:[],receipts:[]},
   });
 });
 

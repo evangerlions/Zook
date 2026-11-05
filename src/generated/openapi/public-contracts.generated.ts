@@ -42072,6 +42072,1772 @@ export type LightTickInvestmentLedgerPageEnvelope = {
   "requestId": string;
 };
 
+export const LightTickInvestmentResearchEvidenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "content",
+    "locator",
+    "source_url",
+    "available_at",
+    "contrary_evidence"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 12000,
+      "minLength": 1
+    },
+    "locator": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2000,
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "available_at": {
+      "type": "string",
+      "maxLength": 40,
+      "format": "date-time"
+    },
+    "contrary_evidence": {
+      "type": "string",
+      "maxLength": 12000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchEvidence = {
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+};
+
+export const LightTickInvestmentResearchMarketSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "input_digest"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchMarketSource = {
+  "id": string;
+  "version": 1;
+  "input_digest": string;
+};
+
+export const LightTickInvestmentResearchWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "instrument_id",
+    "account_id",
+    "title",
+    "horizon",
+    "evidence",
+    "market_sources",
+    "market_context",
+    "technical_case",
+    "catalyst",
+    "company_risk",
+    "valuation_assumptions",
+    "liquidity",
+    "nav_context",
+    "portfolio_impact",
+    "contrary_case",
+    "missing_inputs"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "short",
+        "swing"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "content",
+          "locator",
+          "source_url",
+          "available_at",
+          "contrary_evidence"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1
+          },
+          "locator": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available_at": {
+            "type": "string",
+            "maxLength": 40,
+            "format": "date-time"
+          },
+          "contrary_evidence": {
+            "type": "string",
+            "maxLength": 12000
+          }
+        }
+      }
+    },
+    "market_sources": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "input_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "input_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "market_context": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "technical_case": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "catalyst": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "company_risk": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "valuation_assumptions": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "liquidity": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "nav_context": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "portfolio_impact": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "contrary_case": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "missing_inputs": {
+      "type": "string",
+      "maxLength": 12000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchWrite = {
+  "base_revision": number;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "evidence": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+}
+)[];
+  "market_sources": (
+{
+  "id": string;
+  "version": 1;
+  "input_digest": string;
+}
+)[];
+  "market_context": string;
+  "technical_case": string;
+  "catalyst": string;
+  "company_risk": string;
+  "valuation_assumptions": string;
+  "liquidity": string;
+  "nav_context": string;
+  "portfolio_impact": string;
+  "contrary_case": string;
+  "missing_inputs": string;
+};
+
+export const LightTickInvestmentResearchEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "request_key",
+    "instrument_id",
+    "account_id",
+    "title",
+    "horizon",
+    "evidence",
+    "market_sources",
+    "market_context",
+    "technical_case",
+    "catalyst",
+    "company_risk",
+    "valuation_assumptions",
+    "liquidity",
+    "nav_context",
+    "portfolio_impact",
+    "contrary_case",
+    "missing_inputs",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "short",
+        "swing"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "content",
+          "locator",
+          "source_url",
+          "available_at",
+          "contrary_evidence"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1
+          },
+          "locator": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available_at": {
+            "type": "string",
+            "maxLength": 40,
+            "format": "date-time"
+          },
+          "contrary_evidence": {
+            "type": "string",
+            "maxLength": 12000
+          }
+        }
+      }
+    },
+    "market_sources": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "input_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "input_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "market_context": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "technical_case": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "catalyst": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "company_risk": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "valuation_assumptions": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "liquidity": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "nav_context": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "portfolio_impact": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "contrary_case": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "missing_inputs": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchEntry = {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "evidence": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+}
+)[];
+  "market_sources": (
+{
+  "id": string;
+  "version": 1;
+  "input_digest": string;
+}
+)[];
+  "market_context": string;
+  "technical_case": string;
+  "catalyst": string;
+  "company_risk": string;
+  "valuation_assumptions": string;
+  "liquidity": string;
+  "nav_context": string;
+  "portfolio_impact": string;
+  "contrary_case": string;
+  "missing_inputs": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentResearchRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchRevision = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentResearchSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "instrument_id",
+    "account_id",
+    "title",
+    "horizon",
+    "archived",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "short",
+        "swing"
+      ]
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchSummary = {
+  "id": string;
+  "revision": number;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "archived": boolean;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentResearchPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "instrument_id",
+          "account_id",
+          "title",
+          "horizon",
+          "archived",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "horizon": {
+            "type": "string",
+            "enum": [
+              "short",
+              "swing"
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "archived": boolean;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentResearchHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "request_key",
+          "instrument_id",
+          "account_id",
+          "title",
+          "horizon",
+          "evidence",
+          "market_sources",
+          "market_context",
+          "technical_case",
+          "catalyst",
+          "company_risk",
+          "valuation_assumptions",
+          "liquidity",
+          "nav_context",
+          "portfolio_impact",
+          "contrary_case",
+          "missing_inputs",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "request_key": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "horizon": {
+            "type": "string",
+            "enum": [
+              "short",
+              "swing"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "content",
+                "locator",
+                "source_url",
+                "available_at",
+                "contrary_evidence"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "minLength": 1
+                },
+                "content": {
+                  "type": "string",
+                  "maxLength": 12000,
+                  "minLength": 1
+                },
+                "locator": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "source_url": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "format": "uri",
+                      "pattern": "^https?://"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "available_at": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "format": "date-time"
+                },
+                "contrary_evidence": {
+                  "type": "string",
+                  "maxLength": 12000
+                }
+              }
+            }
+          },
+          "market_sources": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "input_digest"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "version": {
+                  "type": "integer",
+                  "enum": [
+                    1
+                  ]
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          },
+          "market_context": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "technical_case": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "catalyst": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "company_risk": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "valuation_assumptions": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "liquidity": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "nav_context": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "portfolio_impact": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "contrary_case": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "missing_inputs": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchHistory = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "evidence": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+}
+)[];
+  "market_sources": (
+{
+  "id": string;
+  "version": 1;
+  "input_digest": string;
+}
+)[];
+  "market_context": string;
+  "technical_case": string;
+  "catalyst": string;
+  "company_risk": string;
+  "valuation_assumptions": string;
+  "liquidity": string;
+  "nav_context": string;
+  "portfolio_impact": string;
+  "contrary_case": string;
+  "missing_inputs": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": number;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentResearchEntryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "instrument_id",
+        "account_id",
+        "title",
+        "horizon",
+        "evidence",
+        "market_sources",
+        "market_context",
+        "technical_case",
+        "catalyst",
+        "company_risk",
+        "valuation_assumptions",
+        "liquidity",
+        "nav_context",
+        "portfolio_impact",
+        "contrary_case",
+        "missing_inputs",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "horizon": {
+          "type": "string",
+          "enum": [
+            "short",
+            "swing"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "content",
+              "locator",
+              "source_url",
+              "available_at",
+              "contrary_evidence"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 12000,
+                "minLength": 1
+              },
+              "locator": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "format": "uri",
+                    "pattern": "^https?://"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "available_at": {
+                "type": "string",
+                "maxLength": 40,
+                "format": "date-time"
+              },
+              "contrary_evidence": {
+                "type": "string",
+                "maxLength": 12000
+              }
+            }
+          }
+        },
+        "market_sources": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "input_digest"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "version": {
+                "type": "integer",
+                "enum": [
+                  1
+                ]
+              },
+              "input_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "market_context": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "technical_case": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "catalyst": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "company_risk": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "valuation_assumptions": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "liquidity": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "nav_context": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "portfolio_impact": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "contrary_case": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "missing_inputs": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchEntryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "evidence": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+}
+)[];
+  "market_sources": (
+{
+  "id": string;
+  "version": 1;
+  "input_digest": string;
+}
+)[];
+  "market_context": string;
+  "technical_case": string;
+  "catalyst": string;
+  "company_risk": string;
+  "valuation_assumptions": string;
+  "liquidity": string;
+  "nav_context": string;
+  "portfolio_impact": string;
+  "contrary_case": string;
+  "missing_inputs": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentResearchPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "instrument_id",
+              "account_id",
+              "title",
+              "horizon",
+              "archived",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "horizon": {
+                "type": "string",
+                "enum": [
+                  "short",
+                  "swing"
+                ]
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "archived": boolean;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentResearchHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "request_key",
+              "instrument_id",
+              "account_id",
+              "title",
+              "horizon",
+              "evidence",
+              "market_sources",
+              "market_context",
+              "technical_case",
+              "catalyst",
+              "company_risk",
+              "valuation_assumptions",
+              "liquidity",
+              "nav_context",
+              "portfolio_impact",
+              "contrary_case",
+              "missing_inputs",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "horizon": {
+                "type": "string",
+                "enum": [
+                  "short",
+                  "swing"
+                ]
+              },
+              "evidence": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "title",
+                    "content",
+                    "locator",
+                    "source_url",
+                    "available_at",
+                    "contrary_evidence"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    },
+                    "content": {
+                      "type": "string",
+                      "maxLength": 12000,
+                      "minLength": 1
+                    },
+                    "locator": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "source_url": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "format": "uri",
+                          "pattern": "^https?://"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "available_at": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time"
+                    },
+                    "contrary_evidence": {
+                      "type": "string",
+                      "maxLength": 12000
+                    }
+                  }
+                }
+              },
+              "market_sources": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "version",
+                    "input_digest"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "version": {
+                      "type": "integer",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              },
+              "market_context": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "technical_case": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "catalyst": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "company_risk": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "valuation_assumptions": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "liquidity": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "nav_context": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "portfolio_impact": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "contrary_case": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "missing_inputs": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "title": string;
+  "horizon": "short" | "swing";
+  "evidence": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+}
+)[];
+  "market_sources": (
+{
+  "id": string;
+  "version": 1;
+  "input_digest": string;
+}
+)[];
+  "market_context": string;
+  "technical_case": string;
+  "catalyst": string;
+  "company_risk": string;
+  "valuation_assumptions": string;
+  "liquidity": string;
+  "nav_context": string;
+  "portfolio_impact": string;
+  "contrary_case": string;
+  "missing_inputs": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": number;
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentMarketInputSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -79461,6 +81227,17 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentMarketWorkEnvelope",
   "LightTickInvestmentMarketWrite",
   "LightTickInvestmentOpening",
+  "LightTickInvestmentResearchEntry",
+  "LightTickInvestmentResearchEntryEnvelope",
+  "LightTickInvestmentResearchEvidence",
+  "LightTickInvestmentResearchHistory",
+  "LightTickInvestmentResearchHistoryEnvelope",
+  "LightTickInvestmentResearchMarketSource",
+  "LightTickInvestmentResearchPage",
+  "LightTickInvestmentResearchPageEnvelope",
+  "LightTickInvestmentResearchRevision",
+  "LightTickInvestmentResearchSummary",
+  "LightTickInvestmentResearchWrite",
   "LightTickKnowledgeEntry",
   "LightTickKnowledgeEntryEnvelope",
   "LightTickKnowledgeHistory",

@@ -1,3 +1,4 @@
+import {InMemoryResearchStore} from "./in-memory-research-store.ts";
 import {InMemoryMarketStore} from "./in-memory-market-store.ts";
 import {InMemoryInvestmentLedgerStore} from "./in-memory-investment-ledger-store.ts";
 import type {
@@ -12,6 +13,7 @@ const key = (o: LightTickOwner, id: string) =>
   prefix = (o: LightTickOwner) =>
     JSON.stringify([o.appId, o.userId]).slice(0, -1) + ",";
 export class InMemoryInvestmentStore implements InvestmentRepository {
+  readonly research=new InMemoryResearchStore();
   readonly market=new InMemoryMarketStore();
   readonly ledger=new InMemoryInvestmentLedgerStore();
   private symbols = new Map<string, InvestmentInstrument>();
@@ -78,6 +80,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
   }
   snapshot() {
     return structuredClone({
+      research:this.research.snapshot(),
       market:this.market.state(),
       ledger:this.ledger.snapshot(),
       symbols: [...this.symbols],
@@ -85,12 +88,14 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     });
   }
   restore(v: ReturnType<InMemoryInvestmentStore["snapshot"]>) {
+    this.research.restore(v.research);
     this.market.restore(v.market);
     this.ledger.restore(v.ledger);
     this.symbols = new Map(v.symbols);
     this.wallets = new Map(v.wallets);
   }
   deleteOwner(o: LightTickOwner) {
+    this.research.deleteOwner(o);
     this.market.deleteOwner(o);
     this.ledger.deleteOwner(o);
     for (const map of [this.symbols, this.wallets])

@@ -42,6 +42,300 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/investments/research:
+    get:
+      operationId: listInvestmentResearch
+      tags:
+      - lighttick-investments
+      summary: listInvestmentResearch
+      description: Owner-only versioned research dossier. No account required. CAS and original request
+        receipts; explicit archive/restore. Snapshot sources bind owner, instrument, revision and digest.
+        No fetching of supplied URLs, asset mutation, automatic actions or new generic sync entities.
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: instrument_id
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - name: include_archived
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/research/{resourceId}:
+    get:
+      operationId: readInvestmentResearch
+      tags:
+      - lighttick-investments
+      summary: readInvestmentResearch
+      description: Owner-only versioned research dossier. No account required. CAS and original request
+        receipts; explicit archive/restore. Snapshot sources bind owner, instrument, revision and digest.
+        No fetching of supplied URLs, asset mutation, automatic actions or new generic sync entities.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: saveInvestmentResearch
+      tags:
+      - lighttick-investments
+      summary: saveInvestmentResearch
+      description: Owner-only versioned research dossier. No account required. CAS and original request
+        receipts; explicit archive/restore. Snapshot sources bind owner, instrument, revision and digest.
+        No fetching of supplied URLs, asset mutation, automatic actions or new generic sync entities.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentResearchWrite'
+  /api/v1/lighttick/investments/research/{resourceId}/history:
+    get:
+      operationId: readInvestmentResearchHistory
+      tags:
+      - lighttick-investments
+      summary: readInvestmentResearchHistory
+      description: Owner-only versioned research dossier. No account required. CAS and original request
+        receipts; explicit archive/restore. Snapshot sources bind owner, instrument, revision and digest.
+        No fetching of supplied URLs, asset mutation, automatic actions or new generic sync entities.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 10
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchHistoryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/research/{resourceId}/archive:
+    post:
+      operationId: archiveInvestmentResearch
+      tags:
+      - lighttick-investments
+      summary: archiveInvestmentResearch
+      description: Owner-only versioned research dossier. No account required. CAS and original request
+        receipts; explicit archive/restore. Snapshot sources bind owner, instrument, revision and digest.
+        No fetching of supplied URLs, asset mutation, automatic actions or new generic sync entities.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentResearchRevision'
+  /api/v1/lighttick/investments/research/{resourceId}/restore:
+    post:
+      operationId: restoreInvestmentResearch
+      tags:
+      - lighttick-investments
+      summary: restoreInvestmentResearch
+      description: Owner-only versioned research dossier. No account required. CAS and original request
+        receipts; explicit archive/restore. Snapshot sources bind owner, instrument, revision and digest.
+        No fetching of supplied URLs, asset mutation, automatic actions or new generic sync entities.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchEntryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentResearchRevision'
   /api/v1/lighttick/investments/market/capabilities:
     get:
       operationId: getMarketCapabilities
@@ -17387,5 +17681,404 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickInvestmentMarketCapabilities'
+        requestId:
+          type: string
+    LightTickInvestmentResearchEvidence:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - content
+      - locator
+      - source_url
+      - available_at
+      - contrary_evidence
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        content:
+          type: string
+          maxLength: 12000
+          minLength: 1
+        locator:
+          type: string
+          maxLength: 1000
+        source_url:
+          anyOf:
+          - type: string
+            maxLength: 2000
+            format: uri
+            pattern: ^https?://
+          - type: 'null'
+        available_at:
+          type: string
+          maxLength: 40
+          format: date-time
+        contrary_evidence:
+          type: string
+          maxLength: 12000
+    LightTickInvestmentResearchMarketSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - input_digest
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        version:
+          type: integer
+          enum:
+          - 1
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentResearchWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - instrument_id
+      - account_id
+      - title
+      - horizon
+      - evidence
+      - market_sources
+      - market_context
+      - technical_case
+      - catalyst
+      - company_risk
+      - valuation_assumptions
+      - liquidity
+      - nav_context
+      - portfolio_impact
+      - contrary_case
+      - missing_inputs
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        horizon:
+          type: string
+          enum:
+          - short
+          - swing
+        evidence:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchEvidence'
+        market_sources:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchMarketSource'
+        market_context:
+          type: string
+          maxLength: 12000
+        technical_case:
+          type: string
+          maxLength: 12000
+        catalyst:
+          type: string
+          maxLength: 12000
+        company_risk:
+          type: string
+          maxLength: 12000
+        valuation_assumptions:
+          type: string
+          maxLength: 12000
+        liquidity:
+          type: string
+          maxLength: 12000
+        nav_context:
+          type: string
+          maxLength: 12000
+        portfolio_impact:
+          type: string
+          maxLength: 12000
+        contrary_case:
+          type: string
+          maxLength: 12000
+        missing_inputs:
+          type: string
+          maxLength: 12000
+    LightTickInvestmentResearchEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - request_key
+      - instrument_id
+      - account_id
+      - title
+      - horizon
+      - evidence
+      - market_sources
+      - market_context
+      - technical_case
+      - catalyst
+      - company_risk
+      - valuation_assumptions
+      - liquidity
+      - nav_context
+      - portfolio_impact
+      - contrary_case
+      - missing_inputs
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key:
+          type: string
+          minLength: 8
+          maxLength: 128
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        horizon:
+          type: string
+          enum:
+          - short
+          - swing
+        evidence:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchEvidence'
+        market_sources:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchMarketSource'
+        market_context:
+          type: string
+          maxLength: 12000
+        technical_case:
+          type: string
+          maxLength: 12000
+        catalyst:
+          type: string
+          maxLength: 12000
+        company_risk:
+          type: string
+          maxLength: 12000
+        valuation_assumptions:
+          type: string
+          maxLength: 12000
+        liquidity:
+          type: string
+          maxLength: 12000
+        nav_context:
+          type: string
+          maxLength: 12000
+        portfolio_impact:
+          type: string
+          maxLength: 12000
+        contrary_case:
+          type: string
+          maxLength: 12000
+        missing_inputs:
+          type: string
+          maxLength: 12000
+        archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentResearchRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 99
+    LightTickInvestmentResearchSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - account_id
+      - title
+      - horizon
+      - archived
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        account_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        horizon:
+          type: string
+          enum:
+          - short
+          - swing
+        archived:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentResearchPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchSummary'
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentResearchHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchEntry'
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentResearchEntryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchEntry'
+        requestId:
+          type: string
+    LightTickInvestmentResearchPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchPage'
+        requestId:
+          type: string
+    LightTickInvestmentResearchHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchHistory'
         requestId:
           type: string

@@ -26,6 +26,7 @@ export interface InvestmentAccount {
   updated_at: string;
 }
 export interface InvestmentRepository {
+ readonly research: import("./research/research.types.ts").ResearchRepository;
  readonly market: import("./market/market-work.types.ts").MarketRepository;
   readonly ledger: import("./ledger.types.ts").InvestmentLedgerRepository;
   instrument(
