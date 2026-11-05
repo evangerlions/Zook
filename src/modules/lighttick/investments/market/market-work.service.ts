@@ -11,6 +11,7 @@ import {
   fail,
 } from "../../learning/native-learning.validation.ts";
 import { marketDate, shanghaiClock } from "./market.validation.ts";
+function requestDate(value:unknown):string {try{return marketDate(value);}catch{fail(422,'Market dates must be valid YYYY-MM-DD values.');}}
 export const MARKET_WORK_JOB = "lighttick.investment.market";
 export const MARKET_LIMITS = {
   jobs: 1000,
@@ -61,8 +62,8 @@ export class MarketWorkService extends InvestmentService {
     const id = investmentId(b.instrument_id),
       base = integer(b.base_revision, 1, 2147483646),
       supplier = text(b.supplier, 16, true) as MarketInput["supplier"],
-      start = marketDate(b.start),
-      end = marketDate(b.end);
+      start = requestDate(b.start),
+      end = requestDate(b.end);
     if (
       !["csv", "tushare", "eastmoney", "tencent"].includes(supplier) ||
       start > end ||

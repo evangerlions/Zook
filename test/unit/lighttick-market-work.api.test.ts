@@ -154,4 +154,6 @@ test("market HTTP contract publishes owner-only CSV snapshots without requiring 
     ).statusCode,
     422,
   );
+  for(const start of ['bad-date','2026-02-30',42])assert.equal((await call('market/work','POST',{...b,start},'market-http-invalid-date-'+String(start))).statusCode,422);
+
 });
