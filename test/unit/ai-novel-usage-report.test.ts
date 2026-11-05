@@ -270,3 +270,27 @@ test("known paid expiry inside a window excludes it without needing a later clie
   ];
   assert.equal(buildUsageReport(source, filter).tiers[1]?.windows, 0);
 });
+
+test("grant-only account does not appear as a real weekly allowance snapshot", async () => {
+  const store = new InMemoryAiNovelCreditsStore();
+  const credits = new AiNovelCreditsService(store, async () => "pro", undefined, () => new Date(filter.from));
+  await credits.grant("new-user", "admin-id", 5, "admin");
+  const source = await store.readUsageReport({ ...filter, userId: "new-user" });
+  const report = buildUsageReport(source, { ...filter, userId: "new-user" });
+  assert.equal(report.users[0]?.tier, null);
+  assert.equal(report.users[0]?.balance, null);
+  assert.deepEqual(report.detailEvents, []);
+  assert.equal(report.summary.activeUsers, 0);
+  assert.equal((await store.listAdminGrants(0, 50))[0]?.points, 5);
+});
+
+test("a gift-only account initializes a paid weekly window as stable on first use", async () => {
+  const store = new InMemoryAiNovelCreditsStore();
+  const service = new AiNovelCreditsService(store, async () => "pro", undefined, () => new Date(filter.from));
+  await service.grant("paid-new", "grant-first", 5, "admin");
+  await service.begin("paid-new", "job", "request");
+  const source = await store.readUsageReport({ from: filter.from, to: "2026-10-10T00:00:00.000Z" });
+  assert.equal(source.windows.length, 1);
+  assert.equal(source.windows[0]?.tier, "pro");
+  assert.equal(source.windows[0]?.stable, true);
+});

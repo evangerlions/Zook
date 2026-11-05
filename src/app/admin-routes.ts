@@ -1,3 +1,4 @@
+import { tryHandleAdminAiNovelCreditRoutes } from "./admin-ai-novel-credit-routes.ts";
 import { tryHandleFrogSleepAdminRoutes } from "./frogsleep-admin-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -33,6 +34,7 @@ const adminRouteHandlers = [
   tryHandleAdminReleaseUpdateRoutes,
   tryHandleAdminBillingRoutes,
   tryHandleAdminAiNovelUsageRoutes,
+  tryHandleAdminAiNovelCreditRoutes,
   tryHandleBodyLogCheckinAdminRoutes,
 ];
 

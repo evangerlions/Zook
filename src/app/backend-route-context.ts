@@ -1,3 +1,4 @@
+import { AiNovelCreditAdminService } from "../services/ai-novel-credit-admin.service.ts";
 import { assertSleepGuestRequest } from "../modules/frogsleep/guest/guest-access.ts";
 import { retryFrogSleepAdminNotification, type FrogSleepAdminRetryCommand } from "../modules/frogsleep/admin/frogsleep-admin-retry.ts";
 import { timingSafeEqual } from "node:crypto";
@@ -74,6 +75,7 @@ export class BackendRouteContext {
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
   public readonly billingAdminService: BillingAdminService;
+  public readonly aiNovelCreditAdminService: AiNovelCreditAdminService;
   public readonly aiNovelUsageAdminService: AiNovelUsageAdminService;
 
   constructor(
@@ -99,6 +101,7 @@ export class BackendRouteContext {
     protected readonly adminSensitiveOperationService: AdminSensitiveOperationService,
     protected readonly aiNovelBillingService: AiNovelBillingService,
   ) {
+    this.aiNovelCreditAdminService = new AiNovelCreditAdminService(database, aiNovelBillingService);
     this.billingAdminService = new BillingAdminService(database);
     this.aiNovelUsageAdminService = new AiNovelUsageAdminService(database.aiNovelCreditsStore);
   }
