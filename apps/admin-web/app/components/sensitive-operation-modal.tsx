@@ -67,7 +67,7 @@ export function SensitiveOperationModal({
   return (
     <Modal
       cancelText="取消"
-      okButtonProps={{ loading: verifying, disabled: code.trim().length !== 6 }}
+      okButtonProps={{ "aria-label": "验证并继续", loading: verifying, disabled: code.trim().length !== 6 }}
       okText="验证并继续"
       onCancel={onClose}
       onOk={() => void handleVerify()}
