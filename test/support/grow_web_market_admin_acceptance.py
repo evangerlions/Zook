@@ -16,10 +16,11 @@ with sync_playwright() as pw:
    else:route.continue_()
   page.route('**'+path,lose);card.get_by_role('button',name='更新 Tushare 凭据',exact=True).click()
   def verify():
-   dialog=page.get_by_role('dialog',name='确认更新服务端行情凭据');inputs=dialog.locator('input');expect(inputs).to_have_count(6)
+   dialog=page.get_by_role('dialog',name='确认更新服务端行情凭据');expect(dialog).to_be_visible();page.locator('.ant-modal-root').evaluate("async e=>{await Promise.all(e.getAnimations({subtree:true}).filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})))}");inputs=dialog.locator('input');expect(inputs).to_have_count(6)
+   for i in range(6):expect(inputs.nth(i)).to_have_value('')
    for i,d in enumerate('199510'):inputs.nth(i).fill(d)
-   dialog.get_by_role('button',name='验证并继续',exact=True).click();return dialog
-  dialog=verify();expect(card.get_by_text('本次提交尚未确认或已被拒绝。原请求仅保存在此页内存；请核对后重试原请求。',exact=True)).to_be_visible();page.unroute('**'+path,lose);dialog.get_by_role('button',name=re.compile(r'取\s*消')).click();expect(dialog).not_to_be_visible();assert len(original)==1
+   print('sensitive modal ready',flush=True);expect(dialog.get_by_role('button',name='验证并继续',exact=True)).to_be_enabled();dialog.get_by_role('button',name='验证并继续',exact=True).click();return dialog
+  dialog=verify();expect(card.get_by_text('本次提交尚未确认或已被拒绝。原请求仅保存在此页内存；请核对后重试原请求。',exact=True)).to_be_visible();page.unroute('**'+path,lose);dialog.get_by_role('button',name=re.compile(r'取\s*消')).click();expect(dialog).not_to_be_visible();page.wait_for_function("Array.from(document.querySelectorAll('.ant-modal-wrap')).every(e=>getComputedStyle(e).display==='none')");assert len(original)==1
   summary=c.request.get(a.url+path);assert summary.status==200 and secret not in summary.text();revision=summary.json()['data']['revision'];assert summary.json()['data']['configured']
   replay=[]
   def capture(route):

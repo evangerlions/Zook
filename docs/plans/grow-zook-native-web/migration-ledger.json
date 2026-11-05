@@ -3949,7 +3949,28 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/research"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "f8418f51129f729cbbb8c6900b440845698419d3",
+        "tests": [
+          "test/unit/lighttick-research.test.ts",
+          "test/unit/lighttick-research.api.test.ts",
+          "test/integration/lighttick-research-postgres.test.ts",
+          "test/support/grow_web_research_acceptance.py"
+        ],
+        "evidence": "docs/verification/grow-react-u1-20261103/u5-research.md",
+        "remaining": [
+          "Full original request/response and side-effect parity, including existing uncommitted legacy functionality.",
+          "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
+          "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3984,7 +4005,28 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/research/{resourceId}"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "f8418f51129f729cbbb8c6900b440845698419d3",
+        "tests": [
+          "test/unit/lighttick-research.test.ts",
+          "test/unit/lighttick-research.api.test.ts",
+          "test/integration/lighttick-research-postgres.test.ts",
+          "test/support/grow_web_research_acceptance.py"
+        ],
+        "evidence": "docs/verification/grow-react-u1-20261103/u5-research.md",
+        "remaining": [
+          "Full original request/response and side-effect parity, including existing uncommitted legacy functionality.",
+          "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
+          "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -4019,7 +4061,28 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/research/{resourceId}/history"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "f8418f51129f729cbbb8c6900b440845698419d3",
+        "tests": [
+          "test/unit/lighttick-research.test.ts",
+          "test/unit/lighttick-research.api.test.ts",
+          "test/integration/lighttick-research-postgres.test.ts",
+          "test/support/grow_web_research_acceptance.py"
+        ],
+        "evidence": "docs/verification/grow-react-u1-20261103/u5-research.md",
+        "remaining": [
+          "Full original request/response and side-effect parity, including existing uncommitted legacy functionality.",
+          "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
+          "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -12708,7 +12771,28 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "PUT",
+          "path": "/api/v1/lighttick/investments/research/{resourceId}"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "f8418f51129f729cbbb8c6900b440845698419d3",
+        "tests": [
+          "test/unit/lighttick-research.test.ts",
+          "test/unit/lighttick-research.api.test.ts",
+          "test/integration/lighttick-research-postgres.test.ts",
+          "test/support/grow_web_research_acceptance.py"
+        ],
+        "evidence": "docs/verification/grow-react-u1-20261103/u5-research.md",
+        "remaining": [
+          "Full original request/response and side-effect parity, including existing uncommitted legacy functionality.",
+          "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
+          "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -18305,7 +18389,28 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "PUT",
+          "path": "/api/v1/lighttick/investments/research/{resourceId}"
+        },
+        "page": "/grow/investments",
+        "backend_commit": "f8418f51129f729cbbb8c6900b440845698419d3",
+        "tests": [
+          "test/unit/lighttick-research.test.ts",
+          "test/unit/lighttick-research.api.test.ts",
+          "test/integration/lighttick-research-postgres.test.ts",
+          "test/support/grow_web_research_acceptance.py"
+        ],
+        "evidence": "docs/verification/grow-react-u1-20261103/u5-research.md",
+        "remaining": [
+          "Full original request/response and side-effect parity, including existing uncommitted legacy functionality.",
+          "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
+          "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
+        ]
+      }
     },
     {
       "method": "PUT",
