@@ -1296,7 +1296,13 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Personal model setup and browser/account scoped selection/test/cancel are not implemented in the React candidate. Platform model routing does not establish feature parity.",
+        "completion_gate": "Retain personal model choice and all applicable callers; verify secret ownership, settings UX, cancellation, late responses and account isolation."
+      }
     },
     {
       "method": "GET",
@@ -2304,7 +2310,13 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending."
+      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Personal model setup and browser/account scoped selection/test/cancel are not implemented in the React candidate. Platform model routing does not establish feature parity.",
+        "completion_gate": "Retain personal model choice and all applicable callers; verify secret ownership, settings UX, cancellation, late responses and account isolation."
+      }
     },
     {
       "method": "GET",
@@ -10886,7 +10898,13 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Personal model setup and browser/account scoped selection/test/cancel are not implemented in the React candidate. Platform model routing does not establish feature parity.",
+        "completion_gate": "Retain personal model choice and all applicable callers; verify secret ownership, settings UX, cancellation, late responses and account isolation."
+      }
     },
     {
       "method": "POST",
@@ -11678,7 +11696,13 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending."
+      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Personal model setup and browser/account scoped selection/test/cancel are not implemented in the React candidate. Platform model routing does not establish feature parity.",
+        "completion_gate": "Retain personal model choice and all applicable callers; verify secret ownership, settings UX, cancellation, late responses and account isolation."
+      }
     },
     {
       "method": "POST",
@@ -18282,7 +18306,13 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending."
+      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Personal model setup and browser/account scoped selection/test/cancel are not implemented in the React candidate. Platform model routing does not establish feature parity.",
+        "completion_gate": "Retain personal model choice and all applicable callers; verify secret ownership, settings UX, cancellation, late responses and account isolation."
+      }
     },
     {
       "method": "PUT",
