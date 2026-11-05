@@ -1,3 +1,4 @@
+import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
 import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
@@ -168,6 +169,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const marketResult=await handleMarketRequest(runtime,owner,request,assertActive);if(marketResult!==undefined){const result=response(context,request,marketResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);
   if(investmentResult!==undefined)return response(context,request,investmentResult);
   const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);

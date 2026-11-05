@@ -24,6 +24,8 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+ marketWork?:import("./investments/market/market-work.service.ts").MarketWorkService;
+ marketPolicy?:import("./investments/market/market-policy.service.ts").MarketPolicyService;
   investmentLedger?:import("./investments/ledger.service.ts").InvestmentLedgerService;
   learningWork?:LearningWorkService;
   nativeLearning:NativeLearningService;

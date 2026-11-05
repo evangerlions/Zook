@@ -39,3 +39,8 @@
 1. 复用 VersionedAppConfigService 的 LightTick admin.delivery_config 供应商配置、现有 KVManager 单值秘密路径和管理权限/audit；密钥不进入版本历史、公有配置或 worker 输入，管理 UI 沿用 Ant Design。配置读取以 provider＋修订为身份，切换不自动改源。
 2. 新增 owner＋instrument 的不可变行情数据集与持久 work，account 仅可选引用，保证无资产账本也可研究。新表加入共用删除/授权导出。接入现有 LightTickWorker，取得快照/租约后释放 owner 锁，再取数/计算；以 owner、标的版本、原请求、fence 再确认，取消与重启可恢复。不得把学习 route 或财务 account 当市场任务的必需外壳。
 3. 同切片提交 OpenAPI/生成合同、真实 CSV/选源/单位/历史快照/回测事实核对的 React 页面及 PG/Chrome 故障故事。只有明确公司行动、涨跌停/状态与时间线的输入才能完成回测；没有这些事实的普通日线显示 incomplete，不能自动补“正常”。完整市场快照、复权因子、筛选/研究/预测/监控/归档仍逐行为对照，不由基础模块代签。
+
+
+## 日线市场任务接线（本轮实施，待联合浏览器验收后留证）
+
+094 建立 owner＋instrument 的持久 work、不可变数据集与 NUMERIC 日线；不强制 financial account。平台 delivery config 管供应商开关，KV 单值秘密/既有 adminSession＋敏感授权管理 Tushare 凭据，密钥不进历史与任务。原请求接受与任务原子保存，原回执可重放到同一终态；现有 worker 锁外取数/CSV/指标，45 秒上限、owner 两并发、公平恢复、lease/fence 重查后原子发布。Grow 使用实际选源/CSV/单位/日期表单、历史表格和回执，不用 JSON 编辑器代替。公共合同、管理合同与文档已同步；正式任务表仍待该切片联合验收。完整研究/筛选/回测/纠错与全模块迁移、性能门禁继续未完成。

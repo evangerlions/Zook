@@ -774,3 +774,16 @@ LightTick 的专属与平台通用账号删除复用同一领域表清单，包�
 文件物理清理由既有 worker tick 处理 `zook_owner_file_purges`，每批最多 20、45 秒租约、fence、有限退避重试；不新增服务/队列凭据或 env。删除元数据时登记明确的 owner/storage_key，磁盘 IO 不占 owner 事务。仍有平台元数据引用的路径保留；只删除持久根内单个文件，不递归、不扫描其他历史、不跟随父目录逃逸。迟到学习文本上传必须重新核验有效 membership 与元数据，删除后不能确认上传；失败再次登记清理，防止先删后写遗留。平台文件只在 worker 恢复后最终清除，不能宣称事务提交瞬间物理擦除，也不覆盖数据库/文件备份的独立保留策略。
 
 验证只使用专用 localhost 数据库与临时合成文件；本轮未执行真实账号或真实文件清理。监控应观察 worker 聚合清理/重试/保留计数，不把正文、磁盘路径或凭据写入日志。
+
+## LightTick 行情供应商与凭据
+
+供应商开关复用现有 LightTick 项目版本化 `admin.delivery_config`（原 GET/PUT config 及 revisions/restore），字段 `investment_market.providers.{csv,tushare,eastmoney,tencent}.enabled`，不新增配置库或 env。同一供应商只能有 enabled，不接受 token、host、重试或备用源字段；写入和恢复都会校验，凭据不能进入这段配置的版本历史。缺省 CSV=true，其余=false；一个来源失败不切到另一个来源。
+
+服务端凭据使用平台 KVManager 的单值秘密路径，单独权限与审计：
+
+- `GET /api/v1/admin/apps/lighttick/market-providers/tushare-credential`：必须现有 adminSession；仅 revision/configured/updated_at，no-store，不提供 reveal。
+- `PUT` 同路径：必须 adminSession＋`lighttick.market.credentials.write` 敏感授权；原 Idempotency-Key 8–128、base_revision（0 为未配置）、token 字符串或 null（移除）。CASKV 原子写，冲突 409 保留原请求。最近 32 次原回执只保存 key/body hash 与结果元数据，旧回执淘汰后仍受版本拒绝，不再次旋转。token 不进版本历史、审计 payload、公开能力或任务输入；响应永不返回明文。
+
+Admin LightTick 页面使用 Ant Design 提供状态核对、更新/移除、二次授权和原请求重试；输入只留当前页内存，不写 localStorage 或自动重发。未知结果需保留此页并重试原 key/body；关闭页面丢失敏感输入后先核对版本，不能假定上一请求未生效。关闭未发送的授权弹窗可重新编辑；已发出的不确定请求保留到核对处理。权限/审计复用原体系。
+
+唯一管理合同为 `api-contracts/openapi/common/lighttick-market-admin.yaml`；不混入普通客户端配置或 Grow 合同快照。用户端只知道所选来源是否启用及凭据是否具备，不接收凭据值。当前本地验收仅合成凭据，无真实供应商网络请求或配置/发布变更。

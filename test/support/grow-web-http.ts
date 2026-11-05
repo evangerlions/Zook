@@ -1,3 +1,6 @@
+import {MarketWorkRunner} from "../../src/modules/lighttick/investments/market/market-work.runner.ts";
+import {DailyMarketAdapter} from "../../src/modules/lighttick/investments/market/market.adapter.ts";
+import {MarketTransport} from "../../src/modules/lighttick/investments/market/market.transport.ts";
 /** Disposable localhost-only HTTP/PG integration runtime; never imported by production. */
 import { LightTickWorker } from '../../src/modules/lighttick/lighttick-worker.ts';
 import { LearningWorkRunner } from '../../src/modules/lighttick/learning/learning-work.runner.ts';
@@ -25,7 +28,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   seed.appUsers.push({id:'grow-course-'+n,appId:'lighttick',userId,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
  }
  const config=seed.appConfigs.find(c=>c.appId==='lighttick'&&c.configKey==='admin.delivery_config')!;
- const value=JSON.parse(config.configValue);value.enabled=true;value.featureFlags.conversationalPlanning=true;config.configValue=JSON.stringify(value);
+ const value=JSON.parse(config.configValue);value.enabled=true;value.investment_market={providers:{csv:{enabled:true},eastmoney:{enabled:true},tushare:{enabled:false},tencent:{enabled:false}}};value.featureFlags.conversationalPlanning=true;config.configValue=JSON.stringify(value);
  if(process.env.GROW_WEB_TEST_PORT){value.settings={...value.settings,growWebUrl:'http://127.0.0.1:'+process.env.GROW_WEB_TEST_PORT+'/grow/'};config.configValue=JSON.stringify(value);}
 }
 const app = await createApplication({ seed, lighttickEnabled: true, lighttickRepository: repository, secureRefreshCookie: false, refreshCookieSameSite: 'Lax', fileStorageRoot: '.artifacts/grow-unified-20261103/fixture-files' });
@@ -45,7 +48,8 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
    return { provider: 'synthetic', providerModel: 'synthetic', text: JSON.stringify(input.messages.some((m: any) => m.content.includes('"planning_action":"messages"')) ? {message: '请核对投入与日期，再审阅草案。',fields: {}} : {tasks: [{title:'合成规划步骤',estimated_minutes:5,scheduled_for:'2030-01-01T09:00:00Z',completion_criteria:'写下一条具体结论',steps:['打开笔记','写下结论']}]}) };
   }} as any;
   const learning=runtime.worker!.learning!;
-  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,llm),undefined,new LearningWorkRunner(runtime.learningWork!,llm,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments);
+  const market=new MarketWorkRunner(runtime.marketWork!,new DailyMarketAdapter(s=>runtime.marketPolicy!.policy(s),new MarketTransport(async()=>new Response('{"synthetic":"unavailable"}',{status:503}))),runtime.worker!.market!.authorizeOwner);
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,llm),undefined,new LearningWorkRunner(runtime.learningWork!,llm,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments,market);
   let running=false,lastRecovery=0;
   queueTimer=setInterval(()=>{if(running)return;running=true;void (async()=>{if(Date.now()-lastRecovery>1000){lastRecovery=Date.now();await runtime.worker!.recover();}await app.queue.processDueJobs(job=>runtime.worker!.process(job),new Date());})().catch(()=>{}).finally(()=>{running=false;});},100);
 

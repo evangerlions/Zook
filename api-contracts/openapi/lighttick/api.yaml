@@ -42,6 +42,256 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/investments/market/capabilities:
+    get:
+      operationId: getMarketCapabilities
+      tags:
+      - lighttick-investments
+      summary: getMarketCapabilities
+      description: Registered owner only. No asset account required. Immutable daily snapshots and durable
+        work receipts. Exact decimal strings; credentials never reach clients. Original request identity
+        retained; no fallback source and no new generic sync entity.
+      parameters: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMarketCapabilitiesEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/market/work:
+    post:
+      operationId: createDailyMarketWork
+      tags:
+      - lighttick-investments
+      summary: createDailyMarketWork
+      description: Registered owner only. No asset account required. Immutable daily snapshots and durable
+        work receipts. Exact decimal strings; credentials never reach clients. Original request identity
+        retained; no fallback source and no new generic sync entity.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMarketWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentMarketWrite'
+  /api/v1/lighttick/investments/market/work/{resourceId}:
+    get:
+      operationId: readDailyMarketWork
+      tags:
+      - lighttick-investments
+      summary: readDailyMarketWork
+      description: Registered owner only. No asset account required. Immutable daily snapshots and durable
+        work receipts. Exact decimal strings; credentials never reach clients. Original request identity
+        retained; no fallback source and no new generic sync entity.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMarketWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/market/work/{resourceId}/cancel:
+    post:
+      operationId: cancelDailyMarketWork
+      tags:
+      - lighttick-investments
+      summary: cancelDailyMarketWork
+      description: Registered owner only. No asset account required. Immutable daily snapshots and durable
+        work receipts. Exact decimal strings; credentials never reach clients. Original request identity
+        retained; no fallback source and no new generic sync entity.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMarketWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentLedgerCancel'
+  /api/v1/lighttick/investments/market/snapshots:
+    get:
+      operationId: listDailyMarketSnapshots
+      tags:
+      - lighttick-investments
+      summary: listDailyMarketSnapshots
+      description: Registered owner only. No asset account required. Immutable daily snapshots and durable
+        work receipts. Exact decimal strings; credentials never reach clients. Original request identity
+        retained; no fallback source and no new generic sync entity.
+      parameters:
+      - name: instrument_id
+        in: query
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMarketPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/investments/market/snapshots/{resourceId}:
+    get:
+      operationId: readDailyMarketSnapshot
+      tags:
+      - lighttick-investments
+      summary: readDailyMarketSnapshot
+      description: Registered owner only. No asset account required. Immutable daily snapshots and durable
+        work receipts. Exact decimal strings; credentials never reach clients. Original request identity
+        retained; no fallback source and no new generic sync entity.
+      parameters:
+      - name: resourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMarketSnapshotEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/investments/accounts/{resourceId}/events:
     post:
       operationId: appendInvestmentLedgerEvent
@@ -16503,5 +16753,639 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickInvestmentLedgerPage'
+        requestId:
+          type: string
+    LightTickInvestmentMarketInput:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - base_revision
+      - supplier
+      - start
+      - end
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        declared_source:
+          type: string
+          minLength: 1
+          maxLength: 200
+        volume_unit:
+          type: string
+          enum:
+          - shares
+          - lots100
+        amount_unit:
+          type: string
+          enum:
+          - CNY
+          - thousand_CNY
+          - ten_thousand_CNY
+    LightTickInvestmentMarketWrite:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - instrument_id
+        - base_revision
+        - supplier
+        - start
+        - end
+        - csv
+        - declared_source
+        - volume_unit
+        - amount_unit
+        properties:
+          instrument_id:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          supplier:
+            type: string
+            enum:
+            - csv
+          start:
+            type: string
+            format: date
+          end:
+            type: string
+            format: date
+          csv:
+            type: string
+            minLength: 1
+            maxLength: 256000
+          declared_source:
+            type: string
+            minLength: 1
+            maxLength: 200
+          volume_unit:
+            type: string
+            enum:
+            - shares
+            - lots100
+          amount_unit:
+            type: string
+            enum:
+            - CNY
+            - thousand_CNY
+            - ten_thousand_CNY
+      - type: object
+        additionalProperties: false
+        required:
+        - instrument_id
+        - base_revision
+        - supplier
+        - start
+        - end
+        properties:
+          instrument_id:
+            type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          base_revision:
+            type: integer
+            minimum: 1
+            maximum: 2147483647
+          supplier:
+            type: string
+            enum:
+            - tushare
+            - eastmoney
+            - tencent
+          start:
+            type: string
+            format: date
+          end:
+            type: string
+            format: date
+    LightTickInvestmentMarketBar:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - open
+      - high
+      - low
+      - close
+      - volume_shares
+      - amount_cny
+      - turnover_rate_pct
+      properties:
+        date:
+          type: string
+          format: date
+        open:
+          type: string
+          maxLength: 120
+        high:
+          type: string
+          maxLength: 120
+        low:
+          type: string
+          maxLength: 120
+        close:
+          type: string
+          maxLength: 120
+        volume_shares:
+          type: string
+          maxLength: 120
+        amount_cny:
+          type: string
+          maxLength: 120
+        turnover_rate_pct:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+    LightTickInvestmentMarketIndicators:
+      type: object
+      additionalProperties: false
+      required:
+      - price_basis
+      - algorithm_version
+      - ma5
+      - ma20
+      - volume_ratio_5
+      - atr14
+      - record_return_std20
+      - return_sample_count
+      - limitations
+      properties:
+        price_basis:
+          type: string
+          enum:
+          - unadjusted
+        algorithm_version:
+          type: string
+          maxLength: 240
+        ma5:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        ma20:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        volume_ratio_5:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        atr14:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        record_return_std20:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        return_sample_count:
+          type: integer
+          minimum: 0
+          maximum: 20
+        limitations:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 240
+    LightTickInvestmentMarketDataset:
+      type: object
+      additionalProperties: false
+      required:
+      - supplier
+      - adapter_version
+      - policy_revision
+      - instrument_id
+      - code
+      - market
+      - kind
+      - start
+      - end
+      - price_basis
+      - realtime
+      - retrieved_at
+      - available_at
+      - source_units
+      - calendar
+      - missing_sessions
+      - bars
+      - input_digest
+      - limitations
+      properties:
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        adapter_version:
+          type: string
+          maxLength: 240
+        policy_revision:
+          type: string
+          maxLength: 240
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        code:
+          type: string
+          maxLength: 32
+        market:
+          type: string
+          enum:
+          - SSE
+          - SZSE
+        kind:
+          type: string
+          enum:
+          - stock
+          - etf
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        price_basis:
+          type: string
+          enum:
+          - unadjusted
+        realtime:
+          type: boolean
+          enum:
+          - false
+        retrieved_at:
+          type: string
+          format: date-time
+        available_at:
+          type: string
+          format: date-time
+        source_units:
+          type: object
+          additionalProperties: false
+          required:
+          - volume
+          - amount
+          properties:
+            volume:
+              type: string
+              maxLength: 240
+            amount:
+              type: string
+              maxLength: 240
+        calendar:
+          type: object
+          maxProperties: 20
+          additionalProperties: true
+        missing_sessions:
+          anyOf:
+          - type: array
+            maxItems: 370
+            items:
+              type: string
+              format: date
+          - type: 'null'
+        bars:
+          type: array
+          maxItems: 1000
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMarketBar'
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        limitations:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 240
+        declared_source:
+          type: string
+          maxLength: 200
+        raw_input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentMarketWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - instrument_id
+      - base_revision
+      - revision
+      - input
+      - status
+      - attempt
+      - error_code
+      - snapshot_id
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        input:
+          $ref: '#/components/schemas/LightTickInvestmentMarketInput'
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        snapshot_id:
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentMarketSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - instrument_revision
+      - work_id
+      - created_at
+      - dataset
+      - indicators
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          enum:
+          - 1
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        work_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        dataset:
+          $ref: '#/components/schemas/LightTickInvestmentMarketDataset'
+        indicators:
+          $ref: '#/components/schemas/LightTickInvestmentMarketIndicators'
+    LightTickInvestmentMarketSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - instrument_revision
+      - work_id
+      - created_at
+      - supplier
+      - input_digest
+      - start
+      - end
+      - bar_count
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          enum:
+          - 1
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        work_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        bar_count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+    LightTickInvestmentMarketPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMarketSummary'
+        revision:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentMarketCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+      - suppliers
+      properties:
+        suppliers:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - supplier
+            - enabled
+            - credential_configured
+            - revision
+            properties:
+              supplier:
+                type: string
+                enum:
+                - csv
+                - tushare
+                - eastmoney
+                - tencent
+              enabled:
+                type: boolean
+              credential_configured:
+                type: boolean
+              revision:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentMarketWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketWork'
+        requestId:
+          type: string
+    LightTickInvestmentMarketSnapshotEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketSnapshot'
+        requestId:
+          type: string
+    LightTickInvestmentMarketPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketPage'
+        requestId:
+          type: string
+    LightTickInvestmentMarketCapabilitiesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMarketCapabilities'
         requestId:
           type: string

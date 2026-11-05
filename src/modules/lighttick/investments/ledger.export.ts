@@ -1,3 +1,4 @@
+import {exportMarket} from "./market/market.export.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import { fail } from "../learning/native-learning.validation.ts";
@@ -48,5 +49,5 @@ export async function exportInvestments(
     }
     ledgers.push({ account_id: a.id, events, receipts });
   }
-  return { instruments, accounts, ledgers };
+  return { instruments, accounts, ledgers, market:await exportMarket(repo,o) };
 }

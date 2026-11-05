@@ -1,3 +1,4 @@
+import {validateMarketDeliveryConfig} from "../lighttick/investments/market/market-policy.service.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
@@ -232,6 +233,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     const app = await this.requireConfigApp(appId);
     const normalized = cleanAiNovelRevenueCatConfig(app.id, normalizeConfig(rawJson));
     validateAiNovelAlipayPricing(app.id, normalized);
+    validateMarketDeliveryConfig(app.id,normalized);
 
     await this.appConfigService.setValue(
       app.id,
@@ -251,6 +253,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
     validateAiNovelAlipayPricing(app.id, existing.content);
+    validateMarketDeliveryConfig(app.id,existing.content);
     await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);

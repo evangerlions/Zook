@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "common/lighttick-market-admin.yaml": ["LightTickMarketCredentialWrite", "LightTickMarketCredentialSummary", "LightTickMarketCredentialEnvelope"],
     "yaohezi/api.yaml": ['YaoheziMeData', 'YaoheziHealthChallengeRequest', 'YaoheziHealthRecoveryRequest', 'YaoheziHealthBootstrapRequest', 'YaoheziHealthSessionRequest', 'YaoheziHealthRecoverRequest', 'YaoheziHealthEnrollRequest', 'YaoheziHealthInspectRequest', 'YaoheziHealthRevokeDeviceRequest', 'YaoheziHealthRotateKeysRequest', 'YaoheziHealthLogoutRequest', 'YaoheziHealthKeyCapsulesRequest', 'YaoheziHealthVerifyOperationRequest', 'YaoheziHealthRevision', 'YaoheziHealthKeyCapsule', 'YaoheziHealthInspectData', 'YaoheziHealthChallengeData', 'YaoheziHealthSessionData', 'YaoheziHealthRecoveryData', 'YaoheziHealthCloseSessionsRequest', 'YaoheziHealthCloseSessionsData'],
     "common/auth.yaml": [
         "PasswordLoginRequest",
@@ -276,6 +277,20 @@ SPECS: dict[str, list[str]] = {
         'LightTickInvestmentLedgerCancel',
         'LightTickInvestmentLedgerWorkEnvelope',
         'LightTickInvestmentLedgerPageEnvelope',
+        'LightTickInvestmentMarketInput',
+        'LightTickInvestmentMarketWrite',
+        'LightTickInvestmentMarketBar',
+        'LightTickInvestmentMarketIndicators',
+        'LightTickInvestmentMarketDataset',
+        'LightTickInvestmentMarketWork',
+        'LightTickInvestmentMarketSnapshot',
+        'LightTickInvestmentMarketSummary',
+        'LightTickInvestmentMarketPage',
+        'LightTickInvestmentMarketCapabilities',
+        'LightTickInvestmentMarketWorkEnvelope',
+        'LightTickInvestmentMarketSnapshotEnvelope',
+        'LightTickInvestmentMarketPageEnvelope',
+        'LightTickInvestmentMarketCapabilitiesEnvelope',
         'LightTickInvestmentOpening',
         'LightTickInvestmentInstrumentWrite',
         'LightTickInvestmentInstrument',

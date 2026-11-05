@@ -1798,3 +1798,20 @@ AI 复用平台 learning_route/learning_lesson 场景与模型路由，30 秒上
 沿用现有 `lighttick.investment.ledger` worker。owner 事务内取得待办快照/2 分钟租约，60 位 half-even 移动平均计算在事务外；提交再次确认 membership、账户 CAS、标的可用、租约 fence。超额卖出失败；未知费用/基金实际结算/持仓成本与缺失价格保留未知，不能默认为零。当前 `valuation=unpriced`，不取实时行情、不声称当前净值；算法为 `moving-average-decimal60-half-even-v1`。每账户最多 10000 正式事件、1000 历史命令，超过明确 413；崩溃有界恢复 3 次，取消/失权/版本变化直接终态。无新服务、无任意策略执行。
 
 `GET /api/v1/lighttick/review/export` 的授权数据 JSON 新增 investments：本人标的、账户期初、正式流水和领域命令原 key/body/终态；不含 queue lease/fence、密钥或平台配置，投资部分最多 5000 行，全包仍有 8 MiB 门槛，超限明确拒绝而非截断。账号/应用删除共用清理清单同时覆盖事件、命令、期初和标的。
+
+### LightTick 日线行情任务与不可变数据集
+
+Canonical 前缀 `/api/v1/lighttick/investments/market/`，仅已注册 owner，`Cache-Control: no-store`。标的属于本人即可，不要求建立资产账户。新实体不进入旧客户端 generic pull/push，task-only push 不变。
+
+- `GET capabilities`：CSV/Tushare/东方财富/腾讯各自 enabled、credential_configured 和非敏感 policy revision；不返回密钥、管理配置或原始供应商错误。默认 CSV 可用，远程供应商默认关闭，Tushare 需服务端凭据。
+- `POST work`（原 Idempotency-Key 8–128）：instrument_id、base_revision（标的修订）、supplier、start、end。CSV 另需 csv、declared_source、volume_unit=shares/lots100、amount_unit=CNY/thousand_CNY/ten_thousand_CNY；网络源不得夹带 CSV 或凭据字段。最大 370 自然日、CSV 256000 UTF-8 字节/1000 行，拒绝未来或未完成当日日线。CSV 字节原样保留，解析与指标在 worker 中完成，HTTP 接受不代表已发布数据。
+- `GET work/{resourceId}`：持久状态 queued/running/succeeded/failed/cancelled、revision、原 base_revision、输入摘要（不含 CSV 正文）、attempt、error_code 和 snapshot_id。Common operation 接受回执不可变，领域 work 是终态真值；同资源/原 body/key 重试返回同 work 当前回执，不重建请求。
+- `POST work/{resourceId}/cancel`：base_revision 是**任务回执修订**，独立原 key。只取消当前 queued/running；终态或版本变化 409。旧 fence 不得迟到发布。
+- `GET snapshots?instrument_id=&cursor=&limit=20`：本人不可变摘要，limit=1–100，游标绑定 owner/筛选/目录摘要，变化 409 要求重建只读页，保留本机输入和原请求。目录最多 1000，超限不截断。
+- `GET snapshots/{resourceId}`：版本 1 的不可变日线、指标、supplier/adapter/policy、标的原修订、数据取得/可用时间、日历、缺失交易日、未复权口径与输入摘要。价格、份额、金额保持十进制字符串，PG 日线列 NUMERIC(28,10)，不先转 JS 浮点。缺失记录不填零、不推断停牌，指标样本不足返回 null。
+
+既有 `lighttick.investment.market` worker 持久租约 2 分钟、最多 3 次崩溃恢复；每 owner 并行最多 2、UTC 每日最多 100 次/总 1000 次。恢复每 owner 最多选择 2 个，避免单 owner 占满恢复批次。取数、CSV 与指标在 owner 事务外，总执行有界 45 秒（供应商单次请求 15 秒/2 MiB），供应商错误直接终态，不自动重试网络或换源。即使供应商忽略取消也不能挂住领域任务；最终提交再次确认 membership、标的原修订、当前 lease/fence，快照/精确日线/终态原子提交。后台重启在不确定旧进程完成时可能重新读取同一选定源，但只发布同一请求的一个数据集。
+
+当前支持沪深股票/场内 ETF 日线，腾讯日线仅明确股票范围；北交所、场外基金、市场全量快照和复权因子仍未接入。当前数据不能自动补成完整回测输入；缺少历史交易状态、公司行动、涨跌停和时间线事实时，后续回测必须保持 incomplete。取得时间不倒灌成历史事前证据。
+
+授权 `review/export` 新增 `investments.market`：本人快照与原命令/CSV/原 key/body/终态；不包含服务器凭据、lease/fence、平台秘密或内部配置。依然有明确 8 MiB/行数上限，超限 413，不截断称完整备份。共用账号/全 App 清理覆盖 work、snapshots、typed bars。管理供应商配置与凭据只见管理接口文档。

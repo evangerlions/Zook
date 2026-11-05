@@ -1,3 +1,4 @@
+import {handleMarketAdmin} from "./lighttick-market-admin-routes.ts";
 import {LearningMigrationService,type LearningMigrationAction} from "../modules/lighttick/learning/learning-migration.service.ts";
 import {object,keys,text,integer,identity} from "../modules/lighttick/learning/native-learning.validation.ts";
 import {ApplicationError} from "../shared/errors.ts";
@@ -8,6 +9,7 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 
 export async function tryHandleLightTickAdminRoutes(context: BackendRouteContext, enabled: boolean,
   runtime: LightTickRuntime | undefined, request: HttpRequest): Promise<HttpResponse<unknown> | undefined> {
+  const market=await handleMarketAdmin(context,runtime,enabled,request);if(market)return market;
   const migration=/^\/api\/v1\/admin\/apps\/lighttick\/learning-migrations\/([a-zA-Z0-9_-]+)\/(preflight|freeze|import|verify|activate|abort)$/.exec(request.path);
   if(migration&&request.method==='POST'){
     const session=context.requireAdminSession(request);if(!enabled||!runtime)throw new ApplicationError(503,'LIGHTTICK_APP_DISABLED','LightTick is not enabled.');

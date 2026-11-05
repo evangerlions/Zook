@@ -1,6 +1,141 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickMarketCredentialWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "token"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "token": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 4096,
+          "writeOnly": true
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickMarketCredentialWrite = {
+  "base_revision": number;
+  "token": string | unknown;
+};
+
+export const LightTickMarketCredentialSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "configured",
+    "updated_at"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "configured": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickMarketCredentialSummary = {
+  "revision": number;
+  "configured": boolean;
+  "updated_at": string | unknown;
+};
+
+export const LightTickMarketCredentialEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "configured",
+        "updated_at"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "configured": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickMarketCredentialEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": number;
+  "configured": boolean;
+  "updated_at": string | unknown;
+};
+  "requestId": string;
+};
+
 export const YaoheziMeDataSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -41937,6 +42072,2373 @@ export type LightTickInvestmentLedgerPageEnvelope = {
   "requestId": string;
 };
 
+export const LightTickInvestmentMarketInputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "base_revision",
+    "supplier",
+    "start",
+    "end"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "supplier": {
+      "type": "string",
+      "enum": [
+        "csv",
+        "tushare",
+        "eastmoney",
+        "tencent"
+      ]
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "declared_source": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "volume_unit": {
+      "type": "string",
+      "enum": [
+        "shares",
+        "lots100"
+      ]
+    },
+    "amount_unit": {
+      "type": "string",
+      "enum": [
+        "CNY",
+        "thousand_CNY",
+        "ten_thousand_CNY"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketInput = {
+  "instrument_id": string;
+  "base_revision": number;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "start": string;
+  "end": string;
+  "declared_source"?: string;
+  "volume_unit"?: "shares" | "lots100";
+  "amount_unit"?: "CNY" | "thousand_CNY" | "ten_thousand_CNY";
+};
+
+export const LightTickInvestmentMarketWriteSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "base_revision",
+        "supplier",
+        "start",
+        "end",
+        "csv",
+        "declared_source",
+        "volume_unit",
+        "amount_unit"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "csv"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "csv": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256000
+        },
+        "declared_source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "volume_unit": {
+          "type": "string",
+          "enum": [
+            "shares",
+            "lots100"
+          ]
+        },
+        "amount_unit": {
+          "type": "string",
+          "enum": [
+            "CNY",
+            "thousand_CNY",
+            "ten_thousand_CNY"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "base_revision",
+        "supplier",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "tushare",
+            "eastmoney",
+            "tencent"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentMarketWrite = {
+  "instrument_id": string;
+  "base_revision": number;
+  "supplier": "csv";
+  "start": string;
+  "end": string;
+  "csv": string;
+  "declared_source": string;
+  "volume_unit": "shares" | "lots100";
+  "amount_unit": "CNY" | "thousand_CNY" | "ten_thousand_CNY";
+} | {
+  "instrument_id": string;
+  "base_revision": number;
+  "supplier": "tushare" | "eastmoney" | "tencent";
+  "start": string;
+  "end": string;
+};
+
+export const LightTickInvestmentMarketBarSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume_shares",
+    "amount_cny",
+    "turnover_rate_pct"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "open": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "high": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "low": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "close": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "volume_shares": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "amount_cny": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "turnover_rate_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketBar = {
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+};
+
+export const LightTickInvestmentMarketIndicatorsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "price_basis",
+    "algorithm_version",
+    "ma5",
+    "ma20",
+    "volume_ratio_5",
+    "atr14",
+    "record_return_std20",
+    "return_sample_count",
+    "limitations"
+  ],
+  "properties": {
+    "price_basis": {
+      "type": "string",
+      "enum": [
+        "unadjusted"
+      ]
+    },
+    "algorithm_version": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "ma5": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ma20": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "volume_ratio_5": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "atr14": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "record_return_std20": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "return_sample_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "maxLength": 240
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketIndicators = {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+
+export const LightTickInvestmentMarketDatasetSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "supplier",
+    "adapter_version",
+    "policy_revision",
+    "instrument_id",
+    "code",
+    "market",
+    "kind",
+    "start",
+    "end",
+    "price_basis",
+    "realtime",
+    "retrieved_at",
+    "available_at",
+    "source_units",
+    "calendar",
+    "missing_sessions",
+    "bars",
+    "input_digest",
+    "limitations"
+  ],
+  "properties": {
+    "supplier": {
+      "type": "string",
+      "enum": [
+        "csv",
+        "tushare",
+        "eastmoney",
+        "tencent"
+      ]
+    },
+    "adapter_version": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "policy_revision": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "code": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "market": {
+      "type": "string",
+      "enum": [
+        "SSE",
+        "SZSE"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "stock",
+        "etf"
+      ]
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "price_basis": {
+      "type": "string",
+      "enum": [
+        "unadjusted"
+      ]
+    },
+    "realtime": {
+      "type": "boolean",
+      "enum": [
+        false
+      ]
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "available_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "volume",
+        "amount"
+      ],
+      "properties": {
+        "volume": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "amount": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "maxProperties": 20,
+      "additionalProperties": true
+    },
+    "missing_sessions": {
+      "anyOf": [
+        {
+          "type": "array",
+          "maxItems": 370,
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "bars": {
+      "type": "array",
+      "maxItems": 1000,
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume_shares",
+          "amount_cny",
+          "turnover_rate_pct"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "open": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "high": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "low": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "close": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "volume_shares": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "amount_cny": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "turnover_rate_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "maxLength": 240
+      }
+    },
+    "declared_source": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "raw_input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketDataset = {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "bars": (
+{
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+}
+)[];
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+};
+
+export const LightTickInvestmentMarketWorkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "instrument_id",
+    "base_revision",
+    "revision",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "snapshot_id",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "base_revision",
+        "supplier",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "csv",
+            "tushare",
+            "eastmoney",
+            "tencent"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "declared_source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "volume_unit": {
+          "type": "string",
+          "enum": [
+            "shares",
+            "lots100"
+          ]
+        },
+        "amount_unit": {
+          "type": "string",
+          "enum": [
+            "CNY",
+            "thousand_CNY",
+            "ten_thousand_CNY"
+          ]
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketWork = {
+  "id": string;
+  "instrument_id": string;
+  "base_revision": number;
+  "revision": number;
+  "input": {
+  "instrument_id": string;
+  "base_revision": number;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "start": string;
+  "end": string;
+  "declared_source"?: string;
+  "volume_unit"?: "shares" | "lots100";
+  "amount_unit"?: "CNY" | "thousand_CNY" | "ten_thousand_CNY";
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "snapshot_id": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentMarketSnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "instrument_id",
+    "instrument_revision",
+    "work_id",
+    "created_at",
+    "dataset",
+    "indicators"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "instrument_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supplier",
+        "adapter_version",
+        "policy_revision",
+        "instrument_id",
+        "code",
+        "market",
+        "kind",
+        "start",
+        "end",
+        "price_basis",
+        "realtime",
+        "retrieved_at",
+        "available_at",
+        "source_units",
+        "calendar",
+        "missing_sessions",
+        "bars",
+        "input_digest",
+        "limitations"
+      ],
+      "properties": {
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "csv",
+            "tushare",
+            "eastmoney",
+            "tencent"
+          ]
+        },
+        "adapter_version": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "policy_revision": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "market": {
+          "type": "string",
+          "enum": [
+            "SSE",
+            "SZSE"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stock",
+            "etf"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "price_basis": {
+          "type": "string",
+          "enum": [
+            "unadjusted"
+          ]
+        },
+        "realtime": {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "available_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_units": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "volume",
+            "amount"
+          ],
+          "properties": {
+            "volume": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "amount": {
+              "type": "string",
+              "maxLength": 240
+            }
+          }
+        },
+        "calendar": {
+          "type": "object",
+          "maxProperties": 20,
+          "additionalProperties": true
+        },
+        "missing_sessions": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 370,
+              "items": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bars": {
+          "type": "array",
+          "maxItems": 1000,
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "open",
+              "high",
+              "low",
+              "close",
+              "volume_shares",
+              "amount_cny",
+              "turnover_rate_pct"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "open": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "high": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "low": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "close": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "volume_shares": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "amount_cny": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "turnover_rate_pct": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 240
+          }
+        },
+        "declared_source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "raw_input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "indicators": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "price_basis",
+        "algorithm_version",
+        "ma5",
+        "ma20",
+        "volume_ratio_5",
+        "atr14",
+        "record_return_std20",
+        "return_sample_count",
+        "limitations"
+      ],
+      "properties": {
+        "price_basis": {
+          "type": "string",
+          "enum": [
+            "unadjusted"
+          ]
+        },
+        "algorithm_version": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "ma5": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ma20": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "volume_ratio_5": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "atr14": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "record_return_std20": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "return_sample_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 240
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketSnapshot = {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "dataset": {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "bars": (
+{
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+}
+)[];
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+};
+  "indicators": {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+};
+
+export const LightTickInvestmentMarketSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "instrument_id",
+    "instrument_revision",
+    "work_id",
+    "created_at",
+    "supplier",
+    "input_digest",
+    "start",
+    "end",
+    "bar_count"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "instrument_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "supplier": {
+      "type": "string",
+      "enum": [
+        "csv",
+        "tushare",
+        "eastmoney",
+        "tencent"
+      ]
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "bar_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketSummary = {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "input_digest": string;
+  "start": string;
+  "end": string;
+  "bar_count": number;
+};
+
+export const LightTickInvestmentMarketPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "instrument_id",
+          "instrument_revision",
+          "work_id",
+          "created_at",
+          "supplier",
+          "input_digest",
+          "start",
+          "end",
+          "bar_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "instrument_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "work_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "supplier": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "tushare",
+              "eastmoney",
+              "tencent"
+            ]
+          },
+          "input_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
+          },
+          "bar_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketPage = {
+  "items": (
+{
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "input_digest": string;
+  "start": string;
+  "end": string;
+  "bar_count": number;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentMarketCapabilitiesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "suppliers"
+  ],
+  "properties": {
+    "suppliers": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "supplier",
+          "enabled",
+          "credential_configured",
+          "revision"
+        ],
+        "properties": {
+          "supplier": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "tushare",
+              "eastmoney",
+              "tencent"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "credential_configured": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketCapabilities = {
+  "suppliers": (
+{
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "credential_configured": boolean;
+  "revision": string;
+}
+)[];
+};
+
+export const LightTickInvestmentMarketWorkEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "instrument_id",
+        "base_revision",
+        "revision",
+        "input",
+        "status",
+        "attempt",
+        "error_code",
+        "snapshot_id",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instrument_id",
+            "base_revision",
+            "supplier",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "supplier": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "tushare",
+                "eastmoney",
+                "tencent"
+              ]
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "declared_source": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "volume_unit": {
+              "type": "string",
+              "enum": [
+                "shares",
+                "lots100"
+              ]
+            },
+            "amount_unit": {
+              "type": "string",
+              "enum": [
+                "CNY",
+                "thousand_CNY",
+                "ten_thousand_CNY"
+              ]
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketWorkEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "instrument_id": string;
+  "base_revision": number;
+  "revision": number;
+  "input": {
+  "instrument_id": string;
+  "base_revision": number;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "start": string;
+  "end": string;
+  "declared_source"?: string;
+  "volume_unit"?: "shares" | "lots100";
+  "amount_unit"?: "CNY" | "thousand_CNY" | "ten_thousand_CNY";
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "snapshot_id": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentMarketSnapshotEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "instrument_id",
+        "instrument_revision",
+        "work_id",
+        "created_at",
+        "dataset",
+        "indicators"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "instrument_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "work_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dataset": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "supplier",
+            "adapter_version",
+            "policy_revision",
+            "instrument_id",
+            "code",
+            "market",
+            "kind",
+            "start",
+            "end",
+            "price_basis",
+            "realtime",
+            "retrieved_at",
+            "available_at",
+            "source_units",
+            "calendar",
+            "missing_sessions",
+            "bars",
+            "input_digest",
+            "limitations"
+          ],
+          "properties": {
+            "supplier": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "tushare",
+                "eastmoney",
+                "tencent"
+              ]
+            },
+            "adapter_version": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "policy_revision": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "code": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "market": {
+              "type": "string",
+              "enum": [
+                "SSE",
+                "SZSE"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "stock",
+                "etf"
+              ]
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "price_basis": {
+              "type": "string",
+              "enum": [
+                "unadjusted"
+              ]
+            },
+            "realtime": {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            "retrieved_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "available_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "source_units": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "volume",
+                "amount"
+              ],
+              "properties": {
+                "volume": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "amount": {
+                  "type": "string",
+                  "maxLength": 240
+                }
+              }
+            },
+            "calendar": {
+              "type": "object",
+              "maxProperties": 20,
+              "additionalProperties": true
+            },
+            "missing_sessions": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 370,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "bars": {
+              "type": "array",
+              "maxItems": 1000,
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "open",
+                  "high",
+                  "low",
+                  "close",
+                  "volume_shares",
+                  "amount_cny",
+                  "turnover_rate_pct"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "open": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "high": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "low": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "close": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "volume_shares": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "amount_cny": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "turnover_rate_pct": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 240
+              }
+            },
+            "declared_source": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "raw_input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "indicators": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "price_basis",
+            "algorithm_version",
+            "ma5",
+            "ma20",
+            "volume_ratio_5",
+            "atr14",
+            "record_return_std20",
+            "return_sample_count",
+            "limitations"
+          ],
+          "properties": {
+            "price_basis": {
+              "type": "string",
+              "enum": [
+                "unadjusted"
+              ]
+            },
+            "algorithm_version": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "ma5": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ma20": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "volume_ratio_5": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "atr14": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "record_return_std20": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "return_sample_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 240
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketSnapshotEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "dataset": {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "bars": (
+{
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+}
+)[];
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+};
+  "indicators": {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentMarketPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "instrument_id",
+              "instrument_revision",
+              "work_id",
+              "created_at",
+              "supplier",
+              "input_digest",
+              "start",
+              "end",
+              "bar_count"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "enum": [
+                  1
+                ]
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "instrument_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "work_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "supplier": {
+                "type": "string",
+                "enum": [
+                  "csv",
+                  "tushare",
+                  "eastmoney",
+                  "tencent"
+                ]
+              },
+              "input_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              },
+              "bar_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "input_digest": string;
+  "start": string;
+  "end": string;
+  "bar_count": number;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentMarketCapabilitiesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suppliers"
+      ],
+      "properties": {
+        "suppliers": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "supplier",
+              "enabled",
+              "credential_configured",
+              "revision"
+            ],
+            "properties": {
+              "supplier": {
+                "type": "string",
+                "enum": [
+                  "csv",
+                  "tushare",
+                  "eastmoney",
+                  "tencent"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "credential_configured": {
+                "type": "boolean"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMarketCapabilitiesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "suppliers": (
+{
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "credential_configured": boolean;
+  "revision": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentOpeningSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -76944,6 +79446,20 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentLedgerWork",
   "LightTickInvestmentLedgerWorkEnvelope",
   "LightTickInvestmentLedgerWrite",
+  "LightTickInvestmentMarketBar",
+  "LightTickInvestmentMarketCapabilities",
+  "LightTickInvestmentMarketCapabilitiesEnvelope",
+  "LightTickInvestmentMarketDataset",
+  "LightTickInvestmentMarketIndicators",
+  "LightTickInvestmentMarketInput",
+  "LightTickInvestmentMarketPage",
+  "LightTickInvestmentMarketPageEnvelope",
+  "LightTickInvestmentMarketSnapshot",
+  "LightTickInvestmentMarketSnapshotEnvelope",
+  "LightTickInvestmentMarketSummary",
+  "LightTickInvestmentMarketWork",
+  "LightTickInvestmentMarketWorkEnvelope",
+  "LightTickInvestmentMarketWrite",
   "LightTickInvestmentOpening",
   "LightTickKnowledgeEntry",
   "LightTickKnowledgeEntryEnvelope",
@@ -76976,6 +79492,9 @@ export const GeneratedPublicContractNames = [
   "LightTickManualPlanEnvelope",
   "LightTickManualTask",
   "LightTickManualTaskReference",
+  "LightTickMarketCredentialEnvelope",
+  "LightTickMarketCredentialSummary",
+  "LightTickMarketCredentialWrite",
   "LightTickMinimumClientVersions",
   "LightTickNativeLearningAuthority",
   "LightTickNativeLearningAuthorityEnvelope",

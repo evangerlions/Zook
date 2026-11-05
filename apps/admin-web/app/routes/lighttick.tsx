@@ -1,3 +1,4 @@
+import {MarketCredentialsCard} from "../components/market-credentials-card";
 import { Alert, Card, Descriptions, Space, Statistic, Table, Tag } from "antd";
 import { useEffect, useState } from "react";
 import { adminApi } from "../lib/admin-api";
@@ -23,6 +24,7 @@ export default function LightTickRoute() {
     <Alert type={document.enabled ? "success" : "warning"} showIcon message={document.enabled ? "LightTick 已启用" : "LightTick 默认关闭"}
       description="此页面只展示聚合运维数据，不读取用户私密文本、任务笔记或 Coach 对话。" />
     <Space wrap>{Object.entries(document.metrics).map(([key, value]) => <Card key={key}><Statistic title={key} value={value} /></Card>)}</Space>
+    <MarketCredentialsCard />
     <Card title="功能与通知"><Descriptions column={2} items={[
       ...Object.entries(document.feature_flags).map(([key, value]) => ({ key, label: key, children: <Tag color={value ? "green" : "default"}>{String(value)}</Tag> })),
       ...Object.entries(document.notification_defaults).map(([key, value]) => ({ key: `notify-${key}`, label: key, children: String(value) })),

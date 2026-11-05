@@ -1,3 +1,8 @@
+import {MarketWorkService} from "./modules/lighttick/investments/market/market-work.service.ts";
+import {MarketWorkRunner} from "./modules/lighttick/investments/market/market-work.runner.ts";
+import {MarketPolicyService} from "./modules/lighttick/investments/market/market-policy.service.ts";
+import {DailyMarketAdapter} from "./modules/lighttick/investments/market/market.adapter.ts";
+import type {VersionedAppConfigService} from "./services/versioned-app-config.service.ts";
 import {InvestmentLedgerService} from "./modules/lighttick/investments/ledger.service.ts";
 import {InvestmentLedgerRunner} from "./modules/lighttick/investments/ledger.runner.ts";
 import {InMemoryDatabase} from "./testing/in-memory-database.ts";
@@ -56,11 +61,15 @@ export function attachApplicationLightTickAnalytics(runtime: LightTickRuntime, a
 export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
   storageService: StorageService; fileStore: PersistentFileStore;
+ appConfigService:VersionedAppConfigService;kvManager:KVManager;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
   const authorizeOwner=async(owner:import("./modules/lighttick/lighttick.types.ts").LightTickOwner)=>{
     const member=await input.database.findAppUser(owner.appId,owner.userId),user=await input.database.findUserById(owner.userId);
     if(member?.status!=='ACTIVE'||user?.status!=='ACTIVE')throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
   };
+  const market=new MarketWorkService(input.repository,input.queue);
+  const policy=new MarketPolicyService(input.appConfigService,input.kvManager);
+  input.runtime.marketWork=market;input.runtime.marketPolicy=policy;
   const ledger=new InvestmentLedgerService(input.repository,input.queue);
   input.runtime.investmentLedger=ledger;
   const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),input.queue);
@@ -75,7 +84,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, input.llmManager, undefined,
     scene => input.appAiRoutingConfigService.resolveLightTickScene(scene)),
-    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner));
+    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner));
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",
