@@ -911,4 +911,4 @@ BodyLog group admission follow-up: deterministic stale-pending interleavings now
 
 U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长字段与资料/观察证据、不可变行情来源版本/摘要；无需资产账本，可选账户引用。独立 CAS/原请求、历史分页、归档/恢复与本人导出；095 纳入平台共用删除，不扩展旧 task sync。React 与真实 PG/Chrome 验收单独留证，完整规则/筛选/预测/监控/回测和迁移/性能门禁仍未完成。
 
-个人模型设置切片正在接线：普通用户的配置/原请求回执、服务端独立 KV 主密钥＋AES-GCM 账号加密、先测未保存输入/测试已保存配置、持久连接测试与取消已实现。课程和规划任务冻结模型选择并通过同一 dispatcher；没有静默换源/模板兜底。React 设置页与完整 PG/Chrome 验收完成后单独留证；研究 AI 调用、完整旧设置/GitHub 存储等仍待迁移，不能代签全部 U5。
+2026-11-06 个人模型设置切片已通过本地验收：普通用户的配置/原请求回执、服务端独立私有 KV 主密钥＋AES-GCM 账号加密、先测未保存输入/测试已保存配置、持久连接测试与取消及 React 三步设置页已接入。课程和规划任务冻结模型选择并通过同一 dispatcher；没有静默换源/模板兜底。真实 PG/Redis、Chrome、进程重启与旧功能回归见[个人模型验收](verification/grow-react-u1-20261103/personal-model.md)。研究 AI 调用、完整旧设置/GitHub 存储等仍待迁移，不能代签全部 U5；21/27、无真实数据切换或发布。

@@ -396,7 +396,12 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending."
+      "migration_disposition": "Preserve owner repository, branch, credential setup and test behavior. Credential ownership and supported storage integration require implementation review; platform administrator setup is not equivalent to personal configuration. No real credential import or echo.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Content repository/branch/token/save/test UI and runtime are not yet implemented; preserve behavior pending explicit disposition."
+      }
     },
     {
       "method": "GET",
@@ -9746,7 +9751,12 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending."
+      "migration_disposition": "Preserve owner repository, branch, credential setup and test behavior. Credential ownership and supported storage integration require implementation review; platform administrator setup is not equivalent to personal configuration. No real credential import or echo.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Content repository/branch/token/save/test UI and runtime are not yet implemented; preserve behavior pending explicit disposition."
+      }
     },
     {
       "method": "POST",
@@ -10870,7 +10880,9 @@
       "capability_group": "cross-module-and-compatibility",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Secrets move from browser-local plaintext to account-scoped encrypted server storage with explicit consent; no automatic credential import. Public HTTPS/443 only. Other AI callers remain unverified."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -10900,11 +10912,26 @@
       ],
       "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
       "implementation_gap": {
-        "status": "confirmed_missing",
+        "status": "partially_resolved",
         "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
-        "reason": "Personal model setup and browser/account scoped selection/test/cancel are not implemented in the React candidate. Platform model routing does not establish feature parity.",
+        "reason": "Personal settings/test/cancel and actual course/planning workers verified; research and remaining AI callers still gated.",
         "completion_gate": "Retain personal model choice and all applicable callers; verify secret ownership, settings UX, cancellation, late responses and account isolation."
-      }
+      },
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-06",
+          "contract": "/api/v1/lighttick/ai/model-settings/tests",
+          "page": "/grow/settings",
+          "report": "docs/verification/grow-react-u1-20261103/personal-model.md",
+          "tests": [
+            "test/unit/lighttick-personal-model.test.ts",
+            "test/unit/lighttick-personal-model-routing.test.ts",
+            "test/integration/lighttick-personal-model-postgres.test.ts",
+            "test/support/grow_web_model_settings_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -18234,7 +18261,12 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Replace credential configuration with existing platform admin server-side secret references. Do not export credentials or echo keys to a client; endpoint equivalence remains pending."
+      "migration_disposition": "Preserve owner repository, branch, credential setup and test behavior. Credential ownership and supported storage integration require implementation review; platform administrator setup is not equivalent to personal configuration. No real credential import or echo.",
+      "implementation_gap": {
+        "status": "confirmed_missing",
+        "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
+        "reason": "Content repository/branch/token/save/test UI and runtime are not yet implemented; preserve behavior pending explicit disposition."
+      }
     },
     {
       "method": "PUT",
