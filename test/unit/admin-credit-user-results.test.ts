@@ -65,3 +65,26 @@ test("credit presets fill the chosen amount and respect the disabled state", asy
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("grant recipient tooltip shows recorded contacts and identifies legacy data", async () => {
+  const esbuild = require("esbuild") as typeof import("esbuild");
+  const { renderToStaticMarkup } = require("react-dom/server") as typeof import("react-dom/server");
+  const directory = await mkdtemp(join(new URL("node_modules/", adminRoot).pathname, ".credit-test-"));
+  try {
+    const output = join(directory, "recipient.mjs");
+    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-grant-recipient.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", logLevel: "silent" });
+    const { CreditGrantRecipient } = await import(pathToFileURL(output).href);
+    const record = { uid: "user-1", phone: "+12025550100", email: "person@example.invalid", contactSource: "snapshot" };
+    const snapshot = CreditGrantRecipient({ record });
+    const title = renderToStaticMarkup(snapshot.props.title);
+    assert.match(title, /\+12025550100/);
+    assert.match(title, /person@example\.invalid/);
+    assert.doesNotMatch(title, /当前联系方式/);
+    const legacy = CreditGrantRecipient({ record: { ...record, contactSource: "current" } });
+    assert.match(renderToStaticMarkup(legacy.props.title), /历史记录：当前联系方式/);
+    const absent = CreditGrantRecipient({ record: { ...record, contactSource: "unavailable", phone: null, email: null } });
+    assert.match(renderToStaticMarkup(absent.props.title), /联系方式不可用/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

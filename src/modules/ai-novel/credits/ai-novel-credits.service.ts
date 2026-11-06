@@ -146,7 +146,7 @@ export class AiNovelCreditsService {
   }
 
   /** Internal/admin-only grant. Deterministic event ID provides retry safety. */
-  async grant(userId: string, eventId: string, points: number, adminUser?: string): Promise<void> {
+  async grant(userId: string, eventId: string, points: number, adminUser?: string, recipientContact?: { phone: string | null; email: string | null }): Promise<void> {
     requireId(eventId);
     if (!Number.isSafeInteger(points) || points <= 0) throw new ApplicationError(400, "AINOVEL_CREDITS_GRANT_INVALID", "Gift points must be a positive safe integer.");
     await this.store.transact(userId, `gift:${eventId}`, (state) => {
@@ -163,7 +163,7 @@ export class AiNovelCreditsService {
       }
       account.giftMicros = String(nextGift);
       state.job = { id: `gift:${eventId}`, status: "success", expiresAt: this.now().toISOString(), receipts: [], chargedMicros: "0", absorbedMicros: "0", grantedMicros: amount, ...(adminUser ? { grantedBy: adminUser } : {}) };
-      usageEvent(state, { id: `gift:${eventId}`, kind: "grant", periodicMicros: "0", giftMicros: amount, absorbedMicros: "0", ...(adminUser ? { adminUser } : {}) });
+      usageEvent(state, { id: `gift:${eventId}`, kind: "grant", periodicMicros: "0", giftMicros: amount, absorbedMicros: "0", ...(adminUser ? { adminUser } : {}), ...(recipientContact ? { recipientContact } : {}) });
       this.logger?.info("AINovel gift credits granted", { userId, eventId, points });
     });
   }

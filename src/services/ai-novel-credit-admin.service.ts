@@ -32,7 +32,7 @@ export class AiNovelCreditAdminService {
     }
     const user = await this.database.findUserById(uid);
     if (!user) throw new ApplicationError(400, "REQ_INVALID_BODY", "User not found.");
-    await this.credits.grant(uid, idempotencyKey, points, adminUser);
+    await this.credits.grant(uid, idempotencyKey, points, adminUser, { phone: user.phone ?? null, email: user.email ?? null });
     return { uid, points, idempotencyKey };
   }
 }
