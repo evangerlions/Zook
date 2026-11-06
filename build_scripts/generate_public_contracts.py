@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/github-settings.yaml": ['LightTickGitHubSettings', 'LightTickGitHubWrite', 'LightTickGitHubTestWrite', 'LightTickGitHubCancel', 'LightTickGitHubTest', 'LightTickGitHubSettingsEnvelope', 'LightTickGitHubTestEnvelope'],
     "lighttick/personal-model.yaml": ['LightTickPersonalModelSettings', 'LightTickPersonalModelWrite', 'LightTickPersonalModelTestWrite', 'LightTickPersonalModelCancel', 'LightTickPersonalModelTest', 'LightTickPersonalModelSettingsEnvelope', 'LightTickPersonalModelTestEnvelope'],
     "common/lighttick-market-admin.yaml": ["LightTickMarketCredentialWrite", "LightTickMarketCredentialSummary", "LightTickMarketCredentialEnvelope"],
     "yaohezi/api.yaml": ['YaoheziMeData', 'YaoheziHealthChallengeRequest', 'YaoheziHealthRecoveryRequest', 'YaoheziHealthBootstrapRequest', 'YaoheziHealthSessionRequest', 'YaoheziHealthRecoverRequest', 'YaoheziHealthEnrollRequest', 'YaoheziHealthInspectRequest', 'YaoheziHealthRevokeDeviceRequest', 'YaoheziHealthRotateKeysRequest', 'YaoheziHealthLogoutRequest', 'YaoheziHealthKeyCapsulesRequest', 'YaoheziHealthVerifyOperationRequest', 'YaoheziHealthRevision', 'YaoheziHealthKeyCapsule', 'YaoheziHealthInspectData', 'YaoheziHealthChallengeData', 'YaoheziHealthSessionData', 'YaoheziHealthRecoveryData', 'YaoheziHealthCloseSessionsRequest', 'YaoheziHealthCloseSessionsData'],

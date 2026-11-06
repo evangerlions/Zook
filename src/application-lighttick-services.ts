@@ -1,3 +1,6 @@
+import {GitHubService} from "./modules/lighttick/github/github.service.ts";
+import {GitHubKeyResolver} from "./modules/lighttick/github/github.crypto.ts";
+import {GitHubTestRunner} from "./modules/lighttick/github/github-test.runner.ts";
 import {PersonalModelService} from "./modules/lighttick/personal-model/personal-model.service.ts";
 import {PersonalModelDispatcher} from "./modules/lighttick/personal-model/personal-model.dispatcher.ts";
 import {PersonalModelTestRunner} from "./modules/lighttick/personal-model/personal-model-test.runner.ts";
@@ -72,6 +75,9 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
     const member=await input.database.findAppUser(owner.appId,owner.userId),user=await input.database.findUserById(owner.userId);
     if(member?.status!=='ACTIVE'||user?.status!=='ACTIVE')throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
   };
+  const githubKeys=new GitHubKeyResolver(input.kvManager);
+  const github=new GitHubService(input.repository,new AesGcmPayloadCryptoService(githubKeys),()=>githubKeys.ensure(),input.queue);
+  input.runtime.github=github;
   const personalKeys=new PersonalModelKeyResolver(input.kvManager);
   const personal=new PersonalModelService(input.repository,new AesGcmPayloadCryptoService(personalKeys),()=>personalKeys.ensure(),input.queue);
   const personalLlm=new PersonalModelDispatcher(personal,input.llmManager);
@@ -93,7 +99,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, personalLlm, undefined,
     scene => input.appAiRoutingConfigService.resolveLightTickScene(scene)),
-    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner));
+    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner));
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",

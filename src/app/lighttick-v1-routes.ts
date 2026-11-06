@@ -1,4 +1,4 @@
-import {handlePersonalModelRequest} from "./lighttick-personal-model-routes.ts";import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
+import {handleAccountSettingsRequest} from "./lighttick-account-settings-routes.ts";import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
 import {handleResearchRequest} from "./lighttick-research-routes.ts";
 import {handleMarketRequest} from "./lighttick-market-routes.ts";
 import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
@@ -169,7 +169,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
-  const modelResult=await handlePersonalModelRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
+  const modelResult=await handleAccountSettingsRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const researchResult=await handleResearchRequest(runtime.repository,owner,request,assertActive);if(researchResult!==undefined){const result=response(context,request,researchResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const marketResult=await handleMarketRequest(runtime,owner,request,assertActive);if(marketResult!==undefined){const result=response(context,request,marketResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
   const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);

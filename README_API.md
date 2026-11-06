@@ -1839,3 +1839,18 @@ Only OpenAI-compatible nonstreaming chat completions over public HTTPS port 443 
 AI run/course work creation freezes `{mode,revision}` in internal input. The ordinary AI runner, planning runner and course draft/lesson worker consume the same dispatcher. Older queued requests without a selection retain platform mode. Personal revision changes before/during execution cause failure and forbid adopting that result. Reading content requires no model configuration. Actual research AI callers, not yet implemented, remain a separate migration gap; saving a research dossier does not invoke a model.
 
 `POST .../tests` accepts `{settings_revision}` for a saved configuration, or `{settings_revision,config:{base_url,model_name,api_key}}` to test current unsaved input without saving or activation. Unsaved tests allow revision 0 for a never-configured account, bind the current settings revision, encrypt temporary credentials and scrub them on completion/cancellation/recovery exhaustion. `GET .../test-receipts/{requestKey}` recovers the accepted test identity without requiring the secret again. An original key is required; `GET .../tests/{testId}` reads a durable owner receipt, and `POST .../tests/{testId}/cancel` accepts current `{base_revision}` with its own original key. These use the existing LightTick worker, at most one active test per owner and 24/day (UTC), 64 output tokens, a 60-second fenced lease and at most three crash recoveries. Network IO runs outside owner transactions; final publication rechecks membership, lease/fence and settings revision. Cancelled/changed/late results cannot report success. Success checks connectivity and a complete response, not model quality, and does not save or activate an unsaved draft. It applies only to the submitted input/settings revision, not later edits. No automatic model request occurs when opening, editing, saving or clearing settings. Metadata APIs are `no-store`; cross-owner receipts are 404. No new generic sync entity is exposed.
+
+### LightTick 个人 GitHub 仓库设置
+
+Canonical `/api/v1/lighttick/account/github`：普通 LightTick membership/owner 授权，所有响应 `Cache-Control: no-store`。唯一合同 `api-contracts/openapi/lighttick/github-settings.yaml`。
+
+- `GET` 返回修订、`mode: default|custom`、`repository`、`branch`、`configured`、更新时间和 `storage: account_encrypted`，不返回 Token 或密文。default 使用 Zook 原生内容；不会读取旧环境变量仓库或旧用户凭据。
+- `PUT` 接收 `base_revision, mode, repository, branch, token` 和原 `Idempotency-Key`。custom 仓库为 `owner/name`，分支为命名 Git ref；Token 非空字符串表示替换，显式 null 沿用该 owner/基线的已存 Token；首次配置必须提供。default 的三个配置字段均为 null，并清除个人密文。
+- custom 保存前在事务外对固定 `api.github.com` 做一次只读分支检查，15 秒总期限；不跟随跳转，响应上限 1 MiB，不初始化/写入仓库。提交重新校验 membership/CAS。失败不保存，不回传供应商正文；原请求已接受时直接重放，不重复网络检查。
+- `GET /receipts/{requestKey}` 返回同一设置原请求的接受结果；若之后发生其他修改，需另 GET 当前修订。原 key/body 不匹配返回 409。
+- `POST /tests` 接收 `settings_revision`，可附 `config: {repository,branch,token}` 测试未保存输入；省略 config 测试已存配置。返回同一持久测试身份。`GET /tests/{id}` 和 `GET /test-receipts/{requestKey}` 读取最新终态；`POST /tests/{id}/cancel` 接收 `base_revision` 和原 key。
+- 测试复用既有 worker，单 owner 一个未决测试、每日 UTC 24 次、60 秒租约、最多三次崩溃恢复，保存原请求与测试原子提交；取消、撤权、修订变化和 fence 失效不能发布成功。临时 Token 密文在终态/取消/恢复耗尽清除。
+
+Token 只通过服务端独立私有 KV 主密钥和 AES-GCM 保存，绑定 owner/修订/仓库/分支，临时测试另绑定 ID；不进入普通回执、任务 payload、浏览器存储或本人数据导出。留空沿用时仍冻结基线，不能自动采用另一个设备的新 Token。浏览器保留非秘密草稿、基线、原 key 和加盐正文摘要，刷新后可通过回执恢复；缺少原 Token 时重输并核对摘要，不能新建请求代替重试。
+
+成功只证明仓库/分支可读取，不证明 Contents 写权限；检查协议参考 [GitHub Get a reference](https://docs.github.com/en/rest/git/refs#get-a-reference)。本切片只恢复设置与连接能力，尚未将课程读取/发布连接到 GitHub；保存或清除设置都不会迁移、上传或删除既有 Zook 内容。完整内容存储迁移仍按行为账本待验收。

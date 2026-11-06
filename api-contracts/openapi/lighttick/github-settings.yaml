@@ -1,0 +1,581 @@
+openapi: 3.1.1
+info:
+  title: LightTick GitHub account settings
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Owner encrypted GitHub settings and read-only branch connectivity checks.
+    Native Zook content remains authoritative; setting a repository does not move
+    existing content.
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-github-settings
+  description: Owner-selected OpenAI compatible service settings and bounded tests.
+paths:
+  /api/v1/lighttick/account/github:
+    get:
+      operationId: readGitHubSettings
+      tags:
+      - lighttick-github-settings
+      summary: readGitHubSettings
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters: []
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubSettingsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    put:
+      operationId: configureGitHubSettings
+      tags:
+      - lighttick-github-settings
+      summary: configureGitHubSettings
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubSettingsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGitHubWrite'
+  /api/v1/lighttick/account/github/receipts/{requestKey}:
+    get:
+      operationId: readGitHubSettingsReceipt
+      tags:
+      - lighttick-github-settings
+      summary: readGitHubSettingsReceipt
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters:
+      - name: requestKey
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubSettingsEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/account/github/test-receipts/{requestKey}:
+    get:
+      operationId: readGitHubTestReceipt
+      tags:
+      - lighttick-github-settings
+      summary: readGitHubTestReceipt
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters:
+      - name: requestKey
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/account/github/tests:
+    post:
+      operationId: createGitHubConnectionTest
+      tags:
+      - lighttick-github-settings
+      summary: createGitHubConnectionTest
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGitHubTestWrite'
+  /api/v1/lighttick/account/github/tests/{testId}:
+    get:
+      operationId: readGitHubConnectionTest
+      tags:
+      - lighttick-github-settings
+      summary: readGitHubConnectionTest
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters:
+      - name: testId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^githubtest-[a-f0-9]{40}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/account/github/tests/{testId}/cancel:
+    post:
+      operationId: cancelGitHubConnectionTest
+      tags:
+      - lighttick-github-settings
+      summary: cancelGitHubConnectionTest
+      description: Owner-scoped metadata only; secrets excluded. CAS and persistent
+        original receipts. Default mode uses native Zook content. Custom save checks
+        a GitHub branch read-only before committing; null token explicitly retains
+        the current owner revision token. Tests use durable bounded worker and never
+        initialize/write repositories. Readability does not prove Contents write permission.
+      parameters:
+      - name: testId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^githubtest-[a-f0-9]{40}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Owner result with Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickGitHubTestEnvelope'
+        '400':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickGitHubCancel'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickGitHubSettings:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - mode
+      - repository
+      - branch
+      - configured
+      - updated_at
+      - storage
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        mode:
+          type: string
+          enum:
+          - default
+          - custom
+        repository:
+          type:
+          - string
+          - 'null'
+          maxLength: 160
+        branch:
+          type:
+          - string
+          - 'null'
+          maxLength: 160
+        configured:
+          type: boolean
+        updated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        storage:
+          type: string
+          enum:
+          - account_encrypted
+    LightTickGitHubWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - mode
+      - repository
+      - branch
+      - token
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        mode:
+          type: string
+          enum:
+          - default
+          - custom
+        repository:
+          type:
+          - string
+          - 'null'
+          maxLength: 160
+        branch:
+          type:
+          - string
+          - 'null'
+          maxLength: 160
+        token:
+          type:
+          - string
+          - 'null'
+          maxLength: 1000
+          writeOnly: true
+      allOf:
+      - if:
+          properties:
+            mode:
+              const: custom
+          required:
+          - mode
+        then:
+          properties:
+            repository:
+              type: string
+              minLength: 1
+            branch:
+              type: string
+              minLength: 1
+            token:
+              type:
+              - string
+              - 'null'
+              minLength: 1
+              maxLength: 1000
+              writeOnly: true
+        else:
+          properties:
+            repository:
+              type: 'null'
+            branch:
+              type: 'null'
+            token:
+              type: 'null'
+    LightTickGitHubTestWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - settings_revision
+      properties:
+        settings_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        config:
+          type: object
+          additionalProperties: false
+          required:
+          - repository
+          - branch
+          - token
+          properties:
+            repository:
+              type: string
+              maxLength: 160
+            branch:
+              type: string
+              maxLength: 160
+              minLength: 1
+            token:
+              type:
+              - string
+              - 'null'
+              maxLength: 1000
+              minLength: 1
+              writeOnly: true
+    LightTickGitHubCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickGitHubTest:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - settings_revision
+      - target
+      - status
+      - error_code
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          pattern: ^githubtest-[a-f0-9]{40}$
+        revision:
+          type: integer
+          minimum: 1
+        settings_revision:
+          type: integer
+          minimum: 0
+        target:
+          type: string
+          enum:
+          - saved
+          - draft
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        error_code:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickGitHubSettingsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickGitHubSettings'
+        requestId:
+          type: string
+    LightTickGitHubTestEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickGitHubTest'
+        requestId:
+          type: string

@@ -24,6 +24,7 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+ github?:import("./github/github.service.ts").GitHubService;
  personalModel?:import("./personal-model/personal-model.service.ts").PersonalModelService;
  personalModelDispatcher?:import("./personal-model/personal-model.dispatcher.ts").PersonalModelDispatcher;
  marketWork?:import("./investments/market/market-work.service.ts").MarketWorkService;

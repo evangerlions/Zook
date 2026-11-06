@@ -1,6 +1,528 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickGitHubSettingsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "mode",
+    "repository",
+    "branch",
+    "configured",
+    "updated_at",
+    "storage"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "default",
+        "custom"
+      ]
+    },
+    "repository": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 160
+    },
+    "branch": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 160
+    },
+    "configured": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "storage": {
+      "type": "string",
+      "enum": [
+        "account_encrypted"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickGitHubSettings = {
+  "revision": number;
+  "mode": "default" | "custom";
+  "repository": string | null;
+  "branch": string | null;
+  "configured": boolean;
+  "updated_at": string | null;
+  "storage": "account_encrypted";
+};
+
+export const LightTickGitHubWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "mode",
+    "repository",
+    "branch",
+    "token"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "default",
+        "custom"
+      ]
+    },
+    "repository": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 160
+    },
+    "branch": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 160
+    },
+    "token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1000,
+      "writeOnly": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "custom"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "repository": {
+            "type": "string",
+            "minLength": 1
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1
+          },
+          "token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 1000,
+            "writeOnly": true
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "repository": {
+            "type": "null"
+          },
+          "branch": {
+            "type": "null"
+          },
+          "token": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickGitHubWrite = (
+{
+  "base_revision": number;
+  "mode": "default" | "custom";
+  "repository": string | null;
+  "branch": string | null;
+  "token": string | null;
+}
+) & (
+{
+  "base_revision": number;
+  "mode": "default" | "custom";
+  "repository": string | null;
+  "branch": string | null;
+  "token": string | null;
+}
+);
+
+export const LightTickGitHubTestWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "settings_revision"
+  ],
+  "properties": {
+    "settings_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "branch",
+        "token"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "branch": {
+          "type": "string",
+          "maxLength": 160,
+          "minLength": 1
+        },
+        "token": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000,
+          "minLength": 1,
+          "writeOnly": true
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickGitHubTestWrite = {
+  "settings_revision": number;
+  "config"?: {
+  "repository": string;
+  "branch": string;
+  "token": string | null;
+};
+};
+
+export const LightTickGitHubCancelSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickGitHubCancel = {
+  "base_revision": number;
+};
+
+export const LightTickGitHubTestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "settings_revision",
+    "target",
+    "status",
+    "error_code",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^githubtest-[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "settings_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "draft"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickGitHubTest = {
+  "id": string;
+  "revision": number;
+  "settings_revision": number;
+  "target": "saved" | "draft";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "error_code": string | null;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickGitHubSettingsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "mode",
+        "repository",
+        "branch",
+        "configured",
+        "updated_at",
+        "storage"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "default",
+            "custom"
+          ]
+        },
+        "repository": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "branch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 160
+        },
+        "configured": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "storage": {
+          "type": "string",
+          "enum": [
+            "account_encrypted"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGitHubSettingsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": number;
+  "mode": "default" | "custom";
+  "repository": string | null;
+  "branch": string | null;
+  "configured": boolean;
+  "updated_at": string | null;
+  "storage": "account_encrypted";
+};
+  "requestId": string;
+};
+
+export const LightTickGitHubTestEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "settings_revision",
+        "target",
+        "status",
+        "error_code",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^githubtest-[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "settings_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "saved",
+            "draft"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "error_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGitHubTestEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "settings_revision": number;
+  "target": "saved" | "draft";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "error_code": string | null;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
 export const LightTickPersonalModelSettingsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -81690,6 +82212,13 @@ export const GeneratedPublicContractNames = [
   "LightTickFirstActionEnvelope",
   "LightTickFirstActionFeedback",
   "LightTickFirstActionRequest",
+  "LightTickGitHubCancel",
+  "LightTickGitHubSettings",
+  "LightTickGitHubSettingsEnvelope",
+  "LightTickGitHubTest",
+  "LightTickGitHubTestEnvelope",
+  "LightTickGitHubTestWrite",
+  "LightTickGitHubWrite",
   "LightTickGoalConstraints",
   "LightTickGoalCreateRequest",
   "LightTickGoalData",
