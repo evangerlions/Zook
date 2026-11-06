@@ -74,6 +74,7 @@ export interface AdminBillingOrderDetail {
     planKey: string | null;
     expiresAt: string | null;
     autoRenew: boolean | null;
+    revenueCatRenewalStatus?: string | null;
     source: string | null;
     lastSyncedAt: string | null;
     deletedAt: string | null;

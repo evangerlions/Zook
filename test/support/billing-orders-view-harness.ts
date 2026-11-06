@@ -24,6 +24,7 @@ export async function billingOrdersViewHarness(api: Record<string, unknown>, env
   const jsx = (type: string, props: Record<string, unknown>) => ({ type, props });
   const antd = Object.fromEntries(["Alert", "Button", "Drawer", "Empty", "Input", "Select", "Space", "Table", "Tag", "Timeline", "Tooltip"].map((type) => [type, type]));
   const modules: Record<string, unknown> = {
+    "./billing-renewal-status": { BillingRenewalStatus: "BillingRenewalStatus" },
     "../lib/billing-terms": billingTerms,
     "react": { useState, useRef: (value: unknown) => useState({ current: value })[0], useEffect: (effect: () => void) => { effects.push(effect); } },
     "react/jsx-runtime": { jsx, jsxs: jsx },

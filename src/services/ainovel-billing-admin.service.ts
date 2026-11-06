@@ -99,6 +99,7 @@ export class AiNovelBillingAdminService {
         planKey: membership.planKey,
         expiresAt: membership.expiresAt,
         autoRenew: membership.autoRenew,
+        revenueCatRenewalStatus: membership.revenueCatRenewalStatus ?? null,
         source: membership.source,
         lastSyncedAt: membership.lastSyncedAt,
         deletedAt: membership.accountDeletedAt,

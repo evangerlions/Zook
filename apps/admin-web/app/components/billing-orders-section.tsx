@@ -1,4 +1,5 @@
 import { BILLING_TERMS, billingTermValue } from "../lib/billing-terms";
+import { BillingRenewalStatus } from "./billing-renewal-status";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
   Alert,
@@ -325,7 +326,7 @@ export function BillingOrdersSection({ appId, environment, initialUserId }: {
               <Descriptions.Item label="状态">{detail.currentMembership?.state ?? "—"}</Descriptions.Item>
               <Descriptions.Item label="商品代号">{detail.currentMembership?.planKey ?? "—"}</Descriptions.Item>
               <Descriptions.Item label="到期">{formatTimestamp(detail.currentMembership?.expiresAt ?? undefined)}</Descriptions.Item>
-              <Descriptions.Item label="自动续订">{detail.currentMembership?.autoRenew == null ? "未知" : detail.currentMembership.autoRenew ? "是" : "否"}</Descriptions.Item>
+              <Descriptions.Item label="续订状态"><BillingRenewalStatus value={detail.currentMembership?.revenueCatRenewalStatus} /></Descriptions.Item>
               <Descriptions.Item label="最后同步">{formatTimestamp(detail.currentMembership?.lastSyncedAt ?? undefined)}</Descriptions.Item>
             </Descriptions>
 

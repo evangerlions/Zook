@@ -734,6 +734,8 @@ filter. Order-detail membership comparison uses that transaction's environment.
 
 会员接口 `GET /api/v1/admin/billing/memberships` 接受 `environment=PRODUCTION|SANDBOX`（默认正式），在到期筛选和分页前选择会员快照；空值或非法值返回400。每条会员返回 `environment: production|sandbox`。顶部环境切换同时切换收入、会员与订单，重置会员筛选和游标，提示当前只显示正式或沙箱会员。不存在将沙箱会员合并进正式列表的行为。
 
+会员列表与订单详情的当前会员返回可空字段 `revenueCatRenewalStatus`，表示最近同步的 RevenueCat 原始续订状态；它独立于兼容保留的 `autoRenew` 布尔值，未取得原始状态时为空。
+
 后台“支付记录与事件”默认选中已支付（`status=provider_paid`），首次加载、刷新、切换应用/环境及清空筛选后均默认查询已支付。可取消状态选择查询全部，或选择待付款、已关闭等其他状态。接口省略status的全状态查询语义保持不变。
 
 支付后台术语与取值展示统一：`provider` 为支付服务商，`source/purchaseSource` 为支付来源，`platform` 为运行平台，`distribution` 为分发类型，`environment` 为支付环境。筛选请求保留接口原始枚举，所有tab的表格和详情共用展示映射（App Store / Google Play / 支付宝 / RevenueCat / iOS等）。例如source=play_store和distribution=google_play都显示Google Play，但字段语义不合并。未知值显示未知并保留原值，不默认归类；未采集market时不推断小米/vivo。
