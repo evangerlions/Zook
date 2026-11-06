@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { ApiError } from "../../lib/admin-api-client";
 import { grantCredits, searchCreditUsers, type CreditUserCandidate, type CreditUserSearchField } from "../../lib/ai-novel-credit-admin-api";
 import { CreditSelectedUser, CreditUserResults } from "./credit-user-results";
+import { CreditGrantPresets } from "./credit-grant-presets";
 
 type Grant = { uid: string; points: number; idempotencyKey: string };
 const pendingKey = "zook.admin.pending-credit-grant";
@@ -60,6 +61,7 @@ export function CreditGrantForm({ onGranted }: { onGranted: () => void }) {
       {searched && !tooMany && users.length === 0 && <Alert type="info" message="没有匹配的用户。" />}
       {users.length > 0 && <CreditUserResults users={users} selected={selected} disabled={!!pending || busy} onSelect={setSelected} />}
       <Space wrap><InputNumber aria-label="发放点数" min={1} precision={0} value={points} disabled={!!pending || busy} onChange={v => setPoints(v)} placeholder="点数" /><Button type="primary" disabled={!selected || !points || !!pending} loading={busy} onClick={confirm}>发放</Button>{pending && <Button loading={busy} onClick={() => void execute(pending)}>重试发放</Button>}<CreditSelectedUser user={users.find(user => user.uid === selected)} /></Space>
+      <CreditGrantPresets points={points} disabled={!!pending || busy} onSelect={setPoints} />
       {pending && <Alert type="warning" message={`待确认：用户 ${pending.uid}，${pending.points} 点。请重试确认结果。`} />}
       {error && <Alert type="error" message={error} showIcon />}
     </Space>

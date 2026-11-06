@@ -43,3 +43,25 @@ test("credit search results render directly with a bounded scroll area and selec
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("credit presets fill the chosen amount and respect the disabled state", async () => {
+  const esbuild = require("esbuild") as typeof import("esbuild");
+  const React = require("react") as typeof import("react");
+  const { renderToStaticMarkup } = require("react-dom/server") as typeof import("react-dom/server");
+  const directory = await mkdtemp(join(new URL("node_modules/", adminRoot).pathname, ".credit-test-"));
+  try {
+    const output = join(directory, "presets.mjs");
+    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-grant-presets.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", logLevel: "silent" });
+    const { CreditGrantPresets } = await import(pathToFileURL(output).href);
+    let selected = 0;
+    const props = { points: null, disabled: false, onSelect: (value: number) => { selected = value; } };
+    const options = React.Children.toArray(CreditGrantPresets(props).props.children) as Array<React.ReactElement<{ onClick: () => void; children: number }>>;
+    assert.deepEqual(options.map(option => option.props.children), [10, 50, 100, 500, 1000]);
+    options[2].props.onClick();
+    assert.equal(selected, 100);
+    const disabledHtml = renderToStaticMarkup(React.createElement(CreditGrantPresets, { ...props, disabled: true }));
+    assert.equal((disabledHtml.match(/disabled=""/g) ?? []).length, 5);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
