@@ -1,3 +1,4 @@
+import {ResearchAIRunner} from "../../src/modules/lighttick/investments/research-ai/research-ai.runner.ts";
 import {GitHubService} from "../../src/modules/lighttick/github/github.service.ts";
 import {GitHubClient} from "../../src/modules/lighttick/github/github.client.ts";
 import {GitHubTestRunner} from "../../src/modules/lighttick/github/github-test.runner.ts";
@@ -53,6 +54,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     const count=context.brief.pacing==='weekly'?context.brief.weeks*context.brief.sessions:context.brief.lesson_count;
     return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({prerequisites:'合成先修说明',stages:[{title:'合成基础',goal:'解释合成概念'}],lessons:Array.from({length:count},(_,i)=>context.frozen?.find((l:any)=>l.number===i+1)??{number:i+1,topic:'合成课次 '+(i+1),goal:'说明具体结论',exercise:'写下一条应用',assessment:'自查证据',minutes:context.brief.minutes,stage:1,kind:i===count-1?'review':'lesson',requires:i?[i]:[]})})};
    }
+   if(user.includes('LIGHTTICK_RESEARCH_AI_V1')){const frozen=JSON.parse(user.slice(user.lastIndexOf('\n')+1));return {provider:'synthetic',providerModel:'fixture',...(frozen.research.title.includes('TRUNCATED_RESPONSE')?{finishReason:'length'}:{}),text:JSON.stringify({text:'Synthetic '+(/KIND=(analysis|guide|report)/.exec(user)?.[1]??'unknown')+' reviewed document',limitations:'No live quotes. Synthetic verification only.',citations:frozen.research.title.includes('BAD_CITATION')?['invented']:['research:'+frozen.research.id+':'+frozen.research.revision]})};}
    if(user.includes('Draft one complete lesson'))return {provider:'synthetic',providerModel:'fixture',text:JSON.stringify({content:'# 合成教学正文\n## 引导问题\n合成问题\n## 概念\n概念\n## 示范\n示范\n## 边界\n边界\n## 练习\n写下一条应用\n---\n## 参考分析\n核对证据\n## 自查\n自查\n## 记忆提示\n提示',references:'仅使用明确审阅的合成资料'})};
    return { provider: 'synthetic', providerModel: 'synthetic', text: JSON.stringify(input.messages.some((m: any) => m.content.includes('"planning_action":"messages"')) ? {message: '请核对投入与日期，再审阅草案。',fields: {}} : {tasks: [{title:'合成规划步骤',estimated_minutes:5,scheduled_for:'2030-01-01T09:00:00Z',completion_criteria:'写下一条具体结论',steps:['打开笔记','写下结论']}]}) };
   }} as any;
@@ -78,7 +80,7 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
   runtime.github=github;
   const learning=runtime.worker!.learning!;
   const market=new MarketWorkRunner(runtime.marketWork!,new DailyMarketAdapter(s=>runtime.marketPolicy!.policy(s),new MarketTransport(async(url,init)=>{if(new URL(String(url)).searchParams.get('beg')==='20261029')await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);init?.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});return new Response('{"synthetic":"unavailable"}',{status:503});})),runtime.worker!.market!.authorizeOwner);
-  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,personal),undefined,new LearningWorkRunner(runtime.learningWork!,personal,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments,market,new PersonalModelTestRunner(runtime.personalModel!,personal,runtime.worker!.modelTests!.authorizeOwner),new GitHubTestRunner(github,runtime.worker!.githubTests!.authorizeOwner));
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,personal),undefined,new LearningWorkRunner(runtime.learningWork!,personal,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments,market,new PersonalModelTestRunner(runtime.personalModel!,personal,runtime.worker!.modelTests!.authorizeOwner),new GitHubTestRunner(github,runtime.worker!.githubTests!.authorizeOwner),new ResearchAIRunner(runtime.researchAI!,personal,runtime.worker!.researchAI!.authorizeOwner));
   let running=false,lastRecovery=0;
   queueTimer=setInterval(()=>{if(running)return;running=true;void (async()=>{if(Date.now()-lastRecovery>1000){lastRecovery=Date.now();await runtime.worker!.recover();}await app.queue.processDueJobs(job=>runtime.worker!.process(job),new Date());})().catch(()=>{}).finally(()=>{running=false;});},100);
 

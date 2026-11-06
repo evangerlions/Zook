@@ -73,6 +73,14 @@
         "test/unit/lighttick-personal-model.test.ts",
         "test/unit/lighttick-github.test.ts"
       ]
+    },
+    {
+      "id": "research_AI_frozen_model_and_review",
+      "tests": [
+        "test/unit/lighttick-research-ai.test.ts",
+        "test/unit/lighttick-research-ai.api.test.ts",
+        "test/unit/lighttick-research.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -90,7 +98,8 @@
     "test/integration/lighttick-research-postgres.test.ts",
     "test/integration/lighttick-personal-model-postgres.test.ts",
     "test/integration/lighttick-github-postgres.test.ts",
-    "test/integration/lighttick-account-deletion-postgres.test.ts"
+    "test/integration/lighttick-account-deletion-postgres.test.ts",
+    "test/integration/lighttick-research-ai-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",

@@ -21,7 +21,7 @@ paths:
         versions. Existing worker, no automatic publication or trading. Adopt confirms
         a separate analysis artifact; does not modify original facts. CAS/idempotent
         originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
-        30s runtime, 3 crash recoveries, no fallback.
+        30s runtime, 3 total execution attempts including recovery, no fallback.
       tags:
       - lighttick-research-ai
       parameters:
@@ -68,7 +68,7 @@ paths:
         versions. Existing worker, no automatic publication or trading. Adopt confirms
         a separate analysis artifact; does not modify original facts. CAS/idempotent
         originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
-        30s runtime, 3 crash recoveries, no fallback.
+        30s runtime, 3 total execution attempts including recovery, no fallback.
       tags:
       - lighttick-research-ai
       parameters:
@@ -120,7 +120,7 @@ paths:
         versions. Existing worker, no automatic publication or trading. Adopt confirms
         a separate analysis artifact; does not modify original facts. CAS/idempotent
         originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
-        30s runtime, 3 crash recoveries, no fallback.
+        30s runtime, 3 total execution attempts including recovery, no fallback.
       tags:
       - lighttick-research-ai
       parameters:
@@ -161,7 +161,7 @@ paths:
         versions. Existing worker, no automatic publication or trading. Adopt confirms
         a separate analysis artifact; does not modify original facts. CAS/idempotent
         originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
-        30s runtime, 3 crash recoveries, no fallback.
+        30s runtime, 3 total execution attempts including recovery, no fallback.
       tags:
       - lighttick-research-ai
       parameters:
@@ -213,7 +213,7 @@ paths:
         versions. Existing worker, no automatic publication or trading. Adopt confirms
         a separate analysis artifact; does not modify original facts. CAS/idempotent
         originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
-        30s runtime, 3 crash recoveries, no fallback.
+        30s runtime, 3 total execution attempts including recovery, no fallback.
       tags:
       - lighttick-research-ai
       parameters:
