@@ -1,3 +1,6 @@
+import {GitHubService} from "../../src/modules/lighttick/github/github.service.ts";
+import {GitHubClient} from "../../src/modules/lighttick/github/github.client.ts";
+import {GitHubTestRunner} from "../../src/modules/lighttick/github/github-test.runner.ts";
 import {KVManager} from "../../src/infrastructure/kv/kv-manager.ts";
 import {PersonalModelDispatcher} from "../../src/modules/lighttick/personal-model/personal-model.dispatcher.ts";
 import {PersonalModelTestRunner} from "../../src/modules/lighttick/personal-model/personal-model-test.runner.ts";
@@ -19,7 +22,7 @@ import { readRequestBody } from '../../src/infrastructure/http/request-body.ts';
 const dsn = process.env.GROW_WEB_TEST_DSN;
 if (!dsn || !['127.0.0.1', 'localhost'].includes(new URL(dsn).hostname) || !/^\/grow_web_u1_[a-f0-9]+$/.test(new URL(dsn).pathname)) throw Error('Dedicated disposable localhost database required');
 await runPostgresMigrations({ connectionString: dsn, log: () => {} });
-const pool = new Pool({ connectionString: dsn });
+const pool = new Pool({ connectionString: dsn,application_name:"grow-web-fixture" });
 const repository = new PostgresLightTickRepository(pool);
 const seed = buildDefaultSeed(undefined, { includeLightTick: true });
 for (const userId of ['user_alice', 'user_bob']) seed.appUsers.push({ id: 'grow-web-' + userId, appId: 'lighttick', userId, status: 'ACTIVE', accountRegion: 'UNKNOWN', joinedAt: new Date().toISOString() });
@@ -63,9 +66,19 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
     return new Response(JSON.stringify({choices:[{message:{content:result.text},finish_reason:String(body.model).includes('truncated')?'length':'stop'}],usage:{prompt_tokens:10,completion_tokens:10,total_tokens:20}}),{headers:{'Content-Type':'application/json'}});
   });
   runtime.personalModelDispatcher=personal;
+  const githubBase=runtime.github!;
+  const github=new GitHubService(repository,githubBase.crypto,githubBase.keyId,app.queue,new GitHubClient(async(raw,init)=>{
+    const u=new URL(String(raw)),token=new Headers(init?.headers).get('Authorization')??'';
+    if(u.origin!=='https://api.github.com'||!u.pathname.startsWith('/repos/fixture/')||!token.startsWith('Bearer SYNTHETIC_'))throw Error('Synthetic GitHub fixture only');
+    const branch=decodeURIComponent(u.pathname.split('/git/ref/heads/')[1]??'');
+    if(branch.includes('slow'))await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);init?.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});
+    if(branch.includes('failed'))return new Response('{}',{status:403});
+    return new Response(JSON.stringify({ref:'refs/heads/'+branch,object:{type:'commit',sha:'a'.repeat(40)}}),{headers:{'Content-Type':'application/json'}});
+  }));
+  runtime.github=github;
   const learning=runtime.worker!.learning!;
   const market=new MarketWorkRunner(runtime.marketWork!,new DailyMarketAdapter(s=>runtime.marketPolicy!.policy(s),new MarketTransport(async(url,init)=>{if(new URL(String(url)).searchParams.get('beg')==='20261029')await new Promise<void>((resolve,reject)=>{const timer=setTimeout(resolve,10000);init?.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(Error('Synthetic cancelled'));},{once:true});});return new Response('{"synthetic":"unavailable"}',{status:503});})),runtime.worker!.market!.authorizeOwner);
-  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,personal),undefined,new LearningWorkRunner(runtime.learningWork!,personal,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments,market,new PersonalModelTestRunner(runtime.personalModel!,personal,runtime.worker!.modelTests!.authorizeOwner));
+  runtime.worker = new LightTickWorker(new LightTickAiRunner(repository,personal),undefined,new LearningWorkRunner(runtime.learningWork!,personal,{...learning.sources,fetchUrl:async()=> '合成页面资料，来源与摘要在任务中保留。'},learning.authorizeOwner),runtime.worker!.investments,market,new PersonalModelTestRunner(runtime.personalModel!,personal,runtime.worker!.modelTests!.authorizeOwner),new GitHubTestRunner(github,runtime.worker!.githubTests!.authorizeOwner));
   let running=false,lastRecovery=0;
   queueTimer=setInterval(()=>{if(running)return;running=true;void (async()=>{if(Date.now()-lastRecovery>1000){lastRecovery=Date.now();await runtime.worker!.recover();}await app.queue.processDueJobs(job=>runtime.worker!.process(job),new Date());})().catch(()=>{}).finally(()=>{running=false;});},100);
 

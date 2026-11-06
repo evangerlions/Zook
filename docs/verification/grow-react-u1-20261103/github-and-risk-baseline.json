@@ -1,0 +1,438 @@
+{
+  "date": "2026-11-06",
+  "status": "github_settings_and_risk_baseline_increment_verified_not_full_plan_complete",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27,
+    "remaining": 6
+  },
+  "runtime_and_contract_revision": "ccdd537d94f23ed4a926b20de42895f29f4b3e80",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "5265e8219a9a28c31fb2e87ef7cda66fb96d0a70",
+    "contract_revision": "ccdd537d94f23ed4a926b20de42895f29f4b3e80",
+    "source_dirty": false,
+    "files": {
+      "index.html": "d131ca730b2c85838c990bedbb2c572e950c65dc73c8bad817231fa396fbd077",
+      "assets/ActionsPage-CHTasfzM.js": "8b9d37b4f75f4506b0796577799349a47e24e2facb9861743da6655d8714e25c",
+      "assets/GoalsPage-CiNmjCH6.js": "b994f76891dcdbf78579c24c1510882dc5028ef1d7c51ae467938081000372a3",
+      "assets/InvestmentPage-Lfeb101P.js": "25099d9160e70db2154a7fc55ecbeb757175073f9f455677e9f8711e4574809e",
+      "assets/LearningPage-HmQsVs6J.js": "a56aa1e14b0e55d22edc167575086f4ff757738283121796d0fba5ddf740085b",
+      "assets/PendingNotice-BW6O8j5H.js": "ef207d0d28d2cbd07dd62c17303d0a6db25b9a07b2f88744ee4876d450996c56",
+      "assets/PlanningPage-D-MDc8aj.js": "edb803d467b05c8398a4086afab0db7fdca23c227d21ae0adf482a92c4d1afc4",
+      "assets/PlansPage-CTHdegP0.js": "31b98647beec3ebcdf953fb55e03c8aa871004af1efc218fdc93d9d28a988c34",
+      "assets/PracticePage-C4zziutC.js": "d8c38634608a43eacc452e73cf10b6ff33195a4b3cc1a4e514b26688e678dc92",
+      "assets/RecordsPage-BZQmAZlu.js": "20c75ae9ea96ee4f1ce232be414753e244455253522971dfbb4ed930c6d53865",
+      "assets/ReviewPage-C4x4LGp-.js": "ccf28b667106d806234ba327628d8fa62191b2c72326fd0db83cc18eb4c2848e",
+      "assets/SettingsPage-Bw84qzYc.js": "2a750a14b37cf8fe576aff2f9d4b3a8cf5ddd6a30d92f71aa443311a95687959",
+      "assets/TodayPage-CLcw2zld.js": "5b00df02a1e67fcfaddef190f2c084868fd2ebfd2d5636712f85e1398c4b986c",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index-B64wQt8G.js": "0a830714a3ed68131a6479543b03c5e6c424c543427298049d72ebab89c94aba",
+      "assets/index-KRL_7fxh.css": "2dad85eea8356842adf711a1aecb0efd05dafb21fe17c1b2a3057b925bb84d60",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "legacy_browser_tested_grow_revision": "0a33d4aa3181ac8ebe1935fac5738f58b6578b91",
+  "final_grow_change": "settings_CSS_and_strict_corrupt_baseline_validation_then_actual_served_SHA_verified_and_final_regression",
+  "migration": {
+    "path": "src/infrastructure/database/postgres/migrations/097_lighttick_github_settings.sql",
+    "sha256": "11cacd8ae37be7d88d081d4bb916da3241e60d49f6cd4d6df108d294f6f8115a"
+  },
+  "checks": {
+    "backend_full_initial": {
+      "passed": 2450,
+      "existing_skipped": 1,
+      "failed": 0
+    },
+    "github_domain_HTTP": {
+      "passed": 7
+    },
+    "risk_focused_unit": {
+      "passed": 98
+    },
+    "PG_Redis_joint": {
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    },
+    "risk_entry_separate_PG": {
+      "passed": 18
+    },
+    "grow_unit": {
+      "passed": 28
+    },
+    "final_github_chrome": {
+      "passed": true,
+      "account": "course10@example.com",
+      "unsaved_test_no_activation": true,
+      "lost_save_response_receipt_recovery": true,
+      "retained_token_without_echo": true,
+      "CAS_preserves_local_input": true,
+      "exact_original_after_token_reentry": true,
+      "wrong_token_not_sent": true,
+      "running_cancel_fenced": true,
+      "failed_read_does_not_save": true,
+      "explicit_native_clear": true,
+      "no_token_in_storage_or_response": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "corrupt_baseline_blocks_without_deleting_raw": true,
+      "served_grow_revision": "5265e8219a9a28c31fb2e87ef7cda66fb96d0a70"
+    },
+    "previous_github_chrome": {
+      "passed": true,
+      "account": "course5@example.com",
+      "unsaved_test_no_activation": true,
+      "lost_save_response_receipt_recovery": true,
+      "retained_token_without_echo": true,
+      "CAS_preserves_local_input": true,
+      "exact_original_after_token_reentry": true,
+      "wrong_token_not_sent": true,
+      "running_cancel_fenced": true,
+      "failed_read_does_not_save": true,
+      "explicit_native_clear": true,
+      "no_token_in_storage_or_response": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "personal_model_chrome": {
+      "passed": true,
+      "unsaved_test_no_activation": true,
+      "lost_test_and_save_response_recovered_by_receipt": true,
+      "exact_original_body_and_key_after_secret_reentry": true,
+      "wrong_reentered_secret_not_sent": true,
+      "no_plaintext_credentials_in_browser_storage_or_response": true,
+      "live_cancel_fenced": true,
+      "settings_CAS_preserves_input": true,
+      "actual_course_worker_selected_model": true,
+      "actual_planning_selected_model": true,
+      "truncated_response_rejected_no_fallback": true,
+      "explicit_clear_to_platform": true,
+      "widths_320_375_768_1024": true,
+      "page_errors": [],
+      "synthetic_account": "course11@example.com",
+      "course_work_id": "work-3996325b9884e4854d98216415af5b53757ad3d6",
+      "planning_session_id": "planning_bd67ce6bbf2843bcb1005178a6af5f03"
+    },
+    "legacy_chrome": [
+      {
+        "story": "u2",
+        "exit": 0
+      },
+      {
+        "story": "learning",
+        "exit": 0
+      },
+      {
+        "story": "records",
+        "exit": 0
+      },
+      {
+        "story": "plans",
+        "exit": 0
+      },
+      {
+        "story": "actions",
+        "exit": 0
+      },
+      {
+        "story": "practice",
+        "exit": 0
+      },
+      {
+        "story": "review",
+        "exit": 0
+      },
+      {
+        "story": "course",
+        "exit": 0
+      },
+      {
+        "story": "investment_accounts",
+        "exit": 0
+      },
+      {
+        "story": "investment_ledger",
+        "exit": 0
+      },
+      {
+        "story": "market",
+        "exit": 0
+      },
+      {
+        "story": "market_admin",
+        "exit": 0
+      },
+      {
+        "story": "research",
+        "exit": 0
+      }
+    ],
+    "restart": {
+      "passed": true,
+      "same_PG_metadata": true,
+      "private_Redis_key_survives_Zook_restart": true,
+      "saved_test_without_token_reentry": true,
+      "test_id": "githubtest-51eefc517ad080b9a3a96f031b80bf034c4c3477"
+    },
+    "live_DB_migration_guard": {
+      "passed": true,
+      "refuses_migration_replay_on_active_HTTP_fixture_database": true
+    },
+    "backend_full_final": {
+      "passed": 2453,
+      "existing_skipped": 1,
+      "failed": 0
+    },
+    "legacy_chrome_final_first_attempt": [
+      {
+        "story": "u2",
+        "exit": 0
+      },
+      {
+        "story": "learning",
+        "exit": 0
+      },
+      {
+        "story": "records",
+        "exit": 0
+      },
+      {
+        "story": "plans",
+        "exit": 0
+      },
+      {
+        "story": "actions",
+        "exit": 0
+      },
+      {
+        "story": "practice",
+        "exit": 0
+      },
+      {
+        "story": "review",
+        "exit": 0
+      },
+      {
+        "story": "course",
+        "exit": 1
+      },
+      {
+        "story": "investment_accounts",
+        "exit": 0
+      },
+      {
+        "story": "investment_ledger",
+        "exit": 0
+      },
+      {
+        "story": "market",
+        "exit": 0
+      },
+      {
+        "story": "market_admin",
+        "exit": 0
+      },
+      {
+        "story": "research",
+        "exit": 0
+      }
+    ],
+    "legacy_chrome_final": [
+      {
+        "story": "u2",
+        "passed": true,
+        "evidence": "regression-fixed/u2/result.json"
+      },
+      {
+        "story": "learning",
+        "passed": true,
+        "evidence": "regression-fixed/learning/result.json"
+      },
+      {
+        "story": "records",
+        "passed": true,
+        "evidence": "regression-fixed/records/result.json"
+      },
+      {
+        "story": "plans",
+        "passed": true,
+        "evidence": "regression-fixed/plans/result.json"
+      },
+      {
+        "story": "actions",
+        "passed": true,
+        "evidence": "regression-fixed/actions/result.json"
+      },
+      {
+        "story": "practice",
+        "passed": true,
+        "evidence": "regression-fixed/practice/result.json"
+      },
+      {
+        "story": "review",
+        "passed": true,
+        "evidence": "regression-fixed/review/result.json"
+      },
+      {
+        "story": "course",
+        "passed": true,
+        "evidence": "course-final-fresh/result.json"
+      },
+      {
+        "story": "investment_accounts",
+        "passed": true,
+        "evidence": "regression-fixed/investment_accounts/result.json"
+      },
+      {
+        "story": "investment_ledger",
+        "passed": true,
+        "evidence": "regression-fixed/investment_ledger/result.json"
+      },
+      {
+        "story": "market",
+        "passed": true,
+        "evidence": "regression-fixed/market/result.json"
+      },
+      {
+        "story": "market_admin",
+        "passed": true,
+        "evidence": "regression-fixed/market_admin/result.json"
+      },
+      {
+        "story": "research",
+        "passed": true,
+        "evidence": "regression-fixed/research/result.json"
+      }
+    ],
+    "course_budget_refusal_and_fresh_account": {
+      "first_account": "course1@example.com",
+      "reserved_before_repeat_micros": 1950000,
+      "next_lesson_reservation_micros": 450000,
+      "daily_limit_micros": 2000000,
+      "no_budget_increase_or_counter_reset": true,
+      "fresh_account": "course0@example.com",
+      "result": {
+        "passed": true,
+        "manual_route": "plan-4966643d-bac0-4382-8fc7-fbbbe2318af1",
+        "ai_route": "plan-9acbcc8d-b08f-402b-9f88-2f8c7b9f34ae",
+        "lost_response_exact_replay": true,
+        "route_cas_preserves_local": true,
+        "per_content_completion": true,
+        "file_source_worker_review": true,
+        "explicit_ai_adoption": true,
+        "cancel_no_publication": true,
+        "legacy_progress": true,
+        "console_errors": []
+      }
+    }
+  },
+  "artifact_root": ".artifacts/grow-remaining-20261106",
+  "artifact_sha256": {
+    "backend-full.log": "a071e04a501093bb391ae8d2224f4928782ea76d417ee17d419f165204ae7680",
+    "github-final-2.log": "f906ed0970bf705367db06c181a2ac928055939b42df2ecb7fd6ebd86576d26a",
+    "github-types-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pg-joint.log": "ce08829511f16e614da85eba34f68f49a4bd56985d9288d616827fc03c4fa701",
+    "pg-joint-final.log": "00df5f7b331a0bc5cc41f51d841811364cbbbd097ea1f8e0ca3b6b7ac0e89865",
+    "risk-check-final.json": "e33fb489b18737502c1ad5b685fb8a901bd2bef367db1781113832478139a6b5",
+    "risk-unit-final.log": "bd9f0988d7248b26fc2aa6b68ff967402b40ce6adc3f40f3948c2b693ec82424",
+    "risk-pg.log": "5d1b3e31dfcaa3581335f7b8665acf6bf73aa3eee8d497e980cda99353e3f041",
+    "risk-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "risk-live-db-refusal.json": "56a0f0f12dbc32b19ce701bf1511d3abbb3c4261e6c9428179b3f094c5f01bf3",
+    "contracts-check-final.log": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1",
+    "contracts-lint.log": "4ed6945cc50c7a363f305a677fd99c9c343cce8ea727997ff5414a5c2257148f",
+    "lines-final.log": "fef5f48b0e8fcac18880b60dd5859d216fd417a9b9af23892157b316a99b5385",
+    "grow-unit-final.log": "e44dcdf05f47fb71c146b60f02fd2a277fb3d3bf94cba8d7d639e8b6e714e066",
+    "grow-types-corrected.log": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c",
+    "grow-types-ui.log": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c",
+    "grow-clean-build.log": "5e88b85def09b34eeeb7f889110e8eefd087f6d819aff6af4303a3904d18738c",
+    "grow-clean-build-final.log": "242651011a20d8ec1a80f11925814520903fd811553eaa5279565a902ca8adbd",
+    "grow-clean-build-ui.log": "0793a884f4d2046041e5fc7eb5aee19c8fb2728d6b80c55f0e00128cd4c2c91f",
+    "import-ui.log": "55b82147a4cb065c90103a44e065bbd01ae9b097ec160837dd270e1675326ee6",
+    "github-browser-first.log": "2d360801c79143d30c885915a0c223a5a8db82291934fc12db045ee95e09bcf1",
+    "github-browser-second.log": "78f65b9b60614536bedc5477b8f692eefe03975a980a4c0d6bf848ca0e7addc3",
+    "github-browser-third/result.json": "4cd0dc3b350e65c403cc84f5de6dba2f611a6babf6c8c82e43dee0db9088bb33",
+    "github-browser-final/result.json": "afc59b826d55f9ddbddccb86ee8e89fdb044fc8681ea634855aa2f9b3267bf99",
+    "github-browser-final/settings-desktop.png": "d83c3fce8014c626c17b5f41351730fb43ccb45d400cc8326158afc87781cbe2",
+    "github-browser-final/settings-320.png": "9bae940cb47c719d2b311d1df1195f78f473951b33ab199eca89d01e7d1108a2",
+    "model-regression-browser/result.json": "6fde1c8b181d62039182a7b699594434527e4bb4bf38a1fb5fa7d6f3e36ad53f",
+    "regression/results.json": "42a963671973eb8eb5246997b94a8a830383122b27fa492d44272d1de7a750d6",
+    "github-restart-result.json": "6af88de1960da691e039a4bfb1aff12dd2a6302d7dc290fccd0a715204d4fb0c",
+    "grow-index-final.patch": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f",
+    "backend-full-final.log": "2d152981b5169d76866b0ee85f25ed7b69dce497478331aa4d2b4cbf04023fd9",
+    "grow-unit-corrupt.log": "33f8794cdfb54069b2fb144471d90f42cb5cb305232a39290f7a7a952571b7a2",
+    "grow-types-corrupt.log": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c",
+    "grow-clean-build-verified.log": "fdb008cb596846645ecc546ca517c2aec5ad29644ccddf66f31930ffbf11e921",
+    "import-verified.log": "b91ecc7938e2a2f96789f2ffa2b1740c72edb36c80dc144be4b4acaff3e5e087",
+    "risk-unit-close.log": "cf834539f28c550d4ad5cd18033708499d59c8a47b6507a281ad93cfba517754",
+    "risk-check-close.json": "e33fb489b18737502c1ad5b685fb8a901bd2bef367db1781113832478139a6b5",
+    "github-types-accepted.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "github-browser-verified.log": "d5c078251c2514deedfb0307fa28c82c0a74b0da913735cf37bd5e3204f49748",
+    "github-browser-fixed.log": "f127c0b5184832e3f2d467c6bfb8ccb11e582e360317fce0fc79c07e8071d1c8",
+    "github-browser-accepted/result.json": "2328942237b9acd5ccd672a8d433611d9ef00a53b757ce6c76397edc00582848",
+    "github-browser-accepted/settings-desktop.png": "6226c9121ef9098b42add33e7d071eba3f1444001c9214bdc9629315b62fcb17",
+    "github-browser-accepted/settings-320.png": "9bae940cb47c719d2b311d1df1195f78f473951b33ab199eca89d01e7d1108a2",
+    "model-browser-fixed/result.json": "c8bf5bbed51429a850363a8ac7f35d298ed5b33649808997939d3b40859c3c8b",
+    "regression-fixed/results.json": "c7a08c0d3fd50cbc4eb1b4d4e70b0ae68e21513e2311b7e15d44db5b1727a903",
+    "regression-fixed/course.log": "28730d95753b845a02e2a98a7f92f5419d51de7f91b45b8089570925557d61a0",
+    "course-final-fresh/result.json": "130a7bca83cf547059981196acd4d0ad23ee00f8e621541c9346ea3353fd5c1e"
+  },
+  "preserved_existing_grow_index_sha256": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f",
+  "local_review": {
+    "url": "http://127.0.0.1:58631/grow/settings",
+    "synthetic_account": "course6@example.com",
+    "database": "grow_web_u1_20261106",
+    "risk_database": "grow_web_u1_20261106_risk",
+    "http_pid": 92659,
+    "postgres_port": 58630,
+    "redis_port": 58632,
+    "network_adapters": "deterministic_synthetic_only"
+  },
+  "release": {
+    "status": "HOLD",
+    "verified_main_SHA": null,
+    "native_iOS_HEAD": "d158764d16a7c4fb751440a97e7655e6b7db3e98",
+    "native_Android_HEAD": "0332c725461f5b7576e3381d881b7cf5ff332b25",
+    "native_worktree_dirty": true,
+    "compatibility_matrix_complete": false,
+    "real_history_read": false,
+    "real_provider_called": false,
+    "real_migration_executed": false,
+    "dev_online_released": false
+  },
+  "unclosed": [
+    "full_U0_risk_and_per_operation_parity",
+    "GitHub_content_reads_writes_publication_prefix_mapping",
+    "other_settings_and_research_AI",
+    "remaining_investment_research_rules_backtests_compensation",
+    "all_module_synthetic_migration",
+    "native_compatibility_and_other_App_mixed_P95",
+    "real_model_devices_accessibility_observation_migration_and_release"
+  ],
+  "running_static_source_revision": "5265e8219a9a28c31fb2e87ef7cda66fb96d0a70",
+  "verification_failures_retained": [
+    "missing_personal_model_Redis_test_parameter_corrected",
+    "test_request_union_narrowed_before_clean_build",
+    "ambiguous_current_revision_and_nested_status_selectors_fixed",
+    "cached_static_process_was_restarted_then_actual_runtime_revision_checked",
+    "corrupt_draft_injection_must_target_current_document_slot",
+    "repeated_course_owner_budget_refusal_preserved_fresh_owner_verified"
+  ],
+  "tracked_fixture_sha256": {
+    "test/fixtures/lighttick/risk-baseline.json": "6fac2baee0a35d20e8def2c6bc59031b9621cfe30c7a210fe734f09e4603ae0e",
+    "test/fixtures/lighttick/learning-authority-golden.json": "b4d3f962763e917677145b7be293ce501806cc3d8dccc263984dd22139544d37",
+    "test/fixtures/lighttick/course-authority-golden.json": "69086925f4ed5f288131d977f6cbac53013f04c19ce918b54f75e7bf21da4595",
+    "test/fixtures/lighttick/other-app-contract-baseline.json": "d9a4b9a64857523b69a49f25d24cd8fd9df119c14958f80cd6ac1140a102b16f"
+  }
+}

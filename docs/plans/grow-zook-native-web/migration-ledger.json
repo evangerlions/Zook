@@ -368,7 +368,9 @@
       "capability_group": "accounts",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Default is native Zook content; no old default env repository/credentials read. Credentials are account encrypted; tests are durable. No automatic content migration. Full GitHub storage parity remains gated."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -398,10 +400,25 @@
       ],
       "migration_disposition": "Preserve owner repository, branch, credential setup and test behavior. Credential ownership and supported storage integration require implementation review; platform administrator setup is not equivalent to personal configuration. No real credential import or echo.",
       "implementation_gap": {
-        "status": "confirmed_missing",
+        "status": "partially_resolved",
         "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
-        "reason": "Content repository/branch/token/save/test UI and runtime are not yet implemented; preserve behavior pending explicit disposition."
-      }
+        "reason": "Encrypted owner settings, retained token, read-only branch check and durable tests/cancel verified. GitHub content reads/writes/publications and legacy prefix/source mappings are still not integrated."
+      },
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-06",
+          "contract": "/api/v1/lighttick/account/github",
+          "page": "/grow/settings",
+          "report": "docs/verification/grow-react-u1-20261103/github-and-risk-baseline.md",
+          "tests": [
+            "test/unit/lighttick-github.test.ts",
+            "test/unit/lighttick-github.api.test.ts",
+            "test/integration/lighttick-github-postgres.test.ts",
+            "test/support/grow_web_github_settings_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -9723,7 +9740,9 @@
       "capability_group": "accounts",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Default is native Zook content; no old default env repository/credentials read. Credentials are account encrypted; tests are durable. No automatic content migration. Full GitHub storage parity remains gated."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -9753,10 +9772,25 @@
       ],
       "migration_disposition": "Preserve owner repository, branch, credential setup and test behavior. Credential ownership and supported storage integration require implementation review; platform administrator setup is not equivalent to personal configuration. No real credential import or echo.",
       "implementation_gap": {
-        "status": "confirmed_missing",
+        "status": "partially_resolved",
         "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
-        "reason": "Content repository/branch/token/save/test UI and runtime are not yet implemented; preserve behavior pending explicit disposition."
-      }
+        "reason": "Encrypted owner settings, retained token, read-only branch check and durable tests/cancel verified. GitHub content reads/writes/publications and legacy prefix/source mappings are still not integrated."
+      },
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-06",
+          "contract": "/api/v1/lighttick/account/github/tests",
+          "page": "/grow/settings",
+          "report": "docs/verification/grow-react-u1-20261103/github-and-risk-baseline.md",
+          "tests": [
+            "test/unit/lighttick-github.test.ts",
+            "test/unit/lighttick-github.api.test.ts",
+            "test/integration/lighttick-github-postgres.test.ts",
+            "test/support/grow_web_github_settings_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -18233,7 +18267,9 @@
       "capability_group": "accounts",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Default is native Zook content; no old default env repository/credentials read. Credentials are account encrypted; tests are durable. No automatic content migration. Full GitHub storage parity remains gated."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -18263,10 +18299,25 @@
       ],
       "migration_disposition": "Preserve owner repository, branch, credential setup and test behavior. Credential ownership and supported storage integration require implementation review; platform administrator setup is not equivalent to personal configuration. No real credential import or echo.",
       "implementation_gap": {
-        "status": "confirmed_missing",
+        "status": "partially_resolved",
         "evidence": "docs/plans/grow-zook-native-web/feature-preservation-gaps.md",
-        "reason": "Content repository/branch/token/save/test UI and runtime are not yet implemented; preserve behavior pending explicit disposition."
-      }
+        "reason": "Encrypted owner settings, retained token, read-only branch check and durable tests/cancel verified. GitHub content reads/writes/publications and legacy prefix/source mappings are still not integrated."
+      },
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-06",
+          "contract": "/api/v1/lighttick/account/github",
+          "page": "/grow/settings",
+          "report": "docs/verification/grow-react-u1-20261103/github-and-risk-baseline.md",
+          "tests": [
+            "test/unit/lighttick-github.test.ts",
+            "test/unit/lighttick-github.api.test.ts",
+            "test/integration/lighttick-github-postgres.test.ts",
+            "test/support/grow_web_github_settings_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "PUT",

@@ -20,4 +20,5 @@ try {
   try { renameSync(stage, destination); } catch (error) { if (existsSync(previous)) renameSync(previous, destination); throw error; }
   if (existsSync(previous)) rmSync(previous, { recursive: true });
   console.log('Installed fixed LightTick Web artifact: ' + manifest.source_revision);
+  console.log('The existing Web process loads assets once. Restart it and verify /grow/runtime-config.js revision before acceptance.');
 } finally { if (existsSync(stage)) rmSync(stage, { recursive: true }); }

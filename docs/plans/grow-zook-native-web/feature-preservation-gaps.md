@@ -20,7 +20,9 @@
 
 ## 其余设置缺口
 
-旧 `GET/PUT /api/account/github`、`POST /api/account/github/test` 的内容仓库、分支、Token、保存与测试仍未承接；不会以移除菜单代替处置。自定义分类、局部记录副本导出/清空、完成说明继续核对；已有本人授权导出不能代签旧局部备份与恢复。整体仍为 21/27。
+2026-11-06：旧 `GET/PUT /api/account/github`、`POST /api/account/github/test` 的仓库、分支、Token、留空沿用、保存前只读检查及测试已承接，并新增 CAS/回执/取消和账号加密；见[验收报告](../../verification/grow-react-u1-20261103/github-and-risk-baseline.md)。GitHub 内容读取/写入/发布及旧 prefix/来源映射仍未接入，因此仍是部分实现，不签署完整存储等价。默认明确使用 Zook 原生内容，不读取旧 env 仓库或凭据。
+
+自定义分类、局部记录副本导出/清空、完成说明继续核对；已有本人授权导出不能代签旧局部备份与恢复。不会以移除菜单代替处置。整体仍为 21/27。
 
 ## 全量核对规则
 
