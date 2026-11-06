@@ -7,7 +7,7 @@
   border-radius: 8px;
 }
 
-.credit-user-result.ant-radio-wrapper {
+.credit-user-result {
   display: flex;
   align-items: center;
   height: 60px;
@@ -16,8 +16,13 @@
   border-bottom: 1px solid #f0f0f0;
 }
 
-.credit-user-result.ant-radio-wrapper:last-child { border-bottom: 0; }
-.credit-user-result.ant-radio-wrapper-checked { background: #e6f4ff; }
-.credit-user-result > span:last-child { min-width: 0; flex: 1; }
+.credit-user-result:last-child { border-bottom: 0; }
+.credit-user-result-selected { background: #e6f4ff; }
+.credit-user-result-number { width: 28px; flex: none; color: #595959; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.credit-user-result .ant-radio-wrapper { display: flex; align-items: center; flex: 1; min-width: 0; margin: 0; }
+.credit-user-result .ant-radio-wrapper > span:last-child { min-width: 0; flex: 1; }
 .credit-user-result-fields { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
 .credit-user-result-field { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.credit-user-result-phone, .credit-user-result-email { margin-right: 8px; }
+.credit-user-result-phone { color: #389e0d; }
+.credit-user-result-email { color: #722ed1; }

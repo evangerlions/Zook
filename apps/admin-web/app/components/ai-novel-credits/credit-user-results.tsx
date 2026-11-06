@@ -1,3 +1,4 @@
+import { MailOutlined, PhoneOutlined } from "@ant-design/icons";
 import { Radio, Tag } from "antd";
 import type { CreditUserCandidate } from "../../lib/ai-novel-credit-admin-api";
 import "./credit-user-results.css";
@@ -11,12 +12,15 @@ interface Props {
 
 export function CreditUserResults({ users, selected, disabled, onSelect }: Props) {
   return <Radio.Group aria-label="选择用户" className="credit-user-results" value={selected} disabled={disabled} onChange={event => onSelect(event.target.value)}>
-    {users.map(user => <Radio className="credit-user-result" key={user.uid} value={user.uid}>
+    {users.map((user, index) => <div className={`credit-user-result${selected === user.uid ? " credit-user-result-selected" : ""}`} key={user.uid}>
+      <span className="credit-user-result-number">{index + 1}</span>
+      <Radio value={user.uid}>
       <span className="credit-user-result-fields">
         <span className="credit-user-result-field" title={user.uid}><Tag color="blue">UID</Tag>{user.uid}</span>
-        <span className="credit-user-result-field" title={user.phone ?? "—"}><Tag color="green">手机号</Tag>{user.phone ?? "—"}</span>
-        <span className="credit-user-result-field" title={user.email ?? "—"}><Tag color="purple">邮箱</Tag>{user.email ?? "—"}</span>
+        <span className="credit-user-result-field" title={`手机号：${user.phone ?? "—"}`}><PhoneOutlined className="credit-user-result-phone" aria-label="手机号" />{user.phone ?? "—"}</span>
+        <span className="credit-user-result-field" title={`邮箱：${user.email ?? "—"}`}><MailOutlined className="credit-user-result-email" aria-label="邮箱" />{user.email ?? "—"}</span>
       </span>
-    </Radio>)}
+      </Radio>
+    </div>)}
   </Radio.Group>;
 }

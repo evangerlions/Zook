@@ -24,8 +24,10 @@ test("credit search results render directly with a bounded scroll area and selec
     assert.match(html, /phone-0/);
     assert.match(html, /email-0@example\.invalid/);
     assert.match(html, /ant-tag-blue/);
-    assert.match(html, /ant-tag-green/);
-    assert.match(html, /ant-tag-purple/);
+    assert.match(html, /credit-user-result-number">1</);
+    assert.match(html, /credit-user-result-number">9</);
+    assert.match(html, /aria-label="手机号"/);
+    assert.match(html, /aria-label="邮箱"/);
     const css = await readFile(new URL("app/components/ai-novel-credits/credit-user-results.css", adminRoot), "utf8");
     assert.match(css, /max-height:\s*300px/);
     assert.match(css, /height:\s*60px/);
