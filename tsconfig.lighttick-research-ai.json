@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.lighttick-actions.json","include":["src/modules/lighttick/investments/research-ai/**/*.ts","src/app/lighttick-research-ai-routes.ts","src/app/lighttick-account-settings-routes.ts","src/infrastructure/database/postgres/postgres-research-ai-store.ts"]}

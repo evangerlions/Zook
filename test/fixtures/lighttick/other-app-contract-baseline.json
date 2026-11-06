@@ -1,7 +1,7 @@
 {
   "scope": "static_non_LightTick_public_schemas_only_not_mixed_load_or_admin_runtime_acceptance",
   "source_revision": "ccdd537d94f23ed4a926b20de42895f29f4b3e80",
-  "schema_count": 222,
+  "schema_count": 221,
   "schema_names": [
     "AINovelPublicConfigSchema",
     "AccountDeletionDataSchema",
@@ -162,7 +162,6 @@
     "FrogSleepSleepPreferencesRequestSchema",
     "FrogSleepSleepReportRequestSchema",
     "FrogSleepTokenRefreshRequestSchema",
-    "GeneratedPublicContractNames",
     "KickoffPublicConfigSchema",
     "LogAckRequestSchema",
     "LogFailDataSchema",
@@ -226,6 +225,8 @@
     "YaoheziHealthVerifyOperationRequestSchema",
     "YaoheziMeDataSchema"
   ],
-  "sha256": "9b73560c5984ce5c25316f2784dca434dcb5348ae42083e4e2b0af662039d55e",
-  "admin_api_spec_sha256": "2a06eaf7fd51dbee24f4ff940a88a0c518c2a2045f6d6b7a5006bce991209207"
+  "sha256": "3849c3481296f52b0896f518ab74b9d9f26fffe1bebe251e0fc52add6d1084e8",
+  "admin_api_spec_sha256": "2a06eaf7fd51dbee24f4ff940a88a0c518c2a2045f6d6b7a5006bce991209207",
+  "previous_hash_including_name_index": "9b73560c5984ce5c25316f2784dca434dcb5348ae42083e4e2b0af662039d55e",
+  "correction": "Exclude GeneratedPublicContractNames metadata; actual schema payloads verified unchanged against bfeb2e6f"
 }

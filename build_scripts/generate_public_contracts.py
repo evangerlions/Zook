@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/research-ai.yaml": ['LightTickInvestmentResearchAIRequest', 'LightTickInvestmentResearchAICommand', 'LightTickInvestmentResearchAIWork', 'LightTickInvestmentResearchAIPage', 'LightTickInvestmentResearchAIWorkEnvelope', 'LightTickInvestmentResearchAIPageEnvelope'],
     "lighttick/github-settings.yaml": ['LightTickGitHubSettings', 'LightTickGitHubWrite', 'LightTickGitHubTestWrite', 'LightTickGitHubCancel', 'LightTickGitHubTest', 'LightTickGitHubSettingsEnvelope', 'LightTickGitHubTestEnvelope'],
     "lighttick/personal-model.yaml": ['LightTickPersonalModelSettings', 'LightTickPersonalModelWrite', 'LightTickPersonalModelTestWrite', 'LightTickPersonalModelCancel', 'LightTickPersonalModelTest', 'LightTickPersonalModelSettingsEnvelope', 'LightTickPersonalModelTestEnvelope'],
     "common/lighttick-market-admin.yaml": ["LightTickMarketCredentialWrite", "LightTickMarketCredentialSummary", "LightTickMarketCredentialEnvelope"],

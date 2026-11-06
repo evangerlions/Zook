@@ -1,6 +1,1121 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickInvestmentResearchAIRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "research_id",
+    "base_revision",
+    "kind",
+    "consent",
+    "model_mode",
+    "model_revision"
+  ],
+  "properties": {
+    "research_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "analysis",
+        "guide",
+        "report"
+      ]
+    },
+    "consent": {
+      "const": true
+    },
+    "model_mode": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "personal"
+      ]
+    },
+    "model_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchAIRequest = {
+  "research_id": string;
+  "base_revision": number;
+  "kind": "analysis" | "guide" | "report";
+  "consent": unknown;
+  "model_mode": "platform" | "personal";
+  "model_revision": number;
+};
+
+export const LightTickInvestmentResearchAICommandSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchAICommand = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentResearchAIWorkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "request_key",
+    "kind",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "output",
+    "adopted_at",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^researchai-[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "request_key": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "analysis",
+        "guide",
+        "report"
+      ]
+    },
+    "input": {
+      "type": "object",
+      "required": [
+        "research",
+        "markets",
+        "model",
+        "digest",
+        "scene",
+        "instrument"
+      ],
+      "properties": {
+        "research": {
+          "type": "object"
+        },
+        "markets": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object"
+          }
+        },
+        "model": {
+          "type": "object",
+          "required": [
+            "mode",
+            "revision"
+          ],
+          "properties": {
+            "mode": {
+              "enum": [
+                "platform",
+                "personal"
+              ]
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "digest": {
+          "type": "string"
+        },
+        "scene": {
+          "type": "object",
+          "required": [
+            "key",
+            "prompt_version",
+            "model_alias",
+            "max_output_tokens",
+            "max_input_bytes",
+            "timeout_ms"
+          ],
+          "properties": {
+            "key": {
+              "const": "lighttick.research.v1"
+            },
+            "prompt_version": {
+              "const": "research-ai-v1"
+            },
+            "model_alias": {
+              "const": "novel-structured"
+            },
+            "max_output_tokens": {
+              "const": 2500
+            },
+            "max_input_bytes": {
+              "const": 18000
+            },
+            "timeout_ms": {
+              "const": 30000
+            }
+          }
+        },
+        "instrument": {
+          "type": "object"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "output": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "citations",
+        "limitations",
+        "provider",
+        "model",
+        "prompt_version"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 40,
+          "items": {
+            "type": "string"
+          }
+        },
+        "limitations": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "prompt_version": {
+          "type": "string"
+        }
+      }
+    },
+    "adopted_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchAIWork = {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "kind": "analysis" | "guide" | "report";
+  "input": {
+  "research": {
+};
+  "markets": (
+{
+}
+)[];
+  "model": {
+  "mode": "platform" | "personal";
+  "revision": number;
+};
+  "digest": string;
+  "scene": {
+  "key": unknown;
+  "prompt_version": unknown;
+  "model_alias": unknown;
+  "max_output_tokens": unknown;
+  "max_input_bytes": unknown;
+  "timeout_ms": unknown;
+};
+  "instrument": {
+};
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | null;
+  "output": {
+} | null;
+  "adopted_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentResearchAIPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "request_key",
+          "kind",
+          "input",
+          "status",
+          "attempt",
+          "error_code",
+          "output",
+          "adopted_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^researchai-[a-f0-9]{40}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "request_key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "analysis",
+              "guide",
+              "report"
+            ]
+          },
+          "input": {
+            "type": "object",
+            "required": [
+              "research",
+              "markets",
+              "model",
+              "digest",
+              "scene",
+              "instrument"
+            ],
+            "properties": {
+              "research": {
+                "type": "object"
+              },
+              "markets": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "object"
+                }
+              },
+              "model": {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "revision"
+                ],
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "platform",
+                      "personal"
+                    ]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "digest": {
+                "type": "string"
+              },
+              "scene": {
+                "type": "object",
+                "required": [
+                  "key",
+                  "prompt_version",
+                  "model_alias",
+                  "max_output_tokens",
+                  "max_input_bytes",
+                  "timeout_ms"
+                ],
+                "properties": {
+                  "key": {
+                    "const": "lighttick.research.v1"
+                  },
+                  "prompt_version": {
+                    "const": "research-ai-v1"
+                  },
+                  "model_alias": {
+                    "const": "novel-structured"
+                  },
+                  "max_output_tokens": {
+                    "const": 2500
+                  },
+                  "max_input_bytes": {
+                    "const": 18000
+                  },
+                  "timeout_ms": {
+                    "const": 30000
+                  }
+                }
+              },
+              "instrument": {
+                "type": "object"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "text",
+              "citations",
+              "limitations",
+              "provider",
+              "model",
+              "prompt_version"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "citations": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 40,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "limitations": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "provider": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "prompt_version": {
+                "type": "string"
+              }
+            }
+          },
+          "adopted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchAIPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "kind": "analysis" | "guide" | "report";
+  "input": {
+  "research": {
+};
+  "markets": (
+{
+}
+)[];
+  "model": {
+  "mode": "platform" | "personal";
+  "revision": number;
+};
+  "digest": string;
+  "scene": {
+  "key": unknown;
+  "prompt_version": unknown;
+  "model_alias": unknown;
+  "max_output_tokens": unknown;
+  "max_input_bytes": unknown;
+  "timeout_ms": unknown;
+};
+  "instrument": {
+};
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | null;
+  "output": {
+} | null;
+  "adopted_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentResearchAIWorkEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "kind",
+        "input",
+        "status",
+        "attempt",
+        "error_code",
+        "output",
+        "adopted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^researchai-[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "request_key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "analysis",
+            "guide",
+            "report"
+          ]
+        },
+        "input": {
+          "type": "object",
+          "required": [
+            "research",
+            "markets",
+            "model",
+            "digest",
+            "scene",
+            "instrument"
+          ],
+          "properties": {
+            "research": {
+              "type": "object"
+            },
+            "markets": {
+              "type": "array",
+              "maxItems": 30,
+              "items": {
+                "type": "object"
+              }
+            },
+            "model": {
+              "type": "object",
+              "required": [
+                "mode",
+                "revision"
+              ],
+              "properties": {
+                "mode": {
+                  "enum": [
+                    "platform",
+                    "personal"
+                  ]
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "digest": {
+              "type": "string"
+            },
+            "scene": {
+              "type": "object",
+              "required": [
+                "key",
+                "prompt_version",
+                "model_alias",
+                "max_output_tokens",
+                "max_input_bytes",
+                "timeout_ms"
+              ],
+              "properties": {
+                "key": {
+                  "const": "lighttick.research.v1"
+                },
+                "prompt_version": {
+                  "const": "research-ai-v1"
+                },
+                "model_alias": {
+                  "const": "novel-structured"
+                },
+                "max_output_tokens": {
+                  "const": 2500
+                },
+                "max_input_bytes": {
+                  "const": 18000
+                },
+                "timeout_ms": {
+                  "const": 30000
+                }
+              }
+            },
+            "instrument": {
+              "type": "object"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "output": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "text",
+            "citations",
+            "limitations",
+            "provider",
+            "model",
+            "prompt_version"
+          ],
+          "properties": {
+            "text": {
+              "type": "string",
+              "maxLength": 12000
+            },
+            "citations": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 40,
+              "items": {
+                "type": "string"
+              }
+            },
+            "limitations": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "provider": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "prompt_version": {
+              "type": "string"
+            }
+          }
+        },
+        "adopted_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchAIWorkEnvelope = {
+  "code": unknown;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "kind": "analysis" | "guide" | "report";
+  "input": {
+  "research": {
+};
+  "markets": (
+{
+}
+)[];
+  "model": {
+  "mode": "platform" | "personal";
+  "revision": number;
+};
+  "digest": string;
+  "scene": {
+  "key": unknown;
+  "prompt_version": unknown;
+  "model_alias": unknown;
+  "max_output_tokens": unknown;
+  "max_input_bytes": unknown;
+  "timeout_ms": unknown;
+};
+  "instrument": {
+};
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | null;
+  "output": {
+} | null;
+  "adopted_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+};
+};
+
+export const LightTickInvestmentResearchAIPageEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "request_key",
+              "kind",
+              "input",
+              "status",
+              "attempt",
+              "error_code",
+              "output",
+              "adopted_at",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^researchai-[a-f0-9]{40}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "request_key": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "analysis",
+                  "guide",
+                  "report"
+                ]
+              },
+              "input": {
+                "type": "object",
+                "required": [
+                  "research",
+                  "markets",
+                  "model",
+                  "digest",
+                  "scene",
+                  "instrument"
+                ],
+                "properties": {
+                  "research": {
+                    "type": "object"
+                  },
+                  "markets": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "model": {
+                    "type": "object",
+                    "required": [
+                      "mode",
+                      "revision"
+                    ],
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "platform",
+                          "personal"
+                        ]
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "digest": {
+                    "type": "string"
+                  },
+                  "scene": {
+                    "type": "object",
+                    "required": [
+                      "key",
+                      "prompt_version",
+                      "model_alias",
+                      "max_output_tokens",
+                      "max_input_bytes",
+                      "timeout_ms"
+                    ],
+                    "properties": {
+                      "key": {
+                        "const": "lighttick.research.v1"
+                      },
+                      "prompt_version": {
+                        "const": "research-ai-v1"
+                      },
+                      "model_alias": {
+                        "const": "novel-structured"
+                      },
+                      "max_output_tokens": {
+                        "const": 2500
+                      },
+                      "max_input_bytes": {
+                        "const": 18000
+                      },
+                      "timeout_ms": {
+                        "const": 30000
+                      }
+                    }
+                  },
+                  "instrument": {
+                    "type": "object"
+                  }
+                }
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "error_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "output": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "citations",
+                  "limitations",
+                  "provider",
+                  "model",
+                  "prompt_version"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "maxLength": 12000
+                  },
+                  "citations": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 40,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "limitations": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "prompt_version": {
+                    "type": "string"
+                  }
+                }
+              },
+              "adopted_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentResearchAIPageEnvelope = {
+  "code": unknown;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "kind": "analysis" | "guide" | "report";
+  "input": {
+  "research": {
+};
+  "markets": (
+{
+}
+)[];
+  "model": {
+  "mode": "platform" | "personal";
+  "revision": number;
+};
+  "digest": string;
+  "scene": {
+  "key": unknown;
+  "prompt_version": unknown;
+  "model_alias": unknown;
+  "max_output_tokens": unknown;
+  "max_input_bytes": unknown;
+  "timeout_ms": unknown;
+};
+  "instrument": {
+};
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | null;
+  "output": {
+} | null;
+  "adopted_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": string | null;
+};
+};
+
 export const LightTickGitHubSettingsSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -82272,6 +83387,12 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentMarketWorkEnvelope",
   "LightTickInvestmentMarketWrite",
   "LightTickInvestmentOpening",
+  "LightTickInvestmentResearchAICommand",
+  "LightTickInvestmentResearchAIPage",
+  "LightTickInvestmentResearchAIPageEnvelope",
+  "LightTickInvestmentResearchAIRequest",
+  "LightTickInvestmentResearchAIWork",
+  "LightTickInvestmentResearchAIWorkEnvelope",
   "LightTickInvestmentResearchEntry",
   "LightTickInvestmentResearchEntryEnvelope",
   "LightTickInvestmentResearchEvidence",

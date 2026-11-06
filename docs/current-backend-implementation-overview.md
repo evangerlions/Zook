@@ -914,3 +914,5 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 2026-11-06 个人模型设置切片已通过本地验收：普通用户的配置/原请求回执、服务端独立私有 KV 主密钥＋AES-GCM 账号加密、先测未保存输入/测试已保存配置、持久连接测试与取消及 React 三步设置页已接入。课程和规划任务冻结模型选择并通过同一 dispatcher；没有静默换源/模板兜底。真实 PG/Redis、Chrome、进程重启与旧功能回归见[个人模型验收](verification/grow-react-u1-20261103/personal-model.md)。研究 AI 调用、完整旧设置/GitHub 存储等仍待迁移，不能代签全部 U5；21/27、无真实数据切换或发布。
 
 个人 GitHub 仓库设置已新增账号加密、仓库/分支只读检查、CAS/原请求和持久测试/取消，复用 LightTick worker；default 明确对应 Zook 原生内容。旧课程的 GitHub 内容读写、发布和来源映射尚未接入，本切片不能关闭全部存储等价门禁。OpenAPI 与 README_API 同轮维护；只使用合成仓库/Token 验证，不读取真实历史或调用真实 GitHub 仓库。PG/Redis、Chrome/重启和风险基线证据见[GitHub 设置与基线验收](verification/grow-react-u1-20261103/github-and-risk-baseline.md)，完整任务仍为 21/27。
+
+研究 AI、资料导读、研究报告已新增独立持久任务、冻结研究/标的/行情/模型及场景版本、既有 worker 和个人模型 dispatcher 接线，生成后待审、明确采用为独立分析成果，不写入交易或覆盖原事实。React 页面、真实 PG/Chrome 和联合回归完成前不计验收；外部真实模型质量、其余投资专题与完整 U5 保持待执行。

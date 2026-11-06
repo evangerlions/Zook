@@ -1854,3 +1854,17 @@ Canonical `/api/v1/lighttick/account/github`：普通 LightTick membership/owner
 Token 只通过服务端独立私有 KV 主密钥和 AES-GCM 保存，绑定 owner/修订/仓库/分支，临时测试另绑定 ID；不进入普通回执、任务 payload、浏览器存储或本人数据导出。留空沿用时仍冻结基线，不能自动采用另一个设备的新 Token。浏览器保留非秘密草稿、基线、原 key 和加盐正文摘要，刷新后可通过回执恢复；缺少原 Token 时重输并核对摘要，不能新建请求代替重试。
 
 成功只证明仓库/分支可读取，不证明 Contents 写权限；检查协议参考 [GitHub Get a reference](https://docs.github.com/en/rest/git/refs#get-a-reference)。本切片只恢复设置与连接能力，尚未将课程读取/发布连接到 GitHub；保存或清除设置都不会迁移、上传或删除既有 Zook 内容。完整内容存储迁移仍按行为账本待验收。
+
+### LightTick 研究 AI、资料导读与报告
+
+唯一合同 `api-contracts/openapi/lighttick/research-ai.yaml`。普通注册 LightTick owner，canonical `/api/v1/lighttick/investments/research-ai`；不要求资产账户，不进入通用 sync/push 或旧 pull。
+
+- `POST`：`research_id, base_revision, kind: analysis|guide|report, consent: true, model_mode, model_revision`，以及原 `Idempotency-Key`。显式核对保存档案、引用资料/行情和模型设置后提交；服务端冻结标的、研究、行情快照、模型选择和场景/提示版本，并持久化接受回执。模型或研究修订不匹配返回 409，不自动采用当前修订。
+- `GET ?research_id=...&cursor=...&limit=20`（1–50）、`GET /{id}`：读取持久任务、冻结输入及待审输出，分页绑定 owner/研究和目录修订。游标失效返回 409，客户端只重建云端列表，保留本机输入和原请求。
+- `POST /{id}/cancel`、`POST /{id}/adopt`：`base_revision`＋原 key，CAS/持久回执。采用将结果确认为独立分析成果，不更改研究正文、证据、账户、行动或交易；需来源/模型仍匹配。重试同一创建请求返回相同任务最新状态；不重建请求。
+
+场景 `lighttick.research.v1`、提示 `research-ai-v1`、逻辑模型 `novel-structured`；个人模式复用既有 PersonalModelDispatcher，密钥仅在服务端使用，不进入任务或回执。冻结输入上限 18000 字节，输出 2500 token/12000 字符，30 秒执行期限/60 秒租约、最多三次崩溃恢复，单 owner 一个未决任务、UTC 日最多 8 个、最多保留 200 个。调用/计算在 owner 事务外，完成重新检查权限、输入、模型、租约和 fence。提供商失败、非法引用、超时或截断不会生成模板或改用其他个人模型；平台路由沿用既有逻辑模型策略。
+
+输出包括正文、冻结来源引用、局限、实际 provider/model 和提示版本。未核对资料不自动抓取，来源文字按不可信数据处理，未知引用/新 URL 拒绝。真实质量另验，不将合成响应当作投资判断。崩溃窗口恢复可能重新请求提供商，但不会重复产生分析成果；不宣称提供商计费 exactly-once。
+
+本人授权导出只增加已明确采用的 `research.ai_artifacts`，无成果时保持旧导出结构；包含冻结输入/输出和来源身份，不包含模型密钥、队列租约或 fence。账号/整 App 删除覆盖任务表。旧客户端其他接口形状保持；新页面处理三方版本与原请求，不自动覆盖或重基线。

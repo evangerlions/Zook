@@ -1,3 +1,4 @@
+import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
 import { InMemoryGitHubStore } from "./in-memory-github-store.ts";
 import {InMemoryPersonalModelStore} from "./in-memory-personal-model-store.ts";
 import {InMemoryInvestmentStore} from "./in-memory-investment-store.ts";
@@ -28,6 +29,7 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly researchAI=new InMemoryResearchAIStore();
   readonly github=new InMemoryGitHubStore();
   readonly personalModels=new InMemoryPersonalModelStore();
   readonly investments=new InMemoryInvestmentStore();
@@ -115,7 +117,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -123,6 +125,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.researchAI.restore(snapshot.researchAI);
       this.github.restore(snapshot.github);
       this.personalModels.restore(snapshot.personalModels);
       this.nativeLearning.restore(snapshot.nativeLearning);
@@ -431,6 +434,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
   async deleteOwnerData(owner: LightTickOwner) {
     this.nativeLearning.deleteOwner(owner);
+    this.researchAI.deleteOwner(owner);
     this.github.deleteOwner(owner);
     this.personalModels.deleteOwner(owner);
     this.investments.deleteOwner(owner); this.knowledge.deleteOwner(owner); this.learningRoutes.deleteOwner(owner);

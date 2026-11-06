@@ -1,3 +1,4 @@
+import {PostgresResearchAIStore} from "./postgres-research-ai-store.ts";
 import { PostgresGitHubStore } from "./postgres-github-store.ts";
 import {PostgresPersonalModelStore} from "./postgres-personal-model-store.ts";
 import {PostgresInvestmentStore} from "./postgres-investment-store.ts";
@@ -28,6 +29,7 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly researchAI=new PostgresResearchAIStore((sql,args)=>this.query(sql,args));
   readonly github=new PostgresGitHubStore((sql,args)=>this.query(sql,args));
   readonly personalModels=new PostgresPersonalModelStore((sql,args)=>this.query(sql,args));
   readonly investments=new PostgresInvestmentStore((sql,args)=>this.query(sql,args));

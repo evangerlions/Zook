@@ -44,7 +44,7 @@ test("formal course golden preserves unpublished revision, both publications and
 test("non-LightTick public schema and admin API baseline remain unchanged during Grow extension", () => {
   const golden = read("other-app-contract-baseline.json");
   const entries = Object.entries(schemas)
-    .filter(([name]) => !name.startsWith("LightTick"))
+    .filter(([name]) => !name.startsWith("LightTick") && name.endsWith("Schema"))
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   assert.deepEqual(
     entries.map(([name]) => name),

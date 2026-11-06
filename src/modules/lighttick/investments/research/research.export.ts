@@ -43,7 +43,23 @@ export async function exportResearch(
       receipts.push(receipt);
     }
   }
-  const result = { entries, versions, receipts };
+  const ai_artifacts = (await repo.researchAI.list(o))
+    .filter((w) => w.adopted_at)
+    .map((w) => ({
+      id: w.id,
+      revision: w.revision,
+      kind: w.kind,
+      input: w.input,
+      output: w.output,
+      adopted_at: w.adopted_at,
+      request_key: w.request_key,
+    }));
+  const result = {
+    entries,
+    versions,
+    receipts,
+    ...(ai_artifacts.length ? { ai_artifacts } : {}),
+  };
   if (Buffer.byteLength(JSON.stringify(result)) > 8 * 1024 * 1024)
     fail(413, "Research export needs chunks; no partial export returned.");
   return result;
