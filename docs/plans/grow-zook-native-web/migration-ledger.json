@@ -3393,7 +3393,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Verified bounded frozen-dossier analysis/guide/report with personal model and durable worker, reviewed adoption as separate artifact. Arbitrary relay, strategy parameter extraction, monitoring suggestions and all legacy caller parity remain unverified. No migration or legacy API alias claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -3421,7 +3423,22 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-06",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/research-ai",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/research-ai.md",
+          "tests": [
+            "test/unit/lighttick-research-ai.test.ts",
+            "test/unit/lighttick-research-ai.api.test.ts",
+            "test/integration/lighttick-research-ai-postgres.test.ts",
+            "test/support/grow_web_research_ai_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -12480,7 +12497,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Verified bounded frozen-dossier analysis/guide/report with personal model and durable worker, reviewed adoption as separate artifact. Arbitrary relay, strategy parameter extraction, monitoring suggestions and all legacy caller parity remain unverified. No migration or legacy API alias claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -12508,7 +12527,22 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-06",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/research-ai",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/research-ai.md",
+          "tests": [
+            "test/unit/lighttick-research-ai.test.ts",
+            "test/unit/lighttick-research-ai.api.test.ts",
+            "test/integration/lighttick-research-ai-postgres.test.ts",
+            "test/support/grow_web_research_ai_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -12516,7 +12550,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Verified bounded frozen-dossier analysis/guide/report with personal model and durable worker, reviewed adoption as separate artifact. Arbitrary relay, strategy parameter extraction, monitoring suggestions and all legacy caller parity remain unverified. No migration or legacy API alias claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -12544,7 +12580,22 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-06",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/research-ai",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/research-ai.md",
+          "tests": [
+            "test/unit/lighttick-research-ai.test.ts",
+            "test/unit/lighttick-research-ai.api.test.ts",
+            "test/integration/lighttick-research-ai-postgres.test.ts",
+            "test/support/grow_web_research_ai_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
