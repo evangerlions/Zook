@@ -83,6 +83,27 @@ async function evidenceWithRevenue() {
   return evidence;
 }
 
+test("renewal status is mapped consistently for membership and transactions", async () => {
+  const evidence = await evidenceWithRevenue();
+  const sub = evidence.subscriptions[0].subscription;
+  for (const [status, next, expected, state] of [
+    ["will_change_product", undefined, true, "active"],
+    ["will_pause", undefined, false, "active"],
+    ["requires_price_increase_consent", undefined, true, "active"],
+    ["has_already_renewed", "will_not_renew", false, "cancelled"],
+    ["has_already_renewed", "will_renew", true, "active"],
+    ["has_already_renewed", undefined, true, "active"],
+  ] as const) {
+    sub.auto_renewal_status = status;
+    sub.pending_changes = next === undefined ? null : { auto_renewal_status: next };
+    const result = normalizeRevenueCatSnapshot(evidence, "user", new Date("2026-09-24"), { allowSandbox: true });
+    assert.equal(result.membership.revenueCatRenewalStatus, status);
+    assert.equal(result.membership.autoRenew, expected, status);
+    assert.equal(result.membership.state, state, status);
+    assert.equal(result.transactions[0].autoRenew, expected, status);
+  }
+});
+
 test("customer-wide entitlement cannot extend an owned app subscription", async () => {
   const evidence = await evidenceWithRevenue();
   evidence.activeEntitlements[0].expires_at = Date.parse("2026-12-01");

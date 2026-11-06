@@ -32,6 +32,7 @@ function parseMembership(row: QueryResultRow): AiNovelBillingMembershipRecord {
     planKey: row.plan_key == null ? null : String(row.plan_key),
     expiresAt: nullableIso(row.expires_at),
     autoRenew: row.auto_renew == null ? null : Boolean(row.auto_renew),
+    revenueCatRenewalStatus: row.revenuecat_renewal_status == null ? null : String(row.revenuecat_renewal_status),
     source: (row.source ?? null) as AiNovelBillingMembershipRecord["source"],
     managementUrl: row.management_url == null ? null : String(row.management_url),
     lastSyncedAt: toIsoString(row.last_synced_at) as string,
@@ -122,7 +123,7 @@ export class PostgresAiNovelBillingStore {
   ): Promise<AiNovelBillingMembershipRecord | undefined> {
     const result = await this.query(
       `SELECT app_id, user_id, active, state, tier, plan_key, expires_at,
-              auto_renew, source, management_url, last_synced_at, account_deleted_at, credit_window_anchor_at, environment
+              auto_renew, revenuecat_renewal_status, source, management_url, last_synced_at, account_deleted_at, credit_window_anchor_at, environment
        FROM zook_ai_novel_billing_memberships
        WHERE app_id = $1 AND user_id = $2 AND environment = $3`,
       [appId, userId, billingEnvironment()],
@@ -134,12 +135,13 @@ export class PostgresAiNovelBillingStore {
     await this.query(
       `INSERT INTO zook_ai_novel_billing_memberships (
          app_id, user_id, active, state, tier, plan_key, expires_at,
-         auto_renew, source, management_url, last_synced_at, account_deleted_at, credit_window_anchor_at, environment
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10,$11::timestamptz,$12::timestamptz,$13::timestamptz,$14)
+         auto_renew, source, management_url, last_synced_at, account_deleted_at, credit_window_anchor_at, environment, revenuecat_renewal_status
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10,$11::timestamptz,$12::timestamptz,$13::timestamptz,$14,$15)
        ON CONFLICT (app_id, user_id, environment) DO UPDATE SET
          active = EXCLUDED.active, state = EXCLUDED.state, tier = EXCLUDED.tier,
          plan_key = EXCLUDED.plan_key, expires_at = EXCLUDED.expires_at,
          auto_renew = EXCLUDED.auto_renew, source = EXCLUDED.source,
+         revenuecat_renewal_status = EXCLUDED.revenuecat_renewal_status,
          management_url = EXCLUDED.management_url,
          last_synced_at = EXCLUDED.last_synced_at,
          account_deleted_at = EXCLUDED.account_deleted_at,
@@ -147,7 +149,7 @@ export class PostgresAiNovelBillingStore {
        WHERE zook_ai_novel_billing_memberships.last_synced_at <= EXCLUDED.last_synced_at`,
       [record.appId, record.userId, record.active, record.state, record.tier,
         record.planKey, record.expiresAt, record.autoRenew, record.source,
-        record.managementUrl, record.lastSyncedAt, record.accountDeletedAt, record.creditWindowAnchorAt ?? null, record.environment ?? billingEnvironment()],
+        record.managementUrl, record.lastSyncedAt, record.accountDeletedAt, record.creditWindowAnchorAt ?? null, record.environment ?? billingEnvironment(), record.revenueCatRenewalStatus ?? null],
     );
   }
 
@@ -361,7 +363,7 @@ export class PostgresAiNovelBillingStore {
     await this.query(
       `UPDATE zook_ai_novel_billing_memberships
        SET active = FALSE, state = 'free', tier = NULL, plan_key = NULL,
-           expires_at = NULL, auto_renew = NULL, source = NULL, management_url = NULL,
+           expires_at = NULL, auto_renew = NULL, revenuecat_renewal_status = NULL, source = NULL, management_url = NULL,
            last_synced_at = $3::timestamptz, account_deleted_at = $3::timestamptz
        WHERE app_id = $1 AND user_id = $2`,
       [appId, userId, deletedAt],

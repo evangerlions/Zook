@@ -29,6 +29,8 @@ test('PostgreSQL legacy upgrade and canonical stores isolate both billing enviro
     // Startup migration runner re-applies idempotent migrations.
     await pool.query(await readFile(new URL('../../src/infrastructure/database/postgres/migrations/076_ai_novel_billing_environment.sql', import.meta.url), 'utf8'));
     await pool.query(await readFile(new URL('../../src/infrastructure/database/postgres/migrations/077_ai_novel_billing_market.sql', import.meta.url), 'utf8'));
+    await pool.query(await readFile(new URL('../../src/infrastructure/database/postgres/migrations/086_ai_novel_revenuecat_renewal_status.sql', import.meta.url), 'utf8'));
+    await pool.query(await readFile(new URL('../../src/infrastructure/database/postgres/migrations/086_ai_novel_revenuecat_renewal_status.sql', import.meta.url), 'utf8'));
     const store = new PostgresAiNovelBillingStore((sql, values) => pool.query(sql, values));
     assert.equal(await store.findMembership('ai_novel','legacy_sandbox'), undefined);
     assert.equal((await inBillingEnvironment('sandbox',()=>store.findMembership('ai_novel','legacy_sandbox')))?.active,true);
@@ -38,8 +40,10 @@ test('PostgreSQL legacy upgrade and canonical stores isolate both billing enviro
       {user_id:'legacy_sandbox',environment:'sandbox',payload:{tier:'free',giftMicros:'1000000'}},
     ]);
     const member = (await inBillingEnvironment('sandbox',()=>store.findMembership('ai_novel','legacy_sandbox')))!;
-    await store.upsertMembership({...member, environment:'production', tier:'pro', planKey:'pro_yearly'});
+    await store.upsertMembership({...member, environment:'production', tier:'pro', planKey:'pro_yearly', revenueCatRenewalStatus:'has_already_renewed'});
     assert.equal((await store.findMembership('ai_novel','legacy_sandbox'))?.tier,'pro');
+    assert.equal((await store.findMembership('ai_novel','legacy_sandbox'))?.revenueCatRenewalStatus,'has_already_renewed');
+    assert.equal((await inBillingEnvironment('sandbox',()=>store.findMembership('ai_novel','legacy_sandbox')))?.revenueCatRenewalStatus,null);
     assert.equal((await inBillingEnvironment('sandbox',()=>store.findMembership('ai_novel','legacy_sandbox')))?.tier,'plus');
     const tx = (await pool.query('SELECT * FROM zook_ai_novel_billing_transactions')).rows[0];
     await store.upsertTransaction({appId:'ai_novel',userId:'legacy_sandbox',provider:'alipay',providerTransactionId:'receipt',productId:'plus_yearly',productKey:'plus_yearly',source:'alipay',status:'provider_paid',isSandbox:false,expiresAt:'2099-01-01T00:00:00Z',observedAt:new Date().toISOString(),accountDeletedAt:null});
