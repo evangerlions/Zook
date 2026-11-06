@@ -146,11 +146,12 @@ test("unknown citations and provider failures fail closed; original receipt cras
   await assert.rejects(s.create(o, input(), "create-crash-original"));
   assert.equal((await repo.researchAI.list(o)).length, 0);
   repo.saveOperation = save;
-  for (const bad of ["provider", "citation"]) {
+  for (const bad of ["provider", "citation", "truncated"]) {
     const w = await s.create(o, input(), "create-" + bad + "-original");
     await new ResearchAIRunner(s, {
       complete: async () => {
         if (bad === "provider") throw Error("private error");
+        if (bad === "truncated") return { ...result(), finishReason: "length" };
         return {
           ...result(),
           text: JSON.stringify({

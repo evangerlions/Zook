@@ -123,6 +123,8 @@ export class ResearchAIRunner {
             enable_thinking: false,
           },
         });
+        if (result.finishReason && result.finishReason !== "stop")
+          fail(422, "Provider response was incomplete");
         if (Buffer.byteLength(result.text) > 80000)
           fail(422, "Research output exceeds scene capacity");
         const raw = object(JSON.parse(result.text));
