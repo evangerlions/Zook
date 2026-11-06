@@ -140,7 +140,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
   readonly llmObservabilityStore = new InMemoryLlmObservabilityStore();
-  readonly aiNovelCreditsStore = new InMemoryAiNovelCreditsStore();
+  readonly aiNovelCreditsStore = new InMemoryAiNovelCreditsStore(() => this.users.map(user => ({ uid: user.id, phone: user.phone ?? null, email: user.email ?? null })));
   readonly aiNovelConversationStore: InMemoryAiNovelConversationStore;
 
   apps: AppRecord[];

@@ -744,3 +744,13 @@ Market取值为app_store/google_play/xiaomi/vivo/oppo/huawei/honor/direct；未�
 ### 后台 Web server 的公开邀请转发
 
 `apps/admin-web/server.ts` 的三个精确 GET handoff 路径转发到已配置同槽位 API：`/frogsleep/buddy-invitation`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。这些是公开预览接力，不授予管理权限、不会自动接受邀请；其他方法405。保留 query、手动302跳转，强制 no-store/no-referrer，公开错误隐藏上游和令牌。请求的 absolute-form URL 不得替换 ADMIN_API_PROXY_TARGET 的 origin。现有 `/api/*` 流式代理保持原行为。外层 Nginx 的日志与 Universal/App Links 仍独立验收。
+
+### OrangeWrite credit grants
+
+All endpoints require an Admin session and use the server-selected billing environment. Online accepts production only; local/dev/test may explicitly select sandbox through the existing `X-Billing-Environment` header. Responses use the standard API envelope and `Cache-Control: no-store`.
+
+- `GET /api/v1/admin/apps/ai_novel/credit-grants/users?field=uid|phone|email&query=...` searches literal case-insensitive substrings. Returns `{ tooMany, users: [{ uid, phone, email }] }`; the database reads at most 11 matches. More than 10 returns `tooMany: true` and an empty list, requiring a narrower query.
+- `POST /api/v1/admin/apps/ai_novel/credit-grants` accepts `{ uid, points, idempotencyKey }`, where `points` is a positive integer and `idempotencyKey` is a stable request identifier (1–150 letters, digits, `.`, `_`, `:`, or `-`) that is unique across all admin grants within the selected environment. A retry with the same user, amount, key, administrator and environment succeeds without granting again; reuse with different details returns conflict. The recipient must exist. The response data is `{ uid, points, idempotencyKey }`. Successful grants increase only the independent non-expiring gift balance. The credit ledger event and grant are committed atomically; the event includes the administering username.
+- `GET /api/v1/admin/apps/ai_novel/credit-grants?offset=0` returns `{ items, hasMore, offset }` with up to 50 records, newest first. Each item contains `id`, `uid`, `points`, `adminUser` and `at`. Records are isolated by billing environment.
+
+For accounts without an existing credit account, a grant does not start a weekly window. The regular credit flow starts that window on first use. For existing accounts, grants do not refresh or modify the stored subscription allowance, usage, or refresh time.

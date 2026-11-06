@@ -200,6 +200,7 @@ export class InMemoryAiNovelBillingStore {
         planKey: null,
         expiresAt: null,
         autoRenew: null,
+        revenueCatRenewalStatus: null,
         source: null,
         managementUrl: null,
         accountDeletedAt: deletedAt,

@@ -23,6 +23,7 @@ export interface CreditReportingWrite {
   previous?: CreditsAccount;
   entitlementExpiresAt?: string;
   event?: CreditUsageEvent;
+  skipWindow?: boolean;
 }
 
 /** Only called inside the existing serialized credit transaction. */
@@ -33,7 +34,7 @@ export function synchronizeReportedAccount(
 ) {
   state.reporting = {
     at: now.toISOString(),
-    previous: state.account ? structuredClone(state.account) : undefined,
+    previous: state.account && !state.account.deferredStart ? structuredClone(state.account) : undefined,
   };
   const account = (state.account = refreshCreditsAccount(
     state.account,
@@ -50,6 +51,16 @@ export function synchronizeReportedAccount(
   return account;
 }
 
+/** Record a grant without refreshing an existing subscription window. */
+export function prepareGrantAccount(state: CreditsTransaction, now: Date) {
+  if (!state.account) {
+    const at = now.toISOString();
+    state.account = { tier: "free", deferredStart: true, periodKey: at, refreshAt: at, periodicMicros: "0", giftMicros: "0" };
+  }
+  state.reporting = { at: now.toISOString(), previous: structuredClone(state.account), skipWindow: true };
+  return state.account;
+}
+
 export function usageEvent(
   state: CreditsTransaction,
   event: Omit<CreditUsageEvent, "tier" | "periodKey" | "at">,
@@ -58,6 +69,7 @@ export function usageEvent(
     throw new Error("Reporting requires a synchronized account");
   state.reporting.event = {
     ...event,
+    ...(state.account.deferredStart ? { windowPending: true as const } : {}),
     at: state.reporting.at,
     tier: state.account.tier,
     periodKey: state.account.periodKey,
@@ -69,7 +81,7 @@ export function reportedWindow(
 ): CreditWindowSnapshot | undefined {
   const account = state.account,
     write = state.reporting;
-  if (!account || !write) return undefined;
+  if (!account || !write || write.skipWindow) return undefined;
   const previous = write.previous;
   const limit = BigInt(LOCAL_CREDIT_QUOTAS[account.tier]) * CREDIT_MICROS;
   return {
