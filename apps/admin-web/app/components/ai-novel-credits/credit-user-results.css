@@ -1,0 +1,23 @@
+.credit-user-results.ant-radio-group {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+}
+
+.credit-user-result.ant-radio-wrapper {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  margin: 0;
+  padding: 0 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.credit-user-result.ant-radio-wrapper:last-child { border-bottom: 0; }
+.credit-user-result.ant-radio-wrapper-checked { background: #e6f4ff; }
+.credit-user-result > span:last-child { min-width: 0; flex: 1; }
+.credit-user-result-fields { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; }
+.credit-user-result-field { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

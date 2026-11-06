@@ -1,7 +1,8 @@
-import { Alert, Button, Card, Input, InputNumber, Modal, Radio, Select, Space, message } from "antd";
+import { Alert, Button, Card, Input, InputNumber, Modal, Radio, Space, message } from "antd";
 import { useRef, useState } from "react";
 import { ApiError } from "../../lib/admin-api-client";
 import { grantCredits, searchCreditUsers, type CreditUserCandidate, type CreditUserSearchField } from "../../lib/ai-novel-credit-admin-api";
+import { CreditUserResults } from "./credit-user-results";
 
 type Grant = { uid: string; points: number; idempotencyKey: string };
 const pendingKey = "zook.admin.pending-credit-grant";
@@ -57,7 +58,7 @@ export function CreditGrantForm({ onGranted }: { onGranted: () => void }) {
       <Input.Search aria-label="搜索用户" value={query} disabled={!!pending || busy} loading={searching} onChange={e => { setQuery(e.target.value); reset(); }} onSearch={() => void search()} enterButton="搜索" />
       {tooMany && <Alert type="warning" message="匹配用户超过 10 个，请输入更具体的内容。" />}
       {searched && !tooMany && users.length === 0 && <Alert type="info" message="没有匹配的用户。" />}
-      {users.length > 0 && <Select aria-label="选择用户" style={{ width: "100%" }} disabled={!!pending || busy} value={selected} onChange={setSelected} placeholder="选择用户" options={users.map(u => ({ value: u.uid, label: `${u.uid} · ${u.phone ?? "—"} · ${u.email ?? "—"}` }))} />}
+      {users.length > 0 && <CreditUserResults users={users} selected={selected} disabled={!!pending || busy} onSelect={setSelected} />}
       <Space wrap><InputNumber aria-label="发放点数" min={1} precision={0} value={points} disabled={!!pending || busy} onChange={v => setPoints(v)} placeholder="点数" /><Button type="primary" disabled={!selected || !points || !!pending} loading={busy} onClick={confirm}>发放</Button>{pending && <Button loading={busy} onClick={() => void execute(pending)}>重试发放</Button>}</Space>
       {pending && <Alert type="warning" message={`待确认：用户 ${pending.uid}，${pending.points} 点。请重试确认结果。`} />}
       {error && <Alert type="error" message={error} showIcon />}
