@@ -16,7 +16,7 @@ test("credit search results render directly with a bounded scroll area and selec
   try {
     const output = join(directory, "results.mjs");
     await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-user-results.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", loader: { ".css": "empty" }, logLevel: "silent" });
-    const { CreditUserResults } = await import(pathToFileURL(output).href);
+    const { CreditUserResults, CreditSelectedUser } = await import(pathToFileURL(output).href);
     const users = Array.from({ length: 9 }, (_, index) => ({ uid: `uid-${index}`, phone: `phone-${index}`, email: `email-${index}@example.invalid` }));
     const html = renderToStaticMarkup(React.createElement(CreditUserResults, { users, selected: "uid-1", disabled: false, onSelect: () => {} }));
     assert.equal((html.match(/type="radio"/g) ?? []).length, 9);
@@ -28,6 +28,13 @@ test("credit search results render directly with a bounded scroll area and selec
     assert.match(html, /credit-user-result-number">9</);
     assert.match(html, /aria-label="手机号"/);
     assert.match(html, /aria-label="邮箱"/);
+    assert.equal(renderToStaticMarkup(React.createElement(CreditSelectedUser, {})), "");
+    const summary = renderToStaticMarkup(React.createElement(CreditSelectedUser, { user: users[1] }));
+    assert.match(summary, /已选择/);
+    assert.match(summary, /uid-1/);
+    assert.match(summary, /phone-1/);
+    assert.match(summary, /email-1@example\.invalid/);
+    assert.doesNotMatch(summary, /uid-0/);
     const css = await readFile(new URL("app/components/ai-novel-credits/credit-user-results.css", adminRoot), "utf8");
     assert.match(css, /max-height:\s*300px/);
     assert.match(css, /height:\s*60px/);
