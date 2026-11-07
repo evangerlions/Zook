@@ -152,6 +152,17 @@ test("PG observations persist exact forecast sources/receipts and serialize late
       "read-event-original",
       "read",
     );
+    f.setTime("2026-11-06T08:06:00Z");
+    assert.equal(await restart.recover(), 1);
+    const scheduled = (await second.listWorks(o)).items.find(
+      (w) => w.resource_id === mid && w.status === "queued",
+    )!;
+    assert.ok(scheduled);
+    await restart.execute(o, scheduled.id);
+    assert.equal(
+      (await second.readWork(o, scheduled.id)).event_disposition,
+      "duplicate",
+    );
     const late = await s.createWork(
       o,
       "check",
@@ -216,7 +227,7 @@ test("PG observations persist exact forecast sources/receipts and serialize late
     );
     assert.ok(exported.observations!.entries.find((e) => e.id === pid)?.frozen);
     assert.equal(exported.market.snapshots.length, 2);
-    assert.equal(exported.observations!.works.length, 3);
+    assert.equal(exported.observations!.works.length, 4);
     assert.equal(
       JSON.stringify(exported.observations).includes("lease_until"),
       false,

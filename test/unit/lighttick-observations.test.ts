@@ -431,8 +431,27 @@ test("worker recovery, cancel originals, revoked queued terminal and scheduler s
     },
     1,
   );
+  const queuedBefore = f.queue.jobs.length;
+  assert.equal(
+    (
+      await s.createWork(
+        o,
+        "evaluation",
+        f.pid,
+        f.evaluationBody,
+        "recover-original",
+      )
+    ).status,
+    "running",
+  );
+  assert.equal(
+    f.queue.jobs.length,
+    queuedBefore,
+    "An active lease replay must not consume the next recovery job ID",
+  );
   f.setTime("2026-11-06T08:01:00Z");
   await f.runner.recover();
+  assert.equal(f.queue.jobs.length, queuedBefore + 1);
   await f.runner.execute(o, w.id);
   assert.equal((await s.readWork(o, w.id)).attempt, 2);
   const cancelled = await s.createWork(
@@ -533,6 +552,35 @@ test("monitor new-date cooldown is persistent, calendar/MA/zero-volume unknowns 
   input.calendar.status = "coverage_unknown";
   assert.equal((await checkMonitor(input)).reason, "CALENDAR_UNAVAILABLE");
   input.calendar.status = "available";
+  const volume = structuredClone(input);
+  volume.monitor.fields.field = "volume_ratio_5";
+  volume.monitor.fields.op = "gt";
+  volume.monitor.fields.threshold = "1.2";
+  volume.snapshot!.dataset.calendar = volume.calendar as any;
+  volume.snapshot!.dataset.bars = [
+    "2026-11-02",
+    "2026-11-03",
+    "2026-11-04",
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-09",
+  ].map((date) => ({
+    date,
+    open: "10",
+    high: "10",
+    low: "10",
+    close: "10",
+    volume_shares: "0",
+    amount_cny: "0",
+    turnover_rate_pct: null,
+  }));
+  const zero = await checkMonitor(volume);
+  assert.equal(zero.state, "unknown");
+  assert.match(zero.reason!, /^FIELDS_INVALID/);
+  const weekend = structuredClone(input);
+  weekend.as_of = "2026-11-07";
+  weekend.decision_at = "2026-11-07T08:00:00Z";
+  assert.equal((await checkMonitor(weekend)).state, "closed");
   input.decision_at = "2026-11-09T06:00:00Z";
   assert.equal((await checkMonitor(input)).state, "waiting_for_close");
 });
@@ -665,4 +713,71 @@ test("late result cannot resurrect a prediction across archive then restore; mid
   release();
   await run;
   assert.equal((await s.readWork(o, w.id)).status, "failed");
+});
+
+test("late-November horizons retain available calendar coverage and a renamed instrument can start a new frozen evaluation", async () => {
+  const f = await observationFixture(),
+    { s, o } = f;
+  f.setTime("2026-11-20T08:00:00Z");
+  const baseline = await f.publishSource(
+    f.snapshot(
+      "inv-late-november-baseline",
+      ["2026-11-20"],
+      ["20"],
+      "2026-11-20T08:00:00Z",
+    ),
+  );
+  const fields = {
+    ...f.predictionFields,
+    baseline: {
+      snapshot_id: baseline.id,
+      input_digest: baseline.dataset.input_digest,
+      date: "2026-11-20",
+    },
+  };
+  await s.write(
+    o,
+    "predictions",
+    "inv-late-november-forecast",
+    { base_revision: 0, fields, consent: true },
+    "late-november-forecast",
+  );
+  f.setTime("2026-11-23T08:00:00Z");
+  const source = await f.publishSource(
+    f.snapshot(
+      "inv-late-november-source",
+      ["2026-11-23"],
+      ["21"],
+      "2026-11-23T08:00:00Z",
+    ),
+  );
+  await s.updateInstrument(
+    o,
+    f.instrument.id,
+    { base_revision: 1, name: "Renamed synthetic", archived: false },
+    "renamed-instrument-original",
+  );
+  const w = await s.createWork(
+    o,
+    "evaluation",
+    "inv-late-november-forecast",
+    {
+      base_revision: 1,
+      as_of: "2026-11-23",
+      decision_at: "2026-11-23T08:00:00Z",
+      sources: [{ id: source.id, input_digest: source.dataset.input_digest }],
+      corporate_action_review: {
+        unchanged: true,
+        source_label: "Synthetic declaration",
+        available_at: "2026-11-23T08:00:00Z",
+      },
+      consent: true,
+    },
+    "late-november-evaluation",
+  );
+  await f.runner.execute(o, w.id);
+  const done = await s.readWork(o, w.id);
+  assert.equal(done.status, "succeeded");
+  assert.equal((done.output as EvaluationReport).outcomes[0].correct, true);
+  assert.equal((done.input as EvaluationInput).instrument.revision, 2);
 });

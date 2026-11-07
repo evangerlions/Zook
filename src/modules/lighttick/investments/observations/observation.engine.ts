@@ -66,11 +66,10 @@ export async function evaluatePrediction(
     if (c.status !== "available" || c.review_until < decisions) {
       result.state = "unknown";
       result.reason = "CALENDAR_UNAVAILABLE";
-    } else if (
-      !target ||
-      target > input.as_of ||
-      !completed(target, input.decision_at)
-    ) {
+    } else if (!target) {
+      result.state = "unknown";
+      result.reason = "HORIZON_OUTSIDE_CALENDAR";
+    } else if (target > input.as_of || !completed(target, input.decision_at)) {
       result.reason = "FUTURE_SESSION_PENDING";
     } else {
       result.dates = Object.entries(c.sessions)

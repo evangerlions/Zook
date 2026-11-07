@@ -128,7 +128,7 @@ export class ObservationWorkService extends ObservationService {
             snapshots.push(m);
           }
           const end = new Date(
-              Date.parse(prediction.fields.baseline.date) + 45 * 86400000,
+              Date.parse(prediction.fields.baseline.date) + 28 * 86400000,
             )
               .toISOString()
               .slice(0, 10),
@@ -344,7 +344,12 @@ export class ObservationWorkService extends ObservationService {
   }
   async dispatch(o: LightTickOwner, id: string) {
     const w = await this.store.work(o, id);
-    if (!w || !["queued", "running"].includes(w.status)) return;
+    if (
+      !w ||
+      !["queued", "running"].includes(w.status) ||
+      (w.status === "running" && w.lease_until! > this.clock().toISOString())
+    )
+      return;
     try {
       await this.queue.add(
         OBSERVATION_JOB,
