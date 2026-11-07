@@ -121,13 +121,19 @@ export class StrategyRunner {
       phase = "context";
       await check();
     } catch (failure) {
+      const code = (failure as Error).message;
       error = abort.signal.aborted
         ? "CANCELLED_OR_TIMEOUT"
-        : phase === "context"
-          ? "BACKTEST_INPUT_OR_PERMISSION_CHANGED"
-          : (failure as Error).message === "BACKTEST_REPORT_CAPACITY_EXCEEDED"
-            ? "BACKTEST_REPORT_CAPACITY_EXCEEDED"
-            : "BACKTEST_COMPUTATION_FAILED";
+        : [
+              "BACKTEST_ALGORITHM_VERSION_UNAVAILABLE",
+              "BACKTEST_REPORT_CAPACITY_EXCEEDED",
+            ].includes(code)
+          ? code
+          : phase === "context"
+            ? "BACKTEST_INPUT_OR_PERMISSION_CHANGED"
+            : (failure as Error).message === "BACKTEST_REPORT_CAPACITY_EXCEEDED"
+              ? "BACKTEST_REPORT_CAPACITY_EXCEEDED"
+              : "BACKTEST_COMPUTATION_FAILED";
     } finally {
       clearTimeout(timer);
       clearInterval(poll);
@@ -146,7 +152,7 @@ export class StrategyRunner {
         await this.authorizeOwner(o);
         await s.context(o, claim.input);
       } catch {
-        error = "BACKTEST_INPUT_OR_PERMISSION_CHANGED";
+        error ??= "BACKTEST_INPUT_OR_PERMISSION_CHANGED";
       }
       await store.saveWork(
         {

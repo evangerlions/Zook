@@ -116,6 +116,18 @@ test("strategy/backtest canonical HTTP validates frozen reports, pagination and 
       { section: "orders" },
     ),
   );
+  for (const section of ["execution", "prices"])
+    check(
+      "CasePage",
+      await call(
+        "backtests/" + created.id + "/cases/0",
+        "GET",
+        undefined,
+        undefined,
+        undefined,
+        { section },
+      ),
+    );
   const original = check("Work", await call("backtests", "POST", f.body));
   assert.equal(original.id, created.id);
   assert.equal(original.status, "succeeded");

@@ -4,6 +4,31 @@ import { strategyFixture } from "../support/lighttick-strategy-fixture.ts";
 import { StrategyRunner } from "../../src/modules/lighttick/investments/strategies/strategy.runner.ts";
 import { computeBacktest } from "../../src/modules/lighttick/investments/strategies/strategy.engine.ts";
 import { computeInThread } from "../../src/modules/lighttick/investments/strategies/strategy.compute.ts";
+test("frozen algorithm versions cannot silently execute under another engine after recovery", async () => {
+  const f = await strategyFixture(),
+    w = await f.s.createRun(f.o, f.body, "algorithm-original"),
+    raw = (await f.s.store.work(f.o, w.id))!;
+  const input = {
+    ...raw.input,
+    algorithm_version: "synthetic-old-unsupported-version",
+  };
+  assert.throws(
+    () => computeBacktest(input),
+    /BACKTEST_ALGORITHM_VERSION_UNAVAILABLE/,
+  );
+  await assert.rejects(
+    computeInThread(input, new AbortController().signal),
+    /BACKTEST_ALGORITHM_VERSION_UNAVAILABLE/,
+  );
+  await f.repo.transaction(f.o, () =>
+    f.s.store.saveWork({ ...raw, revision: 2, input }, 1),
+  );
+  await f.runner.execute(f.o, w.id);
+  const done = await f.s.readRun(f.o, w.id);
+  assert.equal(done.status, "failed");
+  assert.equal(done.error_code, "BACKTEST_ALGORITHM_VERSION_UNAVAILABLE");
+  assert.equal(done.output, null);
+});
 test("strategies retain originals, CAS and old versions; same-input worker reports and finite-grid comparison are deterministic", async () => {
   const f = await strategyFixture(),
     { s, o, d, body } = f;

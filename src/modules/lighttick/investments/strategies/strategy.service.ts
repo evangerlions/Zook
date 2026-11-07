@@ -54,6 +54,8 @@ export class StrategyService extends StrategyDefinitions {
     super(repo, authorize, clock);
   }
   async context(o: LightTickOwner, input: BacktestInput) {
+    if (input.algorithm_version !== BACKTEST_VERSION)
+      throw Error("BACKTEST_ALGORITHM_VERSION_UNAVAILABLE");
     for (const frozen of input.strategy_heads) {
       const current = await this.store.definition(o, frozen.id);
       if (

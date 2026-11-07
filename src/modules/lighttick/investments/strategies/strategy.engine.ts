@@ -7,6 +7,8 @@ import type {
 } from "./strategy.types.ts";
 import type { ExecutionSeries } from "../market/backtest.types.ts";
 export function computeBacktest(input: BacktestInput): BacktestReport {
+  if (input.algorithm_version !== BACKTEST_VERSION)
+    throw Error("BACKTEST_ALGORITHM_VERSION_UNAVAILABLE");
   const bars = input.snapshot.dataset.bars.filter(
       (b) => b.date <= input.end_at,
     ),
