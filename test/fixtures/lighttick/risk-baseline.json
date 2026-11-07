@@ -112,6 +112,14 @@
         "test/unit/lighttick-observations.test.ts",
         "test/unit/lighttick-observations.api.test.ts"
       ]
+    },
+    {
+      "id": "strategy_versions_comparison_grid_durable_backtest",
+      "tests": [
+        "test/unit/lighttick-strategy-grid.test.ts",
+        "test/unit/lighttick-strategies.test.ts",
+        "test/unit/lighttick-strategies.api.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -133,7 +141,8 @@
     "test/integration/lighttick-research-ai-postgres.test.ts",
     "test/integration/lighttick-materials-postgres.test.ts",
     "test/integration/lighttick-screening-postgres.test.ts",
-    "test/integration/lighttick-observations-postgres.test.ts"
+    "test/integration/lighttick-observations-postgres.test.ts",
+    "test/integration/lighttick-strategies-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",

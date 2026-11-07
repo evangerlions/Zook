@@ -1913,3 +1913,31 @@ Canonical `/api/v1/lighttick/investments/materials`，沿用普通用户 LightTi
 当前边界每 owner 预测200/反馈500/监控50/事件1000，资源100修订，任务保留300、UTC日40、活动2、冻结输入2MiB；自动和手动共用任务预算，达到边界明确拒绝/运行时标注，定时检查不保证无限保留。本人授权 review/export 的非空 investments.observations 包含当前记录、全版本、创建/取消/已读/停止的原key/body及完整冻结数据；不含密钥、租约/fence/内部owner。超过5000项/8MiB明确拒绝分块，不截断。共用 owner 删除覆盖三张新表。
 
 私人HTTPS实时报价/Token、成本偏离提醒、全账户盘前盘后简报、旧扩展行为及完整迁移/回退尚未在本切片承接，仍列于U0/U5账本；不以日线监控代签旧功能完整等价或正式发布。
+
+
+### LightTick 策略版本与受控持久回测
+
+Canonical 前缀 `/api/v1/lighttick/investments`，合同 `api-contracts/openapi/lighttick/strategies.yaml`。沿用普通用户 LightTick membership，所有读写校验 owner；响应 no-store，不使用 admin 身份、不要求资产账户。
+
+| 方法 | 路径 | 行为 |
+| --- | --- | --- |
+| GET | `/strategies/catalog` | 当前受控策略、参数轴及容量 |
+| GET | `/strategies` | cursor/limit、include_archived 分页目录 |
+| PUT / GET | `/strategies/{id}` | 保存完整字段与base_revision、读取当前版本 |
+| GET | `/strategies/{id}/versions/{version}` | 精确不可变参数版本 |
+| GET | `/strategies/{id}/history` | 绑定owner/当前修订的分页历史 |
+| POST | `/strategies/{id}/archive`、`/restore` | 显式CAS生命周期，历史保留 |
+| POST / GET | `/backtests` | 创建持久任务、cursor/limit/可选strategy_id分页历史 |
+| GET | `/backtests/{id}` | 持久终态、冻结输入摘要与比较表；不内联大数组 |
+| POST | `/backtests/{id}/cancel` | 原请求与base_revision取消，拒绝迟到发布 |
+| GET | `/backtests/{id}/cases/{index}` | section=equity/orders/trades/execution/prices，cursor/limit分页明细及冻结事实 |
+
+正式写入携带原 `Idempotency-Key`（8–128字符）；同key/body/resource重试沿用原回执，不重建请求。策略完整字段为name、description和全量config，支持threshold/ma_cross两种受控日线多头/T+1模型；金额/价格/费率均为十进制字符串。CAS冲突409保留本机/基线/云端；目录/历史游标失效409只重建读取，不清草稿或原请求。
+
+创建回测显式提交mode、strategies精确id/version/definition_digest、axes、instrument_id、可选account_id（null）、snapshot_id/input_digest、start_at/end_at、decision_at、execution_review（可显式null）和consent=true。single采用1个版本，compare采用2–4个版本，grid采用1个版本、1–2轴、每轴最多4个不同值，总计最多16组合；非法组合整次拒绝，不静默跳过或自动采用最优参数。比较/网格共享同一数据、日历、区间和逐日执行条件，报告逐组合保留完整配置及摘要。
+
+仅承接已有沪深股票未复权日线快照，最多500根；不抓取、不自动换源、不执行用户代码、交易或行动。冻结来源、参考日历、参数、算法及公司行动/停牌/涨跌停/历史可获知时点的本人来源声明；声明未独立验证。缺事实、日历未覆盖/过期、行情缺口明确产生incomplete且不展示虚构绩效；非法输入422。源必须在决策时点已可获知，当前未收盘日不能作为完整日线。
+
+任务复用现有worker和受限计算线程，计算在owner事务外；每owner活动1、UTC日20、保留100任务，输入2MiB、报告6MiB，30秒期限/60秒租约/3次尝试。取消、撤权、归档或标的版本变化阻止迟到发布；归档后恢复也不接收旧执行。普通参数改版保留已经冻结的旧参数执行。预算429/容量413明确返回；失败不切策略或供应商。报告包含费用/税、资金曲线、信号/订单/成交、逐日条件、原始日线和缺失原因；历史缺失不补零。样本内比较不是样本外质量证明。
+
+本人授权导出包含策略全部版本、完整冻结输入/报告和原创建/取消命令，过滤内部owner/租约/fence；5000项/8MiB超限明确失败，不返回截断包。共用账号删除覆盖新增三表。新领域不进入旧pull，通用sync/push继续task-only；无旧API别名或完整旧行为等价声明。

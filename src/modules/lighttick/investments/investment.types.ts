@@ -26,6 +26,7 @@ export interface InvestmentAccount {
   updated_at: string;
 }
 export interface InvestmentRepository {
+ readonly strategies: import("./strategies/strategy.types.ts").StrategyRepository;
  readonly observations: import("./observations/observation.types.ts").ObservationStore;
  readonly screening: import("./screening/screen.types.ts").ScreeningRepository;
  readonly materials: import("./materials/material.types.ts").MaterialRepository;

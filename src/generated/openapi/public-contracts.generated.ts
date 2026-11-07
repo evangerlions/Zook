@@ -1,6 +1,11689 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickInvestmentStrategyConfigSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "initial_cash",
+    "quantity",
+    "price_tick",
+    "commission_rate",
+    "minimum_commission",
+    "sell_tax_rate",
+    "slippage_bps",
+    "max_participation",
+    "annual_risk_free",
+    "strategy",
+    "entry_above",
+    "exit_below",
+    "fast_window",
+    "slow_window",
+    "lot_size",
+    "annual_periods"
+  ],
+  "properties": {
+    "initial_cash": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "quantity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "price_tick": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "commission_rate": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "minimum_commission": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "sell_tax_rate": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "slippage_bps": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "max_participation": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "annual_risk_free": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "strategy": {
+      "type": "string",
+      "enum": [
+        "threshold",
+        "ma_cross"
+      ]
+    },
+    "entry_above": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "exit_below": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fast_window": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+    },
+    "slow_window": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 250
+    },
+    "lot_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "annual_periods": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyConfig = {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+
+export const LightTickInvestmentStrategyFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "config"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 8000
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_cash",
+        "quantity",
+        "price_tick",
+        "commission_rate",
+        "minimum_commission",
+        "sell_tax_rate",
+        "slippage_bps",
+        "max_participation",
+        "annual_risk_free",
+        "strategy",
+        "entry_above",
+        "exit_below",
+        "fast_window",
+        "slow_window",
+        "lot_size",
+        "annual_periods"
+      ],
+      "properties": {
+        "initial_cash": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "quantity": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "price_tick": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "commission_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "minimum_commission": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "sell_tax_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "slippage_bps": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "max_participation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "annual_risk_free": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "threshold",
+            "ma_cross"
+          ]
+        },
+        "entry_above": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exit_below": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fast_window": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "slow_window": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 250
+        },
+        "lot_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "annual_periods": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyFields = {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+
+export const LightTickInvestmentStrategyDefinitionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "archive_epoch",
+    "fields",
+    "definition_digest",
+    "request_key",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "archive_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "config"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "initial_cash",
+            "quantity",
+            "price_tick",
+            "commission_rate",
+            "minimum_commission",
+            "sell_tax_rate",
+            "slippage_bps",
+            "max_participation",
+            "annual_risk_free",
+            "strategy",
+            "entry_above",
+            "exit_below",
+            "fast_window",
+            "slow_window",
+            "lot_size",
+            "annual_periods"
+          ],
+          "properties": {
+            "initial_cash": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "quantity": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "price_tick": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "commission_rate": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "minimum_commission": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "sell_tax_rate": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "slippage_bps": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "max_participation": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "annual_risk_free": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "strategy": {
+              "type": "string",
+              "enum": [
+                "threshold",
+                "ma_cross"
+              ]
+            },
+            "entry_above": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "exit_below": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fast_window": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120
+            },
+            "slow_window": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 250
+            },
+            "lot_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "annual_periods": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          }
+        }
+      }
+    },
+    "definition_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "request_key": {
+      "type": "string"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyDefinition = {
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentStrategyWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "fields"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "config"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "initial_cash",
+            "quantity",
+            "price_tick",
+            "commission_rate",
+            "minimum_commission",
+            "sell_tax_rate",
+            "slippage_bps",
+            "max_participation",
+            "annual_risk_free",
+            "strategy",
+            "entry_above",
+            "exit_below",
+            "fast_window",
+            "slow_window",
+            "lot_size",
+            "annual_periods"
+          ],
+          "properties": {
+            "initial_cash": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "quantity": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "price_tick": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "commission_rate": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "minimum_commission": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "sell_tax_rate": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "slippage_bps": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "max_participation": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "annual_risk_free": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "strategy": {
+              "type": "string",
+              "enum": [
+                "threshold",
+                "ma_cross"
+              ]
+            },
+            "entry_above": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "exit_below": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fast_window": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120
+            },
+            "slow_window": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 250
+            },
+            "lot_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "annual_periods": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyWrite = {
+  "base_revision": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+};
+
+export const LightTickInvestmentStrategyRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyRevision = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentStrategyReferenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "definition_digest"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "definition_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyReference = {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+
+export const LightTickInvestmentStrategyAxisSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parameter",
+    "values"
+  ],
+  "properties": {
+    "parameter": {
+      "type": "string",
+      "enum": [
+        "entry_above",
+        "exit_below",
+        "fast_window",
+        "slow_window"
+      ]
+    },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250
+          }
+        ]
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyAxis = {
+  "parameter": "entry_above" | "exit_below" | "fast_window" | "slow_window";
+  "values": (
+string | number
+)[];
+};
+
+export const LightTickInvestmentStrategyFactSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "available_at",
+    "suspended",
+    "limit_up",
+    "limit_down",
+    "adj_factor",
+    "split_ratio",
+    "cash_dividend"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "suspended": {
+      "type": "boolean"
+    },
+    "limit_up": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "limit_down": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "adj_factor": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "split_ratio": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "cash_dividend": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyFact = {
+  "date": string;
+  "available_at": string;
+  "suspended": boolean;
+  "limit_up": string;
+  "limit_down": string;
+  "adj_factor": string;
+  "split_ratio": string;
+  "cash_dividend": string;
+};
+
+export const LightTickInvestmentStrategyReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_note",
+    "reviewed_at",
+    "facts"
+  ],
+  "properties": {
+    "source_note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "available_at",
+          "suspended",
+          "limit_up",
+          "limit_down",
+          "adj_factor",
+          "split_ratio",
+          "cash_dividend"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "available_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "suspended": {
+            "type": "boolean"
+          },
+          "limit_up": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "limit_down": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "adj_factor": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "split_ratio": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          },
+          "cash_dividend": {
+            "type": "string",
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+          }
+        }
+      },
+      "maxItems": 500
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyReview = {
+  "source_note": string;
+  "reviewed_at": string;
+  "facts": (
+{
+  "date": string;
+  "available_at": string;
+  "suspended": boolean;
+  "limit_up": string;
+  "limit_down": string;
+  "adj_factor": string;
+  "split_ratio": string;
+  "cash_dividend": string;
+}
+)[];
+};
+
+export const LightTickInvestmentStrategyCaseSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "index",
+    "strategy",
+    "config"
+  ],
+  "properties": {
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 15
+    },
+    "strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "definition_digest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_cash",
+        "quantity",
+        "price_tick",
+        "commission_rate",
+        "minimum_commission",
+        "sell_tax_rate",
+        "slippage_bps",
+        "max_participation",
+        "annual_risk_free",
+        "strategy",
+        "entry_above",
+        "exit_below",
+        "fast_window",
+        "slow_window",
+        "lot_size",
+        "annual_periods"
+      ],
+      "properties": {
+        "initial_cash": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "quantity": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "price_tick": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "commission_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "minimum_commission": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "sell_tax_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "slippage_bps": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "max_participation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "annual_risk_free": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "threshold",
+            "ma_cross"
+          ]
+        },
+        "entry_above": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exit_below": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fast_window": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "slow_window": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 250
+        },
+        "lot_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "annual_periods": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyCase = {
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+
+export const LightTickInvestmentStrategyRunRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode",
+    "strategies",
+    "axes",
+    "instrument_id",
+    "account_id",
+    "snapshot_id",
+    "input_digest",
+    "start_at",
+    "end_at",
+    "decision_at",
+    "execution_review",
+    "consent"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "single",
+        "compare",
+        "grid"
+      ]
+    },
+    "strategies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "definition_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "definition_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "axes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "parameter",
+          "values"
+        ],
+        "properties": {
+          "parameter": {
+            "type": "string",
+            "enum": [
+              "entry_above",
+              "exit_below",
+              "fast_window",
+              "slow_window"
+            ]
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 250
+                }
+              ]
+            }
+          }
+        }
+      },
+      "maxItems": 2
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "start_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution_review": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_note",
+            "reviewed_at",
+            "facts"
+          ],
+          "properties": {
+            "source_note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "reviewed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "facts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "available_at",
+                  "suspended",
+                  "limit_up",
+                  "limit_down",
+                  "adj_factor",
+                  "split_ratio",
+                  "cash_dividend"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "available_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "suspended": {
+                    "type": "boolean"
+                  },
+                  "limit_up": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "limit_down": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "adj_factor": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "split_ratio": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "cash_dividend": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  }
+                }
+              },
+              "maxItems": 500
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "consent": {
+      "const": true,
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyRunRequest = {
+  "mode": "single" | "compare" | "grid";
+  "strategies": (
+{
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+}
+)[];
+  "axes": (
+{
+  "parameter": "entry_above" | "exit_below" | "fast_window" | "slow_window";
+  "values": (
+string | number
+)[];
+}
+)[];
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "snapshot_id": string;
+  "input_digest": string;
+  "start_at": string;
+  "end_at": string;
+  "decision_at": string;
+  "execution_review": (
+{
+  "source_note": string;
+  "reviewed_at": string;
+  "facts": (
+{
+  "date": string;
+  "available_at": string;
+  "suspended": boolean;
+  "limit_up": string;
+  "limit_down": string;
+  "adj_factor": string;
+  "split_ratio": string;
+  "cash_dividend": string;
+}
+)[];
+}
+) | unknown;
+  "consent": boolean;
+};
+
+export const LightTickInvestmentStrategyCalendarSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "market",
+    "version",
+    "start",
+    "end",
+    "reviewed_on",
+    "review_until",
+    "source_url",
+    "sessions",
+    "snapshot_hash"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "coverage_unknown",
+        "review_expired"
+      ]
+    },
+    "market": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "review_until": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sessions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyCalendar = {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
+
+export const LightTickInvestmentStrategySourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "instrument_id",
+    "instrument_revision",
+    "work_id",
+    "created_at",
+    "dataset",
+    "indicators"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "instrument_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supplier",
+        "adapter_version",
+        "policy_revision",
+        "instrument_id",
+        "code",
+        "market",
+        "kind",
+        "start",
+        "end",
+        "price_basis",
+        "realtime",
+        "retrieved_at",
+        "available_at",
+        "source_units",
+        "calendar",
+        "missing_sessions",
+        "input_digest",
+        "limitations",
+        "bar_count"
+      ],
+      "properties": {
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "csv",
+            "tushare",
+            "eastmoney",
+            "tencent"
+          ]
+        },
+        "adapter_version": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "policy_revision": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "market": {
+          "type": "string",
+          "enum": [
+            "SSE",
+            "SZSE"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stock",
+            "etf"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "price_basis": {
+          "type": "string",
+          "enum": [
+            "unadjusted"
+          ]
+        },
+        "realtime": {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "available_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_units": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "volume",
+            "amount"
+          ],
+          "properties": {
+            "volume": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "amount": {
+              "type": "string",
+              "maxLength": 240
+            }
+          }
+        },
+        "calendar": {
+          "type": "object",
+          "maxProperties": 20,
+          "additionalProperties": true
+        },
+        "missing_sessions": {
+          "anyOf": [
+            {
+              "type": "array",
+              "maxItems": 370,
+              "items": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 240
+          }
+        },
+        "declared_source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "raw_input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bar_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500
+        }
+      }
+    },
+    "indicators": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "price_basis",
+        "algorithm_version",
+        "ma5",
+        "ma20",
+        "volume_ratio_5",
+        "atr14",
+        "record_return_std20",
+        "return_sample_count",
+        "limitations"
+      ],
+      "properties": {
+        "price_basis": {
+          "type": "string",
+          "enum": [
+            "unadjusted"
+          ]
+        },
+        "algorithm_version": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "ma5": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ma20": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "volume_ratio_5": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "atr14": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "record_return_std20": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "return_sample_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 240
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategySource = {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "dataset": {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+  "bar_count": number;
+};
+  "indicators": {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+};
+
+export const LightTickInvestmentStrategyPublicReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_note",
+    "reviewed_at",
+    "fact_count"
+  ],
+  "properties": {
+    "source_note": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fact_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyPublicReview = {
+  "source_note": string;
+  "reviewed_at": string;
+  "fact_count": number;
+};
+
+export const LightTickInvestmentStrategyInputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "strategy_heads",
+    "mode",
+    "strategies",
+    "cases",
+    "axes",
+    "instrument",
+    "account_id",
+    "snapshot",
+    "calendar",
+    "start_at",
+    "end_at",
+    "decision_at",
+    "execution_review",
+    "algorithm_version",
+    "digest"
+  ],
+  "properties": {
+    "strategy_heads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "archive_epoch"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "archive_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      },
+      "maxItems": 4
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "single",
+        "compare",
+        "grid"
+      ]
+    },
+    "strategies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "archive_epoch",
+          "fields",
+          "definition_digest",
+          "request_key",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "archive_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "description",
+              "config"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 8000
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "initial_cash",
+                  "quantity",
+                  "price_tick",
+                  "commission_rate",
+                  "minimum_commission",
+                  "sell_tax_rate",
+                  "slippage_bps",
+                  "max_participation",
+                  "annual_risk_free",
+                  "strategy",
+                  "entry_above",
+                  "exit_below",
+                  "fast_window",
+                  "slow_window",
+                  "lot_size",
+                  "annual_periods"
+                ],
+                "properties": {
+                  "initial_cash": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "price_tick": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "commission_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "minimum_commission": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "sell_tax_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "slippage_bps": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "max_participation": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "annual_risk_free": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "threshold",
+                      "ma_cross"
+                    ]
+                  },
+                  "entry_above": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "exit_below": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fast_window": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120
+                  },
+                  "slow_window": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 250
+                  },
+                  "lot_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "annual_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                }
+              }
+            }
+          },
+          "definition_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "request_key": {
+            "type": "string"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 4
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "strategy",
+          "config"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "strategy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "definition_digest"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "initial_cash",
+              "quantity",
+              "price_tick",
+              "commission_rate",
+              "minimum_commission",
+              "sell_tax_rate",
+              "slippage_bps",
+              "max_participation",
+              "annual_risk_free",
+              "strategy",
+              "entry_above",
+              "exit_below",
+              "fast_window",
+              "slow_window",
+              "lot_size",
+              "annual_periods"
+            ],
+            "properties": {
+              "initial_cash": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "price_tick": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "commission_rate": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "minimum_commission": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "sell_tax_rate": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "slippage_bps": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "max_participation": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "annual_risk_free": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "strategy": {
+                "type": "string",
+                "enum": [
+                  "threshold",
+                  "ma_cross"
+                ]
+              },
+              "entry_above": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "exit_below": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fast_window": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120
+              },
+              "slow_window": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 250
+              },
+              "lot_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "annual_periods": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              }
+            }
+          }
+        }
+      },
+      "maxItems": 16
+    },
+    "axes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "parameter",
+          "values"
+        ],
+        "properties": {
+          "parameter": {
+            "type": "string",
+            "enum": [
+              "entry_above",
+              "exit_below",
+              "fast_window",
+              "slow_window"
+            ]
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 250
+                }
+              ]
+            }
+          }
+        }
+      },
+      "maxItems": 2
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "market",
+        "kind",
+        "name",
+        "id",
+        "revision",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "market": {
+          "type": "string",
+          "enum": [
+            "SSE",
+            "SZSE",
+            "BSE",
+            "FUND"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "stock",
+            "etf",
+            "fund"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "instrument_id",
+        "instrument_revision",
+        "work_id",
+        "created_at",
+        "dataset",
+        "indicators"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "instrument_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "work_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dataset": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "supplier",
+            "adapter_version",
+            "policy_revision",
+            "instrument_id",
+            "code",
+            "market",
+            "kind",
+            "start",
+            "end",
+            "price_basis",
+            "realtime",
+            "retrieved_at",
+            "available_at",
+            "source_units",
+            "calendar",
+            "missing_sessions",
+            "input_digest",
+            "limitations",
+            "bar_count"
+          ],
+          "properties": {
+            "supplier": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "tushare",
+                "eastmoney",
+                "tencent"
+              ]
+            },
+            "adapter_version": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "policy_revision": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "code": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "market": {
+              "type": "string",
+              "enum": [
+                "SSE",
+                "SZSE"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "stock",
+                "etf"
+              ]
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "price_basis": {
+              "type": "string",
+              "enum": [
+                "unadjusted"
+              ]
+            },
+            "realtime": {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            "retrieved_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "available_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "source_units": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "volume",
+                "amount"
+              ],
+              "properties": {
+                "volume": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "amount": {
+                  "type": "string",
+                  "maxLength": 240
+                }
+              }
+            },
+            "calendar": {
+              "type": "object",
+              "maxProperties": 20,
+              "additionalProperties": true
+            },
+            "missing_sessions": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 370,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 240
+              }
+            },
+            "declared_source": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "raw_input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "bar_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            }
+          }
+        },
+        "indicators": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "price_basis",
+            "algorithm_version",
+            "ma5",
+            "ma20",
+            "volume_ratio_5",
+            "atr14",
+            "record_return_std20",
+            "return_sample_count",
+            "limitations"
+          ],
+          "properties": {
+            "price_basis": {
+              "type": "string",
+              "enum": [
+                "unadjusted"
+              ]
+            },
+            "algorithm_version": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "ma5": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ma20": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "volume_ratio_5": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "atr14": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "record_return_std20": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "return_sample_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 240
+              }
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "market",
+        "version",
+        "start",
+        "end",
+        "reviewed_on",
+        "review_until",
+        "source_url",
+        "sessions",
+        "snapshot_hash"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "coverage_unknown",
+            "review_expired"
+          ]
+        },
+        "market": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "reviewed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "review_until": {
+          "type": "string",
+          "format": "date"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sessions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "snapshot_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "start_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution_review": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_note",
+            "reviewed_at",
+            "fact_count"
+          ],
+          "properties": {
+            "source_note": {
+              "type": "string"
+            },
+            "reviewed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "fact_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "algorithm_version": {
+      "type": "string"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyInput = {
+  "strategy_heads": (
+{
+  "id": string;
+  "archive_epoch": number;
+}
+)[];
+  "mode": "single" | "compare" | "grid";
+  "strategies": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "cases": (
+{
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+}
+)[];
+  "axes": (
+{
+  "parameter": "entry_above" | "exit_below" | "fast_window" | "slow_window";
+  "values": (
+string | number
+)[];
+}
+)[];
+  "instrument": {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "account_id": string | unknown;
+  "snapshot": {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "dataset": {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+  "bar_count": number;
+};
+  "indicators": {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+};
+  "calendar": {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
+  "start_at": string;
+  "end_at": string;
+  "decision_at": string;
+  "execution_review": (
+{
+  "source_note": string;
+  "reviewed_at": string;
+  "fact_count": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "digest": string;
+};
+
+export const LightTickInvestmentStrategyMetricsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "net_profit",
+    "total_return_pct",
+    "annualized_return_pct",
+    "maximum_drawdown_pct",
+    "volatility_pct",
+    "sharpe",
+    "sortino",
+    "win_rate_pct",
+    "average_win",
+    "average_loss",
+    "largest_win",
+    "largest_loss",
+    "average_holding_calendar_days",
+    "total_fees_and_tax",
+    "benchmark_return_pct",
+    "annual_risk_free",
+    "closed_round_trips",
+    "risk_metric_samples",
+    "annual_periods"
+  ],
+  "properties": {
+    "net_profit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "total_return_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "annualized_return_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "maximum_drawdown_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "volatility_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sharpe": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sortino": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "win_rate_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "average_win": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "average_loss": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "largest_win": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "largest_loss": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "average_holding_calendar_days": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "total_fees_and_tax": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "benchmark_return_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "annual_risk_free": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "closed_round_trips": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "risk_metric_samples": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "annual_periods": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyMetrics = {
+  "net_profit": string | unknown;
+  "total_return_pct": string | unknown;
+  "annualized_return_pct": string | unknown;
+  "maximum_drawdown_pct": string | unknown;
+  "volatility_pct": string | unknown;
+  "sharpe": string | unknown;
+  "sortino": string | unknown;
+  "win_rate_pct": string | unknown;
+  "average_win": string | unknown;
+  "average_loss": string | unknown;
+  "largest_win": string | unknown;
+  "largest_loss": string | unknown;
+  "average_holding_calendar_days": string | unknown;
+  "total_fees_and_tax": string | unknown;
+  "benchmark_return_pct": string | unknown;
+  "annual_risk_free": string | unknown;
+  "closed_round_trips": number;
+  "risk_metric_samples": number;
+  "annual_periods": number;
+};
+
+export const LightTickInvestmentStrategyResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "missing",
+    "metrics",
+    "algorithm_version",
+    "input_digest",
+    "config",
+    "trade_count",
+    "order_count",
+    "equity_count"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "incomplete"
+      ]
+    },
+    "missing": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 50
+    },
+    "metrics": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "net_profit",
+            "total_return_pct",
+            "annualized_return_pct",
+            "maximum_drawdown_pct",
+            "volatility_pct",
+            "sharpe",
+            "sortino",
+            "win_rate_pct",
+            "average_win",
+            "average_loss",
+            "largest_win",
+            "largest_loss",
+            "average_holding_calendar_days",
+            "total_fees_and_tax",
+            "benchmark_return_pct",
+            "annual_risk_free",
+            "closed_round_trips",
+            "risk_metric_samples",
+            "annual_periods"
+          ],
+          "properties": {
+            "net_profit": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "total_return_pct": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "annualized_return_pct": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maximum_drawdown_pct": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "volatility_pct": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sharpe": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sortino": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "win_rate_pct": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "average_win": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "average_loss": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "largest_win": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "largest_loss": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "average_holding_calendar_days": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "total_fees_and_tax": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "benchmark_return_pct": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "annual_risk_free": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "closed_round_trips": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "risk_metric_samples": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "annual_periods": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "algorithm_version": {
+      "type": "string"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_cash",
+        "quantity",
+        "price_tick",
+        "commission_rate",
+        "minimum_commission",
+        "sell_tax_rate",
+        "slippage_bps",
+        "max_participation",
+        "annual_risk_free",
+        "strategy",
+        "entry_above",
+        "exit_below",
+        "fast_window",
+        "slow_window",
+        "lot_size",
+        "annual_periods"
+      ],
+      "properties": {
+        "initial_cash": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "quantity": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "price_tick": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "commission_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "minimum_commission": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "sell_tax_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "slippage_bps": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "max_participation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "annual_risk_free": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "threshold",
+            "ma_cross"
+          ]
+        },
+        "entry_above": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exit_below": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fast_window": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "slow_window": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 250
+        },
+        "lot_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "annual_periods": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    },
+    "trade_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "order_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "equity_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "algorithm": {
+      "type": "string"
+    },
+    "execution_assumptions": {
+      "type": "string"
+    },
+    "final_cash": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "open_quantity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "open_cost_basis": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyResult = {
+  "status": "complete" | "incomplete";
+  "missing": string[];
+  "metrics": (
+{
+  "net_profit": string | unknown;
+  "total_return_pct": string | unknown;
+  "annualized_return_pct": string | unknown;
+  "maximum_drawdown_pct": string | unknown;
+  "volatility_pct": string | unknown;
+  "sharpe": string | unknown;
+  "sortino": string | unknown;
+  "win_rate_pct": string | unknown;
+  "average_win": string | unknown;
+  "average_loss": string | unknown;
+  "largest_win": string | unknown;
+  "largest_loss": string | unknown;
+  "average_holding_calendar_days": string | unknown;
+  "total_fees_and_tax": string | unknown;
+  "benchmark_return_pct": string | unknown;
+  "annual_risk_free": string | unknown;
+  "closed_round_trips": number;
+  "risk_metric_samples": number;
+  "annual_periods": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "input_digest": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "trade_count": number;
+  "order_count": number;
+  "equity_count": number;
+  "algorithm"?: string;
+  "execution_assumptions"?: string;
+  "final_cash"?: string;
+  "open_quantity"?: string;
+  "open_cost_basis"?: string;
+  "limitations"?: string[];
+};
+
+export const LightTickInvestmentStrategyResultCaseSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "index",
+    "strategy",
+    "config",
+    "result"
+  ],
+  "properties": {
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 15
+    },
+    "strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "definition_digest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initial_cash",
+        "quantity",
+        "price_tick",
+        "commission_rate",
+        "minimum_commission",
+        "sell_tax_rate",
+        "slippage_bps",
+        "max_participation",
+        "annual_risk_free",
+        "strategy",
+        "entry_above",
+        "exit_below",
+        "fast_window",
+        "slow_window",
+        "lot_size",
+        "annual_periods"
+      ],
+      "properties": {
+        "initial_cash": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "quantity": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "price_tick": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "commission_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "minimum_commission": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "sell_tax_rate": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "slippage_bps": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "max_participation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "annual_risk_free": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "threshold",
+            "ma_cross"
+          ]
+        },
+        "entry_above": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exit_below": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fast_window": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "slow_window": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 250
+        },
+        "lot_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "annual_periods": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "missing",
+        "metrics",
+        "algorithm_version",
+        "input_digest",
+        "config",
+        "trade_count",
+        "order_count",
+        "equity_count"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "incomplete"
+          ]
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50
+        },
+        "metrics": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "net_profit",
+                "total_return_pct",
+                "annualized_return_pct",
+                "maximum_drawdown_pct",
+                "volatility_pct",
+                "sharpe",
+                "sortino",
+                "win_rate_pct",
+                "average_win",
+                "average_loss",
+                "largest_win",
+                "largest_loss",
+                "average_holding_calendar_days",
+                "total_fees_and_tax",
+                "benchmark_return_pct",
+                "annual_risk_free",
+                "closed_round_trips",
+                "risk_metric_samples",
+                "annual_periods"
+              ],
+              "properties": {
+                "net_profit": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "total_return_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "annualized_return_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "maximum_drawdown_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "volatility_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sharpe": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sortino": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "win_rate_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "average_win": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "average_loss": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "largest_win": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "largest_loss": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "average_holding_calendar_days": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "total_fees_and_tax": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "benchmark_return_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "annual_risk_free": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "closed_round_trips": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "risk_metric_samples": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "annual_periods": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "algorithm_version": {
+          "type": "string"
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "initial_cash",
+            "quantity",
+            "price_tick",
+            "commission_rate",
+            "minimum_commission",
+            "sell_tax_rate",
+            "slippage_bps",
+            "max_participation",
+            "annual_risk_free",
+            "strategy",
+            "entry_above",
+            "exit_below",
+            "fast_window",
+            "slow_window",
+            "lot_size",
+            "annual_periods"
+          ],
+          "properties": {
+            "initial_cash": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "quantity": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "price_tick": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "commission_rate": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "minimum_commission": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "sell_tax_rate": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "slippage_bps": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "max_participation": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "annual_risk_free": {
+              "type": "string",
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "strategy": {
+              "type": "string",
+              "enum": [
+                "threshold",
+                "ma_cross"
+              ]
+            },
+            "entry_above": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "exit_below": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fast_window": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120
+            },
+            "slow_window": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 250
+            },
+            "lot_size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000
+            },
+            "annual_periods": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          }
+        },
+        "trade_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "order_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "equity_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "execution_assumptions": {
+          "type": "string"
+        },
+        "final_cash": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "open_quantity": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "open_cost_basis": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyResultCase = {
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "result": {
+  "status": "complete" | "incomplete";
+  "missing": string[];
+  "metrics": (
+{
+  "net_profit": string | unknown;
+  "total_return_pct": string | unknown;
+  "annualized_return_pct": string | unknown;
+  "maximum_drawdown_pct": string | unknown;
+  "volatility_pct": string | unknown;
+  "sharpe": string | unknown;
+  "sortino": string | unknown;
+  "win_rate_pct": string | unknown;
+  "average_win": string | unknown;
+  "average_loss": string | unknown;
+  "largest_win": string | unknown;
+  "largest_loss": string | unknown;
+  "average_holding_calendar_days": string | unknown;
+  "total_fees_and_tax": string | unknown;
+  "benchmark_return_pct": string | unknown;
+  "annual_risk_free": string | unknown;
+  "closed_round_trips": number;
+  "risk_metric_samples": number;
+  "annual_periods": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "input_digest": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "trade_count": number;
+  "order_count": number;
+  "equity_count": number;
+  "algorithm"?: string;
+  "execution_assumptions"?: string;
+  "final_cash"?: string;
+  "open_quantity"?: string;
+  "open_cost_basis"?: string;
+  "limitations"?: string[];
+};
+};
+
+export const LightTickInvestmentStrategyReportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm_version",
+    "input_digest",
+    "output_digest",
+    "context_digest",
+    "status",
+    "limitations",
+    "cases"
+  ],
+  "properties": {
+    "algorithm_version": {
+      "type": "string"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "output_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "context_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "incomplete"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "strategy",
+          "config",
+          "result"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "strategy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "definition_digest"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "initial_cash",
+              "quantity",
+              "price_tick",
+              "commission_rate",
+              "minimum_commission",
+              "sell_tax_rate",
+              "slippage_bps",
+              "max_participation",
+              "annual_risk_free",
+              "strategy",
+              "entry_above",
+              "exit_below",
+              "fast_window",
+              "slow_window",
+              "lot_size",
+              "annual_periods"
+            ],
+            "properties": {
+              "initial_cash": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "price_tick": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "commission_rate": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "minimum_commission": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "sell_tax_rate": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "slippage_bps": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "max_participation": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "annual_risk_free": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "strategy": {
+                "type": "string",
+                "enum": [
+                  "threshold",
+                  "ma_cross"
+                ]
+              },
+              "entry_above": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "exit_below": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fast_window": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120
+              },
+              "slow_window": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 250
+              },
+              "lot_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "annual_periods": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              }
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "missing",
+              "metrics",
+              "algorithm_version",
+              "input_digest",
+              "config",
+              "trade_count",
+              "order_count",
+              "equity_count"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "incomplete"
+                ]
+              },
+              "missing": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50
+              },
+              "metrics": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "net_profit",
+                      "total_return_pct",
+                      "annualized_return_pct",
+                      "maximum_drawdown_pct",
+                      "volatility_pct",
+                      "sharpe",
+                      "sortino",
+                      "win_rate_pct",
+                      "average_win",
+                      "average_loss",
+                      "largest_win",
+                      "largest_loss",
+                      "average_holding_calendar_days",
+                      "total_fees_and_tax",
+                      "benchmark_return_pct",
+                      "annual_risk_free",
+                      "closed_round_trips",
+                      "risk_metric_samples",
+                      "annual_periods"
+                    ],
+                    "properties": {
+                      "net_profit": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "total_return_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "annualized_return_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maximum_drawdown_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "volatility_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sharpe": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sortino": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "win_rate_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "average_win": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "average_loss": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "largest_win": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "largest_loss": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "average_holding_calendar_days": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "total_fees_and_tax": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "benchmark_return_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "annual_risk_free": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "closed_round_trips": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "risk_metric_samples": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "annual_periods": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "algorithm_version": {
+                "type": "string"
+              },
+              "input_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "initial_cash",
+                  "quantity",
+                  "price_tick",
+                  "commission_rate",
+                  "minimum_commission",
+                  "sell_tax_rate",
+                  "slippage_bps",
+                  "max_participation",
+                  "annual_risk_free",
+                  "strategy",
+                  "entry_above",
+                  "exit_below",
+                  "fast_window",
+                  "slow_window",
+                  "lot_size",
+                  "annual_periods"
+                ],
+                "properties": {
+                  "initial_cash": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "price_tick": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "commission_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "minimum_commission": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "sell_tax_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "slippage_bps": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "max_participation": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "annual_risk_free": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "threshold",
+                      "ma_cross"
+                    ]
+                  },
+                  "entry_above": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "exit_below": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fast_window": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120
+                  },
+                  "slow_window": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 250
+                  },
+                  "lot_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "annual_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                }
+              },
+              "trade_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "order_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "equity_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "algorithm": {
+                "type": "string"
+              },
+              "execution_assumptions": {
+                "type": "string"
+              },
+              "final_cash": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "open_quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "open_cost_basis": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20
+              }
+            }
+          }
+        }
+      },
+      "maxItems": 16
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyReport = {
+  "algorithm_version": string;
+  "input_digest": string;
+  "output_digest": string;
+  "context_digest": string;
+  "status": "complete" | "incomplete";
+  "limitations": string[];
+  "cases": (
+{
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "result": {
+  "status": "complete" | "incomplete";
+  "missing": string[];
+  "metrics": (
+{
+  "net_profit": string | unknown;
+  "total_return_pct": string | unknown;
+  "annualized_return_pct": string | unknown;
+  "maximum_drawdown_pct": string | unknown;
+  "volatility_pct": string | unknown;
+  "sharpe": string | unknown;
+  "sortino": string | unknown;
+  "win_rate_pct": string | unknown;
+  "average_win": string | unknown;
+  "average_loss": string | unknown;
+  "largest_win": string | unknown;
+  "largest_loss": string | unknown;
+  "average_holding_calendar_days": string | unknown;
+  "total_fees_and_tax": string | unknown;
+  "benchmark_return_pct": string | unknown;
+  "annual_risk_free": string | unknown;
+  "closed_round_trips": number;
+  "risk_metric_samples": number;
+  "annual_periods": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "input_digest": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "trade_count": number;
+  "order_count": number;
+  "equity_count": number;
+  "algorithm"?: string;
+  "execution_assumptions"?: string;
+  "final_cash"?: string;
+  "open_quantity"?: string;
+  "open_cost_basis"?: string;
+  "limitations"?: string[];
+};
+}
+)[];
+};
+
+export const LightTickInvestmentStrategyWorkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "sequence",
+    "revision",
+    "request_key",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "output",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "request_key": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy_heads",
+        "mode",
+        "strategies",
+        "cases",
+        "axes",
+        "instrument",
+        "account_id",
+        "snapshot",
+        "calendar",
+        "start_at",
+        "end_at",
+        "decision_at",
+        "execution_review",
+        "algorithm_version",
+        "digest"
+      ],
+      "properties": {
+        "strategy_heads": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "archive_epoch"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "archive_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            }
+          },
+          "maxItems": 4
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "compare",
+            "grid"
+          ]
+        },
+        "strategies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "archive_epoch",
+              "fields",
+              "definition_digest",
+              "request_key",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "archive_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "config"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8000
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "initial_cash",
+                      "quantity",
+                      "price_tick",
+                      "commission_rate",
+                      "minimum_commission",
+                      "sell_tax_rate",
+                      "slippage_bps",
+                      "max_participation",
+                      "annual_risk_free",
+                      "strategy",
+                      "entry_above",
+                      "exit_below",
+                      "fast_window",
+                      "slow_window",
+                      "lot_size",
+                      "annual_periods"
+                    ],
+                    "properties": {
+                      "initial_cash": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "price_tick": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "commission_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "minimum_commission": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "sell_tax_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "slippage_bps": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "max_participation": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "annual_risk_free": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "strategy": {
+                        "type": "string",
+                        "enum": [
+                          "threshold",
+                          "ma_cross"
+                        ]
+                      },
+                      "entry_above": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "exit_below": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fast_window": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 120
+                      },
+                      "slow_window": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 250
+                      },
+                      "lot_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      "annual_periods": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    }
+                  }
+                }
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "request_key": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 4
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "strategy",
+              "config"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              },
+              "strategy": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "version",
+                  "definition_digest"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "definition_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "initial_cash",
+                  "quantity",
+                  "price_tick",
+                  "commission_rate",
+                  "minimum_commission",
+                  "sell_tax_rate",
+                  "slippage_bps",
+                  "max_participation",
+                  "annual_risk_free",
+                  "strategy",
+                  "entry_above",
+                  "exit_below",
+                  "fast_window",
+                  "slow_window",
+                  "lot_size",
+                  "annual_periods"
+                ],
+                "properties": {
+                  "initial_cash": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "price_tick": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "commission_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "minimum_commission": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "sell_tax_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "slippage_bps": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "max_participation": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "annual_risk_free": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "threshold",
+                      "ma_cross"
+                    ]
+                  },
+                  "entry_above": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "exit_below": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fast_window": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120
+                  },
+                  "slow_window": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 250
+                  },
+                  "lot_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "annual_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                }
+              }
+            }
+          },
+          "maxItems": 16
+        },
+        "axes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "parameter",
+              "values"
+            ],
+            "properties": {
+              "parameter": {
+                "type": "string",
+                "enum": [
+                  "entry_above",
+                  "exit_below",
+                  "fast_window",
+                  "slow_window"
+                ]
+              },
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 250
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "maxItems": 2
+        },
+        "instrument": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "market",
+            "kind",
+            "name",
+            "id",
+            "revision",
+            "archived",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "market": {
+              "type": "string",
+              "enum": [
+                "SSE",
+                "SZSE",
+                "BSE",
+                "FUND"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "stock",
+                "etf",
+                "fund"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "instrument_id",
+            "instrument_revision",
+            "work_id",
+            "created_at",
+            "dataset",
+            "indicators"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "enum": [
+                1
+              ]
+            },
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "instrument_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "work_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "dataset": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "supplier",
+                "adapter_version",
+                "policy_revision",
+                "instrument_id",
+                "code",
+                "market",
+                "kind",
+                "start",
+                "end",
+                "price_basis",
+                "realtime",
+                "retrieved_at",
+                "available_at",
+                "source_units",
+                "calendar",
+                "missing_sessions",
+                "input_digest",
+                "limitations",
+                "bar_count"
+              ],
+              "properties": {
+                "supplier": {
+                  "type": "string",
+                  "enum": [
+                    "csv",
+                    "tushare",
+                    "eastmoney",
+                    "tencent"
+                  ]
+                },
+                "adapter_version": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "policy_revision": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "instrument_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "code": {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                "market": {
+                  "type": "string",
+                  "enum": [
+                    "SSE",
+                    "SZSE"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "stock",
+                    "etf"
+                  ]
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "price_basis": {
+                  "type": "string",
+                  "enum": [
+                    "unadjusted"
+                  ]
+                },
+                "realtime": {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                "retrieved_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "available_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "source_units": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "volume",
+                    "amount"
+                  ],
+                  "properties": {
+                    "volume": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "amount": {
+                      "type": "string",
+                      "maxLength": 240
+                    }
+                  }
+                },
+                "calendar": {
+                  "type": "object",
+                  "maxProperties": 20,
+                  "additionalProperties": true
+                },
+                "missing_sessions": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "maxItems": 370,
+                      "items": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "limitations": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 240
+                  }
+                },
+                "declared_source": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "raw_input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "bar_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                }
+              }
+            },
+            "indicators": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "price_basis",
+                "algorithm_version",
+                "ma5",
+                "ma20",
+                "volume_ratio_5",
+                "atr14",
+                "record_return_std20",
+                "return_sample_count",
+                "limitations"
+              ],
+              "properties": {
+                "price_basis": {
+                  "type": "string",
+                  "enum": [
+                    "unadjusted"
+                  ]
+                },
+                "algorithm_version": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "ma5": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "ma20": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "volume_ratio_5": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "atr14": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "record_return_std20": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "return_sample_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 20
+                },
+                "limitations": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 240
+                  }
+                }
+              }
+            }
+          }
+        },
+        "calendar": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "market",
+            "version",
+            "start",
+            "end",
+            "reviewed_on",
+            "review_until",
+            "source_url",
+            "sessions",
+            "snapshot_hash"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "available",
+                "coverage_unknown",
+                "review_expired"
+              ]
+            },
+            "market": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "reviewed_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "review_until": {
+              "type": "string",
+              "format": "date"
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sessions": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "snapshot_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "start_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "end_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "decision_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "execution_review": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_note",
+                "reviewed_at",
+                "fact_count"
+              ],
+              "properties": {
+                "source_note": {
+                  "type": "string"
+                },
+                "reviewed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "fact_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "algorithm_version": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "algorithm_version",
+            "input_digest",
+            "output_digest",
+            "context_digest",
+            "status",
+            "limitations",
+            "cases"
+          ],
+          "properties": {
+            "algorithm_version": {
+              "type": "string"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "output_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "context_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "complete",
+                "incomplete"
+              ]
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20
+            },
+            "cases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "strategy",
+                  "config",
+                  "result"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 15
+                  },
+                  "strategy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "version",
+                      "definition_digest"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "definition_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "initial_cash",
+                      "quantity",
+                      "price_tick",
+                      "commission_rate",
+                      "minimum_commission",
+                      "sell_tax_rate",
+                      "slippage_bps",
+                      "max_participation",
+                      "annual_risk_free",
+                      "strategy",
+                      "entry_above",
+                      "exit_below",
+                      "fast_window",
+                      "slow_window",
+                      "lot_size",
+                      "annual_periods"
+                    ],
+                    "properties": {
+                      "initial_cash": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "price_tick": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "commission_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "minimum_commission": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "sell_tax_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "slippage_bps": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "max_participation": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "annual_risk_free": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "strategy": {
+                        "type": "string",
+                        "enum": [
+                          "threshold",
+                          "ma_cross"
+                        ]
+                      },
+                      "entry_above": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "exit_below": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fast_window": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 120
+                      },
+                      "slow_window": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 250
+                      },
+                      "lot_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      "annual_periods": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    }
+                  },
+                  "result": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "missing",
+                      "metrics",
+                      "algorithm_version",
+                      "input_digest",
+                      "config",
+                      "trade_count",
+                      "order_count",
+                      "equity_count"
+                    ],
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "complete",
+                          "incomplete"
+                        ]
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 50
+                      },
+                      "metrics": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "net_profit",
+                              "total_return_pct",
+                              "annualized_return_pct",
+                              "maximum_drawdown_pct",
+                              "volatility_pct",
+                              "sharpe",
+                              "sortino",
+                              "win_rate_pct",
+                              "average_win",
+                              "average_loss",
+                              "largest_win",
+                              "largest_loss",
+                              "average_holding_calendar_days",
+                              "total_fees_and_tax",
+                              "benchmark_return_pct",
+                              "annual_risk_free",
+                              "closed_round_trips",
+                              "risk_metric_samples",
+                              "annual_periods"
+                            ],
+                            "properties": {
+                              "net_profit": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "total_return_pct": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "annualized_return_pct": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "maximum_drawdown_pct": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "volatility_pct": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "sharpe": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "sortino": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "win_rate_pct": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "average_win": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "average_loss": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "largest_win": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "largest_loss": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "average_holding_calendar_days": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "total_fees_and_tax": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "benchmark_return_pct": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "annual_risk_free": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "closed_round_trips": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "risk_metric_samples": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "annual_periods": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 100000
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "algorithm_version": {
+                        "type": "string"
+                      },
+                      "input_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "config": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "initial_cash",
+                          "quantity",
+                          "price_tick",
+                          "commission_rate",
+                          "minimum_commission",
+                          "sell_tax_rate",
+                          "slippage_bps",
+                          "max_participation",
+                          "annual_risk_free",
+                          "strategy",
+                          "entry_above",
+                          "exit_below",
+                          "fast_window",
+                          "slow_window",
+                          "lot_size",
+                          "annual_periods"
+                        ],
+                        "properties": {
+                          "initial_cash": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "price_tick": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "commission_rate": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "minimum_commission": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "sell_tax_rate": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "slippage_bps": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "max_participation": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "annual_risk_free": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "strategy": {
+                            "type": "string",
+                            "enum": [
+                              "threshold",
+                              "ma_cross"
+                            ]
+                          },
+                          "entry_above": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "exit_below": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fast_window": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 120
+                          },
+                          "slow_window": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 250
+                          },
+                          "lot_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000
+                          },
+                          "annual_periods": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        }
+                      },
+                      "trade_count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "order_count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "equity_count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "algorithm": {
+                        "type": "string"
+                      },
+                      "execution_assumptions": {
+                        "type": "string"
+                      },
+                      "final_cash": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "open_quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "open_cost_basis": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "limitations": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "maxItems": 20
+                      }
+                    }
+                  }
+                }
+              },
+              "maxItems": 16
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyWork = {
+  "id": string;
+  "sequence": number;
+  "revision": number;
+  "request_key": string;
+  "input": {
+  "strategy_heads": (
+{
+  "id": string;
+  "archive_epoch": number;
+}
+)[];
+  "mode": "single" | "compare" | "grid";
+  "strategies": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "cases": (
+{
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+}
+)[];
+  "axes": (
+{
+  "parameter": "entry_above" | "exit_below" | "fast_window" | "slow_window";
+  "values": (
+string | number
+)[];
+}
+)[];
+  "instrument": {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "account_id": string | unknown;
+  "snapshot": {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "dataset": {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+  "bar_count": number;
+};
+  "indicators": {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+};
+  "calendar": {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
+  "start_at": string;
+  "end_at": string;
+  "decision_at": string;
+  "execution_review": (
+{
+  "source_note": string;
+  "reviewed_at": string;
+  "fact_count": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "digest": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "output": (
+{
+  "algorithm_version": string;
+  "input_digest": string;
+  "output_digest": string;
+  "context_digest": string;
+  "status": "complete" | "incomplete";
+  "limitations": string[];
+  "cases": (
+{
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "result": {
+  "status": "complete" | "incomplete";
+  "missing": string[];
+  "metrics": (
+{
+  "net_profit": string | unknown;
+  "total_return_pct": string | unknown;
+  "annualized_return_pct": string | unknown;
+  "maximum_drawdown_pct": string | unknown;
+  "volatility_pct": string | unknown;
+  "sharpe": string | unknown;
+  "sortino": string | unknown;
+  "win_rate_pct": string | unknown;
+  "average_win": string | unknown;
+  "average_loss": string | unknown;
+  "largest_win": string | unknown;
+  "largest_loss": string | unknown;
+  "average_holding_calendar_days": string | unknown;
+  "total_fees_and_tax": string | unknown;
+  "benchmark_return_pct": string | unknown;
+  "annual_risk_free": string | unknown;
+  "closed_round_trips": number;
+  "risk_metric_samples": number;
+  "annual_periods": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "input_digest": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "trade_count": number;
+  "order_count": number;
+  "equity_count": number;
+  "algorithm"?: string;
+  "execution_assumptions"?: string;
+  "final_cash"?: string;
+  "open_quantity"?: string;
+  "open_cost_basis"?: string;
+  "limitations"?: string[];
+};
+}
+)[];
+}
+) | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentStrategySummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "sequence",
+    "revision",
+    "status",
+    "attempt",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "mode",
+    "strategy_ids"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "single",
+        "compare",
+        "grid"
+      ]
+    },
+    "strategy_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+      },
+      "maxItems": 4
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategySummary = {
+  "id": string;
+  "sequence": number;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "mode": "single" | "compare" | "grid";
+  "strategy_ids": string[];
+};
+
+export const LightTickInvestmentStrategyEquitySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "equity",
+    "cash",
+    "quantity",
+    "close",
+    "time",
+    "drawdown_pct"
+  ],
+  "properties": {
+    "equity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "cash": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "quantity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "close": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "drawdown_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyEquity = {
+  "equity": string;
+  "cash": string;
+  "quantity": string;
+  "close": string;
+  "time": string;
+  "drawdown_pct": string | unknown;
+};
+
+export const LightTickInvestmentStrategyTradeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "side",
+    "time",
+    "signal_at",
+    "price",
+    "quantity",
+    "fee",
+    "tax",
+    "cash_after",
+    "position_after"
+  ],
+  "properties": {
+    "side": {
+      "type": "string",
+      "enum": [
+        "buy",
+        "sell"
+      ]
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signal_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "price": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "quantity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "fee": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "tax": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "cash_after": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "position_after": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyTrade = {
+  "side": "buy" | "sell";
+  "time": string;
+  "signal_at": string;
+  "price": string;
+  "quantity": string;
+  "fee": string;
+  "tax": string;
+  "cash_after": string;
+  "position_after": string;
+};
+
+export const LightTickInvestmentStrategyOrderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "side",
+    "signal_at",
+    "signal_bar",
+    "status",
+    "reason",
+    "filled_quantity"
+  ],
+  "properties": {
+    "side": {
+      "type": "string",
+      "enum": [
+        "buy",
+        "sell"
+      ]
+    },
+    "signal_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signal_bar": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "filled",
+        "rejected",
+        "unexecuted"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "filled_quantity": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyOrder = {
+  "side": "buy" | "sell";
+  "signal_at": string;
+  "signal_bar": string;
+  "execution_at"?: string;
+  "status": "filled" | "rejected" | "unexecuted";
+  "reason": string;
+  "filled_quantity": string;
+};
+
+export const LightTickInvestmentStrategyPriceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume_shares",
+    "amount_cny",
+    "turnover_rate_pct"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "open": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "high": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "low": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "close": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "volume_shares": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "amount_cny": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "turnover_rate_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyPrice = {
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+};
+
+export const LightTickInvestmentStrategyCasePageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "case_index",
+    "section",
+    "total",
+    "output_digest",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "equity",
+              "cash",
+              "quantity",
+              "close",
+              "time",
+              "drawdown_pct"
+            ],
+            "properties": {
+              "equity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "cash": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "close": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "drawdown_pct": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "side",
+              "time",
+              "signal_at",
+              "price",
+              "quantity",
+              "fee",
+              "tax",
+              "cash_after",
+              "position_after"
+            ],
+            "properties": {
+              "side": {
+                "type": "string",
+                "enum": [
+                  "buy",
+                  "sell"
+                ]
+              },
+              "time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "signal_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "price": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "fee": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "tax": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "cash_after": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "position_after": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "side",
+              "signal_at",
+              "signal_bar",
+              "status",
+              "reason",
+              "filled_quantity"
+            ],
+            "properties": {
+              "side": {
+                "type": "string",
+                "enum": [
+                  "buy",
+                  "sell"
+                ]
+              },
+              "signal_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "signal_bar": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "execution_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "filled",
+                  "rejected",
+                  "unexecuted"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "filled_quantity": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "available_at",
+              "suspended",
+              "limit_up",
+              "limit_down",
+              "adj_factor",
+              "split_ratio",
+              "cash_dividend"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "available_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "suspended": {
+                "type": "boolean"
+              },
+              "limit_up": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "limit_down": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "adj_factor": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "split_ratio": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              },
+              "cash_dividend": {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "open",
+              "high",
+              "low",
+              "close",
+              "volume_shares",
+              "amount_cny",
+              "turnover_rate_pct"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "open": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "high": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "low": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "close": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "volume_shares": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "amount_cny": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "turnover_rate_pct": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "maxItems": 100
+    },
+    "case_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 15
+    },
+    "section": {
+      "type": "string",
+      "enum": [
+        "equity",
+        "orders",
+        "trades",
+        "execution",
+        "prices"
+      ]
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "output_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyCasePage = {
+  "items": (
+{
+  "equity": string;
+  "cash": string;
+  "quantity": string;
+  "close": string;
+  "time": string;
+  "drawdown_pct": string | unknown;
+} | {
+  "side": "buy" | "sell";
+  "time": string;
+  "signal_at": string;
+  "price": string;
+  "quantity": string;
+  "fee": string;
+  "tax": string;
+  "cash_after": string;
+  "position_after": string;
+} | {
+  "side": "buy" | "sell";
+  "signal_at": string;
+  "signal_bar": string;
+  "execution_at"?: string;
+  "status": "filled" | "rejected" | "unexecuted";
+  "reason": string;
+  "filled_quantity": string;
+} | {
+  "date": string;
+  "available_at": string;
+  "suspended": boolean;
+  "limit_up": string;
+  "limit_down": string;
+  "adj_factor": string;
+  "split_ratio": string;
+  "cash_dividend": string;
+} | {
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+}
+)[];
+  "case_index": number;
+  "section": "equity" | "orders" | "trades" | "execution" | "prices";
+  "total": number;
+  "output_digest": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentStrategyDefinitionPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "archive_epoch",
+          "fields",
+          "definition_digest",
+          "request_key",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "archive_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "description",
+              "config"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 8000
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "initial_cash",
+                  "quantity",
+                  "price_tick",
+                  "commission_rate",
+                  "minimum_commission",
+                  "sell_tax_rate",
+                  "slippage_bps",
+                  "max_participation",
+                  "annual_risk_free",
+                  "strategy",
+                  "entry_above",
+                  "exit_below",
+                  "fast_window",
+                  "slow_window",
+                  "lot_size",
+                  "annual_periods"
+                ],
+                "properties": {
+                  "initial_cash": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "price_tick": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "commission_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "minimum_commission": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "sell_tax_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "slippage_bps": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "max_participation": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "annual_risk_free": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "threshold",
+                      "ma_cross"
+                    ]
+                  },
+                  "entry_above": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "exit_below": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fast_window": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120
+                  },
+                  "slow_window": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 250
+                  },
+                  "lot_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "annual_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                }
+              }
+            }
+          },
+          "definition_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "request_key": {
+            "type": "string"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyDefinitionPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentStrategyRunPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sequence",
+          "revision",
+          "status",
+          "attempt",
+          "error_code",
+          "created_at",
+          "updated_at",
+          "mode",
+          "strategy_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "single",
+              "compare",
+              "grid"
+            ]
+          },
+          "strategy_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "maxItems": 4
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyRunPage = {
+  "items": (
+{
+  "id": string;
+  "sequence": number;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "mode": "single" | "compare" | "grid";
+  "strategy_ids": string[];
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentStrategyHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "archive_epoch",
+          "fields",
+          "definition_digest",
+          "request_key",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "archive_epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "description",
+              "config"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 8000
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "initial_cash",
+                  "quantity",
+                  "price_tick",
+                  "commission_rate",
+                  "minimum_commission",
+                  "sell_tax_rate",
+                  "slippage_bps",
+                  "max_participation",
+                  "annual_risk_free",
+                  "strategy",
+                  "entry_above",
+                  "exit_below",
+                  "fast_window",
+                  "slow_window",
+                  "lot_size",
+                  "annual_periods"
+                ],
+                "properties": {
+                  "initial_cash": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "price_tick": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "commission_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "minimum_commission": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "sell_tax_rate": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "slippage_bps": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "max_participation": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "annual_risk_free": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "strategy": {
+                    "type": "string",
+                    "enum": [
+                      "threshold",
+                      "ma_cross"
+                    ]
+                  },
+                  "entry_above": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "exit_below": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fast_window": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120
+                  },
+                  "slow_window": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 250
+                  },
+                  "lot_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "annual_periods": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  }
+                }
+              }
+            }
+          },
+          "definition_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "request_key": {
+            "type": "string"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyHistory = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": number;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentStrategyCatalogSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm_version",
+    "strategies",
+    "grid_parameters",
+    "limits",
+    "scope"
+  ],
+  "properties": {
+    "algorithm_version": {
+      "type": "string"
+    },
+    "strategies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "threshold",
+          "ma_cross"
+        ]
+      },
+      "maxItems": 2
+    },
+    "grid_parameters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 4
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retained",
+        "daily",
+        "active",
+        "input_bytes",
+        "bars",
+        "cases",
+        "timeout_ms",
+        "lease_ms",
+        "attempts"
+      ],
+      "properties": {
+        "retained": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "daily": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "active": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "input_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "bars": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "lease_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "scope": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyCatalog = {
+  "algorithm_version": string;
+  "strategies": (
+"threshold" | "ma_cross"
+)[];
+  "grid_parameters": string[];
+  "limits": {
+  "retained": number;
+  "daily": number;
+  "active": number;
+  "input_bytes": number;
+  "bars": number;
+  "cases": number;
+  "timeout_ms": number;
+  "lease_ms": number;
+  "attempts": number;
+};
+  "scope": string;
+};
+
+export const LightTickInvestmentStrategyDefinitionEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "archive_epoch",
+        "fields",
+        "definition_digest",
+        "request_key",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "archive_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description",
+            "config"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 8000
+            },
+            "config": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "initial_cash",
+                "quantity",
+                "price_tick",
+                "commission_rate",
+                "minimum_commission",
+                "sell_tax_rate",
+                "slippage_bps",
+                "max_participation",
+                "annual_risk_free",
+                "strategy",
+                "entry_above",
+                "exit_below",
+                "fast_window",
+                "slow_window",
+                "lot_size",
+                "annual_periods"
+              ],
+              "properties": {
+                "initial_cash": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "quantity": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "price_tick": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "commission_rate": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "minimum_commission": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "sell_tax_rate": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "slippage_bps": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "max_participation": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "annual_risk_free": {
+                  "type": "string",
+                  "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "strategy": {
+                  "type": "string",
+                  "enum": [
+                    "threshold",
+                    "ma_cross"
+                  ]
+                },
+                "entry_above": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "exit_below": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fast_window": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 120
+                },
+                "slow_window": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 250
+                },
+                "lot_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "annual_periods": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              }
+            }
+          }
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "request_key": {
+          "type": "string"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyDefinitionEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentStrategyDefinitionPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "archive_epoch",
+              "fields",
+              "definition_digest",
+              "request_key",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "archive_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "config"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8000
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "initial_cash",
+                      "quantity",
+                      "price_tick",
+                      "commission_rate",
+                      "minimum_commission",
+                      "sell_tax_rate",
+                      "slippage_bps",
+                      "max_participation",
+                      "annual_risk_free",
+                      "strategy",
+                      "entry_above",
+                      "exit_below",
+                      "fast_window",
+                      "slow_window",
+                      "lot_size",
+                      "annual_periods"
+                    ],
+                    "properties": {
+                      "initial_cash": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "price_tick": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "commission_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "minimum_commission": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "sell_tax_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "slippage_bps": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "max_participation": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "annual_risk_free": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "strategy": {
+                        "type": "string",
+                        "enum": [
+                          "threshold",
+                          "ma_cross"
+                        ]
+                      },
+                      "entry_above": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "exit_below": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fast_window": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 120
+                      },
+                      "slow_window": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 250
+                      },
+                      "lot_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      "annual_periods": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    }
+                  }
+                }
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "request_key": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyDefinitionPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentStrategyHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "archive_epoch",
+              "fields",
+              "definition_digest",
+              "request_key",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "archive_epoch": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "config"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 8000
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "initial_cash",
+                      "quantity",
+                      "price_tick",
+                      "commission_rate",
+                      "minimum_commission",
+                      "sell_tax_rate",
+                      "slippage_bps",
+                      "max_participation",
+                      "annual_risk_free",
+                      "strategy",
+                      "entry_above",
+                      "exit_below",
+                      "fast_window",
+                      "slow_window",
+                      "lot_size",
+                      "annual_periods"
+                    ],
+                    "properties": {
+                      "initial_cash": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "price_tick": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "commission_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "minimum_commission": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "sell_tax_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "slippage_bps": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "max_participation": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "annual_risk_free": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "strategy": {
+                        "type": "string",
+                        "enum": [
+                          "threshold",
+                          "ma_cross"
+                        ]
+                      },
+                      "entry_above": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "exit_below": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fast_window": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 120
+                      },
+                      "slow_window": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 250
+                      },
+                      "lot_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      "annual_periods": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    }
+                  }
+                }
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "request_key": {
+                "type": "string"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": number;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentStrategyWorkEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sequence",
+        "revision",
+        "request_key",
+        "input",
+        "status",
+        "attempt",
+        "error_code",
+        "output",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "request_key": {
+          "type": "string"
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy_heads",
+            "mode",
+            "strategies",
+            "cases",
+            "axes",
+            "instrument",
+            "account_id",
+            "snapshot",
+            "calendar",
+            "start_at",
+            "end_at",
+            "decision_at",
+            "execution_review",
+            "algorithm_version",
+            "digest"
+          ],
+          "properties": {
+            "strategy_heads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "archive_epoch"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "archive_epoch": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  }
+                }
+              },
+              "maxItems": 4
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "single",
+                "compare",
+                "grid"
+              ]
+            },
+            "strategies": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "archive_epoch",
+                  "fields",
+                  "definition_digest",
+                  "request_key",
+                  "archived",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "archive_epoch": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "description",
+                      "config"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 8000
+                      },
+                      "config": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "initial_cash",
+                          "quantity",
+                          "price_tick",
+                          "commission_rate",
+                          "minimum_commission",
+                          "sell_tax_rate",
+                          "slippage_bps",
+                          "max_participation",
+                          "annual_risk_free",
+                          "strategy",
+                          "entry_above",
+                          "exit_below",
+                          "fast_window",
+                          "slow_window",
+                          "lot_size",
+                          "annual_periods"
+                        ],
+                        "properties": {
+                          "initial_cash": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "price_tick": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "commission_rate": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "minimum_commission": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "sell_tax_rate": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "slippage_bps": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "max_participation": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "annual_risk_free": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "strategy": {
+                            "type": "string",
+                            "enum": [
+                              "threshold",
+                              "ma_cross"
+                            ]
+                          },
+                          "entry_above": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "exit_below": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fast_window": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 120
+                          },
+                          "slow_window": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 250
+                          },
+                          "lot_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000
+                          },
+                          "annual_periods": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "definition_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "request_key": {
+                    "type": "string"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "maxItems": 4
+            },
+            "cases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "strategy",
+                  "config"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 15
+                  },
+                  "strategy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "version",
+                      "definition_digest"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "definition_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "initial_cash",
+                      "quantity",
+                      "price_tick",
+                      "commission_rate",
+                      "minimum_commission",
+                      "sell_tax_rate",
+                      "slippage_bps",
+                      "max_participation",
+                      "annual_risk_free",
+                      "strategy",
+                      "entry_above",
+                      "exit_below",
+                      "fast_window",
+                      "slow_window",
+                      "lot_size",
+                      "annual_periods"
+                    ],
+                    "properties": {
+                      "initial_cash": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "price_tick": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "commission_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "minimum_commission": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "sell_tax_rate": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "slippage_bps": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "max_participation": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "annual_risk_free": {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      "strategy": {
+                        "type": "string",
+                        "enum": [
+                          "threshold",
+                          "ma_cross"
+                        ]
+                      },
+                      "entry_above": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "exit_below": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fast_window": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 120
+                      },
+                      "slow_window": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 250
+                      },
+                      "lot_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      "annual_periods": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100000
+                      }
+                    }
+                  }
+                }
+              },
+              "maxItems": 16
+            },
+            "axes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "parameter",
+                  "values"
+                ],
+                "properties": {
+                  "parameter": {
+                    "type": "string",
+                    "enum": [
+                      "entry_above",
+                      "exit_below",
+                      "fast_window",
+                      "slow_window"
+                    ]
+                  },
+                  "values": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                        },
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 250
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "maxItems": 2
+            },
+            "instrument": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "market",
+                "kind",
+                "name",
+                "id",
+                "revision",
+                "archived",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                "market": {
+                  "type": "string",
+                  "enum": [
+                    "SSE",
+                    "SZSE",
+                    "BSE",
+                    "FUND"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "stock",
+                    "etf",
+                    "fund"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            "account_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "snapshot": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "instrument_id",
+                "instrument_revision",
+                "work_id",
+                "created_at",
+                "dataset",
+                "indicators"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "revision": {
+                  "type": "integer",
+                  "enum": [
+                    1
+                  ]
+                },
+                "instrument_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "instrument_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "work_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "dataset": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "supplier",
+                    "adapter_version",
+                    "policy_revision",
+                    "instrument_id",
+                    "code",
+                    "market",
+                    "kind",
+                    "start",
+                    "end",
+                    "price_basis",
+                    "realtime",
+                    "retrieved_at",
+                    "available_at",
+                    "source_units",
+                    "calendar",
+                    "missing_sessions",
+                    "input_digest",
+                    "limitations",
+                    "bar_count"
+                  ],
+                  "properties": {
+                    "supplier": {
+                      "type": "string",
+                      "enum": [
+                        "csv",
+                        "tushare",
+                        "eastmoney",
+                        "tencent"
+                      ]
+                    },
+                    "adapter_version": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "policy_revision": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "instrument_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "code": {
+                      "type": "string",
+                      "maxLength": 32
+                    },
+                    "market": {
+                      "type": "string",
+                      "enum": [
+                        "SSE",
+                        "SZSE"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "stock",
+                        "etf"
+                      ]
+                    },
+                    "start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "price_basis": {
+                      "type": "string",
+                      "enum": [
+                        "unadjusted"
+                      ]
+                    },
+                    "realtime": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "available_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "source_units": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "volume",
+                        "amount"
+                      ],
+                      "properties": {
+                        "volume": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "amount": {
+                          "type": "string",
+                          "maxLength": 240
+                        }
+                      }
+                    },
+                    "calendar": {
+                      "type": "object",
+                      "maxProperties": 20,
+                      "additionalProperties": true
+                    },
+                    "missing_sessions": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "maxItems": 370,
+                          "items": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 240
+                      }
+                    },
+                    "declared_source": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "raw_input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "bar_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500
+                    }
+                  }
+                },
+                "indicators": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "price_basis",
+                    "algorithm_version",
+                    "ma5",
+                    "ma20",
+                    "volume_ratio_5",
+                    "atr14",
+                    "record_return_std20",
+                    "return_sample_count",
+                    "limitations"
+                  ],
+                  "properties": {
+                    "price_basis": {
+                      "type": "string",
+                      "enum": [
+                        "unadjusted"
+                      ]
+                    },
+                    "algorithm_version": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "ma5": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "ma20": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "volume_ratio_5": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "atr14": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "record_return_std20": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "return_sample_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 20
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 240
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "calendar": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "market",
+                "version",
+                "start",
+                "end",
+                "reviewed_on",
+                "review_until",
+                "source_url",
+                "sessions",
+                "snapshot_hash"
+              ],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "available",
+                    "coverage_unknown",
+                    "review_expired"
+                  ]
+                },
+                "market": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "reviewed_on": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "review_until": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "source_url": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sessions": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  }
+                },
+                "snapshot_hash": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            "start_at": {
+              "type": "string",
+              "format": "date"
+            },
+            "end_at": {
+              "type": "string",
+              "format": "date"
+            },
+            "decision_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "execution_review": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_note",
+                    "reviewed_at",
+                    "fact_count"
+                  ],
+                  "properties": {
+                    "source_note": {
+                      "type": "string"
+                    },
+                    "reviewed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "fact_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "algorithm_version": {
+              "type": "string"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "algorithm_version",
+                "input_digest",
+                "output_digest",
+                "context_digest",
+                "status",
+                "limitations",
+                "cases"
+              ],
+              "properties": {
+                "algorithm_version": {
+                  "type": "string"
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "output_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "context_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "complete",
+                    "incomplete"
+                  ]
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20
+                },
+                "cases": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "index",
+                      "strategy",
+                      "config",
+                      "result"
+                    ],
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 15
+                      },
+                      "strategy": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "version",
+                          "definition_digest"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                          },
+                          "definition_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        }
+                      },
+                      "config": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "initial_cash",
+                          "quantity",
+                          "price_tick",
+                          "commission_rate",
+                          "minimum_commission",
+                          "sell_tax_rate",
+                          "slippage_bps",
+                          "max_participation",
+                          "annual_risk_free",
+                          "strategy",
+                          "entry_above",
+                          "exit_below",
+                          "fast_window",
+                          "slow_window",
+                          "lot_size",
+                          "annual_periods"
+                        ],
+                        "properties": {
+                          "initial_cash": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "price_tick": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "commission_rate": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "minimum_commission": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "sell_tax_rate": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "slippage_bps": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "max_participation": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "annual_risk_free": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "strategy": {
+                            "type": "string",
+                            "enum": [
+                              "threshold",
+                              "ma_cross"
+                            ]
+                          },
+                          "entry_above": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "exit_below": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fast_window": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 120
+                          },
+                          "slow_window": {
+                            "type": "integer",
+                            "minimum": 2,
+                            "maximum": 250
+                          },
+                          "lot_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000
+                          },
+                          "annual_periods": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000
+                          }
+                        }
+                      },
+                      "result": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "status",
+                          "missing",
+                          "metrics",
+                          "algorithm_version",
+                          "input_digest",
+                          "config",
+                          "trade_count",
+                          "order_count",
+                          "equity_count"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "complete",
+                              "incomplete"
+                            ]
+                          },
+                          "missing": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 50
+                          },
+                          "metrics": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "net_profit",
+                                  "total_return_pct",
+                                  "annualized_return_pct",
+                                  "maximum_drawdown_pct",
+                                  "volatility_pct",
+                                  "sharpe",
+                                  "sortino",
+                                  "win_rate_pct",
+                                  "average_win",
+                                  "average_loss",
+                                  "largest_win",
+                                  "largest_loss",
+                                  "average_holding_calendar_days",
+                                  "total_fees_and_tax",
+                                  "benchmark_return_pct",
+                                  "annual_risk_free",
+                                  "closed_round_trips",
+                                  "risk_metric_samples",
+                                  "annual_periods"
+                                ],
+                                "properties": {
+                                  "net_profit": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "total_return_pct": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "annualized_return_pct": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "maximum_drawdown_pct": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "volatility_pct": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "sharpe": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "sortino": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "win_rate_pct": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "average_win": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "average_loss": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "largest_win": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "largest_loss": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "average_holding_calendar_days": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "total_fees_and_tax": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "benchmark_return_pct": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "annual_risk_free": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "closed_round_trips": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  "risk_metric_samples": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  "annual_periods": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 100000
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "algorithm_version": {
+                            "type": "string"
+                          },
+                          "input_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "config": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "initial_cash",
+                              "quantity",
+                              "price_tick",
+                              "commission_rate",
+                              "minimum_commission",
+                              "sell_tax_rate",
+                              "slippage_bps",
+                              "max_participation",
+                              "annual_risk_free",
+                              "strategy",
+                              "entry_above",
+                              "exit_below",
+                              "fast_window",
+                              "slow_window",
+                              "lot_size",
+                              "annual_periods"
+                            ],
+                            "properties": {
+                              "initial_cash": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "quantity": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "price_tick": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "commission_rate": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "minimum_commission": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "sell_tax_rate": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "slippage_bps": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "max_participation": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "annual_risk_free": {
+                                "type": "string",
+                                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                              },
+                              "strategy": {
+                                "type": "string",
+                                "enum": [
+                                  "threshold",
+                                  "ma_cross"
+                                ]
+                              },
+                              "entry_above": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "exit_below": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fast_window": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 120
+                              },
+                              "slow_window": {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 250
+                              },
+                              "lot_size": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10000
+                              },
+                              "annual_periods": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 100000
+                              }
+                            }
+                          },
+                          "trade_count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "order_count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "equity_count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "algorithm": {
+                            "type": "string"
+                          },
+                          "execution_assumptions": {
+                            "type": "string"
+                          },
+                          "final_cash": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "open_quantity": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "open_cost_basis": {
+                            "type": "string",
+                            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                          },
+                          "limitations": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "maxItems": 20
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "maxItems": 16
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyWorkEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "sequence": number;
+  "revision": number;
+  "request_key": string;
+  "input": {
+  "strategy_heads": (
+{
+  "id": string;
+  "archive_epoch": number;
+}
+)[];
+  "mode": "single" | "compare" | "grid";
+  "strategies": (
+{
+  "id": string;
+  "revision": number;
+  "archive_epoch": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+};
+  "definition_digest": string;
+  "request_key": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "cases": (
+{
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+}
+)[];
+  "axes": (
+{
+  "parameter": "entry_above" | "exit_below" | "fast_window" | "slow_window";
+  "values": (
+string | number
+)[];
+}
+)[];
+  "instrument": {
+  "code": string;
+  "market": "SSE" | "SZSE" | "BSE" | "FUND";
+  "kind": "stock" | "etf" | "fund";
+  "name": string;
+  "id": string;
+  "revision": number;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "account_id": string | unknown;
+  "snapshot": {
+  "id": string;
+  "revision": 1;
+  "instrument_id": string;
+  "instrument_revision": number;
+  "work_id": string;
+  "created_at": string;
+  "dataset": {
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "adapter_version": string;
+  "policy_revision": string;
+  "instrument_id": string;
+  "code": string;
+  "market": "SSE" | "SZSE";
+  "kind": "stock" | "etf";
+  "start": string;
+  "end": string;
+  "price_basis": "unadjusted";
+  "realtime": false;
+  "retrieved_at": string;
+  "available_at": string;
+  "source_units": {
+  "volume": string;
+  "amount": string;
+};
+  "calendar": {
+  [key: string]: unknown;
+};
+  "missing_sessions": string[] | unknown;
+  "input_digest": string;
+  "limitations": string[];
+  "declared_source"?: string;
+  "raw_input_digest"?: string;
+  "bar_count": number;
+};
+  "indicators": {
+  "price_basis": "unadjusted";
+  "algorithm_version": string;
+  "ma5": string | unknown;
+  "ma20": string | unknown;
+  "volume_ratio_5": string | unknown;
+  "atr14": string | unknown;
+  "record_return_std20": string | unknown;
+  "return_sample_count": number;
+  "limitations": string[];
+};
+};
+  "calendar": {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
+  "start_at": string;
+  "end_at": string;
+  "decision_at": string;
+  "execution_review": (
+{
+  "source_note": string;
+  "reviewed_at": string;
+  "fact_count": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "digest": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "output": (
+{
+  "algorithm_version": string;
+  "input_digest": string;
+  "output_digest": string;
+  "context_digest": string;
+  "status": "complete" | "incomplete";
+  "limitations": string[];
+  "cases": (
+{
+  "index": number;
+  "strategy": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "result": {
+  "status": "complete" | "incomplete";
+  "missing": string[];
+  "metrics": (
+{
+  "net_profit": string | unknown;
+  "total_return_pct": string | unknown;
+  "annualized_return_pct": string | unknown;
+  "maximum_drawdown_pct": string | unknown;
+  "volatility_pct": string | unknown;
+  "sharpe": string | unknown;
+  "sortino": string | unknown;
+  "win_rate_pct": string | unknown;
+  "average_win": string | unknown;
+  "average_loss": string | unknown;
+  "largest_win": string | unknown;
+  "largest_loss": string | unknown;
+  "average_holding_calendar_days": string | unknown;
+  "total_fees_and_tax": string | unknown;
+  "benchmark_return_pct": string | unknown;
+  "annual_risk_free": string | unknown;
+  "closed_round_trips": number;
+  "risk_metric_samples": number;
+  "annual_periods": number;
+}
+) | unknown;
+  "algorithm_version": string;
+  "input_digest": string;
+  "config": {
+  "initial_cash": string;
+  "quantity": string;
+  "price_tick": string;
+  "commission_rate": string;
+  "minimum_commission": string;
+  "sell_tax_rate": string;
+  "slippage_bps": string;
+  "max_participation": string;
+  "annual_risk_free": string;
+  "strategy": "threshold" | "ma_cross";
+  "entry_above": string | unknown;
+  "exit_below": string | unknown;
+  "fast_window": number;
+  "slow_window": number;
+  "lot_size": number;
+  "annual_periods": number;
+};
+  "trade_count": number;
+  "order_count": number;
+  "equity_count": number;
+  "algorithm"?: string;
+  "execution_assumptions"?: string;
+  "final_cash"?: string;
+  "open_quantity"?: string;
+  "open_cost_basis"?: string;
+  "limitations"?: string[];
+};
+}
+)[];
+}
+) | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentStrategyRunPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "sequence",
+              "revision",
+              "status",
+              "attempt",
+              "error_code",
+              "created_at",
+              "updated_at",
+              "mode",
+              "strategy_ids"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "single",
+                  "compare",
+                  "grid"
+                ]
+              },
+              "strategy_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "maxItems": 4
+              }
+            }
+          },
+          "maxItems": 50
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyRunPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "sequence": number;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "mode": "single" | "compare" | "grid";
+  "strategy_ids": string[];
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentStrategyCasePageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "case_index",
+        "section",
+        "total",
+        "output_digest",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "equity",
+                  "cash",
+                  "quantity",
+                  "close",
+                  "time",
+                  "drawdown_pct"
+                ],
+                "properties": {
+                  "equity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "cash": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "close": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "drawdown_pct": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "side",
+                  "time",
+                  "signal_at",
+                  "price",
+                  "quantity",
+                  "fee",
+                  "tax",
+                  "cash_after",
+                  "position_after"
+                ],
+                "properties": {
+                  "side": {
+                    "type": "string",
+                    "enum": [
+                      "buy",
+                      "sell"
+                    ]
+                  },
+                  "time": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "signal_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "price": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "fee": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "tax": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "cash_after": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "position_after": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "side",
+                  "signal_at",
+                  "signal_bar",
+                  "status",
+                  "reason",
+                  "filled_quantity"
+                ],
+                "properties": {
+                  "side": {
+                    "type": "string",
+                    "enum": [
+                      "buy",
+                      "sell"
+                    ]
+                  },
+                  "signal_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "signal_bar": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "execution_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "filled",
+                      "rejected",
+                      "unexecuted"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "filled_quantity": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "available_at",
+                  "suspended",
+                  "limit_up",
+                  "limit_down",
+                  "adj_factor",
+                  "split_ratio",
+                  "cash_dividend"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "available_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "suspended": {
+                    "type": "boolean"
+                  },
+                  "limit_up": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "limit_down": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "adj_factor": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "split_ratio": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  },
+                  "cash_dividend": {
+                    "type": "string",
+                    "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "date",
+                  "open",
+                  "high",
+                  "low",
+                  "close",
+                  "volume_shares",
+                  "amount_cny",
+                  "turnover_rate_pct"
+                ],
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "open": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "high": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "low": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "close": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "volume_shares": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "amount_cny": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "turnover_rate_pct": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 100
+        },
+        "case_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "section": {
+          "type": "string",
+          "enum": [
+            "equity",
+            "orders",
+            "trades",
+            "execution",
+            "prices"
+          ]
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "output_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyCasePageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "equity": string;
+  "cash": string;
+  "quantity": string;
+  "close": string;
+  "time": string;
+  "drawdown_pct": string | unknown;
+} | {
+  "side": "buy" | "sell";
+  "time": string;
+  "signal_at": string;
+  "price": string;
+  "quantity": string;
+  "fee": string;
+  "tax": string;
+  "cash_after": string;
+  "position_after": string;
+} | {
+  "side": "buy" | "sell";
+  "signal_at": string;
+  "signal_bar": string;
+  "execution_at"?: string;
+  "status": "filled" | "rejected" | "unexecuted";
+  "reason": string;
+  "filled_quantity": string;
+} | {
+  "date": string;
+  "available_at": string;
+  "suspended": boolean;
+  "limit_up": string;
+  "limit_down": string;
+  "adj_factor": string;
+  "split_ratio": string;
+  "cash_dividend": string;
+} | {
+  "date": string;
+  "open": string;
+  "high": string;
+  "low": string;
+  "close": string;
+  "volume_shares": string;
+  "amount_cny": string;
+  "turnover_rate_pct": string | unknown;
+}
+)[];
+  "case_index": number;
+  "section": "equity" | "orders" | "trades" | "execution" | "prices";
+  "total": number;
+  "output_digest": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentStrategyCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm_version",
+        "strategies",
+        "grid_parameters",
+        "limits",
+        "scope"
+      ],
+      "properties": {
+        "algorithm_version": {
+          "type": "string"
+        },
+        "strategies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "threshold",
+              "ma_cross"
+            ]
+          },
+          "maxItems": 2
+        },
+        "grid_parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 4
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "retained",
+            "daily",
+            "active",
+            "input_bytes",
+            "bars",
+            "cases",
+            "timeout_ms",
+            "lease_ms",
+            "attempts"
+          ],
+          "properties": {
+            "retained": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "daily": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "active": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "input_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "bars": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "cases": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "timeout_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "lease_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "attempts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "scope": {
+          "type": "string"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentStrategyCatalogEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "algorithm_version": string;
+  "strategies": (
+"threshold" | "ma_cross"
+)[];
+  "grid_parameters": string[];
+  "limits": {
+  "retained": number;
+  "daily": number;
+  "active": number;
+  "input_bytes": number;
+  "bars": number;
+  "cases": number;
+  "timeout_ms": number;
+  "lease_ms": number;
+  "attempts": number;
+};
+  "scope": string;
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentObservationSourceReferenceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -105615,6 +117298,43 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentScreenWork",
   "LightTickInvestmentScreenWorkEnvelope",
   "LightTickInvestmentScreenWorkSummary",
+  "LightTickInvestmentStrategyAxis",
+  "LightTickInvestmentStrategyCalendar",
+  "LightTickInvestmentStrategyCase",
+  "LightTickInvestmentStrategyCasePage",
+  "LightTickInvestmentStrategyCasePageEnvelope",
+  "LightTickInvestmentStrategyCatalog",
+  "LightTickInvestmentStrategyCatalogEnvelope",
+  "LightTickInvestmentStrategyConfig",
+  "LightTickInvestmentStrategyDefinition",
+  "LightTickInvestmentStrategyDefinitionEnvelope",
+  "LightTickInvestmentStrategyDefinitionPage",
+  "LightTickInvestmentStrategyDefinitionPageEnvelope",
+  "LightTickInvestmentStrategyEquity",
+  "LightTickInvestmentStrategyFact",
+  "LightTickInvestmentStrategyFields",
+  "LightTickInvestmentStrategyHistory",
+  "LightTickInvestmentStrategyHistoryEnvelope",
+  "LightTickInvestmentStrategyInput",
+  "LightTickInvestmentStrategyMetrics",
+  "LightTickInvestmentStrategyOrder",
+  "LightTickInvestmentStrategyPrice",
+  "LightTickInvestmentStrategyPublicReview",
+  "LightTickInvestmentStrategyReference",
+  "LightTickInvestmentStrategyReport",
+  "LightTickInvestmentStrategyResult",
+  "LightTickInvestmentStrategyResultCase",
+  "LightTickInvestmentStrategyReview",
+  "LightTickInvestmentStrategyRevision",
+  "LightTickInvestmentStrategyRunPage",
+  "LightTickInvestmentStrategyRunPageEnvelope",
+  "LightTickInvestmentStrategyRunRequest",
+  "LightTickInvestmentStrategySource",
+  "LightTickInvestmentStrategySummary",
+  "LightTickInvestmentStrategyTrade",
+  "LightTickInvestmentStrategyWork",
+  "LightTickInvestmentStrategyWorkEnvelope",
+  "LightTickInvestmentStrategyWrite",
   "LightTickKnowledgeEntry",
   "LightTickKnowledgeEntryEnvelope",
   "LightTickKnowledgeHistory",

@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.lighttick-actions.json",
+  "include": [
+    "src/modules/lighttick/investments/strategies/**/*.ts",
+    "src/app/lighttick-strategy-routes.ts",
+    "src/infrastructure/database/postgres/postgres-strategy-store.ts"
+  ]
+}
