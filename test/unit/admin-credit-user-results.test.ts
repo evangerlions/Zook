@@ -72,13 +72,17 @@ test("grant recipient tooltip shows recorded contacts and identifies legacy data
   const directory = await mkdtemp(join(new URL("node_modules/", adminRoot).pathname, ".credit-test-"));
   try {
     const output = join(directory, "recipient.mjs");
-    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-grant-recipient.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", logLevel: "silent" });
+    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-grant-recipient.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", loader: { ".css": "empty" }, logLevel: "silent" });
     const { CreditGrantRecipient } = await import(pathToFileURL(output).href);
     const record = { uid: "user-1", phone: "+12025550100", email: "person@example.invalid", contactSource: "snapshot" };
     const snapshot = CreditGrantRecipient({ record });
     const title = renderToStaticMarkup(snapshot.props.title);
     assert.match(title, /\+12025550100/);
     assert.match(title, /person@example\.invalid/);
+    assert.match(title, /class="credit-grant-contact-row"/);
+    assert.equal((title.match(/class="credit-grant-contact-value"/g) ?? []).length, 2);
+    assert.match(title, /aria-label="手机号"/);
+    assert.match(title, /aria-label="邮箱"/);
     assert.doesNotMatch(title, /当前联系方式/);
     const legacy = CreditGrantRecipient({ record: { ...record, contactSource: "current" } });
     assert.match(renderToStaticMarkup(legacy.props.title), /历史记录：当前联系方式/);
