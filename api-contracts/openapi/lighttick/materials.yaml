@@ -428,6 +428,23 @@ components:
         contrary_evidence: &id009
           type: string
           maxLength: 12000
+        instrument_id: &id011
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        account_id: &id012
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        period_end: &id013
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
     LightTickInvestmentMaterialRevision:
       type: object
       additionalProperties: false
@@ -463,23 +480,26 @@ components:
         available_at: *id008
         contrary_evidence: *id009
         id: *id010
-        revision: &id011
+        revision: &id014
           type: integer
           minimum: 1
           maximum: 100
-        request_key: &id015
+        request_key: &id018
           type: string
-        content_digest: &id012
+        content_digest: &id015
           type: string
           pattern: ^[a-f0-9]{64}$
-        archived: &id013
+        archived: &id016
           type: boolean
         created_at:
           type: string
           format: date-time
-        updated_at: &id014
+        updated_at: &id017
           type: string
           format: date-time
+        instrument_id: *id011
+        account_id: *id012
+        period_end: *id013
     LightTickInvestmentMaterialSummary:
       type: object
       additionalProperties: false
@@ -493,12 +513,12 @@ components:
       - updated_at
       properties:
         id: *id010
-        revision: *id011
+        revision: *id014
         title: *id004
-        content_digest: *id012
-        archived: *id013
+        content_digest: *id015
+        archived: *id016
         available_at: *id008
-        updated_at: *id014
+        updated_at: *id017
     LightTickInvestmentMaterialReference:
       type: object
       additionalProperties: false
@@ -515,7 +535,7 @@ components:
           type: integer
           minimum: 1
           maximum: 100
-        title: *id015
+        title: *id018
         instrument_id: *id010
         archived:
           type: boolean
@@ -535,7 +555,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LightTickInvestmentMaterialSummary'
-        revision: *id015
+        revision: *id018
         next_cursor:
           type:
           - string
@@ -572,7 +592,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LightTickInvestmentMaterialReference'
-        revision: *id015
+        revision: *id018
         next_cursor:
           type:
           - string

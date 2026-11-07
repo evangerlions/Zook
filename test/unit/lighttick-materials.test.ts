@@ -282,3 +282,119 @@ test("material catalog/history/reference cursors replay and invalidate on owner 
   });
   assert.equal((await s.references(o, mid)).items[0].archived, true);
 });
+test("optional legacy account/instrument scope and period end stay versioned, enforce owner and match pinned research context", async () => {
+  const { repo, s, r, body } = await setup();
+  const i = body.instrument_id;
+  const a = await r.createAccount(
+    o,
+    "inv-material-account",
+    {
+      base_revision: 0,
+      name: "Synthetic scope",
+      currency: "CNY",
+      baseline_date: "2026-10-01",
+      opening_cash: "0",
+      opening_positions: [],
+    },
+    "material-account-original",
+  );
+  const b = {
+      ...content,
+      base_revision: 0,
+      instrument_id: i,
+      account_id: a.id,
+      period_end: "2026-09-30",
+    },
+    m = await s.write(o, "inv-scoped-material", b, "scoped-material-original"),
+    ref = { id: m.id, version: 1, content_digest: m.content_digest };
+  await assert.rejects(
+    r.write(
+      o,
+      "inv-scope-research-wrong",
+      { ...body, material_sources: [ref] },
+      "scope-wrong-account",
+    ),
+    { statusCode: 422 },
+  );
+  const another = (
+    await r.createInstrument(
+      o,
+      { market: "SSE", code: "600001", kind: "stock", name: "Other" },
+      "other-symbol-original",
+    )
+  ).instrument;
+  await assert.rejects(
+    r.write(
+      o,
+      "inv-scope-research-wrong",
+      {
+        ...body,
+        account_id: a.id,
+        instrument_id: another.id,
+        material_sources: [ref],
+      },
+      "scope-wrong-instrument",
+    ),
+    { statusCode: 422 },
+  );
+  await r.write(
+    o,
+    "inv-scope-research-right",
+    { ...body, account_id: a.id, material_sources: [ref] },
+    "scope-right-original",
+  );
+  const updated = await s.write(
+    o,
+    m.id,
+    { ...content, base_revision: 1, content: "New scope content" },
+    "scope-old-client-original",
+  );
+  assert.equal(updated.account_id, a.id);
+  assert.equal(updated.instrument_id, i);
+  assert.equal(updated.period_end, "2026-09-30");
+  assert.notEqual(updated.content_digest, m.content_digest);
+  await assert.rejects(
+    s.write(
+      o,
+      "inv-invalid-scoped-material",
+      { ...b, instrument_id: "inv-foreign-instrument" },
+      "scope-foreign-original",
+    ),
+    { statusCode: 404 },
+  );
+  await assert.rejects(
+    s.write(
+      o,
+      "inv-invalid-scoped-material",
+      { ...b, period_end: "2026-02-30" },
+      "scope-invalid-date",
+    ),
+    { statusCode: 422 },
+  );
+  await s.write(
+    o,
+    m.id,
+    {
+      ...content,
+      base_revision: 2,
+      instrument_id: null,
+      account_id: null,
+      period_end: null,
+    },
+    "scope-explicit-clear",
+  );
+  assert.equal((await s.readMaterial(o, m.id, 1)).period_end, "2026-09-30");
+  await assert.rejects(
+    r.write(
+      o,
+      "inv-old-scoped-reference",
+      { ...body, material_sources: [ref] },
+      "old-scoped-ref-original",
+    ),
+    { statusCode: 422 },
+  );
+  assert.equal(
+    (await repo.investments.materials.version(o, m.id, 1))!.account_id,
+    a.id,
+  );
+});

@@ -16,6 +16,9 @@ export const materialContent = (m: Material) => ({
   source_url: m.source_url,
   available_at: m.available_at,
   contrary_evidence: m.contrary_evidence,
+  ...(m.instrument_id !== undefined ? { instrument_id: m.instrument_id } : {}),
+  ...(m.account_id !== undefined ? { account_id: m.account_id } : {}),
+  ...(m.period_end !== undefined ? { period_end: m.period_end } : {}),
 });
 export const materialDigest = (m: Material) => digest(materialContent(m));
 export function materialSources(v: unknown): MaterialSource[] {
@@ -42,7 +45,7 @@ export async function resolveMaterials(
   o: LightTickOwner,
   refs: MaterialSource[],
   retained: MaterialSource[] = [],
-  allowArchived = false,
+  scope?: { instrument_id: string; account_id: string | null },
 ) {
   const result: Material[] = [];
   for (const ref of refs) {
@@ -57,7 +60,6 @@ export async function resolveMaterials(
       fail(404, "Exact material source unavailable for this owner.");
     if (
       current.archived &&
-      !allowArchived &&
       !retained.some(
         (s) =>
           s.id === ref.id &&
@@ -66,7 +68,39 @@ export async function resolveMaterials(
       )
     )
       fail(409, "Restore archived material before making a new reference.");
+    if (
+      scope &&
+      ((m.instrument_id && m.instrument_id !== scope.instrument_id) ||
+        (m.account_id && m.account_id !== scope.account_id))
+    )
+      fail(
+        422,
+        "Material scope does not match this research account/instrument.",
+      );
     result.push(m);
   }
   return result;
+}
+
+export function materialMetadata(b: Record<string, unknown>, old?: Material) {
+  const meta: Pick<Material, "instrument_id" | "account_id" | "period_end"> =
+    {};
+  for (const k of ["instrument_id", "account_id"] as const) {
+    const v = b[k] === undefined ? old?.[k] : b[k];
+    if (v !== undefined) meta[k] = v === null ? null : investmentId(v);
+  }
+  const date = b.period_end === undefined ? old?.period_end : b.period_end;
+  if (date !== undefined) {
+    if (
+      date !== null &&
+      (typeof date !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+        date < "0001-01-01" ||
+        !Number.isFinite(Date.parse(date)) ||
+        new Date(date).toISOString().slice(0, 10) !== date)
+    )
+      fail(422, "Material period end must be a calendar date or unknown.");
+    meta.period_end = date as string | null;
+  }
+  return meta;
 }

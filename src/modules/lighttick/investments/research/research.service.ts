@@ -97,6 +97,7 @@ export class ResearchService extends InvestmentService {
             o,
             refs,
             old?.material_sources ?? [],
+            fields,
           );
         const e: ResearchEntry = {
           ...(refs ? { material_sources: refs } : {}),

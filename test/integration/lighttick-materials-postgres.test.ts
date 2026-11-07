@@ -27,6 +27,9 @@ test("PG independent materials preserve versions/CAS/original receipts, source r
     b = {
       base_revision: 0,
       title: "Source",
+      period_end: "2026-09-30",
+      instrument_id: null,
+      account_id: null,
       content: "  original\r\n source  ",
       locator: "p1",
       source_url: null,

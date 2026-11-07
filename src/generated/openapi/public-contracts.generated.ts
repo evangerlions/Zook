@@ -54,6 +54,41 @@ export const LightTickInvestmentMaterialWriteSchema = {
     "contrary_evidence": {
       "type": "string",
       "maxLength": 12000
+    },
+    "instrument_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "period_end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -66,6 +101,9 @@ export type LightTickInvestmentMaterialWrite = {
   "source_url": string | unknown;
   "available_at": string;
   "contrary_evidence": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 };
 
 export const LightTickInvestmentMaterialRevisionSchema = {
@@ -169,6 +207,41 @@ export const LightTickInvestmentMaterialEntrySchema = {
     "updated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "instrument_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "period_end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -187,6 +260,9 @@ export type LightTickInvestmentMaterialEntry = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 };
 
 export const LightTickInvestmentMaterialSummarySchema = {
@@ -475,6 +551,41 @@ export const LightTickInvestmentMaterialHistorySchema = {
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "instrument_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -509,6 +620,9 @@ export type LightTickInvestmentMaterialHistory = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 }
 )[];
   "revision": number;
@@ -695,6 +809,41 @@ export const LightTickInvestmentMaterialEntryEnvelopeSchema = {
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "instrument_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "period_end": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -721,6 +870,9 @@ export type LightTickInvestmentMaterialEntryEnvelope = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 };
   "requestId": string;
 };
@@ -952,6 +1104,41 @@ export const LightTickInvestmentMaterialHistoryEnvelopeSchema = {
               "updated_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "instrument_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "account_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "period_end": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -994,6 +1181,9 @@ export type LightTickInvestmentMaterialHistoryEnvelope = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 }
 )[];
   "revision": number;
@@ -1321,6 +1511,41 @@ export const LightTickInvestmentResearchAIWorkSchema = {
               "updated_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "instrument_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "account_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "period_end": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -1494,6 +1719,9 @@ export type LightTickInvestmentResearchAIWork = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 }
 )[];
   "markets": (
@@ -1673,6 +1901,41 @@ export const LightTickInvestmentResearchAIPageSchema = {
                     "updated_at": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "instrument_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "account_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "period_end": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -1857,6 +2120,9 @@ export type LightTickInvestmentResearchAIPage = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 }
 )[];
   "markets": (
@@ -2046,6 +2312,41 @@ export const LightTickInvestmentResearchAIWorkEnvelopeSchema = {
                   "updated_at": {
                     "type": "string",
                     "format": "date-time"
+                  },
+                  "instrument_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "account_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period_end": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -2225,6 +2526,9 @@ export type LightTickInvestmentResearchAIWorkEnvelope = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 }
 )[];
   "markets": (
@@ -2423,6 +2727,41 @@ export const LightTickInvestmentResearchAIPageEnvelopeSchema = {
                         "updated_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "instrument_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "account_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "period_end": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -2613,6 +2952,9 @@ export type LightTickInvestmentResearchAIPageEnvelope = {
   "archived": boolean;
   "created_at": string;
   "updated_at": string;
+  "instrument_id"?: string | unknown;
+  "account_id"?: string | unknown;
+  "period_end"?: string | unknown;
 }
 )[];
   "markets": (

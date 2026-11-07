@@ -1,7 +1,7 @@
 import { InvestmentService, investmentId } from "../investment.service.ts";
 import type { LightTickOwner } from "../../lighttick.types.ts";
 import { evidenceInput } from "../research/research.validation.ts";
-import { materialDigest } from "./material.validation.ts";
+import { materialDigest, materialMetadata } from "./material.validation.ts";
 import type { Material } from "./material.types.ts";
 import {
   keys,
@@ -33,6 +33,9 @@ export class MaterialService extends InvestmentService {
     investmentId(id);
     keys(b, [
       "base_revision",
+      "instrument_id",
+      "account_id",
+      "period_end",
       "title",
       "content",
       "locator",
@@ -41,7 +44,7 @@ export class MaterialService extends InvestmentService {
       "contrary_evidence",
     ]);
     const base = integer(b.base_revision, 0, 99),
-      { base_revision, ...input } = b,
+      { base_revision, instrument_id, account_id, period_end, ...input } = b,
       fields = evidenceInput(input);
     return this.command(
       o,
@@ -64,7 +67,22 @@ export class MaterialService extends InvestmentService {
           fail(413, "Material catalog exceeds 500 entries.");
         if (Date.parse(fields.available_at) > Date.parse(now))
           fail(422, "Material cannot be declared available in the future.");
+        const metadata = materialMetadata(b, old);
+        if (metadata.instrument_id) {
+          const i = await this.repo.investments.instrument(
+            o,
+            metadata.instrument_id,
+          );
+          if (!i || (i.archived && old?.instrument_id !== i.id))
+            fail(404, "Material instrument unavailable for this owner.");
+        }
+        if (metadata.account_id) {
+          const a = await this.repo.investments.account(o, metadata.account_id);
+          if (!a || (a.archived && old?.account_id !== a.id))
+            fail(404, "Material account unavailable for this owner.");
+        }
         const m: Material = {
+          ...metadata,
           ...fields,
           id,
           revision: base + 1,

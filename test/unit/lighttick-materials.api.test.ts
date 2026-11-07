@@ -62,6 +62,9 @@ test("material HTTP/OpenAPI has registered owner isolation, exact pinned cross-r
     b = {
       base_revision: 0,
       title: "Source",
+      period_end: "2026-09-30",
+      instrument_id: null,
+      account_id: null,
       content: "  source\r\ncontent ",
       locator: "page 1",
       source_url: "https://example.invalid/source",

@@ -1,6 +1,9 @@
 import type { LightTickOwner } from "../../lighttick.types.ts";
 import type { ResearchEvidence } from "../research/research.types.ts";
 export type Material = ResearchEvidence & {
+  instrument_id?: string | null;
+  account_id?: string | null;
+  period_end?: string | null;
   id: string;
   revision: number;
   request_key: string;

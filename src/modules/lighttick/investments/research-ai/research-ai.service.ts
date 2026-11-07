@@ -50,6 +50,8 @@ export class ResearchAIService extends InvestmentService {
         this.repo,
         o,
         w.input.research.material_sources ?? [],
+        [],
+        w.input.research,
       );
     const model = await captureModel(this.repo, o);
     if (
@@ -115,6 +117,8 @@ export class ResearchAIService extends InvestmentService {
         this.repo,
         o,
         research.material_sources ?? [],
+        [],
+        research,
       );
       const frozen = {
         scene: RESEARCH_AI_SCENE,

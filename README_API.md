@@ -1873,7 +1873,7 @@ Token 只通过服务端独立私有 KV 主密钥和 AES-GCM 保存，绑定 own
 
 Canonical `/api/v1/lighttick/investments/materials`，沿用普通用户 LightTick membership 与 owner 身份；响应 `Cache-Control: no-store`。资料不依赖资产账户、标的或研究的生命周期，不自动抓取来源链接。
 
-- `PUT /{id}`：`Idempotency-Key`、`base_revision`（新建 0）及 `title/content/locator/source_url/available_at/contrary_evidence`。原文保留空白与换行，可获知时间必须带时区且不晚于保存时间；新版本不可变，返回独立 ID、`revision` 和正文/来源字段的 `content_digest`。同原 key/body 返回原回执；跨资源/版本复用 key 返回 409。
+- `PUT /{id}`：`Idempotency-Key`、`base_revision`（新建 0）及 `title/content/locator/source_url/available_at/contrary_evidence`。可选 `instrument_id/account_id/period_end` 保留旧资料的标的/账户范围及覆盖截止日（含日期有效性校验）；省略保留旧值，显式 null 才清除。指定范围的固定版本只能引用到匹配研究，不因资料当前范围变化而放宽旧版。原文保留空白与换行，可获知时间必须带时区且不晚于保存时间；新版本不可变，返回独立 ID、`revision` 和正文/来源字段的 `content_digest`。同原 key/body 返回原回执；跨资源/版本复用 key 返回 409。
 - `GET /`：`include_archived=false`、`limit=1..100`、`cursor`，返回摘要页；`GET /{id}` 当前版本；`GET /{id}/versions/{revision}` 精确历史版本；`GET /{id}/history?limit=1..20&cursor=...` 完整历史页。读取始终校验当前 owner 权限；归档版本可回看。
 - `POST /{id}/archive`、`POST /{id}/restore`：原 key＋`base_revision`，产生同 ID 新版本。归档隐藏活动资料并拒绝新增研究引用和新的 AI 任务/采用，保留已有研究和确认成果。恢复不改旧引用；需要显式选择新版本。
 - `GET /{id}/references?limit=1..100&cursor=...`：当前研究头版本的引用清单，含研究 ID/修订/标题/标的/归档状态及所选资料版本；不冒充全部历史入链。历史关系保留于不可变研究版本。列表/历史游标绑定 owner、资源/过滤及快照，变化返回 409，只重建云端读取，保留本机草稿和未决原请求。
