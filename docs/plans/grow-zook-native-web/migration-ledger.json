@@ -6751,7 +6751,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6779,7 +6781,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -6787,7 +6806,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6814,7 +6835,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -6822,7 +6860,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6849,7 +6889,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -6857,7 +6914,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6884,7 +6943,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -13981,7 +14057,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -14009,7 +14087,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -15165,7 +15260,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -15193,7 +15290,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -15344,7 +15458,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -15372,7 +15488,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -15380,7 +15513,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -15407,7 +15542,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -15415,7 +15567,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -15443,7 +15597,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -19000,7 +19171,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Bounded native versioned rules/templates, exact frozen explicit pool, three-valued source explanations and worker verified with synthetic data. No legacy alias, AI parsing, full-universe/extended-field parity or all-domain migration claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -19027,7 +19200,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/screening",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/screening.md",
+          "tests": [
+            "test/unit/lighttick-screening-engine.test.ts",
+            "test/unit/lighttick-screening.test.ts",
+            "test/unit/lighttick-screening.api.test.ts",
+            "test/integration/lighttick-screening-postgres.test.ts",
+            "test/support/grow_web_screening_acceptance.py",
+            "test/support/grow_web_screening_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "PUT",
