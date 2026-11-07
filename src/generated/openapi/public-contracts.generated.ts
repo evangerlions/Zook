@@ -1,6 +1,12276 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickInvestmentScreenMappingSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source",
+    "quote",
+    "reason"
+  ],
+  "properties": {
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "explicit",
+        "default",
+        "suggested"
+      ]
+    },
+    "quote": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 0
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 0
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenMapping = {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+
+export const LightTickInvestmentScreenConditionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "field",
+    "op",
+    "value",
+    "upper_value",
+    "mapping"
+  ],
+  "properties": {
+    "field": {
+      "type": "string",
+      "enum": [
+        "close",
+        "turnover_cny",
+        "turnover_rate_pct",
+        "volume_ratio_5",
+        "price_above_ma20",
+        "return_1d_pct",
+        "return_3d_pct",
+        "return_5d_pct",
+        "return_10d_pct",
+        "return_20d_pct",
+        "avg_turnover_3d_pct",
+        "avg_turnover_5d_pct",
+        "avg_turnover_10d_pct",
+        "avg_turnover_20d_pct",
+        "avg_amount_5d",
+        "avg_amount_10d",
+        "avg_amount_20d"
+      ]
+    },
+    "op": {
+      "type": "string",
+      "enum": [
+        "eq",
+        "ne",
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "between"
+      ]
+    },
+    "value": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "upper_value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "quote",
+        "reason"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "explicit",
+            "default",
+            "suggested"
+          ]
+        },
+        "quote": {
+          "type": "string",
+          "maxLength": 500,
+          "minLength": 0
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500,
+          "minLength": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenCondition = {
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+
+export const LightTickInvestmentScreenRecipeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "window",
+    "minimum_gain",
+    "volume_ratio",
+    "shrink_ratio",
+    "pullback_min",
+    "pullback_max",
+    "near_high_ratio",
+    "exclude_st",
+    "exclude_suspended"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "ma_bullish",
+        "pullback",
+        "volume_breakout",
+        "return_window"
+      ]
+    },
+    "window": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 120
+    },
+    "minimum_gain": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "volume_ratio": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "shrink_ratio": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "pullback_min": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "pullback_max": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "near_high_ratio": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "exclude_st": {
+      "type": "boolean"
+    },
+    "exclude_suspended": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRecipe = {
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+};
+
+export const LightTickInvestmentScreenRuleFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "source_text",
+    "conditions",
+    "combine",
+    "sort_by",
+    "descending",
+    "secondary_sort_by",
+    "secondary_descending",
+    "limit",
+    "recipe",
+    "sort_mapping"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 0
+    },
+    "source_text": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 0
+    },
+    "conditions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "op",
+          "value",
+          "upper_value",
+          "mapping"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "close",
+              "turnover_cny",
+              "turnover_rate_pct",
+              "volume_ratio_5",
+              "price_above_ma20",
+              "return_1d_pct",
+              "return_3d_pct",
+              "return_5d_pct",
+              "return_10d_pct",
+              "return_20d_pct",
+              "avg_turnover_3d_pct",
+              "avg_turnover_5d_pct",
+              "avg_turnover_10d_pct",
+              "avg_turnover_20d_pct",
+              "avg_amount_5d",
+              "avg_amount_10d",
+              "avg_amount_20d"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "eq",
+              "ne",
+              "gt",
+              "gte",
+              "lt",
+              "lte",
+              "between"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "upper_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mapping": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "quote",
+              "reason"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "enum": [
+                  "manual",
+                  "explicit",
+                  "default",
+                  "suggested"
+                ]
+              },
+              "quote": {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 0
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "combine": {
+      "type": "string",
+      "enum": [
+        "all",
+        "any"
+      ]
+    },
+    "sort_by": {
+      "type": "string",
+      "enum": [
+        "close",
+        "turnover_cny",
+        "turnover_rate_pct",
+        "volume_ratio_5",
+        "price_above_ma20",
+        "return_1d_pct",
+        "return_3d_pct",
+        "return_5d_pct",
+        "return_10d_pct",
+        "return_20d_pct",
+        "avg_turnover_3d_pct",
+        "avg_turnover_5d_pct",
+        "avg_turnover_10d_pct",
+        "avg_turnover_20d_pct",
+        "avg_amount_5d",
+        "avg_amount_10d",
+        "avg_amount_20d"
+      ]
+    },
+    "descending": {
+      "type": "boolean"
+    },
+    "secondary_sort_by": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "close",
+            "turnover_cny",
+            "turnover_rate_pct",
+            "volume_ratio_5",
+            "price_above_ma20",
+            "return_1d_pct",
+            "return_3d_pct",
+            "return_5d_pct",
+            "return_10d_pct",
+            "return_20d_pct",
+            "avg_turnover_3d_pct",
+            "avg_turnover_5d_pct",
+            "avg_turnover_10d_pct",
+            "avg_turnover_20d_pct",
+            "avg_amount_5d",
+            "avg_amount_10d",
+            "avg_amount_20d"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "secondary_descending": {
+      "type": "boolean"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "recipe": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "window",
+            "minimum_gain",
+            "volume_ratio",
+            "shrink_ratio",
+            "pullback_min",
+            "pullback_max",
+            "near_high_ratio",
+            "exclude_st",
+            "exclude_suspended"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "ma_bullish",
+                "pullback",
+                "volume_breakout",
+                "return_window"
+              ]
+            },
+            "window": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 120
+            },
+            "minimum_gain": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "volume_ratio": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "shrink_ratio": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "pullback_min": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "pullback_max": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "near_high_ratio": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "exclude_st": {
+              "type": "boolean"
+            },
+            "exclude_suspended": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sort_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "quote",
+        "reason"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "explicit",
+            "default",
+            "suggested"
+          ]
+        },
+        "quote": {
+          "type": "string",
+          "maxLength": 500,
+          "minLength": 0
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500,
+          "minLength": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRuleFields = {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+
+export const LightTickInvestmentScreenRuleReferenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "definition_digest"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "definition_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRuleReference = {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+
+export const LightTickInvestmentScreenTemplateFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description",
+    "rule",
+    "instrument_ids",
+    "account_id",
+    "enabled",
+    "tags"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 0
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "definition_digest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "instrument_ids": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+        "maxLength": 100
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "maxLength": 50,
+        "minLength": 1
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenTemplateFields = {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+
+export const LightTickInvestmentScreenRuleDefinitionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "request_key",
+    "definition_digest",
+    "archived",
+    "created_at",
+    "updated_at",
+    "kind",
+    "fields"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8
+    },
+    "definition_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "kind": {
+      "const": "rules"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "source_text",
+        "conditions",
+        "combine",
+        "sort_by",
+        "descending",
+        "secondary_sort_by",
+        "secondary_descending",
+        "limit",
+        "recipe",
+        "sort_mapping"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "source_text": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "conditions": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "op",
+              "value",
+              "upper_value",
+              "mapping"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "enum": [
+                  "close",
+                  "turnover_cny",
+                  "turnover_rate_pct",
+                  "volume_ratio_5",
+                  "price_above_ma20",
+                  "return_1d_pct",
+                  "return_3d_pct",
+                  "return_5d_pct",
+                  "return_10d_pct",
+                  "return_20d_pct",
+                  "avg_turnover_3d_pct",
+                  "avg_turnover_5d_pct",
+                  "avg_turnover_10d_pct",
+                  "avg_turnover_20d_pct",
+                  "avg_amount_5d",
+                  "avg_amount_10d",
+                  "avg_amount_20d"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "gt",
+                  "gte",
+                  "lt",
+                  "lte",
+                  "between"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              "upper_value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mapping": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source",
+                  "quote",
+                  "reason"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "explicit",
+                      "default",
+                      "suggested"
+                    ]
+                  },
+                  "quote": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "combine": {
+          "type": "string",
+          "enum": [
+            "all",
+            "any"
+          ]
+        },
+        "sort_by": {
+          "type": "string",
+          "enum": [
+            "close",
+            "turnover_cny",
+            "turnover_rate_pct",
+            "volume_ratio_5",
+            "price_above_ma20",
+            "return_1d_pct",
+            "return_3d_pct",
+            "return_5d_pct",
+            "return_10d_pct",
+            "return_20d_pct",
+            "avg_turnover_3d_pct",
+            "avg_turnover_5d_pct",
+            "avg_turnover_10d_pct",
+            "avg_turnover_20d_pct",
+            "avg_amount_5d",
+            "avg_amount_10d",
+            "avg_amount_20d"
+          ]
+        },
+        "descending": {
+          "type": "boolean"
+        },
+        "secondary_sort_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "close",
+                "turnover_cny",
+                "turnover_rate_pct",
+                "volume_ratio_5",
+                "price_above_ma20",
+                "return_1d_pct",
+                "return_3d_pct",
+                "return_5d_pct",
+                "return_10d_pct",
+                "return_20d_pct",
+                "avg_turnover_3d_pct",
+                "avg_turnover_5d_pct",
+                "avg_turnover_10d_pct",
+                "avg_turnover_20d_pct",
+                "avg_amount_5d",
+                "avg_amount_10d",
+                "avg_amount_20d"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "secondary_descending": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "recipe": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "window",
+                "minimum_gain",
+                "volume_ratio",
+                "shrink_ratio",
+                "pullback_min",
+                "pullback_max",
+                "near_high_ratio",
+                "exclude_st",
+                "exclude_suspended"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ma_bullish",
+                    "pullback",
+                    "volume_breakout",
+                    "return_window"
+                  ]
+                },
+                "window": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 120
+                },
+                "minimum_gain": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "volume_ratio": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "shrink_ratio": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "pullback_min": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "pullback_max": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "near_high_ratio": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "exclude_st": {
+                  "type": "boolean"
+                },
+                "exclude_suspended": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sort_mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "quote",
+            "reason"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "explicit",
+                "default",
+                "suggested"
+              ]
+            },
+            "quote": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 0
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 0
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRuleDefinition = {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+};
+
+export const LightTickInvestmentScreenRuleWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "fields"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "source_text",
+        "conditions",
+        "combine",
+        "sort_by",
+        "descending",
+        "secondary_sort_by",
+        "secondary_descending",
+        "limit",
+        "recipe",
+        "sort_mapping"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "source_text": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "conditions": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "op",
+              "value",
+              "upper_value",
+              "mapping"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "enum": [
+                  "close",
+                  "turnover_cny",
+                  "turnover_rate_pct",
+                  "volume_ratio_5",
+                  "price_above_ma20",
+                  "return_1d_pct",
+                  "return_3d_pct",
+                  "return_5d_pct",
+                  "return_10d_pct",
+                  "return_20d_pct",
+                  "avg_turnover_3d_pct",
+                  "avg_turnover_5d_pct",
+                  "avg_turnover_10d_pct",
+                  "avg_turnover_20d_pct",
+                  "avg_amount_5d",
+                  "avg_amount_10d",
+                  "avg_amount_20d"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "gt",
+                  "gte",
+                  "lt",
+                  "lte",
+                  "between"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              "upper_value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mapping": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source",
+                  "quote",
+                  "reason"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "explicit",
+                      "default",
+                      "suggested"
+                    ]
+                  },
+                  "quote": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "combine": {
+          "type": "string",
+          "enum": [
+            "all",
+            "any"
+          ]
+        },
+        "sort_by": {
+          "type": "string",
+          "enum": [
+            "close",
+            "turnover_cny",
+            "turnover_rate_pct",
+            "volume_ratio_5",
+            "price_above_ma20",
+            "return_1d_pct",
+            "return_3d_pct",
+            "return_5d_pct",
+            "return_10d_pct",
+            "return_20d_pct",
+            "avg_turnover_3d_pct",
+            "avg_turnover_5d_pct",
+            "avg_turnover_10d_pct",
+            "avg_turnover_20d_pct",
+            "avg_amount_5d",
+            "avg_amount_10d",
+            "avg_amount_20d"
+          ]
+        },
+        "descending": {
+          "type": "boolean"
+        },
+        "secondary_sort_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "close",
+                "turnover_cny",
+                "turnover_rate_pct",
+                "volume_ratio_5",
+                "price_above_ma20",
+                "return_1d_pct",
+                "return_3d_pct",
+                "return_5d_pct",
+                "return_10d_pct",
+                "return_20d_pct",
+                "avg_turnover_3d_pct",
+                "avg_turnover_5d_pct",
+                "avg_turnover_10d_pct",
+                "avg_turnover_20d_pct",
+                "avg_amount_5d",
+                "avg_amount_10d",
+                "avg_amount_20d"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "secondary_descending": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "recipe": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "window",
+                "minimum_gain",
+                "volume_ratio",
+                "shrink_ratio",
+                "pullback_min",
+                "pullback_max",
+                "near_high_ratio",
+                "exclude_st",
+                "exclude_suspended"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ma_bullish",
+                    "pullback",
+                    "volume_breakout",
+                    "return_window"
+                  ]
+                },
+                "window": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 120
+                },
+                "minimum_gain": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "volume_ratio": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "shrink_ratio": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "pullback_min": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "pullback_max": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "near_high_ratio": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "exclude_st": {
+                  "type": "boolean"
+                },
+                "exclude_suspended": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sort_mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "quote",
+            "reason"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "explicit",
+                "default",
+                "suggested"
+              ]
+            },
+            "quote": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 0
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 0
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRuleWrite = {
+  "base_revision": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+};
+
+export const LightTickInvestmentScreenTemplateDefinitionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "request_key",
+    "definition_digest",
+    "archived",
+    "created_at",
+    "updated_at",
+    "kind",
+    "fields"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8
+    },
+    "definition_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "kind": {
+      "const": "templates"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "rule",
+        "instrument_ids",
+        "account_id",
+        "enabled",
+        "tags"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "definition_digest"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "definition_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "instrument_ids": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenTemplateDefinition = {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+};
+
+export const LightTickInvestmentScreenTemplateWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "fields"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "rule",
+        "instrument_ids",
+        "account_id",
+        "enabled",
+        "tags"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "definition_digest"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "definition_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "instrument_ids": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenTemplateWrite = {
+  "base_revision": number;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+};
+
+export const LightTickInvestmentScreenDefinitionSchema = {
+  "anyOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "definition_digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "kind",
+        "fields"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "const": "rules"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description",
+            "source_text",
+            "conditions",
+            "combine",
+            "sort_by",
+            "descending",
+            "secondary_sort_by",
+            "secondary_descending",
+            "limit",
+            "recipe",
+            "sort_mapping"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 0
+            },
+            "source_text": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 0
+            },
+            "conditions": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "field",
+                  "op",
+                  "value",
+                  "upper_value",
+                  "mapping"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "turnover_cny",
+                      "turnover_rate_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "return_1d_pct",
+                      "return_3d_pct",
+                      "return_5d_pct",
+                      "return_10d_pct",
+                      "return_20d_pct",
+                      "avg_turnover_3d_pct",
+                      "avg_turnover_5d_pct",
+                      "avg_turnover_10d_pct",
+                      "avg_turnover_20d_pct",
+                      "avg_amount_5d",
+                      "avg_amount_10d",
+                      "avg_amount_20d"
+                    ]
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "eq",
+                      "ne",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "between"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "upper_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "quote",
+                      "reason"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "explicit",
+                          "default",
+                          "suggested"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "combine": {
+              "type": "string",
+              "enum": [
+                "all",
+                "any"
+              ]
+            },
+            "sort_by": {
+              "type": "string",
+              "enum": [
+                "close",
+                "turnover_cny",
+                "turnover_rate_pct",
+                "volume_ratio_5",
+                "price_above_ma20",
+                "return_1d_pct",
+                "return_3d_pct",
+                "return_5d_pct",
+                "return_10d_pct",
+                "return_20d_pct",
+                "avg_turnover_3d_pct",
+                "avg_turnover_5d_pct",
+                "avg_turnover_10d_pct",
+                "avg_turnover_20d_pct",
+                "avg_amount_5d",
+                "avg_amount_10d",
+                "avg_amount_20d"
+              ]
+            },
+            "descending": {
+              "type": "boolean"
+            },
+            "secondary_sort_by": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "close",
+                    "turnover_cny",
+                    "turnover_rate_pct",
+                    "volume_ratio_5",
+                    "price_above_ma20",
+                    "return_1d_pct",
+                    "return_3d_pct",
+                    "return_5d_pct",
+                    "return_10d_pct",
+                    "return_20d_pct",
+                    "avg_turnover_3d_pct",
+                    "avg_turnover_5d_pct",
+                    "avg_turnover_10d_pct",
+                    "avg_turnover_20d_pct",
+                    "avg_amount_5d",
+                    "avg_amount_10d",
+                    "avg_amount_20d"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "secondary_descending": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "recipe": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "window",
+                    "minimum_gain",
+                    "volume_ratio",
+                    "shrink_ratio",
+                    "pullback_min",
+                    "pullback_max",
+                    "near_high_ratio",
+                    "exclude_st",
+                    "exclude_suspended"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ma_bullish",
+                        "pullback",
+                        "volume_breakout",
+                        "return_window"
+                      ]
+                    },
+                    "window": {
+                      "type": "integer",
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "minimum_gain": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "volume_ratio": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "shrink_ratio": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "pullback_min": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "pullback_max": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "near_high_ratio": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "exclude_st": {
+                      "type": "boolean"
+                    },
+                    "exclude_suspended": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sort_mapping": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "quote",
+                "reason"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "explicit",
+                    "default",
+                    "suggested"
+                  ]
+                },
+                "quote": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 0
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "definition_digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "kind",
+        "fields"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "const": "templates"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description",
+            "rule",
+            "instrument_ids",
+            "account_id",
+            "enabled",
+            "tags"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 0
+            },
+            "rule": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "definition_digest"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "definition_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            "instrument_ids": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "account_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentScreenDefinition = (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+}
+);
+
+export const LightTickInvestmentScreenRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRevision = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentScreenCancelSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenCancel = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentScreenDefinitionPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "request_key",
+              "definition_digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "kind",
+              "fields"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "const": "rules"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "source_text",
+                  "conditions",
+                  "combine",
+                  "sort_by",
+                  "descending",
+                  "secondary_sort_by",
+                  "secondary_descending",
+                  "limit",
+                  "recipe",
+                  "sort_mapping"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 0
+                  },
+                  "source_text": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 0
+                  },
+                  "conditions": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "op",
+                        "value",
+                        "upper_value",
+                        "mapping"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "between"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "upper_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "quote",
+                            "reason"
+                          ],
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "explicit",
+                                "default",
+                                "suggested"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "combine": {
+                    "type": "string",
+                    "enum": [
+                      "all",
+                      "any"
+                    ]
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "turnover_cny",
+                      "turnover_rate_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "return_1d_pct",
+                      "return_3d_pct",
+                      "return_5d_pct",
+                      "return_10d_pct",
+                      "return_20d_pct",
+                      "avg_turnover_3d_pct",
+                      "avg_turnover_5d_pct",
+                      "avg_turnover_10d_pct",
+                      "avg_turnover_20d_pct",
+                      "avg_amount_5d",
+                      "avg_amount_10d",
+                      "avg_amount_20d"
+                    ]
+                  },
+                  "descending": {
+                    "type": "boolean"
+                  },
+                  "secondary_sort_by": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "turnover_cny",
+                          "turnover_rate_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "return_1d_pct",
+                          "return_3d_pct",
+                          "return_5d_pct",
+                          "return_10d_pct",
+                          "return_20d_pct",
+                          "avg_turnover_3d_pct",
+                          "avg_turnover_5d_pct",
+                          "avg_turnover_10d_pct",
+                          "avg_turnover_20d_pct",
+                          "avg_amount_5d",
+                          "avg_amount_10d",
+                          "avg_amount_20d"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "secondary_descending": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "recipe": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "window",
+                          "minimum_gain",
+                          "volume_ratio",
+                          "shrink_ratio",
+                          "pullback_min",
+                          "pullback_max",
+                          "near_high_ratio",
+                          "exclude_st",
+                          "exclude_suspended"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "ma_bullish",
+                              "pullback",
+                              "volume_breakout",
+                              "return_window"
+                            ]
+                          },
+                          "window": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "minimum_gain": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "volume_ratio": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "shrink_ratio": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "pullback_min": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "pullback_max": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "near_high_ratio": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "exclude_st": {
+                            "type": "boolean"
+                          },
+                          "exclude_suspended": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sort_mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "quote",
+                      "reason"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "explicit",
+                          "default",
+                          "suggested"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "request_key",
+              "definition_digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "kind",
+              "fields"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "const": "templates"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "rule",
+                  "instrument_ids",
+                  "account_id",
+                  "enabled",
+                  "tags"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 0
+                  },
+                  "rule": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "version",
+                      "definition_digest"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "definition_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  "instrument_ids": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                  },
+                  "account_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "revision": {
+      "type": "string"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenDefinitionPage = {
+  "items": (
+(
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+}
+)
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentScreenHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "request_key",
+              "definition_digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "kind",
+              "fields"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "const": "rules"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "source_text",
+                  "conditions",
+                  "combine",
+                  "sort_by",
+                  "descending",
+                  "secondary_sort_by",
+                  "secondary_descending",
+                  "limit",
+                  "recipe",
+                  "sort_mapping"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 0
+                  },
+                  "source_text": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 0
+                  },
+                  "conditions": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "op",
+                        "value",
+                        "upper_value",
+                        "mapping"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "between"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "upper_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "quote",
+                            "reason"
+                          ],
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "explicit",
+                                "default",
+                                "suggested"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "combine": {
+                    "type": "string",
+                    "enum": [
+                      "all",
+                      "any"
+                    ]
+                  },
+                  "sort_by": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "turnover_cny",
+                      "turnover_rate_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "return_1d_pct",
+                      "return_3d_pct",
+                      "return_5d_pct",
+                      "return_10d_pct",
+                      "return_20d_pct",
+                      "avg_turnover_3d_pct",
+                      "avg_turnover_5d_pct",
+                      "avg_turnover_10d_pct",
+                      "avg_turnover_20d_pct",
+                      "avg_amount_5d",
+                      "avg_amount_10d",
+                      "avg_amount_20d"
+                    ]
+                  },
+                  "descending": {
+                    "type": "boolean"
+                  },
+                  "secondary_sort_by": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "turnover_cny",
+                          "turnover_rate_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "return_1d_pct",
+                          "return_3d_pct",
+                          "return_5d_pct",
+                          "return_10d_pct",
+                          "return_20d_pct",
+                          "avg_turnover_3d_pct",
+                          "avg_turnover_5d_pct",
+                          "avg_turnover_10d_pct",
+                          "avg_turnover_20d_pct",
+                          "avg_amount_5d",
+                          "avg_amount_10d",
+                          "avg_amount_20d"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "secondary_descending": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "recipe": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "window",
+                          "minimum_gain",
+                          "volume_ratio",
+                          "shrink_ratio",
+                          "pullback_min",
+                          "pullback_max",
+                          "near_high_ratio",
+                          "exclude_st",
+                          "exclude_suspended"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "ma_bullish",
+                              "pullback",
+                              "volume_breakout",
+                              "return_window"
+                            ]
+                          },
+                          "window": {
+                            "type": "integer",
+                            "minimum": 5,
+                            "maximum": 120
+                          },
+                          "minimum_gain": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "volume_ratio": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "shrink_ratio": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "pullback_min": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "pullback_max": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "near_high_ratio": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "exclude_st": {
+                            "type": "boolean"
+                          },
+                          "exclude_suspended": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sort_mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "quote",
+                      "reason"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "explicit",
+                          "default",
+                          "suggested"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "request_key",
+              "definition_digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "kind",
+              "fields"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "const": "templates"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "description",
+                  "rule",
+                  "instrument_ids",
+                  "account_id",
+                  "enabled",
+                  "tags"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 0
+                  },
+                  "rule": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "version",
+                      "definition_digest"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "definition_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  "instrument_ids": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                  },
+                  "account_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenHistory = {
+  "items": (
+(
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+}
+)
+)[];
+  "revision": number;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentScreenSecurityStatusSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "as_of",
+    "is_st",
+    "suspended",
+    "source_label",
+    "available_at"
+  ],
+  "properties": {
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_st": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "suspended": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_label": {
+      "type": "string",
+      "maxLength": 300,
+      "minLength": 1
+    },
+    "available_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenSecurityStatus = {
+  "as_of": string;
+  "is_st": boolean | unknown;
+  "suspended": boolean | unknown;
+  "source_label": string;
+  "available_at": string;
+};
+
+export const LightTickInvestmentScreenSourceSelectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "snapshot_id",
+    "input_digest",
+    "security_status"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "input_digest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "security_status": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "as_of",
+            "is_st",
+            "suspended",
+            "source_label",
+            "available_at"
+          ],
+          "properties": {
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            },
+            "is_st": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "suspended": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source_label": {
+              "type": "string",
+              "maxLength": 300,
+              "minLength": 1
+            },
+            "available_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenSourceSelection = {
+  "instrument_id": string;
+  "snapshot_id": string | unknown;
+  "input_digest": string | unknown;
+  "security_status": (
+{
+  "as_of": string;
+  "is_st": boolean | unknown;
+  "suspended": boolean | unknown;
+  "source_label": string;
+  "available_at": string;
+}
+) | unknown;
+};
+
+export const LightTickInvestmentScreenRunRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "template_id",
+    "base_revision",
+    "as_of",
+    "decision_at",
+    "sources",
+    "consent"
+  ],
+  "properties": {
+    "template_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "snapshot_id",
+          "input_digest",
+          "security_status"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "security_status": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "as_of",
+                  "is_st",
+                  "suspended",
+                  "source_label",
+                  "available_at"
+                ],
+                "properties": {
+                  "as_of": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "is_st": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "suspended": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source_label": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "minLength": 1
+                  },
+                  "available_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "consent": {
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRunRequest = {
+  "template_id": string;
+  "base_revision": number;
+  "as_of": string;
+  "decision_at": string;
+  "sources": (
+{
+  "instrument_id": string;
+  "snapshot_id": string | unknown;
+  "input_digest": string | unknown;
+  "security_status": (
+{
+  "as_of": string;
+  "is_st": boolean | unknown;
+  "suspended": boolean | unknown;
+  "source_label": string;
+  "available_at": string;
+}
+) | unknown;
+}
+)[];
+  "consent": unknown;
+};
+
+export const LightTickInvestmentScreenDetailSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "field",
+    "label",
+    "unit",
+    "actual",
+    "result",
+    "reason",
+    "dates",
+    "condition"
+  ],
+  "properties": {
+    "field": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "actual": {
+      "type": [
+        "string",
+        "boolean",
+        "null"
+      ]
+    },
+    "result": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dates": {
+      "type": "array",
+      "maxItems": 121,
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    "condition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "op",
+            "value",
+            "upper_value",
+            "mapping"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "enum": [
+                "close",
+                "turnover_cny",
+                "turnover_rate_pct",
+                "volume_ratio_5",
+                "price_above_ma20",
+                "return_1d_pct",
+                "return_3d_pct",
+                "return_5d_pct",
+                "return_10d_pct",
+                "return_20d_pct",
+                "avg_turnover_3d_pct",
+                "avg_turnover_5d_pct",
+                "avg_turnover_10d_pct",
+                "avg_turnover_20d_pct",
+                "avg_amount_5d",
+                "avg_amount_10d",
+                "avg_amount_20d"
+              ]
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "between"
+              ]
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "upper_value": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mapping": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "quote",
+                "reason"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "explicit",
+                    "default",
+                    "suggested"
+                  ]
+                },
+                "quote": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 0
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenDetail = {
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+};
+
+export const LightTickInvestmentScreenEvaluationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "code",
+    "market",
+    "name",
+    "status",
+    "values",
+    "details",
+    "source",
+    "limitations",
+    "sorting"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "code": {
+      "type": "string"
+    },
+    "market": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "matched",
+        "excluded",
+        "unknown"
+      ]
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "details": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "label",
+          "unit",
+          "actual",
+          "result",
+          "reason",
+          "dates",
+          "condition"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "actual": {
+            "type": [
+              "string",
+              "boolean",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dates": {
+            "type": "array",
+            "maxItems": 121,
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "field",
+                  "op",
+                  "value",
+                  "upper_value",
+                  "mapping"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "turnover_cny",
+                      "turnover_rate_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "return_1d_pct",
+                      "return_3d_pct",
+                      "return_5d_pct",
+                      "return_10d_pct",
+                      "return_20d_pct",
+                      "avg_turnover_3d_pct",
+                      "avg_turnover_5d_pct",
+                      "avg_turnover_10d_pct",
+                      "avg_turnover_20d_pct",
+                      "avg_amount_5d",
+                      "avg_amount_10d",
+                      "avg_amount_20d"
+                    ]
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "eq",
+                      "ne",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "between"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "upper_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "quote",
+                      "reason"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "explicit",
+                          "default",
+                          "suggested"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "string"
+      }
+    },
+    "sorting": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "label",
+          "unit",
+          "actual",
+          "result",
+          "reason",
+          "dates",
+          "condition"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "actual": {
+            "type": [
+              "string",
+              "boolean",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dates": {
+            "type": "array",
+            "maxItems": 121,
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "field",
+                  "op",
+                  "value",
+                  "upper_value",
+                  "mapping"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "turnover_cny",
+                      "turnover_rate_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "return_1d_pct",
+                      "return_3d_pct",
+                      "return_5d_pct",
+                      "return_10d_pct",
+                      "return_20d_pct",
+                      "avg_turnover_3d_pct",
+                      "avg_turnover_5d_pct",
+                      "avg_turnover_10d_pct",
+                      "avg_turnover_20d_pct",
+                      "avg_amount_5d",
+                      "avg_amount_10d",
+                      "avg_amount_20d"
+                    ]
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "eq",
+                      "ne",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "between"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "upper_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "quote",
+                      "reason"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "explicit",
+                          "default",
+                          "suggested"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenEvaluation = {
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+};
+
+export const LightTickInvestmentScreenReportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm_version",
+    "input_digest",
+    "as_of",
+    "decision_at",
+    "items",
+    "evaluations",
+    "total",
+    "unresolved",
+    "incomplete",
+    "limitations",
+    "output_digest"
+  ],
+  "properties": {
+    "algorithm_version": {
+      "const": "screen-rational-session-v1"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "code",
+          "market",
+          "name",
+          "status",
+          "values",
+          "details",
+          "source",
+          "limitations",
+          "sorting"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "code": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "matched",
+              "excluded",
+              "unknown"
+            ]
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "details": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "label",
+                "unit",
+                "actual",
+                "result",
+                "reason",
+                "dates",
+                "condition"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "actual": {
+                  "type": [
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "result": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dates": {
+                  "type": "array",
+                  "maxItems": 121,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "condition": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "op",
+                        "value",
+                        "upper_value",
+                        "mapping"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "between"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "upper_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "quote",
+                            "reason"
+                          ],
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "explicit",
+                                "default",
+                                "suggested"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "source": {
+            "type": "object"
+          },
+          "limitations": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          },
+          "sorting": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "label",
+                "unit",
+                "actual",
+                "result",
+                "reason",
+                "dates",
+                "condition"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "actual": {
+                  "type": [
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "result": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dates": {
+                  "type": "array",
+                  "maxItems": 121,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "condition": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "op",
+                        "value",
+                        "upper_value",
+                        "mapping"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "between"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "upper_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "quote",
+                            "reason"
+                          ],
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "explicit",
+                                "default",
+                                "suggested"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "evaluations": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "code",
+          "market",
+          "name",
+          "status",
+          "values",
+          "details",
+          "source",
+          "limitations",
+          "sorting"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "code": {
+            "type": "string"
+          },
+          "market": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "matched",
+              "excluded",
+              "unknown"
+            ]
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "details": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "label",
+                "unit",
+                "actual",
+                "result",
+                "reason",
+                "dates",
+                "condition"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "actual": {
+                  "type": [
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "result": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dates": {
+                  "type": "array",
+                  "maxItems": 121,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "condition": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "op",
+                        "value",
+                        "upper_value",
+                        "mapping"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "between"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "upper_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "quote",
+                            "reason"
+                          ],
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "explicit",
+                                "default",
+                                "suggested"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "source": {
+            "type": "object"
+          },
+          "limitations": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string"
+            }
+          },
+          "sorting": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "label",
+                "unit",
+                "actual",
+                "result",
+                "reason",
+                "dates",
+                "condition"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "actual": {
+                  "type": [
+                    "string",
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "result": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dates": {
+                  "type": "array",
+                  "maxItems": 121,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "condition": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "op",
+                        "value",
+                        "upper_value",
+                        "mapping"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "between"
+                          ]
+                        },
+                        "value": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "upper_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mapping": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "quote",
+                            "reason"
+                          ],
+                          "properties": {
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "explicit",
+                                "default",
+                                "suggested"
+                              ]
+                            },
+                            "quote": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            },
+                            "reason": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 0
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "unresolved": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "incomplete": {
+      "type": "boolean"
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "string"
+      }
+    },
+    "output_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenReport = {
+  "algorithm_version": unknown;
+  "input_digest": string;
+  "as_of": string;
+  "decision_at": string;
+  "items": (
+{
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "evaluations": (
+{
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "total": number;
+  "unresolved": number;
+  "incomplete": boolean;
+  "limitations": string[];
+  "output_digest": string;
+};
+
+export const LightTickInvestmentScreenInputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rule",
+    "template",
+    "as_of",
+    "decision_at",
+    "sources",
+    "algorithm_version",
+    "digest"
+  ],
+  "properties": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "definition_digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "kind",
+        "fields"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "const": "rules"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description",
+            "source_text",
+            "conditions",
+            "combine",
+            "sort_by",
+            "descending",
+            "secondary_sort_by",
+            "secondary_descending",
+            "limit",
+            "recipe",
+            "sort_mapping"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 0
+            },
+            "source_text": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 0
+            },
+            "conditions": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "field",
+                  "op",
+                  "value",
+                  "upper_value",
+                  "mapping"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "turnover_cny",
+                      "turnover_rate_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "return_1d_pct",
+                      "return_3d_pct",
+                      "return_5d_pct",
+                      "return_10d_pct",
+                      "return_20d_pct",
+                      "avg_turnover_3d_pct",
+                      "avg_turnover_5d_pct",
+                      "avg_turnover_10d_pct",
+                      "avg_turnover_20d_pct",
+                      "avg_amount_5d",
+                      "avg_amount_10d",
+                      "avg_amount_20d"
+                    ]
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "eq",
+                      "ne",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "between"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "upper_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mapping": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "quote",
+                      "reason"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "explicit",
+                          "default",
+                          "suggested"
+                        ]
+                      },
+                      "quote": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 0
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "combine": {
+              "type": "string",
+              "enum": [
+                "all",
+                "any"
+              ]
+            },
+            "sort_by": {
+              "type": "string",
+              "enum": [
+                "close",
+                "turnover_cny",
+                "turnover_rate_pct",
+                "volume_ratio_5",
+                "price_above_ma20",
+                "return_1d_pct",
+                "return_3d_pct",
+                "return_5d_pct",
+                "return_10d_pct",
+                "return_20d_pct",
+                "avg_turnover_3d_pct",
+                "avg_turnover_5d_pct",
+                "avg_turnover_10d_pct",
+                "avg_turnover_20d_pct",
+                "avg_amount_5d",
+                "avg_amount_10d",
+                "avg_amount_20d"
+              ]
+            },
+            "descending": {
+              "type": "boolean"
+            },
+            "secondary_sort_by": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "close",
+                    "turnover_cny",
+                    "turnover_rate_pct",
+                    "volume_ratio_5",
+                    "price_above_ma20",
+                    "return_1d_pct",
+                    "return_3d_pct",
+                    "return_5d_pct",
+                    "return_10d_pct",
+                    "return_20d_pct",
+                    "avg_turnover_3d_pct",
+                    "avg_turnover_5d_pct",
+                    "avg_turnover_10d_pct",
+                    "avg_turnover_20d_pct",
+                    "avg_amount_5d",
+                    "avg_amount_10d",
+                    "avg_amount_20d"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "secondary_descending": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "recipe": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "window",
+                    "minimum_gain",
+                    "volume_ratio",
+                    "shrink_ratio",
+                    "pullback_min",
+                    "pullback_max",
+                    "near_high_ratio",
+                    "exclude_st",
+                    "exclude_suspended"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "ma_bullish",
+                        "pullback",
+                        "volume_breakout",
+                        "return_window"
+                      ]
+                    },
+                    "window": {
+                      "type": "integer",
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "minimum_gain": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "volume_ratio": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "shrink_ratio": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "pullback_min": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "pullback_max": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "near_high_ratio": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "exclude_st": {
+                      "type": "boolean"
+                    },
+                    "exclude_suspended": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sort_mapping": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "quote",
+                "reason"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "explicit",
+                    "default",
+                    "suggested"
+                  ]
+                },
+                "quote": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 0
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "definition_digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "kind",
+        "fields"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8
+        },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "const": "templates"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "description",
+            "rule",
+            "instrument_ids",
+            "account_id",
+            "enabled",
+            "tags"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 0
+            },
+            "rule": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "definition_digest"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "definition_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            "instrument_ids": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "account_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument",
+          "snapshot",
+          "security_status"
+        ],
+        "properties": {
+          "instrument": {
+            "type": "object"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "security_status": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "as_of",
+                  "is_st",
+                  "suspended",
+                  "source_label",
+                  "available_at"
+                ],
+                "properties": {
+                  "as_of": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "is_st": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "suspended": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source_label": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "minLength": 1
+                  },
+                  "available_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "algorithm_version": {
+      "const": "screen-rational-session-v1"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenInput = {
+  "rule": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+};
+  "template": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+};
+  "as_of": string;
+  "decision_at": string;
+  "sources": (
+{
+  "instrument": {
+};
+  "snapshot": (
+{
+}
+) | unknown;
+  "security_status": (
+{
+  "as_of": string;
+  "is_st": boolean | unknown;
+  "suspended": boolean | unknown;
+  "source_label": string;
+  "available_at": string;
+}
+) | unknown;
+}
+)[];
+  "algorithm_version": unknown;
+  "digest": string;
+};
+
+export const LightTickInvestmentScreenWorkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "request_key",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "output",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 8
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "template",
+        "as_of",
+        "decision_at",
+        "sources",
+        "algorithm_version",
+        "digest"
+      ],
+      "properties": {
+        "rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "request_key",
+            "definition_digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8
+            },
+            "definition_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "kind": {
+              "const": "rules"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "description",
+                "source_text",
+                "conditions",
+                "combine",
+                "sort_by",
+                "descending",
+                "secondary_sort_by",
+                "secondary_descending",
+                "limit",
+                "recipe",
+                "sort_mapping"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 0
+                },
+                "source_text": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 0
+                },
+                "conditions": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "field",
+                      "op",
+                      "value",
+                      "upper_value",
+                      "mapping"
+                    ],
+                    "properties": {
+                      "field": {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "turnover_cny",
+                          "turnover_rate_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "return_1d_pct",
+                          "return_3d_pct",
+                          "return_5d_pct",
+                          "return_10d_pct",
+                          "return_20d_pct",
+                          "avg_turnover_3d_pct",
+                          "avg_turnover_5d_pct",
+                          "avg_turnover_10d_pct",
+                          "avg_turnover_20d_pct",
+                          "avg_amount_5d",
+                          "avg_amount_10d",
+                          "avg_amount_20d"
+                        ]
+                      },
+                      "op": {
+                        "type": "string",
+                        "enum": [
+                          "eq",
+                          "ne",
+                          "gt",
+                          "gte",
+                          "lt",
+                          "lte",
+                          "between"
+                        ]
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "upper_value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mapping": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "source",
+                          "quote",
+                          "reason"
+                        ],
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "explicit",
+                              "default",
+                              "suggested"
+                            ]
+                          },
+                          "quote": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "combine": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "any"
+                  ]
+                },
+                "sort_by": {
+                  "type": "string",
+                  "enum": [
+                    "close",
+                    "turnover_cny",
+                    "turnover_rate_pct",
+                    "volume_ratio_5",
+                    "price_above_ma20",
+                    "return_1d_pct",
+                    "return_3d_pct",
+                    "return_5d_pct",
+                    "return_10d_pct",
+                    "return_20d_pct",
+                    "avg_turnover_3d_pct",
+                    "avg_turnover_5d_pct",
+                    "avg_turnover_10d_pct",
+                    "avg_turnover_20d_pct",
+                    "avg_amount_5d",
+                    "avg_amount_10d",
+                    "avg_amount_20d"
+                  ]
+                },
+                "descending": {
+                  "type": "boolean"
+                },
+                "secondary_sort_by": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "close",
+                        "turnover_cny",
+                        "turnover_rate_pct",
+                        "volume_ratio_5",
+                        "price_above_ma20",
+                        "return_1d_pct",
+                        "return_3d_pct",
+                        "return_5d_pct",
+                        "return_10d_pct",
+                        "return_20d_pct",
+                        "avg_turnover_3d_pct",
+                        "avg_turnover_5d_pct",
+                        "avg_turnover_10d_pct",
+                        "avg_turnover_20d_pct",
+                        "avg_amount_5d",
+                        "avg_amount_10d",
+                        "avg_amount_20d"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "secondary_descending": {
+                  "type": "boolean"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "recipe": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "window",
+                        "minimum_gain",
+                        "volume_ratio",
+                        "shrink_ratio",
+                        "pullback_min",
+                        "pullback_max",
+                        "near_high_ratio",
+                        "exclude_st",
+                        "exclude_suspended"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "ma_bullish",
+                            "pullback",
+                            "volume_breakout",
+                            "return_window"
+                          ]
+                        },
+                        "window": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "minimum_gain": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "volume_ratio": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "shrink_ratio": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "pullback_min": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "pullback_max": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "near_high_ratio": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "exclude_st": {
+                          "type": "boolean"
+                        },
+                        "exclude_suspended": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sort_mapping": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source",
+                    "quote",
+                    "reason"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "explicit",
+                        "default",
+                        "suggested"
+                      ]
+                    },
+                    "quote": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 0
+                    },
+                    "reason": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "template": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "request_key",
+            "definition_digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8
+            },
+            "definition_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "kind": {
+              "const": "templates"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "description",
+                "rule",
+                "instrument_ids",
+                "account_id",
+                "enabled",
+                "tags"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 0
+                },
+                "rule": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "version",
+                    "definition_digest"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "definition_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                "instrument_ids": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                },
+                "account_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "tags": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "decision_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sources": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument",
+              "snapshot",
+              "security_status"
+            ],
+            "properties": {
+              "instrument": {
+                "type": "object"
+              },
+              "snapshot": {
+                "anyOf": [
+                  {
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "security_status": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "as_of",
+                      "is_st",
+                      "suspended",
+                      "source_label",
+                      "available_at"
+                    ],
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "is_st": {
+                        "anyOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "suspended": {
+                        "anyOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "source_label": {
+                        "type": "string",
+                        "maxLength": 300,
+                        "minLength": 1
+                      },
+                      "available_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "algorithm_version": {
+          "const": "screen-rational-session-v1"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "algorithm_version",
+            "input_digest",
+            "as_of",
+            "decision_at",
+            "items",
+            "evaluations",
+            "total",
+            "unresolved",
+            "incomplete",
+            "limitations",
+            "output_digest"
+          ],
+          "properties": {
+            "algorithm_version": {
+              "const": "screen-rational-session-v1"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            },
+            "decision_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "items": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "code",
+                  "market",
+                  "name",
+                  "status",
+                  "values",
+                  "details",
+                  "source",
+                  "limitations",
+                  "sorting"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "market": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "matched",
+                      "excluded",
+                      "unknown"
+                    ]
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "details": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "label",
+                        "unit",
+                        "actual",
+                        "result",
+                        "reason",
+                        "dates",
+                        "condition"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "actual": {
+                          "type": [
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "dates": {
+                          "type": "array",
+                          "maxItems": 121,
+                          "items": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "condition": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "field",
+                                "op",
+                                "value",
+                                "upper_value",
+                                "mapping"
+                              ],
+                              "properties": {
+                                "field": {
+                                  "type": "string",
+                                  "enum": [
+                                    "close",
+                                    "turnover_cny",
+                                    "turnover_rate_pct",
+                                    "volume_ratio_5",
+                                    "price_above_ma20",
+                                    "return_1d_pct",
+                                    "return_3d_pct",
+                                    "return_5d_pct",
+                                    "return_10d_pct",
+                                    "return_20d_pct",
+                                    "avg_turnover_3d_pct",
+                                    "avg_turnover_5d_pct",
+                                    "avg_turnover_10d_pct",
+                                    "avg_turnover_20d_pct",
+                                    "avg_amount_5d",
+                                    "avg_amount_10d",
+                                    "avg_amount_20d"
+                                  ]
+                                },
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "eq",
+                                    "ne",
+                                    "gt",
+                                    "gte",
+                                    "lt",
+                                    "lte",
+                                    "between"
+                                  ]
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "minLength": 1
+                                },
+                                "upper_value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "mapping": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "source",
+                                    "quote",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "explicit",
+                                        "default",
+                                        "suggested"
+                                      ]
+                                    },
+                                    "quote": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "source": {
+                    "type": "object"
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sorting": {
+                    "type": "array",
+                    "maxItems": 2,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "label",
+                        "unit",
+                        "actual",
+                        "result",
+                        "reason",
+                        "dates",
+                        "condition"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "actual": {
+                          "type": [
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "dates": {
+                          "type": "array",
+                          "maxItems": 121,
+                          "items": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "condition": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "field",
+                                "op",
+                                "value",
+                                "upper_value",
+                                "mapping"
+                              ],
+                              "properties": {
+                                "field": {
+                                  "type": "string",
+                                  "enum": [
+                                    "close",
+                                    "turnover_cny",
+                                    "turnover_rate_pct",
+                                    "volume_ratio_5",
+                                    "price_above_ma20",
+                                    "return_1d_pct",
+                                    "return_3d_pct",
+                                    "return_5d_pct",
+                                    "return_10d_pct",
+                                    "return_20d_pct",
+                                    "avg_turnover_3d_pct",
+                                    "avg_turnover_5d_pct",
+                                    "avg_turnover_10d_pct",
+                                    "avg_turnover_20d_pct",
+                                    "avg_amount_5d",
+                                    "avg_amount_10d",
+                                    "avg_amount_20d"
+                                  ]
+                                },
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "eq",
+                                    "ne",
+                                    "gt",
+                                    "gte",
+                                    "lt",
+                                    "lte",
+                                    "between"
+                                  ]
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "minLength": 1
+                                },
+                                "upper_value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "mapping": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "source",
+                                    "quote",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "explicit",
+                                        "default",
+                                        "suggested"
+                                      ]
+                                    },
+                                    "quote": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "evaluations": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "code",
+                  "market",
+                  "name",
+                  "status",
+                  "values",
+                  "details",
+                  "source",
+                  "limitations",
+                  "sorting"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "market": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "matched",
+                      "excluded",
+                      "unknown"
+                    ]
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "details": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "label",
+                        "unit",
+                        "actual",
+                        "result",
+                        "reason",
+                        "dates",
+                        "condition"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "actual": {
+                          "type": [
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "dates": {
+                          "type": "array",
+                          "maxItems": 121,
+                          "items": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "condition": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "field",
+                                "op",
+                                "value",
+                                "upper_value",
+                                "mapping"
+                              ],
+                              "properties": {
+                                "field": {
+                                  "type": "string",
+                                  "enum": [
+                                    "close",
+                                    "turnover_cny",
+                                    "turnover_rate_pct",
+                                    "volume_ratio_5",
+                                    "price_above_ma20",
+                                    "return_1d_pct",
+                                    "return_3d_pct",
+                                    "return_5d_pct",
+                                    "return_10d_pct",
+                                    "return_20d_pct",
+                                    "avg_turnover_3d_pct",
+                                    "avg_turnover_5d_pct",
+                                    "avg_turnover_10d_pct",
+                                    "avg_turnover_20d_pct",
+                                    "avg_amount_5d",
+                                    "avg_amount_10d",
+                                    "avg_amount_20d"
+                                  ]
+                                },
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "eq",
+                                    "ne",
+                                    "gt",
+                                    "gte",
+                                    "lt",
+                                    "lte",
+                                    "between"
+                                  ]
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "minLength": 1
+                                },
+                                "upper_value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "mapping": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "source",
+                                    "quote",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "explicit",
+                                        "default",
+                                        "suggested"
+                                      ]
+                                    },
+                                    "quote": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "source": {
+                    "type": "object"
+                  },
+                  "limitations": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sorting": {
+                    "type": "array",
+                    "maxItems": 2,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "field",
+                        "label",
+                        "unit",
+                        "actual",
+                        "result",
+                        "reason",
+                        "dates",
+                        "condition"
+                      ],
+                      "properties": {
+                        "field": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "actual": {
+                          "type": [
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "dates": {
+                          "type": "array",
+                          "maxItems": 121,
+                          "items": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "condition": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "field",
+                                "op",
+                                "value",
+                                "upper_value",
+                                "mapping"
+                              ],
+                              "properties": {
+                                "field": {
+                                  "type": "string",
+                                  "enum": [
+                                    "close",
+                                    "turnover_cny",
+                                    "turnover_rate_pct",
+                                    "volume_ratio_5",
+                                    "price_above_ma20",
+                                    "return_1d_pct",
+                                    "return_3d_pct",
+                                    "return_5d_pct",
+                                    "return_10d_pct",
+                                    "return_20d_pct",
+                                    "avg_turnover_3d_pct",
+                                    "avg_turnover_5d_pct",
+                                    "avg_turnover_10d_pct",
+                                    "avg_turnover_20d_pct",
+                                    "avg_amount_5d",
+                                    "avg_amount_10d",
+                                    "avg_amount_20d"
+                                  ]
+                                },
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "eq",
+                                    "ne",
+                                    "gt",
+                                    "gte",
+                                    "lt",
+                                    "lte",
+                                    "between"
+                                  ]
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "minLength": 1
+                                },
+                                "upper_value": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "mapping": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "source",
+                                    "quote",
+                                    "reason"
+                                  ],
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "explicit",
+                                        "default",
+                                        "suggested"
+                                      ]
+                                    },
+                                    "quote": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "maxLength": 500,
+                                      "minLength": 0
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "unresolved": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "incomplete": {
+              "type": "boolean"
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {
+                "type": "string"
+              }
+            },
+            "output_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenWork = {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "input": {
+  "rule": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+};
+  "template": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+};
+  "as_of": string;
+  "decision_at": string;
+  "sources": (
+{
+  "instrument": {
+};
+  "snapshot": (
+{
+}
+) | unknown;
+  "security_status": (
+{
+  "as_of": string;
+  "is_st": boolean | unknown;
+  "suspended": boolean | unknown;
+  "source_label": string;
+  "available_at": string;
+}
+) | unknown;
+}
+)[];
+  "algorithm_version": unknown;
+  "digest": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "output": (
+{
+  "algorithm_version": unknown;
+  "input_digest": string;
+  "as_of": string;
+  "decision_at": string;
+  "items": (
+{
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "evaluations": (
+{
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "total": number;
+  "unresolved": number;
+  "incomplete": boolean;
+  "limitations": string[];
+  "output_digest": string;
+}
+) | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentScreenWorkSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "status",
+    "attempt",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "template_id",
+    "template_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "template_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "template_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenWorkSummary = {
+  "id": string;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "template_id": string;
+  "template_version": number;
+};
+
+export const LightTickInvestmentScreenRunPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "status",
+          "attempt",
+          "error_code",
+          "created_at",
+          "updated_at",
+          "template_id",
+          "template_version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "template_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "template_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRunPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "template_id": string;
+  "template_version": number;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentScreenCatalogSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm_version",
+    "fields",
+    "recipes",
+    "limits"
+  ],
+  "properties": {
+    "algorithm_version": {
+      "const": "screen-rational-session-v1"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "unit",
+          "window"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "window": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 121
+          }
+        }
+      }
+    },
+    "recipes": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "string",
+        "enum": [
+          "ma_bullish",
+          "pullback",
+          "volume_breakout",
+          "return_window"
+        ]
+      }
+    },
+    "limits": {
+      "type": "object"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenCatalog = {
+  "algorithm_version": unknown;
+  "fields": {
+  [key: string]: {
+  "label": string;
+  "unit": string;
+  "window": number;
+};
+};
+  "recipes": (
+"ma_bullish" | "pullback" | "volume_breakout" | "return_window"
+)[];
+  "limits": {
+};
+};
+
+export const LightTickInvestmentScreenDefinitionEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "request_key",
+            "definition_digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8
+            },
+            "definition_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "kind": {
+              "const": "rules"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "description",
+                "source_text",
+                "conditions",
+                "combine",
+                "sort_by",
+                "descending",
+                "secondary_sort_by",
+                "secondary_descending",
+                "limit",
+                "recipe",
+                "sort_mapping"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 0
+                },
+                "source_text": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 0
+                },
+                "conditions": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "field",
+                      "op",
+                      "value",
+                      "upper_value",
+                      "mapping"
+                    ],
+                    "properties": {
+                      "field": {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "turnover_cny",
+                          "turnover_rate_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "return_1d_pct",
+                          "return_3d_pct",
+                          "return_5d_pct",
+                          "return_10d_pct",
+                          "return_20d_pct",
+                          "avg_turnover_3d_pct",
+                          "avg_turnover_5d_pct",
+                          "avg_turnover_10d_pct",
+                          "avg_turnover_20d_pct",
+                          "avg_amount_5d",
+                          "avg_amount_10d",
+                          "avg_amount_20d"
+                        ]
+                      },
+                      "op": {
+                        "type": "string",
+                        "enum": [
+                          "eq",
+                          "ne",
+                          "gt",
+                          "gte",
+                          "lt",
+                          "lte",
+                          "between"
+                        ]
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "upper_value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mapping": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "source",
+                          "quote",
+                          "reason"
+                        ],
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "explicit",
+                              "default",
+                              "suggested"
+                            ]
+                          },
+                          "quote": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "combine": {
+                  "type": "string",
+                  "enum": [
+                    "all",
+                    "any"
+                  ]
+                },
+                "sort_by": {
+                  "type": "string",
+                  "enum": [
+                    "close",
+                    "turnover_cny",
+                    "turnover_rate_pct",
+                    "volume_ratio_5",
+                    "price_above_ma20",
+                    "return_1d_pct",
+                    "return_3d_pct",
+                    "return_5d_pct",
+                    "return_10d_pct",
+                    "return_20d_pct",
+                    "avg_turnover_3d_pct",
+                    "avg_turnover_5d_pct",
+                    "avg_turnover_10d_pct",
+                    "avg_turnover_20d_pct",
+                    "avg_amount_5d",
+                    "avg_amount_10d",
+                    "avg_amount_20d"
+                  ]
+                },
+                "descending": {
+                  "type": "boolean"
+                },
+                "secondary_sort_by": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "close",
+                        "turnover_cny",
+                        "turnover_rate_pct",
+                        "volume_ratio_5",
+                        "price_above_ma20",
+                        "return_1d_pct",
+                        "return_3d_pct",
+                        "return_5d_pct",
+                        "return_10d_pct",
+                        "return_20d_pct",
+                        "avg_turnover_3d_pct",
+                        "avg_turnover_5d_pct",
+                        "avg_turnover_10d_pct",
+                        "avg_turnover_20d_pct",
+                        "avg_amount_5d",
+                        "avg_amount_10d",
+                        "avg_amount_20d"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "secondary_descending": {
+                  "type": "boolean"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "recipe": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "window",
+                        "minimum_gain",
+                        "volume_ratio",
+                        "shrink_ratio",
+                        "pullback_min",
+                        "pullback_max",
+                        "near_high_ratio",
+                        "exclude_st",
+                        "exclude_suspended"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "ma_bullish",
+                            "pullback",
+                            "volume_breakout",
+                            "return_window"
+                          ]
+                        },
+                        "window": {
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        },
+                        "minimum_gain": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "volume_ratio": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "shrink_ratio": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "pullback_min": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "pullback_max": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "near_high_ratio": {
+                          "type": "string",
+                          "maxLength": 100,
+                          "minLength": 1
+                        },
+                        "exclude_st": {
+                          "type": "boolean"
+                        },
+                        "exclude_suspended": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sort_mapping": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source",
+                    "quote",
+                    "reason"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "explicit",
+                        "default",
+                        "suggested"
+                      ]
+                    },
+                    "quote": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 0
+                    },
+                    "reason": {
+                      "type": "string",
+                      "maxLength": 500,
+                      "minLength": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "request_key",
+            "definition_digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128,
+              "minLength": 8
+            },
+            "definition_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "kind": {
+              "const": "templates"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "description",
+                "rule",
+                "instrument_ids",
+                "account_id",
+                "enabled",
+                "tags"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "minLength": 0
+                },
+                "rule": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "version",
+                    "definition_digest"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "definition_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                "instrument_ids": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                },
+                "account_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "tags": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenDefinitionEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+}
+);
+  "requestId": string;
+};
+
+export const LightTickInvestmentScreenDefinitionPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "request_key",
+                  "definition_digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "fields"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8
+                  },
+                  "definition_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "const": "rules"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "description",
+                      "source_text",
+                      "conditions",
+                      "combine",
+                      "sort_by",
+                      "descending",
+                      "secondary_sort_by",
+                      "secondary_descending",
+                      "limit",
+                      "recipe",
+                      "sort_mapping"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 0
+                      },
+                      "source_text": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 0
+                      },
+                      "conditions": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "field",
+                            "op",
+                            "value",
+                            "upper_value",
+                            "mapping"
+                          ],
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": [
+                                "close",
+                                "turnover_cny",
+                                "turnover_rate_pct",
+                                "volume_ratio_5",
+                                "price_above_ma20",
+                                "return_1d_pct",
+                                "return_3d_pct",
+                                "return_5d_pct",
+                                "return_10d_pct",
+                                "return_20d_pct",
+                                "avg_turnover_3d_pct",
+                                "avg_turnover_5d_pct",
+                                "avg_turnover_10d_pct",
+                                "avg_turnover_20d_pct",
+                                "avg_amount_5d",
+                                "avg_amount_10d",
+                                "avg_amount_20d"
+                              ]
+                            },
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "eq",
+                                "ne",
+                                "gt",
+                                "gte",
+                                "lt",
+                                "lte",
+                                "between"
+                              ]
+                            },
+                            "value": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "upper_value": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "mapping": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "source",
+                                "quote",
+                                "reason"
+                              ],
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "explicit",
+                                    "default",
+                                    "suggested"
+                                  ]
+                                },
+                                "quote": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 0
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 0
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "combine": {
+                        "type": "string",
+                        "enum": [
+                          "all",
+                          "any"
+                        ]
+                      },
+                      "sort_by": {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "turnover_cny",
+                          "turnover_rate_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "return_1d_pct",
+                          "return_3d_pct",
+                          "return_5d_pct",
+                          "return_10d_pct",
+                          "return_20d_pct",
+                          "avg_turnover_3d_pct",
+                          "avg_turnover_5d_pct",
+                          "avg_turnover_10d_pct",
+                          "avg_turnover_20d_pct",
+                          "avg_amount_5d",
+                          "avg_amount_10d",
+                          "avg_amount_20d"
+                        ]
+                      },
+                      "descending": {
+                        "type": "boolean"
+                      },
+                      "secondary_sort_by": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "close",
+                              "turnover_cny",
+                              "turnover_rate_pct",
+                              "volume_ratio_5",
+                              "price_above_ma20",
+                              "return_1d_pct",
+                              "return_3d_pct",
+                              "return_5d_pct",
+                              "return_10d_pct",
+                              "return_20d_pct",
+                              "avg_turnover_3d_pct",
+                              "avg_turnover_5d_pct",
+                              "avg_turnover_10d_pct",
+                              "avg_turnover_20d_pct",
+                              "avg_amount_5d",
+                              "avg_amount_10d",
+                              "avg_amount_20d"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "secondary_descending": {
+                        "type": "boolean"
+                      },
+                      "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 20
+                      },
+                      "recipe": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "kind",
+                              "window",
+                              "minimum_gain",
+                              "volume_ratio",
+                              "shrink_ratio",
+                              "pullback_min",
+                              "pullback_max",
+                              "near_high_ratio",
+                              "exclude_st",
+                              "exclude_suspended"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "ma_bullish",
+                                  "pullback",
+                                  "volume_breakout",
+                                  "return_window"
+                                ]
+                              },
+                              "window": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "minimum_gain": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "volume_ratio": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "shrink_ratio": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "pullback_min": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "pullback_max": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "near_high_ratio": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "exclude_st": {
+                                "type": "boolean"
+                              },
+                              "exclude_suspended": {
+                                "type": "boolean"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sort_mapping": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "source",
+                          "quote",
+                          "reason"
+                        ],
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "explicit",
+                              "default",
+                              "suggested"
+                            ]
+                          },
+                          "quote": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "request_key",
+                  "definition_digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "fields"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8
+                  },
+                  "definition_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "const": "templates"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "description",
+                      "rule",
+                      "instrument_ids",
+                      "account_id",
+                      "enabled",
+                      "tags"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 0
+                      },
+                      "rule": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "version",
+                          "definition_digest"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                          },
+                          "definition_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        }
+                      },
+                      "instrument_ids": {
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                      },
+                      "account_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 50,
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "revision": {
+          "type": "string"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenDefinitionPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+(
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+}
+)
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentScreenHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "request_key",
+                  "definition_digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "fields"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8
+                  },
+                  "definition_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "const": "rules"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "description",
+                      "source_text",
+                      "conditions",
+                      "combine",
+                      "sort_by",
+                      "descending",
+                      "secondary_sort_by",
+                      "secondary_descending",
+                      "limit",
+                      "recipe",
+                      "sort_mapping"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 0
+                      },
+                      "source_text": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 0
+                      },
+                      "conditions": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "field",
+                            "op",
+                            "value",
+                            "upper_value",
+                            "mapping"
+                          ],
+                          "properties": {
+                            "field": {
+                              "type": "string",
+                              "enum": [
+                                "close",
+                                "turnover_cny",
+                                "turnover_rate_pct",
+                                "volume_ratio_5",
+                                "price_above_ma20",
+                                "return_1d_pct",
+                                "return_3d_pct",
+                                "return_5d_pct",
+                                "return_10d_pct",
+                                "return_20d_pct",
+                                "avg_turnover_3d_pct",
+                                "avg_turnover_5d_pct",
+                                "avg_turnover_10d_pct",
+                                "avg_turnover_20d_pct",
+                                "avg_amount_5d",
+                                "avg_amount_10d",
+                                "avg_amount_20d"
+                              ]
+                            },
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "eq",
+                                "ne",
+                                "gt",
+                                "gte",
+                                "lt",
+                                "lte",
+                                "between"
+                              ]
+                            },
+                            "value": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "upper_value": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 100,
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "mapping": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "source",
+                                "quote",
+                                "reason"
+                              ],
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "explicit",
+                                    "default",
+                                    "suggested"
+                                  ]
+                                },
+                                "quote": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 0
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 0
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "combine": {
+                        "type": "string",
+                        "enum": [
+                          "all",
+                          "any"
+                        ]
+                      },
+                      "sort_by": {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "turnover_cny",
+                          "turnover_rate_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "return_1d_pct",
+                          "return_3d_pct",
+                          "return_5d_pct",
+                          "return_10d_pct",
+                          "return_20d_pct",
+                          "avg_turnover_3d_pct",
+                          "avg_turnover_5d_pct",
+                          "avg_turnover_10d_pct",
+                          "avg_turnover_20d_pct",
+                          "avg_amount_5d",
+                          "avg_amount_10d",
+                          "avg_amount_20d"
+                        ]
+                      },
+                      "descending": {
+                        "type": "boolean"
+                      },
+                      "secondary_sort_by": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "close",
+                              "turnover_cny",
+                              "turnover_rate_pct",
+                              "volume_ratio_5",
+                              "price_above_ma20",
+                              "return_1d_pct",
+                              "return_3d_pct",
+                              "return_5d_pct",
+                              "return_10d_pct",
+                              "return_20d_pct",
+                              "avg_turnover_3d_pct",
+                              "avg_turnover_5d_pct",
+                              "avg_turnover_10d_pct",
+                              "avg_turnover_20d_pct",
+                              "avg_amount_5d",
+                              "avg_amount_10d",
+                              "avg_amount_20d"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "secondary_descending": {
+                        "type": "boolean"
+                      },
+                      "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 20
+                      },
+                      "recipe": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "kind",
+                              "window",
+                              "minimum_gain",
+                              "volume_ratio",
+                              "shrink_ratio",
+                              "pullback_min",
+                              "pullback_max",
+                              "near_high_ratio",
+                              "exclude_st",
+                              "exclude_suspended"
+                            ],
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "ma_bullish",
+                                  "pullback",
+                                  "volume_breakout",
+                                  "return_window"
+                                ]
+                              },
+                              "window": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                              },
+                              "minimum_gain": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "volume_ratio": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "shrink_ratio": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "pullback_min": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "pullback_max": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "near_high_ratio": {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              "exclude_st": {
+                                "type": "boolean"
+                              },
+                              "exclude_suspended": {
+                                "type": "boolean"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sort_mapping": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "source",
+                          "quote",
+                          "reason"
+                        ],
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "explicit",
+                              "default",
+                              "suggested"
+                            ]
+                          },
+                          "quote": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "request_key",
+                  "definition_digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "fields"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 8
+                  },
+                  "definition_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "const": "templates"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "description",
+                      "rule",
+                      "instrument_ids",
+                      "account_id",
+                      "enabled",
+                      "tags"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "minLength": 0
+                      },
+                      "rule": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "version",
+                          "definition_digest"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                          },
+                          "definition_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        }
+                      },
+                      "instrument_ids": {
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                      },
+                      "account_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 50,
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+(
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+}
+)
+)[];
+  "revision": number;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentScreenWorkEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "request_key",
+        "input",
+        "status",
+        "attempt",
+        "error_code",
+        "output",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 8
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rule",
+            "template",
+            "as_of",
+            "decision_at",
+            "sources",
+            "algorithm_version",
+            "digest"
+          ],
+          "properties": {
+            "rule": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "request_key",
+                "definition_digest",
+                "archived",
+                "created_at",
+                "updated_at",
+                "kind",
+                "fields"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "request_key": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8
+                },
+                "definition_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "kind": {
+                  "const": "rules"
+                },
+                "fields": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "description",
+                    "source_text",
+                    "conditions",
+                    "combine",
+                    "sort_by",
+                    "descending",
+                    "secondary_sort_by",
+                    "secondary_descending",
+                    "limit",
+                    "recipe",
+                    "sort_mapping"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 0
+                    },
+                    "source_text": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 0
+                    },
+                    "conditions": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "field",
+                          "op",
+                          "value",
+                          "upper_value",
+                          "mapping"
+                        ],
+                        "properties": {
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "close",
+                              "turnover_cny",
+                              "turnover_rate_pct",
+                              "volume_ratio_5",
+                              "price_above_ma20",
+                              "return_1d_pct",
+                              "return_3d_pct",
+                              "return_5d_pct",
+                              "return_10d_pct",
+                              "return_20d_pct",
+                              "avg_turnover_3d_pct",
+                              "avg_turnover_5d_pct",
+                              "avg_turnover_10d_pct",
+                              "avg_turnover_20d_pct",
+                              "avg_amount_5d",
+                              "avg_amount_10d",
+                              "avg_amount_20d"
+                            ]
+                          },
+                          "op": {
+                            "type": "string",
+                            "enum": [
+                              "eq",
+                              "ne",
+                              "gt",
+                              "gte",
+                              "lt",
+                              "lte",
+                              "between"
+                            ]
+                          },
+                          "value": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "minLength": 1
+                          },
+                          "upper_value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 100,
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "mapping": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "source",
+                              "quote",
+                              "reason"
+                            ],
+                            "properties": {
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "explicit",
+                                  "default",
+                                  "suggested"
+                                ]
+                              },
+                              "quote": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 0
+                              },
+                              "reason": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "combine": {
+                      "type": "string",
+                      "enum": [
+                        "all",
+                        "any"
+                      ]
+                    },
+                    "sort_by": {
+                      "type": "string",
+                      "enum": [
+                        "close",
+                        "turnover_cny",
+                        "turnover_rate_pct",
+                        "volume_ratio_5",
+                        "price_above_ma20",
+                        "return_1d_pct",
+                        "return_3d_pct",
+                        "return_5d_pct",
+                        "return_10d_pct",
+                        "return_20d_pct",
+                        "avg_turnover_3d_pct",
+                        "avg_turnover_5d_pct",
+                        "avg_turnover_10d_pct",
+                        "avg_turnover_20d_pct",
+                        "avg_amount_5d",
+                        "avg_amount_10d",
+                        "avg_amount_20d"
+                      ]
+                    },
+                    "descending": {
+                      "type": "boolean"
+                    },
+                    "secondary_sort_by": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "close",
+                            "turnover_cny",
+                            "turnover_rate_pct",
+                            "volume_ratio_5",
+                            "price_above_ma20",
+                            "return_1d_pct",
+                            "return_3d_pct",
+                            "return_5d_pct",
+                            "return_10d_pct",
+                            "return_20d_pct",
+                            "avg_turnover_3d_pct",
+                            "avg_turnover_5d_pct",
+                            "avg_turnover_10d_pct",
+                            "avg_turnover_20d_pct",
+                            "avg_amount_5d",
+                            "avg_amount_10d",
+                            "avg_amount_20d"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "secondary_descending": {
+                      "type": "boolean"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 20
+                    },
+                    "recipe": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "window",
+                            "minimum_gain",
+                            "volume_ratio",
+                            "shrink_ratio",
+                            "pullback_min",
+                            "pullback_max",
+                            "near_high_ratio",
+                            "exclude_st",
+                            "exclude_suspended"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "ma_bullish",
+                                "pullback",
+                                "volume_breakout",
+                                "return_window"
+                              ]
+                            },
+                            "window": {
+                              "type": "integer",
+                              "minimum": 5,
+                              "maximum": 120
+                            },
+                            "minimum_gain": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "volume_ratio": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "shrink_ratio": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "pullback_min": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "pullback_max": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "near_high_ratio": {
+                              "type": "string",
+                              "maxLength": 100,
+                              "minLength": 1
+                            },
+                            "exclude_st": {
+                              "type": "boolean"
+                            },
+                            "exclude_suspended": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sort_mapping": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "source",
+                        "quote",
+                        "reason"
+                      ],
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "explicit",
+                            "default",
+                            "suggested"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string",
+                          "maxLength": 500,
+                          "minLength": 0
+                        },
+                        "reason": {
+                          "type": "string",
+                          "maxLength": 500,
+                          "minLength": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "template": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "request_key",
+                "definition_digest",
+                "archived",
+                "created_at",
+                "updated_at",
+                "kind",
+                "fields"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "request_key": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 8
+                },
+                "definition_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "kind": {
+                  "const": "templates"
+                },
+                "fields": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "description",
+                    "rule",
+                    "instrument_ids",
+                    "account_id",
+                    "enabled",
+                    "tags"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100,
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "minLength": 0
+                    },
+                    "rule": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "version",
+                        "definition_digest"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "definition_digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        }
+                      }
+                    },
+                    "instrument_ids": {
+                      "type": "array",
+                      "maxItems": 20,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    },
+                    "account_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            },
+            "decision_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "sources": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument",
+                  "snapshot",
+                  "security_status"
+                ],
+                "properties": {
+                  "instrument": {
+                    "type": "object"
+                  },
+                  "snapshot": {
+                    "anyOf": [
+                      {
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "security_status": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "as_of",
+                          "is_st",
+                          "suspended",
+                          "source_label",
+                          "available_at"
+                        ],
+                        "properties": {
+                          "as_of": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "is_st": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "suspended": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "source_label": {
+                            "type": "string",
+                            "maxLength": 300,
+                            "minLength": 1
+                          },
+                          "available_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "algorithm_version": {
+              "const": "screen-rational-session-v1"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "algorithm_version",
+                "input_digest",
+                "as_of",
+                "decision_at",
+                "items",
+                "evaluations",
+                "total",
+                "unresolved",
+                "incomplete",
+                "limitations",
+                "output_digest"
+              ],
+              "properties": {
+                "algorithm_version": {
+                  "const": "screen-rational-session-v1"
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "decision_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "items": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "code",
+                      "market",
+                      "name",
+                      "status",
+                      "values",
+                      "details",
+                      "source",
+                      "limitations",
+                      "sorting"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "market": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "matched",
+                          "excluded",
+                          "unknown"
+                        ]
+                      },
+                      "values": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": [
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "details": {
+                        "type": "array",
+                        "maxItems": 30,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "field",
+                            "label",
+                            "unit",
+                            "actual",
+                            "result",
+                            "reason",
+                            "dates",
+                            "condition"
+                          ],
+                          "properties": {
+                            "field": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            },
+                            "actual": {
+                              "type": [
+                                "string",
+                                "boolean",
+                                "null"
+                              ]
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "dates": {
+                              "type": "array",
+                              "maxItems": 121,
+                              "items": {
+                                "type": "string",
+                                "format": "date"
+                              }
+                            },
+                            "condition": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "field",
+                                    "op",
+                                    "value",
+                                    "upper_value",
+                                    "mapping"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "type": "string",
+                                      "enum": [
+                                        "close",
+                                        "turnover_cny",
+                                        "turnover_rate_pct",
+                                        "volume_ratio_5",
+                                        "price_above_ma20",
+                                        "return_1d_pct",
+                                        "return_3d_pct",
+                                        "return_5d_pct",
+                                        "return_10d_pct",
+                                        "return_20d_pct",
+                                        "avg_turnover_3d_pct",
+                                        "avg_turnover_5d_pct",
+                                        "avg_turnover_10d_pct",
+                                        "avg_turnover_20d_pct",
+                                        "avg_amount_5d",
+                                        "avg_amount_10d",
+                                        "avg_amount_20d"
+                                      ]
+                                    },
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "eq",
+                                        "ne",
+                                        "gt",
+                                        "gte",
+                                        "lt",
+                                        "lte",
+                                        "between"
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    "upper_value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 100,
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "mapping": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "source",
+                                        "quote",
+                                        "reason"
+                                      ],
+                                      "properties": {
+                                        "source": {
+                                          "type": "string",
+                                          "enum": [
+                                            "manual",
+                                            "explicit",
+                                            "default",
+                                            "suggested"
+                                          ]
+                                        },
+                                        "quote": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "source": {
+                        "type": "object"
+                      },
+                      "limitations": {
+                        "type": "array",
+                        "maxItems": 50,
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "sorting": {
+                        "type": "array",
+                        "maxItems": 2,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "field",
+                            "label",
+                            "unit",
+                            "actual",
+                            "result",
+                            "reason",
+                            "dates",
+                            "condition"
+                          ],
+                          "properties": {
+                            "field": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            },
+                            "actual": {
+                              "type": [
+                                "string",
+                                "boolean",
+                                "null"
+                              ]
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "dates": {
+                              "type": "array",
+                              "maxItems": 121,
+                              "items": {
+                                "type": "string",
+                                "format": "date"
+                              }
+                            },
+                            "condition": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "field",
+                                    "op",
+                                    "value",
+                                    "upper_value",
+                                    "mapping"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "type": "string",
+                                      "enum": [
+                                        "close",
+                                        "turnover_cny",
+                                        "turnover_rate_pct",
+                                        "volume_ratio_5",
+                                        "price_above_ma20",
+                                        "return_1d_pct",
+                                        "return_3d_pct",
+                                        "return_5d_pct",
+                                        "return_10d_pct",
+                                        "return_20d_pct",
+                                        "avg_turnover_3d_pct",
+                                        "avg_turnover_5d_pct",
+                                        "avg_turnover_10d_pct",
+                                        "avg_turnover_20d_pct",
+                                        "avg_amount_5d",
+                                        "avg_amount_10d",
+                                        "avg_amount_20d"
+                                      ]
+                                    },
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "eq",
+                                        "ne",
+                                        "gt",
+                                        "gte",
+                                        "lt",
+                                        "lte",
+                                        "between"
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    "upper_value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 100,
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "mapping": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "source",
+                                        "quote",
+                                        "reason"
+                                      ],
+                                      "properties": {
+                                        "source": {
+                                          "type": "string",
+                                          "enum": [
+                                            "manual",
+                                            "explicit",
+                                            "default",
+                                            "suggested"
+                                          ]
+                                        },
+                                        "quote": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "evaluations": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "code",
+                      "market",
+                      "name",
+                      "status",
+                      "values",
+                      "details",
+                      "source",
+                      "limitations",
+                      "sorting"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "market": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "matched",
+                          "excluded",
+                          "unknown"
+                        ]
+                      },
+                      "values": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": [
+                            "string",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "details": {
+                        "type": "array",
+                        "maxItems": 30,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "field",
+                            "label",
+                            "unit",
+                            "actual",
+                            "result",
+                            "reason",
+                            "dates",
+                            "condition"
+                          ],
+                          "properties": {
+                            "field": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            },
+                            "actual": {
+                              "type": [
+                                "string",
+                                "boolean",
+                                "null"
+                              ]
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "dates": {
+                              "type": "array",
+                              "maxItems": 121,
+                              "items": {
+                                "type": "string",
+                                "format": "date"
+                              }
+                            },
+                            "condition": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "field",
+                                    "op",
+                                    "value",
+                                    "upper_value",
+                                    "mapping"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "type": "string",
+                                      "enum": [
+                                        "close",
+                                        "turnover_cny",
+                                        "turnover_rate_pct",
+                                        "volume_ratio_5",
+                                        "price_above_ma20",
+                                        "return_1d_pct",
+                                        "return_3d_pct",
+                                        "return_5d_pct",
+                                        "return_10d_pct",
+                                        "return_20d_pct",
+                                        "avg_turnover_3d_pct",
+                                        "avg_turnover_5d_pct",
+                                        "avg_turnover_10d_pct",
+                                        "avg_turnover_20d_pct",
+                                        "avg_amount_5d",
+                                        "avg_amount_10d",
+                                        "avg_amount_20d"
+                                      ]
+                                    },
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "eq",
+                                        "ne",
+                                        "gt",
+                                        "gte",
+                                        "lt",
+                                        "lte",
+                                        "between"
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    "upper_value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 100,
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "mapping": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "source",
+                                        "quote",
+                                        "reason"
+                                      ],
+                                      "properties": {
+                                        "source": {
+                                          "type": "string",
+                                          "enum": [
+                                            "manual",
+                                            "explicit",
+                                            "default",
+                                            "suggested"
+                                          ]
+                                        },
+                                        "quote": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "source": {
+                        "type": "object"
+                      },
+                      "limitations": {
+                        "type": "array",
+                        "maxItems": 50,
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "sorting": {
+                        "type": "array",
+                        "maxItems": 2,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "field",
+                            "label",
+                            "unit",
+                            "actual",
+                            "result",
+                            "reason",
+                            "dates",
+                            "condition"
+                          ],
+                          "properties": {
+                            "field": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "unit": {
+                              "type": "string"
+                            },
+                            "actual": {
+                              "type": [
+                                "string",
+                                "boolean",
+                                "null"
+                              ]
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reason": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "dates": {
+                              "type": "array",
+                              "maxItems": 121,
+                              "items": {
+                                "type": "string",
+                                "format": "date"
+                              }
+                            },
+                            "condition": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "field",
+                                    "op",
+                                    "value",
+                                    "upper_value",
+                                    "mapping"
+                                  ],
+                                  "properties": {
+                                    "field": {
+                                      "type": "string",
+                                      "enum": [
+                                        "close",
+                                        "turnover_cny",
+                                        "turnover_rate_pct",
+                                        "volume_ratio_5",
+                                        "price_above_ma20",
+                                        "return_1d_pct",
+                                        "return_3d_pct",
+                                        "return_5d_pct",
+                                        "return_10d_pct",
+                                        "return_20d_pct",
+                                        "avg_turnover_3d_pct",
+                                        "avg_turnover_5d_pct",
+                                        "avg_turnover_10d_pct",
+                                        "avg_turnover_20d_pct",
+                                        "avg_amount_5d",
+                                        "avg_amount_10d",
+                                        "avg_amount_20d"
+                                      ]
+                                    },
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "eq",
+                                        "ne",
+                                        "gt",
+                                        "gte",
+                                        "lt",
+                                        "lte",
+                                        "between"
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "maxLength": 100,
+                                      "minLength": 1
+                                    },
+                                    "upper_value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 100,
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "mapping": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "source",
+                                        "quote",
+                                        "reason"
+                                      ],
+                                      "properties": {
+                                        "source": {
+                                          "type": "string",
+                                          "enum": [
+                                            "manual",
+                                            "explicit",
+                                            "default",
+                                            "suggested"
+                                          ]
+                                        },
+                                        "quote": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        },
+                                        "reason": {
+                                          "type": "string",
+                                          "maxLength": 500,
+                                          "minLength": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 20
+                },
+                "unresolved": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 20
+                },
+                "incomplete": {
+                  "type": "boolean"
+                },
+                "limitations": {
+                  "type": "array",
+                  "maxItems": 50,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "output_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenWorkEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "input": {
+  "rule": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "source_text": string;
+  "conditions": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+)[];
+  "combine": "all" | "any";
+  "sort_by": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "descending": boolean;
+  "secondary_sort_by": (
+"close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d"
+) | unknown;
+  "secondary_descending": boolean;
+  "limit": number;
+  "recipe": (
+{
+  "kind": "ma_bullish" | "pullback" | "volume_breakout" | "return_window";
+  "window": number;
+  "minimum_gain": string;
+  "volume_ratio": string;
+  "shrink_ratio": string;
+  "pullback_min": string;
+  "pullback_max": string;
+  "near_high_ratio": string;
+  "exclude_st": boolean;
+  "exclude_suspended": boolean;
+}
+) | unknown;
+  "sort_mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+};
+};
+  "template": {
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "definition_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "kind": unknown;
+  "fields": {
+  "name": string;
+  "description": string;
+  "rule": {
+  "id": string;
+  "version": number;
+  "definition_digest": string;
+};
+  "instrument_ids": string[];
+  "account_id": string | unknown;
+  "enabled": boolean;
+  "tags": string[];
+};
+};
+  "as_of": string;
+  "decision_at": string;
+  "sources": (
+{
+  "instrument": {
+};
+  "snapshot": (
+{
+}
+) | unknown;
+  "security_status": (
+{
+  "as_of": string;
+  "is_st": boolean | unknown;
+  "suspended": boolean | unknown;
+  "source_label": string;
+  "available_at": string;
+}
+) | unknown;
+}
+)[];
+  "algorithm_version": unknown;
+  "digest": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "output": (
+{
+  "algorithm_version": unknown;
+  "input_digest": string;
+  "as_of": string;
+  "decision_at": string;
+  "items": (
+{
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "evaluations": (
+{
+  "instrument_id": string;
+  "code": string;
+  "market": string;
+  "name": string;
+  "status": "matched" | "excluded" | "unknown";
+  "values": {
+  [key: string]: string | boolean | null;
+};
+  "details": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+  "source": {
+};
+  "limitations": string[];
+  "sorting": (
+{
+  "field": string;
+  "label": string;
+  "unit": string;
+  "actual": string | boolean | null;
+  "result": boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "condition": (
+{
+  "field": "close" | "turnover_cny" | "turnover_rate_pct" | "volume_ratio_5" | "price_above_ma20" | "return_1d_pct" | "return_3d_pct" | "return_5d_pct" | "return_10d_pct" | "return_20d_pct" | "avg_turnover_3d_pct" | "avg_turnover_5d_pct" | "avg_turnover_10d_pct" | "avg_turnover_20d_pct" | "avg_amount_5d" | "avg_amount_10d" | "avg_amount_20d";
+  "op": "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "between";
+  "value": string;
+  "upper_value": string | unknown;
+  "mapping": {
+  "source": "manual" | "explicit" | "default" | "suggested";
+  "quote": string;
+  "reason": string;
+};
+}
+) | unknown;
+}
+)[];
+}
+)[];
+  "total": number;
+  "unresolved": number;
+  "incomplete": boolean;
+  "limitations": string[];
+  "output_digest": string;
+}
+) | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentScreenRunPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "status",
+              "attempt",
+              "error_code",
+              "created_at",
+              "updated_at",
+              "template_id",
+              "template_version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "template_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "template_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenRunPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "template_id": string;
+  "template_version": number;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentScreenCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm_version",
+        "fields",
+        "recipes",
+        "limits"
+      ],
+      "properties": {
+        "algorithm_version": {
+          "const": "screen-rational-session-v1"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "unit",
+              "window"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "window": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 121
+              }
+            }
+          }
+        },
+        "recipes": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "enum": [
+              "ma_bullish",
+              "pullback",
+              "volume_breakout",
+              "return_window"
+            ]
+          }
+        },
+        "limits": {
+          "type": "object"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentScreenCatalogEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "algorithm_version": unknown;
+  "fields": {
+  [key: string]: {
+  "label": string;
+  "unit": string;
+  "window": number;
+};
+};
+  "recipes": (
+"ma_bullish" | "pullback" | "volume_breakout" | "return_window"
+)[];
+  "limits": {
+};
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentMaterialWriteSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -85509,6 +97779,38 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentResearchRevision",
   "LightTickInvestmentResearchSummary",
   "LightTickInvestmentResearchWrite",
+  "LightTickInvestmentScreenCancel",
+  "LightTickInvestmentScreenCatalog",
+  "LightTickInvestmentScreenCatalogEnvelope",
+  "LightTickInvestmentScreenCondition",
+  "LightTickInvestmentScreenDefinition",
+  "LightTickInvestmentScreenDefinitionEnvelope",
+  "LightTickInvestmentScreenDefinitionPage",
+  "LightTickInvestmentScreenDefinitionPageEnvelope",
+  "LightTickInvestmentScreenDetail",
+  "LightTickInvestmentScreenEvaluation",
+  "LightTickInvestmentScreenHistory",
+  "LightTickInvestmentScreenHistoryEnvelope",
+  "LightTickInvestmentScreenInput",
+  "LightTickInvestmentScreenMapping",
+  "LightTickInvestmentScreenRecipe",
+  "LightTickInvestmentScreenReport",
+  "LightTickInvestmentScreenRevision",
+  "LightTickInvestmentScreenRuleDefinition",
+  "LightTickInvestmentScreenRuleFields",
+  "LightTickInvestmentScreenRuleReference",
+  "LightTickInvestmentScreenRuleWrite",
+  "LightTickInvestmentScreenRunPage",
+  "LightTickInvestmentScreenRunPageEnvelope",
+  "LightTickInvestmentScreenRunRequest",
+  "LightTickInvestmentScreenSecurityStatus",
+  "LightTickInvestmentScreenSourceSelection",
+  "LightTickInvestmentScreenTemplateDefinition",
+  "LightTickInvestmentScreenTemplateFields",
+  "LightTickInvestmentScreenTemplateWrite",
+  "LightTickInvestmentScreenWork",
+  "LightTickInvestmentScreenWorkEnvelope",
+  "LightTickInvestmentScreenWorkSummary",
   "LightTickKnowledgeEntry",
   "LightTickKnowledgeEntryEnvelope",
   "LightTickKnowledgeHistory",

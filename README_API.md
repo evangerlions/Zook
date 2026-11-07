@@ -1883,3 +1883,17 @@ Canonical `/api/v1/lighttick/investments/materials`，沿用普通用户 LightTi
 研究 AI 创建时同时冻结已选独立资料原文、版本与摘要，支持 `material:{id}:{version}` 引用；仍受原 18000 字节场景输入限制，不静默截断。资料归档后未采用结果不可采用，已确认成果仍保留其冻结历史。资料修订不使旧固定版本变成新版本。
 
 初始容量边界：每 owner 500 份资料、每份最多 100 版本，原文/反证各 12000 字符，定位 1000 字符、标题 200 字符、来源链接 2000 字符。达到边界明确拒绝。本人授权导出在已有有界包内添加非空 `investments.materials`（当前资料、全部版本、原 key/body 回执），同时保留研究关系和确认 AI 成果；没有资料时保持旧空包结构。超出 5000 版本/8 MiB 拒绝完整导出，不返回截断包。平台/产品/全 App 删除共用资料表清单；不把新资料实体放入旧 `sync/pull`，`sync/push` 仍 task-only。
+
+### LightTick 版本化规则、筛选模板与可解释执行
+
+唯一合同 `api-contracts/openapi/lighttick/screening.yaml`，canonical `/api/v1/lighttick/investments/screening`；复用普通 LightTick membership、owner 事务入口、原回执和现有 worker。全部读取 `no-store`，无需资产账户，不进入旧客户端 pull；通用 push 保持 task-only。
+
+- `GET /catalog`：受控字段、单位、窗口、配方、算法和容量。`GET /rules|templates?include_archived=true&cursor=...&limit=1..50`；`GET /{kind}/{id}`、`/{id}/versions/{version}`、`/{id}/history`：活动/历史定义及分页。游标绑定 owner/资源/过滤/目录修订，失效 409，只重建读取，保留本机草稿与原请求。
+- `PUT /rules|templates/{id}`：`Idempotency-Key`、`{base_revision,fields}`，新建 0；同 ID 不可变历史最多 100 修订（含归档恢复），每 kind 最多 200 个，每次正文 16000 字节。规则条件最多 10，有限 17 字段、all/any、精确十进制阈值、主/次排序、20 结果以及四种有限配方；条件与配方同时存在时为 AND。手动/原文明确/默认/建议映射保留引文和解释，原文明确数值、窗口及比较方向必须一致。不调用 AI，不执行任意代码。
+- 模板固定规则 `id/version/definition_digest`、显式 1..20 标的池，可选账户、标签及 enabled。更新规则不会隐式更新模板；新版本须显式选择。`POST /{kind}/{id}/archive|restore` 使用原 key 和 `{base_revision}`；归档/停用阻止新执行及未完成结果发布，保留历史。普通定义编辑不改已冻结执行。标的变更/撤权/相关账户归档阻止迟到结果提交。
+- `POST /runs`：`{template_id,base_revision,as_of,decision_at,sources,consent:true}`；sources 精确覆盖所选池，每项显式 snapshot_id/input_digest 或双 null 表示缺失；可选目标日 ST/停牌事实附来源和可获知时间。数据日期不得晚于决策日，决策/行情/状态可获知时间不得在未来，不自动换快照或供应商。冻结规则/模板/标的、完整行情/交易日历、复权口径、状态、参数与算法 `screen-rational-session-v1` 及摘要。
+- `GET /runs?template_id=...&cursor=...&limit=1..50`、`GET /runs/{id}`、`POST /runs/{id}/cancel`：持久任务、分页摘要、解释结果及 CAS 取消。创建原 key/body 重放返回同一任务的当前状态；取消保留自己的原 key/body。每 owner 活动 1、UTC 日 20、保留 100，冻结输入 2 MiB；30 秒计算/60 秒租约、最多 3 次执行尝试，现有 worker 恢复过期租约。计算在事务外，发布再次校验 owner、上下文和 fence；取消后不接受迟到结果。
+
+报告含全部池的 matched/excluded/unknown、逐条件实际值/单位/交易日期窗口/比较结果、主次排序依据、供应商/适配器/日历/复权/快照摘要及局限。严格按交易日窗口计算，缺数据/交易日历/换手率/零分母/未收盘时明确 unknown，不补零、不当作排除；all/any 使用三值逻辑。内部 BigInt 有理数精确比较和排序，展示截取 28 位小数不回灌计算。无公司行动仍明确 unadjusted，不宣称可交易或回测收益。人工 ST/停牌来源不是已验证交易所事实。
+
+授权 review 导出非空 `investments.screening`：定义、全部版本、原 key/body、完整冻结数据/结果及创建/取消回执，不含 owner 内部字段、租约/fence、密钥；5000 项/8 MiB 超限明确拒绝，不截断。共用 owner 删除覆盖三张新表。此切片不代表旧 AI 解析、全部扩展字段/全市场扫描、预测监控、策略比较、回测和全领域迁移已等价完成。

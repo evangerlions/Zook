@@ -32,3 +32,7 @@ LightTick Android ───┘                   └─ 平台公共能力 + 既
 - [Web规范](specs/grow-native-web/spec.md)、[平台接入规范](specs/grow-platform-services/spec.md)、[同步兼容规范](specs/grow-compatibility-gates/spec.md)。
 
 所有后端遵循 Zook AGENTS/CLAUDE、唯一OpenAPI、文档同轮更新和 main→dev→同SHA online。前端产物与双端合同快照固定版本；原生二进制发布另行验收。本目录与本地忽略的OpenSpec镜像同步，不把规划校验当功能验收。
+
+## 2026-11-07 筛选工程切片
+
+版本化规则/固定引用模板、有限精确计算、持久 worker 和 React 筛选入口的代码已接入，PG/单测通过；浏览器联合验收完成后再更新[子任务](screening-subtasks.md)与主任务增量证据。原 U0/U5 整项仍保持未勾选，当前主任务进度 21/27。此处不替代逐项旧行为、全领域迁移或发布验收。

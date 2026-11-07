@@ -29,6 +29,10 @@
     {
       "path": "test/fixtures/lighttick/other-app-contract-baseline.json",
       "sha256": "75b210c72e6ea2cf7f93f3fe517422ec247662cc8bc25ca978b9980fe9602a01"
+    },
+    {
+      "path": "test/fixtures/lighttick/screening-golden.json",
+      "sha256": "f83cbd71a5b54739d0b74142762459e7002c7a444189bc7d24ea43958d4c1d4e"
     }
   ],
   "unit_groups": [
@@ -89,6 +93,14 @@
         "test/unit/lighttick-materials-ai.test.ts",
         "test/unit/lighttick-materials.api.test.ts"
       ]
+    },
+    {
+      "id": "screening_versioned_exact_explainable_execution",
+      "tests": [
+        "test/unit/lighttick-screening-engine.test.ts",
+        "test/unit/lighttick-screening.test.ts",
+        "test/unit/lighttick-screening.api.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -108,7 +120,8 @@
     "test/integration/lighttick-github-postgres.test.ts",
     "test/integration/lighttick-account-deletion-postgres.test.ts",
     "test/integration/lighttick-research-ai-postgres.test.ts",
-    "test/integration/lighttick-materials-postgres.test.ts"
+    "test/integration/lighttick-materials-postgres.test.ts",
+    "test/integration/lighttick-screening-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",
