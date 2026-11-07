@@ -1,3 +1,7 @@
+import {
+  materialSources,
+  resolveMaterials,
+} from "../materials/material.validation.ts";
 import { InvestmentService, investmentId } from "../investment.service.ts";
 import { researchId, researchInput } from "./research.validation.ts";
 import type { ResearchEntry, ResearchSummary } from "./research.types.ts";
@@ -83,7 +87,19 @@ export class ResearchService extends InvestmentService {
               404,
               "Exact market source is unavailable for this owner and instrument.",
             );
+        const refs =
+          b.material_sources === undefined
+            ? old?.material_sources
+            : materialSources(b.material_sources);
+        if (refs)
+          await resolveMaterials(
+            this.repo,
+            o,
+            refs,
+            old?.material_sources ?? [],
+          );
         const e: ResearchEntry = {
+          ...(refs ? { material_sources: refs } : {}),
           ...fields,
           id,
           request_key: key,

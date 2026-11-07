@@ -1,3 +1,4 @@
+import {exportMaterials} from "./materials/material.export.ts";
 import {exportResearch} from "./research/research.export.ts";
 import {exportMarket} from "./market/market.export.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -50,5 +51,6 @@ export async function exportInvestments(
     }
     ledgers.push({ account_id: a.id, events, receipts });
   }
-  return { instruments, accounts, ledgers, market:await exportMarket(repo,o), research:await exportResearch(repo,o) };
+  const materials=await exportMaterials(repo,o);
+  return { ...(materials.entries.length?{materials}:{}), instruments, accounts, ledgers, market:await exportMarket(repo,o), research:await exportResearch(repo,o) };
 }

@@ -1,6 +1,1115 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickInvestmentMaterialWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "title",
+    "content",
+    "locator",
+    "source_url",
+    "available_at",
+    "contrary_evidence"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 12000,
+      "minLength": 1
+    },
+    "locator": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2000,
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "available_at": {
+      "type": "string",
+      "maxLength": 40,
+      "format": "date-time"
+    },
+    "contrary_evidence": {
+      "type": "string",
+      "maxLength": 12000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialWrite = {
+  "base_revision": number;
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+};
+
+export const LightTickInvestmentMaterialRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialRevision = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentMaterialEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "content",
+    "locator",
+    "source_url",
+    "available_at",
+    "contrary_evidence",
+    "id",
+    "revision",
+    "request_key",
+    "content_digest",
+    "archived",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 12000,
+      "minLength": 1
+    },
+    "locator": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2000,
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "available_at": {
+      "type": "string",
+      "maxLength": 40,
+      "format": "date-time"
+    },
+    "contrary_evidence": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string"
+    },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialEntry = {
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentMaterialSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "title",
+    "content_digest",
+    "archived",
+    "available_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "available_at": {
+      "type": "string",
+      "maxLength": 40,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialSummary = {
+  "id": string;
+  "revision": number;
+  "title": string;
+  "content_digest": string;
+  "archived": boolean;
+  "available_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentMaterialReferenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "research_id",
+    "research_revision",
+    "title",
+    "instrument_id",
+    "archived",
+    "material_version"
+  ],
+  "properties": {
+    "research_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "research_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "title": {
+      "type": "string"
+    },
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "material_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialReference = {
+  "research_id": string;
+  "research_revision": number;
+  "title": string;
+  "instrument_id": string;
+  "archived": boolean;
+  "material_version": number;
+};
+
+export const LightTickInvestmentMaterialPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "title",
+          "content_digest",
+          "archived",
+          "available_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "available_at": {
+            "type": "string",
+            "maxLength": 40,
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "content_digest": string;
+  "archived": boolean;
+  "available_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentMaterialHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "content",
+          "locator",
+          "source_url",
+          "available_at",
+          "contrary_evidence",
+          "id",
+          "revision",
+          "request_key",
+          "content_digest",
+          "archived",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1
+          },
+          "locator": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri",
+                "pattern": "^https?://"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available_at": {
+            "type": "string",
+            "maxLength": 40,
+            "format": "date-time"
+          },
+          "contrary_evidence": {
+            "type": "string",
+            "maxLength": 12000
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "request_key": {
+            "type": "string"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialHistory = {
+  "items": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": number;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentMaterialReferencesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "research_id",
+          "research_revision",
+          "title",
+          "instrument_id",
+          "archived",
+          "material_version"
+        ],
+        "properties": {
+          "research_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "research_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "title": {
+            "type": "string"
+          },
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "material_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialReferences = {
+  "items": (
+{
+  "research_id": string;
+  "research_revision": number;
+  "title": string;
+  "instrument_id": string;
+  "archived": boolean;
+  "material_version": number;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+
+export const LightTickInvestmentMaterialEntryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "content",
+        "locator",
+        "source_url",
+        "available_at",
+        "contrary_evidence",
+        "id",
+        "revision",
+        "request_key",
+        "content_digest",
+        "archived",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 12000,
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000,
+              "format": "uri",
+              "pattern": "^https?://"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "available_at": {
+          "type": "string",
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "contrary_evidence": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string"
+        },
+        "content_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialEntryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentMaterialPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "title",
+              "content_digest",
+              "archived",
+              "available_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "content_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "available_at": {
+                "type": "string",
+                "maxLength": 40,
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "content_digest": string;
+  "archived": boolean;
+  "available_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentMaterialHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "content",
+              "locator",
+              "source_url",
+              "available_at",
+              "contrary_evidence",
+              "id",
+              "revision",
+              "request_key",
+              "content_digest",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 12000,
+                "minLength": 1
+              },
+              "locator": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "format": "uri",
+                    "pattern": "^https?://"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "available_at": {
+                "type": "string",
+                "maxLength": 40,
+                "format": "date-time"
+              },
+              "contrary_evidence": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string"
+              },
+              "content_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": number;
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentMaterialReferencesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "research_id",
+              "research_revision",
+              "title",
+              "instrument_id",
+              "archived",
+              "material_version"
+            ],
+            "properties": {
+              "research_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "research_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "title": {
+                "type": "string"
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "material_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialReferencesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "research_id": string;
+  "research_revision": number;
+  "title": string;
+  "instrument_id": string;
+  "archived": boolean;
+  "material_version": number;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | null;
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentResearchAIRequestSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -126,6 +1235,95 @@ export const LightTickInvestmentResearchAIWorkSchema = {
       "properties": {
         "research": {
           "type": "object"
+        },
+        "materials": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "content",
+              "locator",
+              "source_url",
+              "available_at",
+              "contrary_evidence",
+              "id",
+              "revision",
+              "request_key",
+              "content_digest",
+              "archived",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "content": {
+                "type": "string",
+                "maxLength": 12000,
+                "minLength": 1
+              },
+              "locator": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "format": "uri",
+                    "pattern": "^https?://"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "available_at": {
+                "type": "string",
+                "maxLength": 40,
+                "format": "date-time"
+              },
+              "contrary_evidence": {
+                "type": "string",
+                "maxLength": 12000
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string"
+              },
+              "content_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         },
         "markets": {
           "type": "array",
@@ -281,6 +1479,23 @@ export type LightTickInvestmentResearchAIWork = {
   "input": {
   "research": {
 };
+  "materials"?: (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
   "markets": (
 {
 }
@@ -372,6 +1587,95 @@ export const LightTickInvestmentResearchAIPageSchema = {
             "properties": {
               "research": {
                 "type": "object"
+              },
+              "materials": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "title",
+                    "content",
+                    "locator",
+                    "source_url",
+                    "available_at",
+                    "contrary_evidence",
+                    "id",
+                    "revision",
+                    "request_key",
+                    "content_digest",
+                    "archived",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    },
+                    "content": {
+                      "type": "string",
+                      "maxLength": 12000,
+                      "minLength": 1
+                    },
+                    "locator": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "source_url": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "format": "uri",
+                          "pattern": "^https?://"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "available_at": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time"
+                    },
+                    "contrary_evidence": {
+                      "type": "string",
+                      "maxLength": 12000
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "request_key": {
+                      "type": "string"
+                    },
+                    "content_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
               },
               "markets": {
                 "type": "array",
@@ -538,6 +1842,23 @@ export type LightTickInvestmentResearchAIPage = {
   "input": {
   "research": {
 };
+  "materials"?: (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
   "markets": (
 {
 }
@@ -639,6 +1960,95 @@ export const LightTickInvestmentResearchAIWorkEnvelopeSchema = {
           "properties": {
             "research": {
               "type": "object"
+            },
+            "materials": {
+              "type": "array",
+              "maxItems": 30,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "content",
+                  "locator",
+                  "source_url",
+                  "available_at",
+                  "contrary_evidence",
+                  "id",
+                  "revision",
+                  "request_key",
+                  "content_digest",
+                  "archived",
+                  "created_at",
+                  "updated_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 12000,
+                    "minLength": 1
+                  },
+                  "locator": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "format": "uri",
+                        "pattern": "^https?://"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "available_at": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "format": "date-time"
+                  },
+                  "contrary_evidence": {
+                    "type": "string",
+                    "maxLength": 12000
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string"
+                  },
+                  "content_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
             },
             "markets": {
               "type": "array",
@@ -800,6 +2210,23 @@ export type LightTickInvestmentResearchAIWorkEnvelope = {
   "input": {
   "research": {
 };
+  "materials"?: (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
   "markets": (
 {
 }
@@ -910,6 +2337,95 @@ export const LightTickInvestmentResearchAIPageEnvelopeSchema = {
                 "properties": {
                   "research": {
                     "type": "object"
+                  },
+                  "materials": {
+                    "type": "array",
+                    "maxItems": 30,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "title",
+                        "content",
+                        "locator",
+                        "source_url",
+                        "available_at",
+                        "contrary_evidence",
+                        "id",
+                        "revision",
+                        "request_key",
+                        "content_digest",
+                        "archived",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        },
+                        "content": {
+                          "type": "string",
+                          "maxLength": 12000,
+                          "minLength": 1
+                        },
+                        "locator": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "source_url": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 2000,
+                              "format": "uri",
+                              "pattern": "^https?://"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "available_at": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time"
+                        },
+                        "contrary_evidence": {
+                          "type": "string",
+                          "maxLength": 12000
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "request_key": {
+                          "type": "string"
+                        },
+                        "content_digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "archived": {
+                          "type": "boolean"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
                   },
                   "markets": {
                     "type": "array",
@@ -1082,6 +2598,23 @@ export type LightTickInvestmentResearchAIPageEnvelope = {
   "input": {
   "research": {
 };
+  "materials"?: (
+{
+  "title": string;
+  "content": string;
+  "locator": string;
+  "source_url": string | unknown;
+  "available_at": string;
+  "contrary_evidence": string;
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "content_digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
   "markets": (
 {
 }
@@ -14645,6 +16178,38 @@ export type BodyLogChallengeData = {
 )[];
   "createdAt": string;
   "updatedAt": string;
+};
+
+export const LightTickInvestmentMaterialSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "content_digest"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentMaterialSource = {
+  "id": string;
+  "version": number;
+  "content_digest": string;
 };
 
 export const LightTickManualTaskReferenceSchema = {
@@ -44459,6 +46024,36 @@ export const LightTickInvestmentResearchWriteSchema = {
         }
       }
     },
+    "material_sources": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Exact independent material versions. Omission retains prior references; explicit empty array detaches.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "content_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
     "market_context": {
       "type": "string",
       "maxLength": 12000
@@ -44523,6 +46118,13 @@ export type LightTickInvestmentResearchWrite = {
   "id": string;
   "version": 1;
   "input_digest": string;
+}
+)[];
+  "material_sources"?: (
+{
+  "id": string;
+  "version": number;
+  "content_digest": string;
 }
 )[];
   "market_context": string;
@@ -44693,6 +46295,36 @@ export const LightTickInvestmentResearchEntrySchema = {
         }
       }
     },
+    "material_sources": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Exact independent material versions. Omission retains prior references; explicit empty array detaches.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "content_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
     "market_context": {
       "type": "string",
       "maxLength": 12000
@@ -44770,6 +46402,13 @@ export type LightTickInvestmentResearchEntry = {
   "id": string;
   "version": 1;
   "input_digest": string;
+}
+)[];
+  "material_sources"?: (
+{
+  "id": string;
+  "version": number;
+  "content_digest": string;
 }
 )[];
   "market_context": string;
@@ -45153,6 +46792,36 @@ export const LightTickInvestmentResearchHistorySchema = {
               }
             }
           },
+          "material_sources": {
+            "type": "array",
+            "maxItems": 30,
+            "description": "Exact independent material versions. Omission retains prior references; explicit empty array detaches.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "version",
+                "content_digest"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "content_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          },
           "market_context": {
             "type": "string",
             "maxLength": 12000
@@ -45246,6 +46915,13 @@ export type LightTickInvestmentResearchHistory = {
   "id": string;
   "version": 1;
   "input_digest": string;
+}
+)[];
+  "material_sources"?: (
+{
+  "id": string;
+  "version": number;
+  "content_digest": string;
 }
 )[];
   "market_context": string;
@@ -45442,6 +47118,36 @@ export const LightTickInvestmentResearchEntryEnvelopeSchema = {
             }
           }
         },
+        "material_sources": {
+          "type": "array",
+          "maxItems": 30,
+          "description": "Exact independent material versions. Omission retains prior references; explicit empty array detaches.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "version",
+              "content_digest"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "content_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
         "market_context": {
           "type": "string",
           "maxLength": 12000
@@ -45527,6 +47233,13 @@ export type LightTickInvestmentResearchEntryEnvelope = {
   "id": string;
   "version": 1;
   "input_digest": string;
+}
+)[];
+  "material_sources"?: (
+{
+  "id": string;
+  "version": number;
+  "content_digest": string;
 }
 )[];
   "market_context": string;
@@ -45867,6 +47580,36 @@ export const LightTickInvestmentResearchHistoryEnvelopeSchema = {
                   }
                 }
               },
+              "material_sources": {
+                "type": "array",
+                "maxItems": 30,
+                "description": "Exact independent material versions. Omission retains prior references; explicit empty array detaches.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "version",
+                    "content_digest"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "content_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              },
               "market_context": {
                 "type": "string",
                 "maxLength": 12000
@@ -45968,6 +47711,13 @@ export type LightTickInvestmentResearchHistoryEnvelope = {
   "id": string;
   "version": 1;
   "input_digest": string;
+}
+)[];
+  "material_sources"?: (
+{
+  "id": string;
+  "version": number;
+  "content_digest": string;
 }
 )[];
   "market_context": string;
@@ -83386,6 +85136,19 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentMarketWork",
   "LightTickInvestmentMarketWorkEnvelope",
   "LightTickInvestmentMarketWrite",
+  "LightTickInvestmentMaterialEntry",
+  "LightTickInvestmentMaterialEntryEnvelope",
+  "LightTickInvestmentMaterialHistory",
+  "LightTickInvestmentMaterialHistoryEnvelope",
+  "LightTickInvestmentMaterialPage",
+  "LightTickInvestmentMaterialPageEnvelope",
+  "LightTickInvestmentMaterialReference",
+  "LightTickInvestmentMaterialReferences",
+  "LightTickInvestmentMaterialReferencesEnvelope",
+  "LightTickInvestmentMaterialRevision",
+  "LightTickInvestmentMaterialSource",
+  "LightTickInvestmentMaterialSummary",
+  "LightTickInvestmentMaterialWrite",
   "LightTickInvestmentOpening",
   "LightTickInvestmentResearchAICommand",
   "LightTickInvestmentResearchAIPage",

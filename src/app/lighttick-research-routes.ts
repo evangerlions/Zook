@@ -1,3 +1,4 @@
+import {handleMaterialRequest} from "./lighttick-material-routes.ts";
 import { ResearchService } from "../modules/lighttick/investments/research/research.service.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
@@ -13,6 +14,7 @@ export async function handleResearchRequest(
   r: HttpRequest,
   authorize: () => Promise<void>,
 ) {
+  if(r.path==="/api/v1/lighttick/investments/materials"||r.path.startsWith("/api/v1/lighttick/investments/materials/"))return handleMaterialRequest(repo,o,r,authorize);
   const prefix = "/api/v1/lighttick/investments/research";
   if (r.path !== prefix && !r.path.startsWith(prefix + "/")) return;
   const s = new ResearchService(repo, authorize),

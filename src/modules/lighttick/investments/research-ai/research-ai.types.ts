@@ -13,6 +13,7 @@ export interface ResearchAIWork extends LightTickOwner {
     instrument: InvestmentInstrument;
     research: ResearchEntry;
     markets: MarketSnapshot[];
+    materials?: import("../materials/material.types.ts").Material[];
     model: ModelSelection;
     digest: string;
   };

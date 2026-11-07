@@ -1,3 +1,4 @@
+import {PostgresMaterialStore} from "./postgres-material-store.ts";
 import {PostgresResearchStore} from "./postgres-research-store.ts";
 import {PostgresMarketStore} from "./postgres-market-store.ts";
 import {PostgresInvestmentLedgerStore} from "./postgres-investment-ledger-store.ts";
@@ -21,10 +22,11 @@ const conflict = () => {
   );
 };
 export class PostgresInvestmentStore implements InvestmentRepository {
+  readonly materials:PostgresMaterialStore;
   readonly research:PostgresResearchStore;
   readonly market:PostgresMarketStore;
   readonly ledger:PostgresInvestmentLedgerStore;
-  constructor(readonly query: Query) {this.research=new PostgresResearchStore(query);this.market=new PostgresMarketStore(query);this.ledger=new PostgresInvestmentLedgerStore(query); }
+  constructor(readonly query: Query) {this.materials=new PostgresMaterialStore(query);this.research=new PostgresResearchStore(query);this.market=new PostgresMarketStore(query);this.ledger=new PostgresInvestmentLedgerStore(query); }
   async instrument(o: LightTickOwner, id: string) {
     return (
       await this.query(

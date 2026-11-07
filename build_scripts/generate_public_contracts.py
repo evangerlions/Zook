@@ -10,6 +10,7 @@ import yaml
 
 
 SPECS: dict[str, list[str]] = {
+    "lighttick/materials.yaml": ['LightTickInvestmentMaterialWrite', 'LightTickInvestmentMaterialRevision', 'LightTickInvestmentMaterialEntry', 'LightTickInvestmentMaterialSummary', 'LightTickInvestmentMaterialReference', 'LightTickInvestmentMaterialPage', 'LightTickInvestmentMaterialHistory', 'LightTickInvestmentMaterialReferences', 'LightTickInvestmentMaterialEntryEnvelope', 'LightTickInvestmentMaterialPageEnvelope', 'LightTickInvestmentMaterialHistoryEnvelope', 'LightTickInvestmentMaterialReferencesEnvelope'],
     "lighttick/research-ai.yaml": ['LightTickInvestmentResearchAIRequest', 'LightTickInvestmentResearchAICommand', 'LightTickInvestmentResearchAIWork', 'LightTickInvestmentResearchAIPage', 'LightTickInvestmentResearchAIWorkEnvelope', 'LightTickInvestmentResearchAIPageEnvelope'],
     "lighttick/github-settings.yaml": ['LightTickGitHubSettings', 'LightTickGitHubWrite', 'LightTickGitHubTestWrite', 'LightTickGitHubCancel', 'LightTickGitHubTest', 'LightTickGitHubSettingsEnvelope', 'LightTickGitHubTestEnvelope'],
     "lighttick/personal-model.yaml": ['LightTickPersonalModelSettings', 'LightTickPersonalModelWrite', 'LightTickPersonalModelTestWrite', 'LightTickPersonalModelCancel', 'LightTickPersonalModelTest', 'LightTickPersonalModelSettingsEnvelope', 'LightTickPersonalModelTestEnvelope'],
@@ -166,6 +167,7 @@ SPECS: dict[str, list[str]] = {
         "BodyLogChallengeData",
     ],
     "lighttick/api.yaml": [
+        "LightTickInvestmentMaterialSource",
         'LightTickManualTaskReference',
         'LightTickConfirmedCondition',
         'LightTickDailyLimit',

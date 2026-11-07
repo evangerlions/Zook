@@ -34,6 +34,7 @@ export type ResearchEntry = Record<(typeof researchFields)[number], string> & {
   horizon: "short" | "swing";
   evidence: ResearchEvidence[];
   market_sources: ResearchMarketSource[];
+  material_sources?: import("../materials/material.types.ts").MaterialSource[];
   archived: boolean;
   created_at: string;
   updated_at: string;

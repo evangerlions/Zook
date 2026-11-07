@@ -136,6 +136,9 @@ export class ResearchAIRunner {
             claim.input.research.id +
             ":" +
             claim.input.research.revision,
+          ...(claim.input.materials ?? []).map(
+            (m) => "material:" + m.id + ":" + m.revision,
+          ),
           ...claim.input.research.evidence.map((_, i) => "evidence:" + i),
           ...claim.input.markets.map(
             (m) => "market:" + m.id + ":" + m.revision,

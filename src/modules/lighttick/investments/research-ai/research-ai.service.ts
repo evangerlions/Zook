@@ -1,3 +1,4 @@
+import { resolveMaterials } from "../materials/material.validation.ts";
 import { InvestmentService } from "../investment.service.ts";
 import type { LightTickRepository } from "../../lighttick.repository.ts";
 import type { LightTickOwner } from "../../lighttick.types.ts";
@@ -44,6 +45,12 @@ export class ResearchAIService extends InvestmentService {
       const a = await this.repo.investments.account(o, r.account_id);
       if (!a || a.archived) fail(409, "Research account unavailable");
     }
+    if (w.input.materials?.length)
+      await resolveMaterials(
+        this.repo,
+        o,
+        w.input.research.material_sources ?? [],
+      );
     const model = await captureModel(this.repo, o);
     if (
       model.mode !== w.input.model.mode ||
@@ -104,7 +111,19 @@ export class ResearchAIService extends InvestmentService {
       );
       if (!instrument || instrument.archived)
         fail(409, "Instrument unavailable");
-      const frozen = { scene: RESEARCH_AI_SCENE, instrument, research, markets, model };
+      const materials = await resolveMaterials(
+        this.repo,
+        o,
+        research.material_sources ?? [],
+      );
+      const frozen = {
+        scene: RESEARCH_AI_SCENE,
+        instrument,
+        research,
+        markets,
+        model,
+        ...(materials.length ? { materials } : {}),
+      };
       if (Buffer.byteLength(JSON.stringify(frozen)) > 18000)
         fail(
           413,

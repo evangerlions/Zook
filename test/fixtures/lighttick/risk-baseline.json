@@ -81,6 +81,14 @@
         "test/unit/lighttick-research-ai.api.test.ts",
         "test/unit/lighttick-research.test.ts"
       ]
+    },
+    {
+      "id": "independent_material_versions_and_references",
+      "tests": [
+        "test/unit/lighttick-materials.test.ts",
+        "test/unit/lighttick-materials-ai.test.ts",
+        "test/unit/lighttick-materials.api.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -99,7 +107,8 @@
     "test/integration/lighttick-personal-model-postgres.test.ts",
     "test/integration/lighttick-github-postgres.test.ts",
     "test/integration/lighttick-account-deletion-postgres.test.ts",
-    "test/integration/lighttick-research-ai-postgres.test.ts"
+    "test/integration/lighttick-research-ai-postgres.test.ts",
+    "test/integration/lighttick-materials-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",

@@ -1868,3 +1868,18 @@ Token 只通过服务端独立私有 KV 主密钥和 AES-GCM 保存，绑定 own
 输出包括正文、冻结来源引用、局限、实际 provider/model 和提示版本。未核对资料不自动抓取，来源文字按不可信数据处理，未知引用/新 URL 拒绝。真实质量另验，不将合成响应当作投资判断。崩溃窗口恢复可能重新请求提供商，但不会重复产生分析成果；不宣称提供商计费 exactly-once。
 
 本人授权导出只增加已明确采用的 `research.ai_artifacts`，无成果时保持旧导出结构；包含冻结输入/输出和来源身份，不包含模型密钥、队列租约或 fence。账号/整 App 删除覆盖任务表。旧客户端其他接口形状保持；新页面处理三方版本与原请求，不自动覆盖或重基线。
+
+## LightTick 独立研究资料与版本引用
+
+Canonical `/api/v1/lighttick/investments/materials`，沿用普通用户 LightTick membership 与 owner 身份；响应 `Cache-Control: no-store`。资料不依赖资产账户、标的或研究的生命周期，不自动抓取来源链接。
+
+- `PUT /{id}`：`Idempotency-Key`、`base_revision`（新建 0）及 `title/content/locator/source_url/available_at/contrary_evidence`。原文保留空白与换行，可获知时间必须带时区且不晚于保存时间；新版本不可变，返回独立 ID、`revision` 和正文/来源字段的 `content_digest`。同原 key/body 返回原回执；跨资源/版本复用 key 返回 409。
+- `GET /`：`include_archived=false`、`limit=1..100`、`cursor`，返回摘要页；`GET /{id}` 当前版本；`GET /{id}/versions/{revision}` 精确历史版本；`GET /{id}/history?limit=1..20&cursor=...` 完整历史页。读取始终校验当前 owner 权限；归档版本可回看。
+- `POST /{id}/archive`、`POST /{id}/restore`：原 key＋`base_revision`，产生同 ID 新版本。归档隐藏活动资料并拒绝新增研究引用和新的 AI 任务/采用，保留已有研究和确认成果。恢复不改旧引用；需要显式选择新版本。
+- `GET /{id}/references?limit=1..100&cursor=...`：当前研究头版本的引用清单，含研究 ID/修订/标题/标的/归档状态及所选资料版本；不冒充全部历史入链。历史关系保留于不可变研究版本。列表/历史游标绑定 owner、资源/过滤及快照，变化返回 409，只重建云端读取，保留本机草稿和未决原请求。
+
+研究 `PUT /api/v1/lighttick/investments/research/{id}` 新增可选 `material_sources: [{id,version,content_digest}]`（最多 30 个不同资料 ID）。版本/摘要精确匹配 owner 的历史资料；活动资料可选旧版本，跨研究/标的复用同 ID；旧客户端省略字段时保留已有引用，显式 `[]` 才移除。已归档资料的原引用可原样保留，不允许新增或切换成另一版本。资料改版不自动重写研究或任务。
+
+研究 AI 创建时同时冻结已选独立资料原文、版本与摘要，支持 `material:{id}:{version}` 引用；仍受原 18000 字节场景输入限制，不静默截断。资料归档后未采用结果不可采用，已确认成果仍保留其冻结历史。资料修订不使旧固定版本变成新版本。
+
+初始容量边界：每 owner 500 份资料、每份最多 100 版本，原文/反证各 12000 字符，定位 1000 字符、标题 200 字符、来源链接 2000 字符。达到边界明确拒绝。本人授权导出在已有有界包内添加非空 `investments.materials`（当前资料、全部版本、原 key/body 回执），同时保留研究关系和确认 AI 成果；没有资料时保持旧空包结构。超出 5000 版本/8 MiB 拒绝完整导出，不返回截断包。平台/产品/全 App 删除共用资料表清单；不把新资料实体放入旧 `sync/pull`，`sync/push` 仍 task-only。
