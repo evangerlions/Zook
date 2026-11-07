@@ -3973,7 +3973,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -4021,7 +4023,24 @@
           "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
           "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
         ]
-      }
+      },
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -4029,7 +4048,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -4077,7 +4098,24 @@
           "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
           "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
         ]
-      }
+      },
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -4085,7 +4123,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -4133,7 +4173,24 @@
           "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
           "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
         ]
-      }
+      },
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -6103,7 +6160,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6130,7 +6189,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -6390,7 +6466,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6417,7 +6495,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -6425,7 +6520,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -6452,7 +6549,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "GET",
@@ -12880,7 +12994,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -12928,7 +13044,24 @@
           "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
           "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
         ]
-      }
+      },
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -14438,7 +14571,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -14465,7 +14600,24 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "POST",
@@ -18526,7 +18678,9 @@
       "capability_group": "investment-and-research",
       "target_contract": null,
       "disposition": "unreviewed",
-      "semantic_differences": [],
+      "semantic_differences": [
+        "Independent material identity/version/digest, legacy optional account/instrument scope and period_end, pinned cross-research references, archive/restore and compatible omission verified in synthetic native implementation. No real import, legacy route alias or complete migration/parity claimed."
+      ],
       "acceptance_evidence": [],
       "source_locations": [
         {
@@ -18574,7 +18728,24 @@
           "Separate evidence object identities, cross-dossier reuse, complete relation/receipt migration mapping and reconciliation.",
           "Whole-module synthetic migration, client compatibility and mixed-load performance gates."
         ]
-      }
+      },
+      "implementation_evidence": [
+        {
+          "date": "2026-11-07",
+          "status": "partial_not_parity",
+          "contract": "/api/v1/lighttick/investments/materials",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/materials.md",
+          "tests": [
+            "test/unit/lighttick-materials.test.ts",
+            "test/unit/lighttick-materials.api.test.ts",
+            "test/unit/lighttick-materials-ai.test.ts",
+            "test/integration/lighttick-materials-postgres.test.ts",
+            "test/support/grow_web_materials_acceptance.py",
+            "test/support/grow_web_material_scope_acceptance.py"
+          ]
+        }
+      ]
     },
     {
       "method": "PUT",
