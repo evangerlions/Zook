@@ -9,5 +9,5 @@ export function CreditGrantRecipient({ record }: { record: CreditGrantRecord }) 
     <span className="credit-grant-contact-row"><PhoneOutlined aria-label="手机号" /><span className="credit-grant-contact-value">{record.phone ?? "—"}</span></span>
     <span className="credit-grant-contact-row"><MailOutlined aria-label="邮箱" /><span className="credit-grant-contact-value">{record.email ?? "—"}</span></span>
   </Space>;
-  return <Tooltip title={details}><span tabIndex={0} style={{ cursor: "help", borderBottom: "1px dotted" }}>{record.uid}</span></Tooltip>;
+  return <Tooltip title={details} styles={{ root: { width: "max-content", maxWidth: "calc(100vw - 24px)" }, container: { overflowX: "auto" } }}><span tabIndex={0} style={{ cursor: "help", borderBottom: "1px dotted" }}>{record.uid}</span></Tooltip>;
 }

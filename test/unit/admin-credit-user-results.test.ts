@@ -76,6 +76,10 @@ test("grant recipient tooltip shows recorded contacts and identifies legacy data
     const { CreditGrantRecipient } = await import(pathToFileURL(output).href);
     const record = { uid: "user-1", phone: "+12025550100", email: "person@example.invalid", contactSource: "snapshot" };
     const snapshot = CreditGrantRecipient({ record });
+    assert.equal(snapshot.props.styles.root.width, "max-content");
+    assert.equal(snapshot.props.styles.container.overflowX, "auto");
+    const css = await readFile(new URL("app/components/ai-novel-credits/credit-grant-recipient.css", adminRoot), "utf8");
+    assert.match(css, /white-space:\s*nowrap/);
     const title = renderToStaticMarkup(snapshot.props.title);
     assert.match(title, /\+12025550100/);
     assert.match(title, /person@example\.invalid/);
