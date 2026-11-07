@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Real Chrome on dedicated localhost; synthetic past-clock records are explicit in fixture JSON."""
 import argparse,json,uuid,time,re,hashlib
 from pathlib import Path
@@ -54,4 +55,8 @@ with sync_playwright() as pw:
   page.set_viewport_size({'width':320,'height':900});e.get_by_label('预测反馈复盘正文',exact=True).scroll_into_view_if_needed();page.screenshot(path=str(a.output/'feedback-320.png'));assert errors==[],errors
   (a.output/'result.json').write_text(json.dumps({'passed':True,'served_revision':a.expected_grow_revision,'synthetic_history_clock_declared':True,'prediction_id':newpid,'historical_prediction_id':seed['prediction_id'],'evaluation_id':wid,'feedback_id':fid,'stopped_work_id':checkid,'prediction_loss_exact_original_and_immutable':True,'rapid_mode_switch_drops_stale_read_and_loads_new_scope':True,'server_versioned_reference_adoption':True,'evaluation_loss_original_after_reload':True,'resolved_and_pending_correct_calibration':True,'feedback_versions_and_three_way_CAS':True,'event_read_and_unread_filter':True,'monitor_stop_fences_late_result_and_restore_retains_disabled':True,'offline_and_owner_switch_exact_pending_recovery':True,'authorized_export_original_sources_versions_receipts':True,'widths':[320,375,768,1024],'page_errors':errors},ensure_ascii=False,indent=2))
  except Exception:page.screenshot(path=str(a.output/'failure.png'),full_page=True);raise
- finally:api.dispose();c.close();b.close()
+ finally:
+  # Close the polling page before its context so route callbacks cannot hold teardown.
+  page.close(run_before_unload=False);api.dispose();c.close();b.close()
+ if (a.output/'result.json').exists():
+  result=json.loads((a.output/'result.json').read_text());result['browser_cleanup_completed']=True;(a.output/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('GSTACK_STEP_OK',flush=True)
