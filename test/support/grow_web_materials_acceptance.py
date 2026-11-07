@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 """Real Chrome, explicit localhost synthetic account; no real providers or history."""
-import argparse,json,uuid,hashlib,re
+import argparse,json,uuid,hashlib,re,time
 from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
 p=argparse.ArgumentParser();p.add_argument('--url',required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--account',default='course0@example.com');p.add_argument('--expected-grow-revision',required=True);a=p.parse_args()
 assert a.url.startswith('http://127.0.0.1:') and re.fullmatch(r'course\d+@example.com',a.account);a.output.mkdir(parents=True,exist_ok=True)
 with sync_playwright() as pw:
  b=pw.chromium.launch(channel='chrome',headless=True);c=b.new_context(viewport={'width':1440,'height':1000});page=c.new_page();page.on('dialog',lambda d:d.accept());errors=[];page.on('pageerror',lambda e:errors.append(str(e)));api=pw.request.new_context(base_url=a.url)
+ deadline=time.monotonic()+20
+ while True:
+  try:
+   ready=api.get('/grow/runtime-config.js');assert ready.status==200 and a.expected_grow_revision in ready.text();break
+  except Exception:
+   if time.monotonic()>=deadline:raise
+   time.sleep(.2)
  auth=api.post('/api/v1/auth/login',data={'appId':'lighttick','account':a.account,'password':'Password1234','clientType':'app'}).json()['data'];h={'Authorization':'Bearer '+auth['accessToken'],'X-App-Id':'lighttick'};root='/api/v1/lighttick/investments/';label='独立合成资料 '+uuid.uuid4().hex[:8];original='  Synthetic original\nVerbatim source  '
  def req(path,body=None,method='GET'):
   r=api.fetch(root+path,headers={**h,'Idempotency-Key':str(uuid.uuid4())},method=method,data=body);assert r.status==200,r.text();return r.json()['data']
