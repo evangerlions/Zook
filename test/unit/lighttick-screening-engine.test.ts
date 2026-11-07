@@ -108,6 +108,12 @@ for (const c of golden.recipes)
         makeInput(golden.items[c.item_key], fields, c.request.as_of),
       );
     assert.equal(result.evaluations[0].status, c.expected.status);
+    for (const detail of result.evaluations[0].details)
+      if (
+        typeof detail.actual === "string" &&
+        ["recent_gain", "pullback_range", "window_gain"].includes(detail.field)
+      )
+        assert.equal(detail.unit, "%");
     assert.deepEqual(
       result.evaluations[0].details.map((d) => d.result),
       c.expected.condition_results,

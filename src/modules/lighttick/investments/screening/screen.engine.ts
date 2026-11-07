@@ -24,6 +24,21 @@ import {
   display,
   type Rational,
 } from "./screen.rational.ts";
+const recipeLabels: Record<string, string> = {
+  exclude_is_st: "排除 ST",
+  exclude_suspended: "排除停牌",
+  history: "配方交易日窗口",
+  ma5_gt_ma10_gt_ma20: "MA5 > MA10 > MA20",
+  ma_slopes_positive: "均线斜率为正",
+  recent_gain: "近期价格涨幅",
+  pullback_range: "近5交易日回撤",
+  above_ma20: "收盘不低于 MA20",
+  shrinking_volume: "近3日缩量条件",
+  volume_ratio: "前5交易日放量条件",
+  near_window_high: "接近窗口高点",
+  window_gain: "窗口价格变化",
+  fields: "配方字段有效性",
+};
 const zero = from("0"),
   one = from("1"),
   hundred = from("100");
@@ -293,8 +308,10 @@ function evaluateRecipe(
   ) =>
     details.push({
       field,
-      label: field,
-      unit: "布尔",
+      label: recipeLabels[field] ?? field,
+      unit: ["recent_gain", "pullback_range", "window_gain"].includes(field)
+        ? "%"
+        : "布尔",
       actual,
       result,
       reason: result === null ? reason : null,
