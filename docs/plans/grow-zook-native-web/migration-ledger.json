@@ -7145,7 +7145,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "GET",
@@ -7180,7 +7199,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "GET",
@@ -7215,7 +7253,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "GET",
@@ -7536,7 +7593,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "GET",
@@ -15156,7 +15232,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/backtests",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "POST",
@@ -15913,7 +16008,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "POST",
@@ -15948,7 +16062,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "POST",
@@ -16020,7 +16153,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/backtests",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "POST",
@@ -16056,7 +16208,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/backtests",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "POST",
@@ -16198,7 +16369,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "POST",
@@ -19499,7 +19689,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/strategies",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/strategies.md",
+          "tests": [
+            "test/unit/lighttick-strategies.test.ts",
+            "test/unit/lighttick-strategy-grid.test.ts",
+            "test/unit/lighttick-strategies.api.test.ts",
+            "test/integration/lighttick-strategies-postgres.test.ts",
+            "test/support/grow_web_strategies_acceptance.py",
+            "test/support/grow_web_strategy_boundaries.py",
+            "test/support/grow_web_strategy_read_acceptance.py"
+          ],
+          "limitations": "Only controlled threshold/ma_cross saved-daily SSE/SZSE stock T+1; lifecycle archive/restore only. No arbitrary-code IDE, other templates, minute/multi-instrument/benchmark or full legacy parity certification; owner-stated execution facts not independently verified."
+        }
+      ]
     },
     {
       "method": "PUT",
