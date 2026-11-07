@@ -1,9 +1,11 @@
-import { Alert, Button, Card, Input, InputNumber, Modal, Radio, Space, message } from "antd";
+import { Alert, Button, Card, InputNumber, Modal, Radio, Space, message } from "antd";
 import { useRef, useState } from "react";
 import { ApiError } from "../../lib/admin-api-client";
 import { grantCredits, searchCreditUsers, type CreditUserCandidate, type CreditUserSearchField } from "../../lib/ai-novel-credit-admin-api";
 import { CreditSelectedUser, CreditUserResults } from "./credit-user-results";
 import { CreditGrantPresets } from "./credit-grant-presets";
+import { CreditSearchInput } from "./credit-search-input";
+import { addSearchHistory, loadSearchHistory, saveSearchHistory, searchHistoryStorage } from "./credit-search-history";
 
 type Grant = { uid: string; points: number; idempotencyKey: string };
 const pendingKey = "zook.admin.pending-credit-grant";
@@ -16,7 +18,7 @@ function savePending(value?: Grant) {
   if (value) sessionStorage.setItem(pendingKey, JSON.stringify(value));
   else sessionStorage.removeItem(pendingKey);
 }
-export function CreditGrantForm({ onGranted }: { onGranted: () => void }) {
+export function CreditGrantForm({ onGranted, adminUser }: { onGranted: () => void; adminUser: string }) {
   const [field, setField] = useState<CreditUserSearchField>("uid");
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<CreditUserCandidate[]>([]);
@@ -28,15 +30,18 @@ export function CreditGrantForm({ onGranted }: { onGranted: () => void }) {
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Grant | undefined>(readPending);
+  const [history, setHistory] = useState(() => loadSearchHistory(searchHistoryStorage(), adminUser));
   const generation = useRef(0);
   const confirming = useRef(false);
   function reset() { generation.current++; setUsers([]); setSelected(undefined); setSearched(false); setSearching(false); setTooMany(false); setError(undefined); }
-  async function search() {
+  async function search(value: string) {
     const id = ++generation.current; setSearching(true); setSelected(undefined); setError(undefined); setSearched(false);
     try {
-      const result = await searchCreditUsers(field, query);
+      const result = await searchCreditUsers(field, value);
       if (id !== generation.current) return;
       setUsers(result.users); setTooMany(result.tooMany); setSearched(true);
+      const next = addSearchHistory(history, field, value);
+      setHistory(next); saveSearchHistory(searchHistoryStorage(), adminUser, next);
     } catch (e) { if (id === generation.current) setError(e instanceof Error ? e.message : "查询失败"); }
     finally { if (id === generation.current) setSearching(false); }
   }
@@ -56,7 +61,7 @@ export function CreditGrantForm({ onGranted }: { onGranted: () => void }) {
   return <Card title="发放创作点">
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
       <Radio.Group value={field} disabled={!!pending || busy} onChange={e => { setField(e.target.value); reset(); }} options={[{ label: "UID", value: "uid" }, { label: "手机号", value: "phone" }, { label: "邮箱", value: "email" }]} />
-      <Input.Search aria-label="搜索用户" value={query} disabled={!!pending || busy} loading={searching} onChange={e => { setQuery(e.target.value); reset(); }} onSearch={() => void search()} enterButton="搜索" />
+      <CreditSearchInput value={query} history={history.filter(item => item.field === field).map(item => item.query)} disabled={!!pending || busy} loading={searching} onChange={value => { setQuery(value); reset(); }} onSearch={value => { setQuery(value); void search(value); }} />
       {tooMany && <Alert type="warning" message="匹配用户超过 10 个，请输入更具体的内容。" />}
       {searched && !tooMany && users.length === 0 && <Alert type="info" message="没有匹配的用户。" />}
       {users.length > 0 && <CreditUserResults users={users} selected={selected} disabled={!!pending || busy} onSelect={setSelected} />}

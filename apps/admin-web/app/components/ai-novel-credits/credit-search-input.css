@@ -1,0 +1,9 @@
+.credit-search-history-popup .rc-virtual-list-holder {
+  max-height: 160px !important;
+  overflow-y: auto !important;
+}
+
+.credit-search-history-popup .ant-select-item-option {
+  min-height: 32px;
+  height: 32px;
+}
