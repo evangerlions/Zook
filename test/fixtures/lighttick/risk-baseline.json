@@ -33,6 +33,10 @@
     {
       "path": "test/fixtures/lighttick/screening-golden.json",
       "sha256": "f83cbd71a5b54739d0b74142762459e7002c7a444189bc7d24ea43958d4c1d4e"
+    },
+    {
+      "path": "test/fixtures/lighttick/prediction-monitor-golden.json",
+      "sha256": "912e8d751e211379e767135f3e7d36522975170cdaa49b310a0886d807dc2b2c"
     }
   ],
   "unit_groups": [
@@ -101,6 +105,13 @@
         "test/unit/lighttick-screening.test.ts",
         "test/unit/lighttick-screening.api.test.ts"
       ]
+    },
+    {
+      "id": "immutable_predictions_feedback_daily_monitors",
+      "tests": [
+        "test/unit/lighttick-observations.test.ts",
+        "test/unit/lighttick-observations.api.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -121,7 +132,8 @@
     "test/integration/lighttick-account-deletion-postgres.test.ts",
     "test/integration/lighttick-research-ai-postgres.test.ts",
     "test/integration/lighttick-materials-postgres.test.ts",
-    "test/integration/lighttick-screening-postgres.test.ts"
+    "test/integration/lighttick-screening-postgres.test.ts",
+    "test/integration/lighttick-observations-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",

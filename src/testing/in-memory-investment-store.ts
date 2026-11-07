@@ -1,3 +1,4 @@
+import {InMemoryObservationStore} from "./in-memory-observation-store.ts";
 import {InMemoryScreeningStore} from "./in-memory-screening-store.ts";
 import {InMemoryMaterialStore} from "./in-memory-material-store.ts";
 import {InMemoryResearchStore} from "./in-memory-research-store.ts";
@@ -15,6 +16,7 @@ const key = (o: LightTickOwner, id: string) =>
   prefix = (o: LightTickOwner) =>
     JSON.stringify([o.appId, o.userId]).slice(0, -1) + ",";
 export class InMemoryInvestmentStore implements InvestmentRepository {
+  readonly observations=new InMemoryObservationStore();
   readonly screening=new InMemoryScreeningStore();
   readonly research=new InMemoryResearchStore();
   readonly materials=new InMemoryMaterialStore(this.research);
@@ -84,7 +86,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
   }
   snapshot() {
     return structuredClone({
-      screening:this.screening.snapshot(),
+      observations:this.observations.snapshot(),screening:this.screening.snapshot(),
       materials:this.materials.snapshot(),
       research:this.research.snapshot(),
       market:this.market.state(),
@@ -94,7 +96,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     });
   }
   restore(v: ReturnType<InMemoryInvestmentStore["snapshot"]>) {
-    this.screening.restore(v.screening);
+    this.observations.restore(v.observations);this.screening.restore(v.screening);
     this.materials.restore(v.materials);
     this.research.restore(v.research);
     this.market.restore(v.market);
@@ -103,7 +105,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     this.wallets = new Map(v.wallets);
   }
   deleteOwner(o: LightTickOwner) {
-    this.screening.deleteOwner(o);
+    this.observations.deleteOwner(o);this.screening.deleteOwner(o);
     this.materials.deleteOwner(o);
     this.research.deleteOwner(o);
     this.market.deleteOwner(o);

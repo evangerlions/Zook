@@ -1897,3 +1897,19 @@ Canonical `/api/v1/lighttick/investments/materials`，沿用普通用户 LightTi
 报告含全部池的 matched/excluded/unknown、逐条件实际值/单位/交易日期窗口/比较结果、主次排序依据、供应商/适配器/日历/复权/快照摘要及局限。严格按交易日窗口计算，缺数据/交易日历/换手率/零分母/未收盘时明确 unknown，不补零、不当作排除；all/any 使用三值逻辑。内部 BigInt 有理数精确比较和排序，展示截取 28 位小数不回灌计算。无公司行动仍明确 unadjusted，不宣称可交易或回测收益。人工 ST/停牌来源不是已验证交易所事实。
 
 授权 review 导出非空 `investments.screening`：定义、全部版本、原 key/body、完整冻结数据/结果及创建/取消回执，不含 owner 内部字段、租约/fence、密钥；5000 项/8 MiB 超限明确拒绝，不截断。共用 owner 删除覆盖三张新表。此切片不代表旧 AI 解析、全部扩展字段/全市场扫描、预测监控、策略比较、回测和全领域迁移已等价完成。
+
+### LightTick 预测、复盘反馈与日线监控
+
+唯一合同 `lighttick/observations.yaml`，canonical `/api/v1/lighttick/investments/observations`，普通 LightTick owner/membership、全部读取 no-store，不进入旧 pull；通用 push 保持 task-only，不需要资产账户。
+
+- `GET /catalog` 返回算法/周期/日线条件/供应商选择和容量。`GET /predictions|feedback|monitors|events` 分页 limit1–50，支持 cursor、include_archived、resource_id；事件可 unread。`GET /{kind}/{id}`、`/versions/{version}`、`/history` 保留同 ID 不可变历史。游标绑定 owner/过滤/头修订，失效409，保留草稿和未决原请求。列表/历史省略完整冻结正文，单记录读取保留来源投影，bulk bars 仅完整导出。
+- `PUT /predictions/{id}`：原 Idempotency-Key、`{base_revision:0,consent:true,fields}`。方向 up/down、整数概率0–100或null、理由/反证各4000字、可选账户、明确基准 snapshot_id/input_digest/date 和最多20份固定版本引用。基准必须为登记前最近已完成沪深交易日且当时已可获知。冻结标的、日历、基准价/完整快照、登记时点、原始判断和来源内容；登记后不修改，补充通过 feedback。来源 kind 为 research/material/screen_rule/screen_run，同 owner、精确版本/摘要及匹配账户/标的。`GET /source-preview?kind&id&version&instrument_id&account_id` 返回服务端计算的精确引用及最多4000字摘录，truncated 显式提示；不自动读取外部链接。
+- `POST /predictions/{id}/evaluate`：原 key、base_revision、as_of、decision_at、显式 sources[{id,input_digest}]、corporate_action_review（null或本人声明unchanged/source_label/available_at）、consent:true。冻结1/3/5/10个登记后才开盘的后续交易日、所选日线、当前参考日历、声明/参数/算法 `forecast-daily-rational-v1`。未来未到期pending；缺失/冲突/不完整区间/未确认公司行动为unknown，correct为null，不计命中。原始未复权价格变化可显示，不能代替收益；平价对看涨/看跌均为不正确。本人声明不代表独立核验公司行动。
+- `PUT /feedback/{id}`：原 key、base_revision、consent:true；绑定 prediction_id、成功 evaluation_id、horizon、reflection/learned/next_step。冻结所用预测摘要和核对结果/摘要，保留版本历史；原文空白不裁剪，不自动创建下一步行动。prediction_id 不可改。
+- `PUT /monitors/{id}`：原 key、base_revision、consent:true；固定账户/标的，名称、close/return_1d_pct/volume_ratio_5/price_above_ma20/ma_bullish、比较/精确阈值、明确csv/tushare/eastmoney/tencent、enabled、间隔300–86400秒、冷却60–604800秒。布尔条件使用gte 1；ma_bullish为MA5>MA10>MA20，不额外要求斜率。复用现有worker恢复扫描，不新增定时服务。仅计算已保存日线，不请求供应商；自动选择配置供应商唯一当天快照，多个候选明确unknown，不静默选择或换源。盘中等待15:30上海收盘；非交易日closed。`POST /monitors/{id}/check` 使用原 key、base_revision、consent:true，可明确 snapshot_id/input_digest，否则执行相同唯一来源政策。停止/归档/配置变化/撤权/标的变化阻止迟到结果或事件。`POST /monitors/{id}/stop` CAS/原回执；恢复归档不会自动把已停止监控启用。
+- `GET /work?resource_id&cursor&limit`、`GET /work/{id}`、`POST /work/{id}/cancel`：持久任务、CAS取消/原回执；同创建key/body返回同任务当前状态。owner锁内冻结与发布，计算在事务外；30秒执行/60秒租约，最多3次尝试，过期租约由现有worker恢复。成功检查对监控ID＋配置修订＋来源交易日去重，冷却期明确cooldown，不追发漏过的历史通知。站内事件持久，`POST /events/{id}/read` 使用base_revision/原key，不自动交易、推送或承诺关页通知。
+- `GET /calibration`：只读，每个预测×周期按as_of、decision_at、owner单调登记序号选择最近成功核对；未知/未到期不进入准确率/Brier。概率表示“所声明方向正确”的本人概率，统计不是实盘胜率。读取使用有界SQL投影，不载入历史行情大对象。
+
+当前边界每 owner 预测200/反馈500/监控50/事件1000，资源100修订，任务保留300、UTC日40、活动2、冻结输入2MiB；自动和手动共用任务预算，达到边界明确拒绝/运行时标注，定时检查不保证无限保留。本人授权 review/export 的非空 investments.observations 包含当前记录、全版本、创建/取消/已读/停止的原key/body及完整冻结数据；不含密钥、租约/fence/内部owner。超过5000项/8MiB明确拒绝分块，不截断。共用 owner 删除覆盖三张新表。
+
+私人HTTPS实时报价/Token、成本偏离提醒、全账户盘前盘后简报、旧扩展行为及完整迁移/回退尚未在本切片承接，仍列于U0/U5账本；不以日线监控代签旧功能完整等价或正式发布。

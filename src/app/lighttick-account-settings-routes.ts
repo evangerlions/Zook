@@ -1,3 +1,5 @@
+import {handleObservations} from "./lighttick-observation-routes.ts";
+import type {ObservationWorkService} from "../modules/lighttick/investments/observations/observation.work-service.ts";
 import {handleScreening} from "./lighttick-screening-routes.ts";
 import type {ScreeningService} from "../modules/lighttick/investments/screening/screen.service.ts";
 import { handleResearchAI } from "./lighttick-research-ai-routes.ts";
@@ -10,6 +12,7 @@ import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { HttpRequest } from "../shared/types.ts";
 export async function handleAccountSettingsRequest(
   runtime: {
+    observations?:ObservationWorkService;
     screening?:ScreeningService;
     researchAI?: ResearchAIService;
     personalModel?: PersonalModelService;
@@ -19,6 +22,7 @@ export async function handleAccountSettingsRequest(
   request: HttpRequest,
   authorize: () => Promise<void>,
 ) {
+  if(request.path==="/api/v1/lighttick/investments/observations"||request.path.startsWith("/api/v1/lighttick/investments/observations/"))return handleObservations(runtime,owner,request,authorize);
   if(request.path==="/api/v1/lighttick/investments/screening"||request.path.startsWith("/api/v1/lighttick/investments/screening/"))return handleScreening(runtime,owner,request,authorize);
   if (
     request.path === "/api/v1/lighttick/investments/research-ai" ||

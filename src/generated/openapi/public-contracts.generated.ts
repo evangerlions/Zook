@@ -1,6 +1,7772 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickInvestmentObservationSourceReferenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "version",
+    "digest"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "research",
+        "material",
+        "screen_rule",
+        "screen_run"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationSourceReference = {
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+};
+
+export const LightTickInvestmentObservationBaselineSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "snapshot_id",
+    "input_digest",
+    "date"
+  ],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationBaseline = {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+
+export const LightTickInvestmentObservationPredictionFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "account_id",
+    "direction",
+    "probability",
+    "reason",
+    "counterevidence",
+    "baseline",
+    "references"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "up",
+        "down"
+      ]
+    },
+    "probability": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 4000,
+      "minLength": 1
+    },
+    "counterevidence": {
+      "type": "string",
+      "maxLength": 4000,
+      "minLength": 1
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_id",
+        "input_digest",
+        "date"
+      ],
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "version",
+          "digest"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "research",
+              "material",
+              "screen_rule",
+              "screen_run"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationPredictionFields = {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+
+export const LightTickInvestmentObservationFeedbackFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "prediction_id",
+    "evaluation_id",
+    "horizon",
+    "reflection",
+    "learned",
+    "next_step"
+  ],
+  "properties": {
+    "prediction_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "evaluation_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "horizon": {
+      "type": "integer",
+      "enum": [
+        1,
+        3,
+        5,
+        10
+      ]
+    },
+    "reflection": {
+      "type": "string",
+      "maxLength": 4000,
+      "minLength": 1
+    },
+    "learned": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "next_step": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationFeedbackFields = {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+
+export const LightTickInvestmentObservationMonitorFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "account_id",
+    "name",
+    "field",
+    "op",
+    "threshold",
+    "supplier",
+    "enabled",
+    "interval_seconds",
+    "cooldown_seconds"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "account_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1
+    },
+    "field": {
+      "type": "string",
+      "enum": [
+        "close",
+        "return_1d_pct",
+        "volume_ratio_5",
+        "price_above_ma20",
+        "ma_bullish"
+      ]
+    },
+    "op": {
+      "type": "string",
+      "enum": [
+        "gt",
+        "gte",
+        "lt",
+        "lte"
+      ]
+    },
+    "threshold": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "supplier": {
+      "type": "string",
+      "enum": [
+        "csv",
+        "tushare",
+        "eastmoney",
+        "tencent"
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "interval_seconds": {
+      "type": "integer",
+      "minimum": 300,
+      "maximum": 86400
+    },
+    "cooldown_seconds": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 604800
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationMonitorFields = {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+
+export const LightTickInvestmentObservationEventFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "monitor_id",
+    "monitor_version",
+    "work_id",
+    "observation",
+    "deduplication_key",
+    "read"
+  ],
+  "properties": {
+    "monitor_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "monitor_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "observation": {
+      "type": "object"
+    },
+    "deduplication_key": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "read": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationEventFields = {
+  "monitor_id": string;
+  "monitor_version": number;
+  "work_id": string;
+  "observation": {
+};
+  "deduplication_key": string;
+  "read": boolean;
+};
+
+export const LightTickInvestmentObservationMonitorRuntimeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "next_at",
+    "last_source",
+    "last_triggered_at",
+    "last_work_id"
+  ],
+  "properties": {
+    "next_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_source": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_triggered_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_work_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_error": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationMonitorRuntime = {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+
+export const LightTickInvestmentObservationPredictionsEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "revision",
+    "request_key",
+    "digest",
+    "archived",
+    "created_at",
+    "updated_at",
+    "fields"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "predictions"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "account_id",
+        "direction",
+        "probability",
+        "reason",
+        "counterevidence",
+        "baseline",
+        "references"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "up",
+            "down"
+          ]
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        },
+        "counterevidence": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "snapshot_id",
+            "input_digest",
+            "date"
+          ],
+          "properties": {
+            "snapshot_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "version",
+              "digest"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "research",
+                  "material",
+                  "screen_rule",
+                  "screen_run"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "frozen": {
+      "type": "object"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_at",
+        "last_source",
+        "last_triggered_at",
+        "last_work_id"
+      ],
+      "properties": {
+        "next_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_source": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_triggered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_work_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationPredictionsEntry = {
+  "kind": "predictions";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+};
+
+export const LightTickInvestmentObservationPredictionsWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "fields",
+    "consent"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "account_id",
+        "direction",
+        "probability",
+        "reason",
+        "counterevidence",
+        "baseline",
+        "references"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "up",
+            "down"
+          ]
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        },
+        "counterevidence": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "snapshot_id",
+            "input_digest",
+            "date"
+          ],
+          "properties": {
+            "snapshot_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "version",
+              "digest"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "research",
+                  "material",
+                  "screen_rule",
+                  "screen_run"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "consent": {
+      "const": true,
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationPredictionsWrite = {
+  "base_revision": number;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+  "consent": boolean;
+};
+
+export const LightTickInvestmentObservationFeedbackEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "revision",
+    "request_key",
+    "digest",
+    "archived",
+    "created_at",
+    "updated_at",
+    "fields"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "feedback"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prediction_id",
+        "evaluation_id",
+        "horizon",
+        "reflection",
+        "learned",
+        "next_step"
+      ],
+      "properties": {
+        "prediction_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "evaluation_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "horizon": {
+          "type": "integer",
+          "enum": [
+            1,
+            3,
+            5,
+            10
+          ]
+        },
+        "reflection": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        },
+        "learned": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "next_step": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "frozen": {
+      "type": "object"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_at",
+        "last_source",
+        "last_triggered_at",
+        "last_work_id"
+      ],
+      "properties": {
+        "next_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_source": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_triggered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_work_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationFeedbackEntry = {
+  "kind": "feedback";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+};
+
+export const LightTickInvestmentObservationFeedbackWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "fields",
+    "consent"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prediction_id",
+        "evaluation_id",
+        "horizon",
+        "reflection",
+        "learned",
+        "next_step"
+      ],
+      "properties": {
+        "prediction_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "evaluation_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "horizon": {
+          "type": "integer",
+          "enum": [
+            1,
+            3,
+            5,
+            10
+          ]
+        },
+        "reflection": {
+          "type": "string",
+          "maxLength": 4000,
+          "minLength": 1
+        },
+        "learned": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "next_step": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "consent": {
+      "const": true,
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationFeedbackWrite = {
+  "base_revision": number;
+  "fields": {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+  "consent": boolean;
+};
+
+export const LightTickInvestmentObservationMonitorsEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "revision",
+    "request_key",
+    "digest",
+    "archived",
+    "created_at",
+    "updated_at",
+    "fields"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "monitors"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "account_id",
+        "name",
+        "field",
+        "op",
+        "threshold",
+        "supplier",
+        "enabled",
+        "interval_seconds",
+        "cooldown_seconds"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "field": {
+          "type": "string",
+          "enum": [
+            "close",
+            "return_1d_pct",
+            "volume_ratio_5",
+            "price_above_ma20",
+            "ma_bullish"
+          ]
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "gt",
+            "gte",
+            "lt",
+            "lte"
+          ]
+        },
+        "threshold": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "csv",
+            "tushare",
+            "eastmoney",
+            "tencent"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval_seconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 86400
+        },
+        "cooldown_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 604800
+        }
+      }
+    },
+    "frozen": {
+      "type": "object"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_at",
+        "last_source",
+        "last_triggered_at",
+        "last_work_id"
+      ],
+      "properties": {
+        "next_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_source": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_triggered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_work_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationMonitorsEntry = {
+  "kind": "monitors";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+};
+
+export const LightTickInvestmentObservationMonitorsWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "fields",
+    "consent"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instrument_id",
+        "account_id",
+        "name",
+        "field",
+        "op",
+        "threshold",
+        "supplier",
+        "enabled",
+        "interval_seconds",
+        "cooldown_seconds"
+      ],
+      "properties": {
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "account_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "field": {
+          "type": "string",
+          "enum": [
+            "close",
+            "return_1d_pct",
+            "volume_ratio_5",
+            "price_above_ma20",
+            "ma_bullish"
+          ]
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "gt",
+            "gte",
+            "lt",
+            "lte"
+          ]
+        },
+        "threshold": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "supplier": {
+          "type": "string",
+          "enum": [
+            "csv",
+            "tushare",
+            "eastmoney",
+            "tencent"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval_seconds": {
+          "type": "integer",
+          "minimum": 300,
+          "maximum": 86400
+        },
+        "cooldown_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 604800
+        }
+      }
+    },
+    "consent": {
+      "const": true,
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationMonitorsWrite = {
+  "base_revision": number;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+  "consent": boolean;
+};
+
+export const LightTickInvestmentObservationEventsEntrySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "revision",
+    "request_key",
+    "digest",
+    "archived",
+    "created_at",
+    "updated_at",
+    "fields"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "events"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monitor_id",
+        "monitor_version",
+        "work_id",
+        "observation",
+        "deduplication_key",
+        "read"
+      ],
+      "properties": {
+        "monitor_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "monitor_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "work_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "observation": {
+          "type": "object"
+        },
+        "deduplication_key": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "read": {
+          "type": "boolean"
+        }
+      }
+    },
+    "frozen": {
+      "type": "object"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_at",
+        "last_source",
+        "last_triggered_at",
+        "last_work_id"
+      ],
+      "properties": {
+        "next_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_source": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_triggered_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_work_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationEventsEntry = {
+  "kind": "events";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "monitor_id": string;
+  "monitor_version": number;
+  "work_id": string;
+  "observation": {
+};
+  "deduplication_key": string;
+  "read": boolean;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+};
+
+export const LightTickInvestmentObservationEntrySchema = {
+  "anyOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "request_key",
+        "digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "fields"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "predictions"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instrument_id",
+            "account_id",
+            "direction",
+            "probability",
+            "reason",
+            "counterevidence",
+            "baseline",
+            "references"
+          ],
+          "properties": {
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "account_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "up",
+                "down"
+              ]
+            },
+            "probability": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "counterevidence": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "snapshot_id",
+                "input_digest",
+                "date"
+              ],
+              "properties": {
+                "snapshot_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            },
+            "references": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "id",
+                  "version",
+                  "digest"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "research",
+                      "material",
+                      "screen_rule",
+                      "screen_run"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "frozen": {
+          "type": "object"
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "next_at",
+            "last_source",
+            "last_triggered_at",
+            "last_work_id"
+          ],
+          "properties": {
+            "next_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "last_source": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_triggered_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_work_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_error": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "request_key",
+        "digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "fields"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "feedback"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prediction_id",
+            "evaluation_id",
+            "horizon",
+            "reflection",
+            "learned",
+            "next_step"
+          ],
+          "properties": {
+            "prediction_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "evaluation_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "horizon": {
+              "type": "integer",
+              "enum": [
+                1,
+                3,
+                5,
+                10
+              ]
+            },
+            "reflection": {
+              "type": "string",
+              "maxLength": 4000,
+              "minLength": 1
+            },
+            "learned": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "next_step": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          }
+        },
+        "frozen": {
+          "type": "object"
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "next_at",
+            "last_source",
+            "last_triggered_at",
+            "last_work_id"
+          ],
+          "properties": {
+            "next_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "last_source": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_triggered_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_work_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_error": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "request_key",
+        "digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "fields"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "monitors"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instrument_id",
+            "account_id",
+            "name",
+            "field",
+            "op",
+            "threshold",
+            "supplier",
+            "enabled",
+            "interval_seconds",
+            "cooldown_seconds"
+          ],
+          "properties": {
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "account_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "field": {
+              "type": "string",
+              "enum": [
+                "close",
+                "return_1d_pct",
+                "volume_ratio_5",
+                "price_above_ma20",
+                "ma_bullish"
+              ]
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "gt",
+                "gte",
+                "lt",
+                "lte"
+              ]
+            },
+            "threshold": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "supplier": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "tushare",
+                "eastmoney",
+                "tencent"
+              ]
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "interval_seconds": {
+              "type": "integer",
+              "minimum": 300,
+              "maximum": 86400
+            },
+            "cooldown_seconds": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 604800
+            }
+          }
+        },
+        "frozen": {
+          "type": "object"
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "next_at",
+            "last_source",
+            "last_triggered_at",
+            "last_work_id"
+          ],
+          "properties": {
+            "next_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "last_source": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_triggered_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_work_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_error": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "request_key",
+        "digest",
+        "archived",
+        "created_at",
+        "updated_at",
+        "fields"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "events"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "monitor_id",
+            "monitor_version",
+            "work_id",
+            "observation",
+            "deduplication_key",
+            "read"
+          ],
+          "properties": {
+            "monitor_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "monitor_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "work_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "observation": {
+              "type": "object"
+            },
+            "deduplication_key": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "read": {
+              "type": "boolean"
+            }
+          }
+        },
+        "frozen": {
+          "type": "object"
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "next_at",
+            "last_source",
+            "last_triggered_at",
+            "last_work_id"
+          ],
+          "properties": {
+            "next_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "last_source": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_triggered_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_work_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "last_error": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentObservationEntry = (
+{
+  "kind": "predictions";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "feedback";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "monitors";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "events";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "monitor_id": string;
+  "monitor_version": number;
+  "work_id": string;
+  "observation": {
+};
+  "deduplication_key": string;
+  "read": boolean;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+);
+
+export const LightTickInvestmentObservationPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "revision",
+              "request_key",
+              "digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "fields"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "predictions"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "account_id",
+                  "direction",
+                  "probability",
+                  "reason",
+                  "counterevidence",
+                  "baseline",
+                  "references"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "account_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "up",
+                      "down"
+                    ]
+                  },
+                  "probability": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "minLength": 1
+                  },
+                  "counterevidence": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "minLength": 1
+                  },
+                  "baseline": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "snapshot_id",
+                      "input_digest",
+                      "date"
+                    ],
+                    "properties": {
+                      "snapshot_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "input_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    }
+                  },
+                  "references": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "id",
+                        "version",
+                        "digest"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "research",
+                            "material",
+                            "screen_rule",
+                            "screen_run"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "frozen": {
+                "type": "object"
+              },
+              "runtime": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "next_at",
+                  "last_source",
+                  "last_triggered_at",
+                  "last_work_id"
+                ],
+                "properties": {
+                  "next_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_triggered_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_work_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_error": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "revision",
+              "request_key",
+              "digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "fields"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "feedback"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "prediction_id",
+                  "evaluation_id",
+                  "horizon",
+                  "reflection",
+                  "learned",
+                  "next_step"
+                ],
+                "properties": {
+                  "prediction_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "evaluation_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "horizon": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      3,
+                      5,
+                      10
+                    ]
+                  },
+                  "reflection": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "minLength": 1
+                  },
+                  "learned": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "next_step": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                }
+              },
+              "frozen": {
+                "type": "object"
+              },
+              "runtime": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "next_at",
+                  "last_source",
+                  "last_triggered_at",
+                  "last_work_id"
+                ],
+                "properties": {
+                  "next_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_triggered_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_work_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_error": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "revision",
+              "request_key",
+              "digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "fields"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "monitors"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "account_id",
+                  "name",
+                  "field",
+                  "op",
+                  "threshold",
+                  "supplier",
+                  "enabled",
+                  "interval_seconds",
+                  "cooldown_seconds"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "account_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                  },
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "close",
+                      "return_1d_pct",
+                      "volume_ratio_5",
+                      "price_above_ma20",
+                      "ma_bullish"
+                    ]
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte"
+                    ]
+                  },
+                  "threshold": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "supplier": {
+                    "type": "string",
+                    "enum": [
+                      "csv",
+                      "tushare",
+                      "eastmoney",
+                      "tencent"
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "interval_seconds": {
+                    "type": "integer",
+                    "minimum": 300,
+                    "maximum": 86400
+                  },
+                  "cooldown_seconds": {
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 604800
+                  }
+                }
+              },
+              "frozen": {
+                "type": "object"
+              },
+              "runtime": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "next_at",
+                  "last_source",
+                  "last_triggered_at",
+                  "last_work_id"
+                ],
+                "properties": {
+                  "next_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_triggered_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_work_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_error": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "revision",
+              "request_key",
+              "digest",
+              "archived",
+              "created_at",
+              "updated_at",
+              "fields"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "events"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "request_key": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "monitor_id",
+                  "monitor_version",
+                  "work_id",
+                  "observation",
+                  "deduplication_key",
+                  "read"
+                ],
+                "properties": {
+                  "monitor_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "monitor_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "work_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "observation": {
+                    "type": "object"
+                  },
+                  "deduplication_key": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "read": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "frozen": {
+                "type": "object"
+              },
+              "runtime": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "next_at",
+                  "last_source",
+                  "last_triggered_at",
+                  "last_work_id"
+                ],
+                "properties": {
+                  "next_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "last_source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_triggered_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_work_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "last_error": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "revision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      ]
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationPage = {
+  "items": (
+(
+{
+  "kind": "predictions";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "feedback";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "monitors";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "events";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "monitor_id": string;
+  "monitor_version": number;
+  "work_id": string;
+  "observation": {
+};
+  "deduplication_key": string;
+  "read": boolean;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+)
+)[];
+  "revision": string | number;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentObservationRevisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationRevision = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentObservationCancelSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCancel = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentObservationCorporateActionReviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "unchanged",
+    "source_label",
+    "available_at"
+  ],
+  "properties": {
+    "unchanged": {
+      "type": "boolean"
+    },
+    "source_label": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 1
+    },
+    "available_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCorporateActionReview = {
+  "unchanged": boolean;
+  "source_label": string;
+  "available_at": string;
+};
+
+export const LightTickInvestmentObservationSnapshotSelectionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "input_digest"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationSnapshotSelection = {
+  "id": string;
+  "input_digest": string;
+};
+
+export const LightTickInvestmentObservationEvaluationRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "as_of",
+    "decision_at",
+    "sources",
+    "corporate_action_review",
+    "consent"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "decision_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "input_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "input_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "corporate_action_review": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unchanged",
+            "source_label",
+            "available_at"
+          ],
+          "properties": {
+            "unchanged": {
+              "type": "boolean"
+            },
+            "source_label": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "available_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "consent": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationEvaluationRequest = {
+  "base_revision": number;
+  "as_of": string;
+  "decision_at": string;
+  "sources": (
+{
+  "id": string;
+  "input_digest": string;
+}
+)[];
+  "corporate_action_review": (
+{
+  "unchanged": boolean;
+  "source_label": string;
+  "available_at": string;
+}
+) | unknown;
+  "consent": boolean;
+};
+
+export const LightTickInvestmentObservationCheckRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "consent"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "input_digest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "consent": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCheckRequest = {
+  "base_revision": number;
+  "snapshot_id"?: string | unknown;
+  "input_digest"?: string | unknown;
+  "consent": boolean;
+};
+
+export const LightTickInvestmentObservationOutcomeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "horizon",
+    "state",
+    "target_date",
+    "price",
+    "raw_return_pct",
+    "correct",
+    "reason",
+    "source_ids",
+    "dates"
+  ],
+  "properties": {
+    "horizon": {
+      "type": "integer",
+      "enum": [
+        1,
+        3,
+        5,
+        10
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "unknown",
+        "resolved"
+      ]
+    },
+    "target_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "price": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "raw_return_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "correct": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_ids": {
+      "type": "array",
+      "maxItems": 21,
+      "items": {
+        "type": "string",
+        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+      }
+    },
+    "dates": {
+      "type": "array",
+      "maxItems": 80,
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationOutcome = {
+  "horizon": 1 | 3 | 5 | 10;
+  "state": "pending" | "unknown" | "resolved";
+  "target_date": string | unknown;
+  "price": string | unknown;
+  "raw_return_pct": string | unknown;
+  "correct": boolean | unknown;
+  "reason": string | unknown;
+  "source_ids": string[];
+  "dates": string[];
+};
+
+export const LightTickInvestmentObservationEvaluationReportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "outcomes",
+    "input_digest",
+    "output_digest",
+    "limitations"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "evaluation"
+      ]
+    },
+    "outcomes": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "horizon",
+          "state",
+          "target_date",
+          "price",
+          "raw_return_pct",
+          "correct",
+          "reason",
+          "source_ids",
+          "dates"
+        ],
+        "properties": {
+          "horizon": {
+            "type": "integer",
+            "enum": [
+              1,
+              3,
+              5,
+              10
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "unknown",
+              "resolved"
+            ]
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "raw_return_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "correct": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "maxItems": 21,
+            "items": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            }
+          },
+          "dates": {
+            "type": "array",
+            "maxItems": 80,
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      }
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "output_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "maxLength": 1000
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationEvaluationReport = {
+  "kind": "evaluation";
+  "outcomes": (
+{
+  "horizon": 1 | 3 | 5 | 10;
+  "state": "pending" | "unknown" | "resolved";
+  "target_date": string | unknown;
+  "price": string | unknown;
+  "raw_return_pct": string | unknown;
+  "correct": boolean | unknown;
+  "reason": string | unknown;
+  "source_ids": string[];
+  "dates": string[];
+}
+)[];
+  "input_digest": string;
+  "output_digest": string;
+  "limitations": string[];
+};
+
+export const LightTickInvestmentObservationCheckReportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "state",
+    "actual",
+    "reason",
+    "dates",
+    "source_time",
+    "input_digest",
+    "output_digest",
+    "limitations",
+    "source"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "check"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "triggered",
+        "not_met",
+        "unknown",
+        "closed",
+        "waiting_for_close"
+      ]
+    },
+    "actual": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dates": {
+      "type": "array",
+      "maxItems": 80,
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    "source_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "output_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "maxLength": 1000
+      }
+    },
+    "source": {
+      "type": "object"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCheckReport = {
+  "kind": "check";
+  "state": "triggered" | "not_met" | "unknown" | "closed" | "waiting_for_close";
+  "actual": string | boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "source_time": string | unknown;
+  "input_digest": string;
+  "output_digest": string;
+  "limitations": string[];
+  "source": {
+};
+};
+
+export const LightTickInvestmentObservationWorkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "sequence",
+    "kind",
+    "revision",
+    "resource_id",
+    "request_key",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "output",
+    "event_id",
+    "event_disposition",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "evaluation",
+        "check"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "resource_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "request_key": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "input": {
+      "type": "object"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "outcomes",
+            "input_digest",
+            "output_digest",
+            "limitations"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "evaluation"
+              ]
+            },
+            "outcomes": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "horizon",
+                  "state",
+                  "target_date",
+                  "price",
+                  "raw_return_pct",
+                  "correct",
+                  "reason",
+                  "source_ids",
+                  "dates"
+                ],
+                "properties": {
+                  "horizon": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      3,
+                      5,
+                      10
+                    ]
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "unknown",
+                      "resolved"
+                    ]
+                  },
+                  "target_date": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "price": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "raw_return_pct": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "correct": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source_ids": {
+                    "type": "array",
+                    "maxItems": 21,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    }
+                  },
+                  "dates": {
+                    "type": "array",
+                    "maxItems": 80,
+                    "items": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                }
+              }
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "output_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "state",
+            "actual",
+            "reason",
+            "dates",
+            "source_time",
+            "input_digest",
+            "output_digest",
+            "limitations",
+            "source"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "check"
+              ]
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "triggered",
+                "not_met",
+                "unknown",
+                "closed",
+                "waiting_for_close"
+              ]
+            },
+            "actual": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "dates": {
+              "type": "array",
+              "maxItems": 80,
+              "items": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "source_time": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "output_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "limitations": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "source": {
+              "type": "object"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "event_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "event_disposition": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "created",
+            "duplicate",
+            "cooldown",
+            "not_triggered"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationWork = {
+  "id": string;
+  "sequence": number;
+  "kind": "evaluation" | "check";
+  "revision": number;
+  "resource_id": string;
+  "request_key": string;
+  "input": {
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "output": (
+{
+  "kind": "evaluation";
+  "outcomes": (
+{
+  "horizon": 1 | 3 | 5 | 10;
+  "state": "pending" | "unknown" | "resolved";
+  "target_date": string | unknown;
+  "price": string | unknown;
+  "raw_return_pct": string | unknown;
+  "correct": boolean | unknown;
+  "reason": string | unknown;
+  "source_ids": string[];
+  "dates": string[];
+}
+)[];
+  "input_digest": string;
+  "output_digest": string;
+  "limitations": string[];
+}
+) | (
+{
+  "kind": "check";
+  "state": "triggered" | "not_met" | "unknown" | "closed" | "waiting_for_close";
+  "actual": string | boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "source_time": string | unknown;
+  "input_digest": string;
+  "output_digest": string;
+  "limitations": string[];
+  "source": {
+};
+}
+) | unknown;
+  "event_id": string | unknown;
+  "event_disposition": (
+"created" | "duplicate" | "cooldown" | "not_triggered"
+) | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentObservationWorkSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "sequence",
+    "kind",
+    "revision",
+    "resource_id",
+    "status",
+    "attempt",
+    "error_code",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "evaluation",
+        "check"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483646
+    },
+    "resource_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationWorkSummary = {
+  "id": string;
+  "sequence": number;
+  "kind": "evaluation" | "check";
+  "revision": number;
+  "resource_id": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickInvestmentObservationWorkPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sequence",
+          "kind",
+          "revision",
+          "resource_id",
+          "status",
+          "attempt",
+          "error_code",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 300
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "evaluation",
+              "check"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483646
+          },
+          "resource_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationWorkPage = {
+  "items": (
+{
+  "id": string;
+  "sequence": number;
+  "kind": "evaluation" | "check";
+  "revision": number;
+  "resource_id": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentObservationCalibrationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "resolved",
+    "unresolved",
+    "correct",
+    "accuracy",
+    "probability_samples",
+    "brier_score",
+    "scope",
+    "read_only"
+  ],
+  "properties": {
+    "resolved": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "unresolved": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "correct": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "accuracy": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "probability_samples": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "brier_score": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "read_only": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCalibration = {
+  "resolved": number;
+  "unresolved": number;
+  "correct": number;
+  "accuracy": string | unknown;
+  "probability_samples": number;
+  "brier_score": string | unknown;
+  "scope": string;
+  "read_only": boolean;
+};
+
+export const LightTickInvestmentObservationCatalogSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm_version",
+    "horizons",
+    "monitor_fields",
+    "source_policy",
+    "limits"
+  ],
+  "properties": {
+    "algorithm_version": {
+      "type": "string",
+      "enum": [
+        "forecast-daily-rational-v1"
+      ]
+    },
+    "horizons": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10
+      }
+    },
+    "monitor_fields": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "maxLength": 100
+      }
+    },
+    "source_policy": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000000
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCatalog = {
+  "algorithm_version": "forecast-daily-rational-v1";
+  "horizons": number[];
+  "monitor_fields": string[];
+  "source_policy": string;
+  "limits": {
+  [key: string]: number;
+};
+};
+
+export const LightTickInvestmentObservationEntryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "revision",
+            "request_key",
+            "digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "predictions"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "instrument_id",
+                "account_id",
+                "direction",
+                "probability",
+                "reason",
+                "counterevidence",
+                "baseline",
+                "references"
+              ],
+              "properties": {
+                "instrument_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "account_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "up",
+                    "down"
+                  ]
+                },
+                "probability": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "maxLength": 4000,
+                  "minLength": 1
+                },
+                "counterevidence": {
+                  "type": "string",
+                  "maxLength": 4000,
+                  "minLength": 1
+                },
+                "baseline": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "snapshot_id",
+                    "input_digest",
+                    "date"
+                  ],
+                  "properties": {
+                    "snapshot_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    }
+                  }
+                },
+                "references": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "id",
+                      "version",
+                      "digest"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "research",
+                          "material",
+                          "screen_rule",
+                          "screen_run"
+                        ]
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "frozen": {
+              "type": "object"
+            },
+            "runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "next_at",
+                "last_source",
+                "last_triggered_at",
+                "last_work_id"
+              ],
+              "properties": {
+                "next_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_source": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_triggered_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_work_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_error": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "revision",
+            "request_key",
+            "digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "feedback"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "prediction_id",
+                "evaluation_id",
+                "horizon",
+                "reflection",
+                "learned",
+                "next_step"
+              ],
+              "properties": {
+                "prediction_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "evaluation_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "horizon": {
+                  "type": "integer",
+                  "enum": [
+                    1,
+                    3,
+                    5,
+                    10
+                  ]
+                },
+                "reflection": {
+                  "type": "string",
+                  "maxLength": 4000,
+                  "minLength": 1
+                },
+                "learned": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "next_step": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              }
+            },
+            "frozen": {
+              "type": "object"
+            },
+            "runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "next_at",
+                "last_source",
+                "last_triggered_at",
+                "last_work_id"
+              ],
+              "properties": {
+                "next_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_source": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_triggered_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_work_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_error": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "revision",
+            "request_key",
+            "digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "monitors"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "instrument_id",
+                "account_id",
+                "name",
+                "field",
+                "op",
+                "threshold",
+                "supplier",
+                "enabled",
+                "interval_seconds",
+                "cooldown_seconds"
+              ],
+              "properties": {
+                "instrument_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "account_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 100,
+                  "minLength": 1
+                },
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "close",
+                    "return_1d_pct",
+                    "volume_ratio_5",
+                    "price_above_ma20",
+                    "ma_bullish"
+                  ]
+                },
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "gt",
+                    "gte",
+                    "lt",
+                    "lte"
+                  ]
+                },
+                "threshold": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "supplier": {
+                  "type": "string",
+                  "enum": [
+                    "csv",
+                    "tushare",
+                    "eastmoney",
+                    "tencent"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "interval_seconds": {
+                  "type": "integer",
+                  "minimum": 300,
+                  "maximum": 86400
+                },
+                "cooldown_seconds": {
+                  "type": "integer",
+                  "minimum": 60,
+                  "maximum": 604800
+                }
+              }
+            },
+            "frozen": {
+              "type": "object"
+            },
+            "runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "next_at",
+                "last_source",
+                "last_triggered_at",
+                "last_work_id"
+              ],
+              "properties": {
+                "next_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_source": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_triggered_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_work_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_error": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "revision",
+            "request_key",
+            "digest",
+            "archived",
+            "created_at",
+            "updated_at",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "events"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "request_key": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "archived": {
+              "type": "boolean"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "monitor_id",
+                "monitor_version",
+                "work_id",
+                "observation",
+                "deduplication_key",
+                "read"
+              ],
+              "properties": {
+                "monitor_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "monitor_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "work_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "observation": {
+                  "type": "object"
+                },
+                "deduplication_key": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "read": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "frozen": {
+              "type": "object"
+            },
+            "runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "next_at",
+                "last_source",
+                "last_triggered_at",
+                "last_work_id"
+              ],
+              "properties": {
+                "next_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "last_source": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_triggered_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_work_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_error": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationEntryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": (
+{
+  "kind": "predictions";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "feedback";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "monitors";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "events";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "monitor_id": string;
+  "monitor_version": number;
+  "work_id": string;
+  "observation": {
+};
+  "deduplication_key": string;
+  "read": boolean;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+);
+  "requestId": string;
+};
+
+export const LightTickInvestmentObservationPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "id",
+                  "revision",
+                  "request_key",
+                  "digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "fields"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "predictions"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "account_id",
+                      "direction",
+                      "probability",
+                      "reason",
+                      "counterevidence",
+                      "baseline",
+                      "references"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "account_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "up",
+                          "down"
+                        ]
+                      },
+                      "probability": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "minLength": 1
+                      },
+                      "counterevidence": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "minLength": 1
+                      },
+                      "baseline": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "snapshot_id",
+                          "input_digest",
+                          "date"
+                        ],
+                        "properties": {
+                          "snapshot_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          "input_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        }
+                      },
+                      "references": {
+                        "type": "array",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "id",
+                            "version",
+                            "digest"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "research",
+                                "material",
+                                "screen_rule",
+                                "screen_run"
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 100
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "frozen": {
+                    "type": "object"
+                  },
+                  "runtime": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "next_at",
+                      "last_source",
+                      "last_triggered_at",
+                      "last_work_id"
+                    ],
+                    "properties": {
+                      "next_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "last_source": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_triggered_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_work_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_error": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "id",
+                  "revision",
+                  "request_key",
+                  "digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "fields"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "feedback"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "prediction_id",
+                      "evaluation_id",
+                      "horizon",
+                      "reflection",
+                      "learned",
+                      "next_step"
+                    ],
+                    "properties": {
+                      "prediction_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "evaluation_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "horizon": {
+                        "type": "integer",
+                        "enum": [
+                          1,
+                          3,
+                          5,
+                          10
+                        ]
+                      },
+                      "reflection": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "minLength": 1
+                      },
+                      "learned": {
+                        "type": "string",
+                        "maxLength": 4000
+                      },
+                      "next_step": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    }
+                  },
+                  "frozen": {
+                    "type": "object"
+                  },
+                  "runtime": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "next_at",
+                      "last_source",
+                      "last_triggered_at",
+                      "last_work_id"
+                    ],
+                    "properties": {
+                      "next_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "last_source": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_triggered_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_work_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_error": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "id",
+                  "revision",
+                  "request_key",
+                  "digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "fields"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "monitors"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "account_id",
+                      "name",
+                      "field",
+                      "op",
+                      "threshold",
+                      "supplier",
+                      "enabled",
+                      "interval_seconds",
+                      "cooldown_seconds"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "account_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                      },
+                      "field": {
+                        "type": "string",
+                        "enum": [
+                          "close",
+                          "return_1d_pct",
+                          "volume_ratio_5",
+                          "price_above_ma20",
+                          "ma_bullish"
+                        ]
+                      },
+                      "op": {
+                        "type": "string",
+                        "enum": [
+                          "gt",
+                          "gte",
+                          "lt",
+                          "lte"
+                        ]
+                      },
+                      "threshold": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "supplier": {
+                        "type": "string",
+                        "enum": [
+                          "csv",
+                          "tushare",
+                          "eastmoney",
+                          "tencent"
+                        ]
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "interval_seconds": {
+                        "type": "integer",
+                        "minimum": 300,
+                        "maximum": 86400
+                      },
+                      "cooldown_seconds": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 604800
+                      }
+                    }
+                  },
+                  "frozen": {
+                    "type": "object"
+                  },
+                  "runtime": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "next_at",
+                      "last_source",
+                      "last_triggered_at",
+                      "last_work_id"
+                    ],
+                    "properties": {
+                      "next_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "last_source": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_triggered_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_work_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_error": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "id",
+                  "revision",
+                  "request_key",
+                  "digest",
+                  "archived",
+                  "created_at",
+                  "updated_at",
+                  "fields"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "events"
+                    ]
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "monitor_id",
+                      "monitor_version",
+                      "work_id",
+                      "observation",
+                      "deduplication_key",
+                      "read"
+                    ],
+                    "properties": {
+                      "monitor_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "monitor_version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      },
+                      "work_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "observation": {
+                        "type": "object"
+                      },
+                      "deduplication_key": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "read": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "frozen": {
+                    "type": "object"
+                  },
+                  "runtime": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "next_at",
+                      "last_source",
+                      "last_triggered_at",
+                      "last_work_id"
+                    ],
+                    "properties": {
+                      "next_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "last_source": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_triggered_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_work_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "last_error": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          ]
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+(
+{
+  "kind": "predictions";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "direction": "up" | "down";
+  "probability": number | unknown;
+  "reason": string;
+  "counterevidence": string;
+  "baseline": {
+  "snapshot_id": string;
+  "input_digest": string;
+  "date": string;
+};
+  "references": (
+{
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+}
+)[];
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "feedback";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "prediction_id": string;
+  "evaluation_id": string;
+  "horizon": 1 | 3 | 5 | 10;
+  "reflection": string;
+  "learned": string;
+  "next_step": string;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "monitors";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "instrument_id": string;
+  "account_id": string | unknown;
+  "name": string;
+  "field": "close" | "return_1d_pct" | "volume_ratio_5" | "price_above_ma20" | "ma_bullish";
+  "op": "gt" | "gte" | "lt" | "lte";
+  "threshold": string;
+  "supplier": "csv" | "tushare" | "eastmoney" | "tencent";
+  "enabled": boolean;
+  "interval_seconds": number;
+  "cooldown_seconds": number;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+) | (
+{
+  "kind": "events";
+  "id": string;
+  "revision": number;
+  "request_key": string;
+  "digest": string;
+  "archived": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "fields": {
+  "monitor_id": string;
+  "monitor_version": number;
+  "work_id": string;
+  "observation": {
+};
+  "deduplication_key": string;
+  "read": boolean;
+};
+  "frozen"?: {
+};
+  "runtime"?: {
+  "next_at": string;
+  "last_source": string | unknown;
+  "last_triggered_at": string | unknown;
+  "last_work_id": string | unknown;
+  "last_error"?: string | unknown;
+};
+}
+)
+)[];
+  "revision": string | number;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentObservationWorkEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sequence",
+        "kind",
+        "revision",
+        "resource_id",
+        "request_key",
+        "input",
+        "status",
+        "attempt",
+        "error_code",
+        "output",
+        "event_id",
+        "event_disposition",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "evaluation",
+            "check"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483646
+        },
+        "resource_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "request_key": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "input": {
+          "type": "object"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "outcomes",
+                "input_digest",
+                "output_digest",
+                "limitations"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "evaluation"
+                  ]
+                },
+                "outcomes": {
+                  "type": "array",
+                  "maxItems": 4,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "horizon",
+                      "state",
+                      "target_date",
+                      "price",
+                      "raw_return_pct",
+                      "correct",
+                      "reason",
+                      "source_ids",
+                      "dates"
+                    ],
+                    "properties": {
+                      "horizon": {
+                        "type": "integer",
+                        "enum": [
+                          1,
+                          3,
+                          5,
+                          10
+                        ]
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "pending",
+                          "unknown",
+                          "resolved"
+                        ]
+                      },
+                      "target_date": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "price": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "raw_return_pct": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "correct": {
+                        "anyOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "source_ids": {
+                        "type": "array",
+                        "maxItems": 21,
+                        "items": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                        }
+                      },
+                      "dates": {
+                        "type": "array",
+                        "maxItems": 80,
+                        "items": {
+                          "type": "string",
+                          "format": "date"
+                        }
+                      }
+                    }
+                  }
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "output_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "limitations": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "state",
+                "actual",
+                "reason",
+                "dates",
+                "source_time",
+                "input_digest",
+                "output_digest",
+                "limitations",
+                "source"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "check"
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "triggered",
+                    "not_met",
+                    "unknown",
+                    "closed",
+                    "waiting_for_close"
+                  ]
+                },
+                "actual": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "dates": {
+                  "type": "array",
+                  "maxItems": 80,
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "source_time": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "output_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "limitations": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "source": {
+                  "type": "object"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_disposition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "created",
+                "duplicate",
+                "cooldown",
+                "not_triggered"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationWorkEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "sequence": number;
+  "kind": "evaluation" | "check";
+  "revision": number;
+  "resource_id": string;
+  "request_key": string;
+  "input": {
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "output": (
+{
+  "kind": "evaluation";
+  "outcomes": (
+{
+  "horizon": 1 | 3 | 5 | 10;
+  "state": "pending" | "unknown" | "resolved";
+  "target_date": string | unknown;
+  "price": string | unknown;
+  "raw_return_pct": string | unknown;
+  "correct": boolean | unknown;
+  "reason": string | unknown;
+  "source_ids": string[];
+  "dates": string[];
+}
+)[];
+  "input_digest": string;
+  "output_digest": string;
+  "limitations": string[];
+}
+) | (
+{
+  "kind": "check";
+  "state": "triggered" | "not_met" | "unknown" | "closed" | "waiting_for_close";
+  "actual": string | boolean | unknown;
+  "reason": string | unknown;
+  "dates": string[];
+  "source_time": string | unknown;
+  "input_digest": string;
+  "output_digest": string;
+  "limitations": string[];
+  "source": {
+};
+}
+) | unknown;
+  "event_id": string | unknown;
+  "event_disposition": (
+"created" | "duplicate" | "cooldown" | "not_triggered"
+) | unknown;
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentObservationWorkPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "sequence",
+              "kind",
+              "revision",
+              "resource_id",
+              "status",
+              "attempt",
+              "error_code",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 300
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "evaluation",
+                  "check"
+                ]
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483646
+              },
+              "resource_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationWorkPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "sequence": number;
+  "kind": "evaluation" | "check";
+  "revision": number;
+  "resource_id": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentObservationCalibrationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resolved",
+        "unresolved",
+        "correct",
+        "accuracy",
+        "probability_samples",
+        "brier_score",
+        "scope",
+        "read_only"
+      ],
+      "properties": {
+        "resolved": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "unresolved": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "correct": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "accuracy": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "probability_samples": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "brier_score": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "read_only": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCalibrationEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "resolved": number;
+  "unresolved": number;
+  "correct": number;
+  "accuracy": string | unknown;
+  "probability_samples": number;
+  "brier_score": string | unknown;
+  "scope": string;
+  "read_only": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentObservationCatalogEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm_version",
+        "horizons",
+        "monitor_fields",
+        "source_policy",
+        "limits"
+      ],
+      "properties": {
+        "algorithm_version": {
+          "type": "string",
+          "enum": [
+            "forecast-daily-rational-v1"
+          ]
+        },
+        "horizons": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          }
+        },
+        "monitor_fields": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "source_policy": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationCatalogEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "algorithm_version": "forecast-daily-rational-v1";
+  "horizons": number[];
+  "monitor_fields": string[];
+  "source_policy": string;
+  "limits": {
+  [key: string]: number;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentObservationSourcePreviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ref",
+    "title",
+    "excerpt",
+    "truncated"
+  ],
+  "properties": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "version",
+        "digest"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "research",
+            "material",
+            "screen_rule",
+            "screen_run"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "excerpt": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationSourcePreview = {
+  "ref": {
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+};
+  "title": string;
+  "excerpt": string;
+  "truncated": boolean;
+};
+
+export const LightTickInvestmentObservationSourcePreviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ref",
+        "title",
+        "excerpt",
+        "truncated"
+      ],
+      "properties": {
+        "ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "version",
+            "digest"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "research",
+                "material",
+                "screen_rule",
+                "screen_run"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentObservationSourcePreviewEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "ref": {
+  "kind": "research" | "material" | "screen_rule" | "screen_run";
+  "id": string;
+  "version": number;
+  "digest": string;
+};
+  "title": string;
+  "excerpt": string;
+  "truncated": boolean;
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentScreenMappingSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -97761,6 +105527,44 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentMaterialSource",
   "LightTickInvestmentMaterialSummary",
   "LightTickInvestmentMaterialWrite",
+  "LightTickInvestmentObservationBaseline",
+  "LightTickInvestmentObservationCalibration",
+  "LightTickInvestmentObservationCalibrationEnvelope",
+  "LightTickInvestmentObservationCancel",
+  "LightTickInvestmentObservationCatalog",
+  "LightTickInvestmentObservationCatalogEnvelope",
+  "LightTickInvestmentObservationCheckReport",
+  "LightTickInvestmentObservationCheckRequest",
+  "LightTickInvestmentObservationCorporateActionReview",
+  "LightTickInvestmentObservationEntry",
+  "LightTickInvestmentObservationEntryEnvelope",
+  "LightTickInvestmentObservationEvaluationReport",
+  "LightTickInvestmentObservationEvaluationRequest",
+  "LightTickInvestmentObservationEventFields",
+  "LightTickInvestmentObservationEventsEntry",
+  "LightTickInvestmentObservationFeedbackEntry",
+  "LightTickInvestmentObservationFeedbackFields",
+  "LightTickInvestmentObservationFeedbackWrite",
+  "LightTickInvestmentObservationMonitorFields",
+  "LightTickInvestmentObservationMonitorRuntime",
+  "LightTickInvestmentObservationMonitorsEntry",
+  "LightTickInvestmentObservationMonitorsWrite",
+  "LightTickInvestmentObservationOutcome",
+  "LightTickInvestmentObservationPage",
+  "LightTickInvestmentObservationPageEnvelope",
+  "LightTickInvestmentObservationPredictionFields",
+  "LightTickInvestmentObservationPredictionsEntry",
+  "LightTickInvestmentObservationPredictionsWrite",
+  "LightTickInvestmentObservationRevision",
+  "LightTickInvestmentObservationSnapshotSelection",
+  "LightTickInvestmentObservationSourcePreview",
+  "LightTickInvestmentObservationSourcePreviewEnvelope",
+  "LightTickInvestmentObservationSourceReference",
+  "LightTickInvestmentObservationWork",
+  "LightTickInvestmentObservationWorkEnvelope",
+  "LightTickInvestmentObservationWorkPage",
+  "LightTickInvestmentObservationWorkPageEnvelope",
+  "LightTickInvestmentObservationWorkSummary",
   "LightTickInvestmentOpening",
   "LightTickInvestmentResearchAICommand",
   "LightTickInvestmentResearchAIPage",

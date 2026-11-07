@@ -1,3 +1,4 @@
+import {exportObservations} from "./observations/observation.export.ts";
 import {exportScreening} from "./screening/screen.export.ts";
 import {exportMaterials} from "./materials/material.export.ts";
 import {exportResearch} from "./research/research.export.ts";
@@ -52,7 +53,8 @@ export async function exportInvestments(
     }
     ledgers.push({ account_id: a.id, events, receipts });
   }
+  const observations=await exportObservations(repo,o);
   const screening=await exportScreening(repo,o);
   const materials=await exportMaterials(repo,o);
-  return { ...(screening.definitions.length||screening.runs.length?{screening}:{}), ...(materials.entries.length?{materials}:{}), instruments, accounts, ledgers, market:await exportMarket(repo,o), research:await exportResearch(repo,o) };
+  return { ...(observations.entries.length||observations.works.length?{observations}:{}), ...(screening.definitions.length||screening.runs.length?{screening}:{}), ...(materials.entries.length?{materials}:{}), instruments, accounts, ledgers, market:await exportMarket(repo,o), research:await exportResearch(repo,o) };
 }
