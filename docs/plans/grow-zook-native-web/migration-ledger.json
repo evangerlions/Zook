@@ -4609,7 +4609,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/market/snapshots",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "GET"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -4645,7 +4664,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/calibration",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "GET"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -4681,7 +4719,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/work",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "GET"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -4717,7 +4774,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/predictions",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "GET"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -5480,7 +5556,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/events",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "GET"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -5516,7 +5611,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/monitors",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "GET"
+        }
+      ]
     },
     {
       "method": "GET",
@@ -13414,7 +13528,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/predictions/{id}",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "PUT"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -13450,7 +13583,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/predictions/{id}/evaluate",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "POST"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -14197,7 +14349,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/events/{id}/read",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "POST"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -14233,7 +14404,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/monitors/{id}",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "PUT"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -14269,7 +14459,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/monitors/{id}/check",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "POST"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -14305,7 +14514,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/monitors/{id}/stop",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "POST"
+        }
+      ]
     },
     {
       "method": "POST",
@@ -19023,7 +19251,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-07",
+          "contract": "/api/v1/lighttick/investments/observations/monitors/{id}",
+          "page": "/grow/investments",
+          "report": "docs/verification/grow-react-u1-20261103/prediction-monitor.md",
+          "tests": [
+            "test/unit/lighttick-observations.test.ts",
+            "test/unit/lighttick-observations.api.test.ts",
+            "test/integration/lighttick-observations-postgres.test.ts",
+            "test/support/grow_web_observations_acceptance.py",
+            "test/support/grow_web_observation_boundaries.py",
+            "test/support/grow_web_observation_monitor_acceptance.py"
+          ],
+          "limitations": "Saved daily snapshots and explicit owner-reviewed corporate-action declaration only. Legacy HTTPS realtime quote credentials/source policy, cost deviation, whole-account filtering/briefings and full migration parity remain unverified. No old API alias or automatic trading.",
+          "method": "PUT"
+        }
+      ]
     },
     {
       "method": "PUT",
