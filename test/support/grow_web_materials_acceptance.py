@@ -52,4 +52,6 @@ with sync_playwright() as pw:
   page.set_viewport_size({'width':320,'height':900});e.get_by_label('独立资料标题',exact=True).scroll_into_view_if_needed();page.screenshot(path=str(a.output/'material-320.png'));assert errors==[]
   (a.output/'result.json').write_text(json.dumps({'passed':True,'served_revision':a.expected_grow_revision,'synthetic_account':a.account,'material_id':mid,'lost_response_exact_original_after_reload':True,'baseline_local_cloud_CAS':True,'cross_instrument_research_pins_different_versions':True,'source_update_does_not_replace_research_refs':True,'archive_rejects_new_refs_retains_old_client_and_history':True,'restore_same_identity':True,'optional_period_end_preserved':True,'paginated_history_original_content':True,'offline_reload_preserves_unsaved_draft':True,'authorized_export_versions_receipts_and_relations':True,'no_asset_account_required':True,'cross_owner_denied':True,'widths':[320,375,768,1024],'page_errors':errors},ensure_ascii=False,indent=2))
  except Exception:page.screenshot(path=str(a.output/'failure.png'),full_page=True);raise
- finally:api.dispose();c.close();b.close()
+ finally:page.close(run_before_unload=False);api.dispose();b.close()
+ if (a.output/'result.json').exists():
+  result=json.loads((a.output/'result.json').read_text());result['browser_cleanup_completed']=True;(a.output/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('GSTACK_STEP_OK',flush=True)

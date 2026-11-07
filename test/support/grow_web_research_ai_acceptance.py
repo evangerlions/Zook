@@ -95,4 +95,6 @@ with sync_playwright() as pw:
   assert errors==[],errors
   (a.output/'result.json').write_text(json.dumps({'passed':True,'served_revision':a.expected_grow_revision,'research_id':rid,'account':a.account,'lost_response_exact_original_after_reload':True,'analysis_guide_report_explicit_adoption':True,'selected_personal_model_used':True,'no_account_required':True,'cancel_fences_late_results':True,'provider_failure_no_fallback':True,'source_change_refuses_result_and_adoption':True,'model_change_refuses_result':True,'original_facts_not_automatically_modified':True,'export_no_secret':True,'quota_refusal_keeps_draft_and_explicit_release':True,'no_browser_secret':True,'widths':[320,375,768,1024],'page_errors':errors},indent=2))
  except Exception:page.screenshot(path=str(a.output/'failure.png'),full_page=True);raise
- finally:api.dispose();c.close();b.close()
+ finally:page.close(run_before_unload=False);api.dispose();b.close()
+ if (a.output/'result.json').exists():
+  result=json.loads((a.output/'result.json').read_text());result['browser_cleanup_completed']=True;(a.output/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('GSTACK_STEP_OK',flush=True)

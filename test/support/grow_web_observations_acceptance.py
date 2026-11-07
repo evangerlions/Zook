@@ -57,6 +57,6 @@ with sync_playwright() as pw:
  except Exception:page.screenshot(path=str(a.output/'failure.png'),full_page=True);raise
  finally:
   # Close the polling page before its context so route callbacks cannot hold teardown.
-  page.close(run_before_unload=False);api.dispose();c.close();b.close()
+  page.close(run_before_unload=False);api.dispose();b.close()
  if (a.output/'result.json').exists():
   result=json.loads((a.output/'result.json').read_text());result['browser_cleanup_completed']=True;(a.output/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('GSTACK_STEP_OK',flush=True)

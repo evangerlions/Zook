@@ -66,4 +66,6 @@ with sync_playwright() as pw:
   page.set_viewport_size({'width':320,'height':900});e.get_by_label('筛选规则名称',exact=True).scroll_into_view_if_needed();page.screenshot(path=str(a.output/'rule-320.png'));assert errors==[],errors
   (a.output/'result.json').write_text(json.dumps({'passed':True,'served_revision':a.expected_grow_revision,'rule_id':rid,'template_id':tid,'run_id':wid,'cancelled_id':cancelled['id'],'output_digest':digest,'lost_definition_and_run_response_exact_original_after_reload':True,'baseline_local_cloud_CAS':True,'template_pins_historical_rule':True,'actual_existing_worker_CSV_source':True,'matched_and_unknown_explained':True,'running_cancel_no_late_result':True,'disable_archive_restore_retains_report':True,'offline_reload_preserves_draft':True,'paginated_history_expired_cursor_rebuild_retains_local':True,'one_template_editor_after_each_save':True,'export_full_frozen_input_and_original_commands':True,'no_asset_account':True,'cross_owner_denied':True,'widths':[320,375,768,1024],'page_errors':errors},ensure_ascii=False,indent=2))
  except Exception:page.screenshot(path=str(a.output/'failure.png'),full_page=True);raise
- finally:api.dispose();c.close();b.close()
+ finally:page.close(run_before_unload=False);api.dispose();b.close()
+ if (a.output/'result.json').exists():
+  result=json.loads((a.output/'result.json').read_text());result['browser_cleanup_completed']=True;(a.output/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2));print('GSTACK_STEP_OK',flush=True)
