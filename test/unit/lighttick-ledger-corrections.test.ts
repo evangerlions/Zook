@@ -49,7 +49,7 @@ test("worker persists original, replacement and void compensation chain, origina
 });
 test("correction validation refuses stale targets and cursor, nested input and foreign scope without creating work",async()=>{
  const f=await ledgerCorrectionFixture(new InMemoryLightTickRepository());const a=await f.append(f.cash("1"));await f.append(f.cash("2"),"second-pagination-fact");const before=await f.l.ledger(f.o,f.id,"",1,"2");const body=await f.body(a.id,f.cash("2"));
- for(const wrong of [{...body,correction:{...body.correction,target_input_digest:"0".repeat(64)}},{...body,correction:{...body.correction,replacement:body}},{...body,correction:{...body.correction,reason:" "}},{...body,correction:{...body.correction,replacement:f.cash("-1")}}])await assert.rejects(()=>f.l.append(f.o,f.id,wrong,"invalid-correction-"+JSON.stringify(wrong).length));
+ for(const wrong of [{...body,correction:{...body.correction,target_input_digest:"0".repeat(64)}},{...body,correction:{...body.correction,replacement:body}},{...body,correction:{...body.correction,replacement:{...f.cash("2"),base_revision:99}}},{...body,correction:{...body.correction,reason:" "}},{...body,correction:{...body.correction,replacement:f.cash("-1")}}])await assert.rejects(()=>f.l.append(f.o,f.id,wrong,"invalid-correction-"+JSON.stringify(wrong).length));
  await assert.rejects(()=>f.l.append({...f.o,userId:"other-owner"},f.id,body,"foreign-original-key"));
  const c=await f.l.append(f.o,f.id,body,"good-correction-command");await f.runner.execute(f.o,c.id);
  await assert.rejects(()=>f.l.append(f.o,f.id,{...body,base_revision:4},"late-old-target"),/target/i);
