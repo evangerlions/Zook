@@ -56,12 +56,11 @@ test("non-LightTick public schema and admin API baseline remain unchanged during
       .digest("hex"),
     golden.sha256,
   );
-  assert.equal(
-    createHash("sha256")
-      .update(
-        readFileSync(new URL("../../docs/admin-api-spec.md", import.meta.url)),
-      )
-      .digest("hex"),
-    golden.admin_api_spec_sha256,
-  );
+  const document = readFileSync(new URL("../../docs/admin-api-spec.md", import.meta.url));
+  const reviewed = golden.reviewed_lighttick_runtime_scope_prefix;
+  assert.equal(createHash("sha256").update(document).digest("hex"), golden.admin_api_spec_sha256);
+  assert.equal(createHash("sha256").update(document.subarray(0, reviewed.bytes)).digest("hex"), reviewed.sha256);
+  // Only the reviewed LightTick-specific prefix is new. Every original byte of
+  // the shared admin document, including other Apps, must still match the baseline.
+  assert.equal(createHash("sha256").update(document.subarray(reviewed.bytes)).digest("hex"), reviewed.remaining_document_sha256);
 });

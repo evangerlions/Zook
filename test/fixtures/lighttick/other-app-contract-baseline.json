@@ -226,9 +226,14 @@
     "YaoheziMeDataSchema"
   ],
   "sha256": "3849c3481296f52b0896f518ab74b9d9f26fffe1bebe251e0fc52add6d1084e8",
-  "admin_api_spec_sha256": "5b23c7c738c9595aa4bc6085a3ad59e8b22b6b904263878eab04d029ddd792c0",
+  "admin_api_spec_sha256": "befcd171b3d62833316b4d1ca80b45dfd100e71915c0ad34fb395cfeb14fb7ed",
   "previous_hash_including_name_index": "9b73560c5984ce5c25316f2784dca434dcb5348ae42083e4e2b0af662039d55e",
   "correction": "Exclude GeneratedPublicContractNames metadata; actual schema payloads verified unchanged against bfeb2e6f",
   "previous_admin_api_spec_sha256": "2a06eaf7fd51dbee24f4ff940a88a0c518c2a2045f6d6b7a5006bce991209207",
-  "admin_baseline_integration": "Rebased with origin/main aa8885c6: retain OrangeWrite credit grant API documentation from main alongside Grow documentation; non-LightTick schema payload hashes unchanged."
+  "admin_baseline_integration": "Rebased with origin/main aa8885c6: retain OrangeWrite credit grant API documentation from main alongside Grow documentation; non-LightTick schema payload hashes unchanged.",
+  "reviewed_lighttick_runtime_scope_prefix": {
+    "bytes": 661,
+    "sha256": "ef8e23bf34c8d10d6650b6da837218d74bbd94551fd4e84369f8fb053bb342cc",
+    "remaining_document_sha256": "5b23c7c738c9595aa4bc6085a3ad59e8b22b6b904263878eab04d029ddd792c0"
+  }
 }

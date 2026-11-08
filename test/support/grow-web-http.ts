@@ -98,9 +98,10 @@ if (process.env.GROW_WEB_TEST_AI === 'synthetic') {
 const api = createServer(async (request, response) => {
   try {
     const url = new URL(request.url!, 'http://127.0.0.1');
-    if (process.env.GROW_WEB_TEST_SCOPE_CONTROL === "1" && process.env.GROW_WEB_TEST_AI === "synthetic" && url.pathname === "/__fixture/runtime-scope" && request.method === "POST") {
-      const body = await readRequestBody(request, request.headers['content-type']) as { scope?: string };
+    if (process.env.GROW_WEB_TEST_SCOPE_CONTROL === "1" && process.env.GROW_WEB_TEST_AI === "synthetic" && url.pathname === "/api/v1/__fixture/runtime-scope" && request.method === "POST") {
+      const body = await readRequestBody(request, request.headers['content-type']) as { scope?: string; pause?: boolean };
       if (!body || !["core", "full"].includes(body.scope ?? "")) { response.writeHead(422); response.end('{}'); return; }
+      if(body.pause && queueTimer) { clearInterval(queueTimer); queueTimer=undefined; }
       const old = JSON.parse((await app.services.appConfigService.getValue("lighttick", "admin.delivery_config")) ?? "{}");
       await app.services.appConfigService.setValue("lighttick", "admin.delivery_config", JSON.stringify({...old, settings:{...old.settings,runtimeScope:body.scope}}),"synthetic-runtime-scope");
       response.writeHead(200,{'Content-Type':'application/json'});response.end(JSON.stringify({scope:body.scope}));return;

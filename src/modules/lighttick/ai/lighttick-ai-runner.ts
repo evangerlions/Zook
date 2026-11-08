@@ -26,10 +26,19 @@ export class LightTickAiRunner {
     if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene,this.authorizeOwner).execute(owner,runId);
     if (!["queued", "failed"].includes(run.status)) return run;
     const scene = await this.resolveScene(sceneName); const started = this.clock();
-    run = { ...run, promptVersion: LIGHTTICK_PROMPT_VERSION };
+    const original = run;
+    const claim = await this.repository.transaction(owner, async () => {
+      await this.authorizeOwner(owner);
+      const current = await this.repository.getAiRun(owner, runId);
+      if (!current || !["queued", "failed"].includes(current.status) || current.attemptCount !== original.attemptCount)
+        return { execute: false as const, row: current };
+      await this.repository.saveAiRun({ ...current, status: "running", attemptCount: current.attemptCount + 1,
+        startedAt: started.toISOString(), updatedAt: started.toISOString() });
+      return { execute: true as const, row: current };
+    });
+    if (!claim.execute) return claim.row ?? { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
+    run = { ...claim.row, promptVersion: LIGHTTICK_PROMPT_VERSION };
     let context: any;
-    await this.repository.saveAiRun({ ...run, status: "running", attemptCount: run.attemptCount + 1,
-      startedAt: started.toISOString(), updatedAt: started.toISOString() });
     try {
       context = sceneName === "coach_chat"
         ? await assembleChatContext(this.repository, owner, run.inputContext,
@@ -49,6 +58,9 @@ export class LightTickAiRunner {
         usageOwner: { appId: owner.appId, userId: owner.userId } });
       const output = this.validate(sceneName, parseLightTickJson(result.text), context);
       return await this.repository.transaction(owner, async () => {
+      const current = await this.repository.getAiRun(owner, runId);
+      if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
+      if (current.status !== "running" || current.attemptCount !== run.attemptCount + 1) return current;
       await this.authorizeOwner(owner);
       const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai");
       await this.authorizeOwner(owner);
@@ -69,12 +81,18 @@ export class LightTickAiRunner {
           if (candidate) fallback = this.validate(sceneName, candidate, context);
         } catch { /* Preserve original failure; never materialize invalid fallback. */ }
       }
+      return await this.repository.transaction(owner, async () => {
+      const current = await this.repository.getAiRun(owner, runId);
+      if (!current) return { ...run, status: "failed", errorCode: "LIGHTTICK_RESOURCE_NOT_FOUND" };
+      if (current.status !== "running" || current.attemptCount !== run.attemptCount + 1) return current;
+      try { await this.authorizeOwner(owner); } catch { fallback = undefined; }
       const materializedId = fallback ? await this.materializeOutput(owner, run, sceneName, fallback, "template") : undefined;
-      return await this.repository.saveAiRun({ ...run, status: fallback ? "succeeded" : "failed", attemptCount: run.attemptCount + 1,
+      return await this.repository.saveAiRun({ ...current, status: fallback ? "succeeded" : "failed", attemptCount: run.attemptCount + 1,
         resourceId: materializedId ?? run.resourceId, provider: fallback ? "deterministic_template" : run.provider, output: fallback,
         errorCode: fallback ? undefined : error instanceof ApplicationError ? error.code : "LIGHTTICK_AI_UNAVAILABLE",
         usage: {}, latencyMs: completed.getTime() - started.getTime(), startedAt: started.toISOString(), completedAt: completed.toISOString(),
         updatedAt: completed.toISOString() });
+      });
     }
   }
 

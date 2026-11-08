@@ -74,3 +74,14 @@ test("a failing config store fails closed without starving the shared queue", as
  assert.equal(await policy.current(),"core");
  await assert.rejects(policy.assertFull(),{code:"LIGHTTICK_CAPABILITY_UNAVAILABLE"});
 });
+
+test("late AI completion after owner deletion cannot recreate the run or a fallback plan", async () => {
+ const {InMemoryLightTickRepository}=await import("../../src/testing/in-memory-lighttick-repository.ts");
+ const {LightTickAiRunner}=await import("../../src/modules/lighttick/ai/lighttick-ai-runner.ts");
+ const repo=new InMemoryLightTickRepository(),o={appId:"lighttick" as const,userId:"deleted-scope-owner"};const now=new Date().toISOString();
+ await repo.saveAiRun({...o,id:"scope-deleted-run",kind:"plan",status:"queued",sceneKey:"test",promptVersion:"1",schemaVersion:"1",attemptCount:0,inputContext:{period_start:"2026-11-02",period_end:"2026-11-08",available_minutes:120},usage:{},createdAt:now,updatedAt:now});
+ let active=true;
+ const runner=new LightTickAiRunner(repo,{complete:async()=>{await repo.deleteOwnerData(o);active=false;return {provider:"fixture",providerModel:"fixture",text:JSON.stringify({tasks:[{title:"Never recreate",estimated_minutes:30}]})};}} as any,undefined,undefined,async()=>{if(!active)throw new (await import("../../src/shared/errors.ts")).ApplicationError(403,"APP_SCOPE_FORBIDDEN","Owner deleted");});
+ await runner.execute(o,"scope-deleted-run","week_plan");
+ assert.equal(await repo.getAiRun(o,"scope-deleted-run"),undefined);assert.equal((await repo.listPlans(o)).length,0);
+});
