@@ -18,7 +18,7 @@ export const formKeys = [
   "insights",
   "todos",
 ];
-function date(value: string) {
+export function formDate(value: string) {
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
     value < "0001-01-01" ||
@@ -114,7 +114,7 @@ export function formRecords(value: unknown): FormRecords {
   )
     fail(422, "日期条目超过容量。");
   for (const [day, raw] of Object.entries(checkins)) {
-    date(day);
+    formDate(day);
     const row = object(raw);
     for (const [id, status] of Object.entries(row)) {
       if (!modules.some((m) => m.id === id))
@@ -123,7 +123,7 @@ export function formRecords(value: unknown): FormRecords {
     }
   }
   for (const [day, raw] of Object.entries(habits)) {
-    date(day);
+    formDate(day);
     const row = object(raw);
     keys(row, ["minutes", "note"]);
     integer(row.minutes, 0, 1440);

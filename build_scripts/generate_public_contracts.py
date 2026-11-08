@@ -171,7 +171,7 @@ SPECS: dict[str, list[str]] = {
         "BodyLogChallengeData",
     ],
     "lighttick/api.yaml": [
-        "LightTickFormData", "LightTickFormSnapshot", "LightTickFormWrite", "LightTickFormClear", "LightTickFormExport", "LightTickFormEnvelope", "LightTickFormExportEnvelope",
+        "LightTickFormSectionWrite", "LightTickFormData", "LightTickFormSnapshot", "LightTickFormWrite", "LightTickFormClear", "LightTickFormExport", "LightTickFormEnvelope", "LightTickFormExportEnvelope",
         "LightTickInvestmentMaterialSource",
         'LightTickManualTaskReference',
         'LightTickConfirmedCondition',

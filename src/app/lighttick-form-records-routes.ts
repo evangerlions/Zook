@@ -25,6 +25,9 @@ export async function handleFormRecordsRequest(
     };
   const key =
     r.headers["idempotency-key"] ?? r.headers["Idempotency-Key"] ?? "";
+  const section = /^\/sections\/([a-z]+)$/.exec(r.path.slice(root.length));
+  if (r.method === "PATCH" && section)
+    return service.patch(owner, section[1], object(r.body), key);
   if (r.method === "PUT" && r.path === root)
     return service.save(owner, object(r.body), key);
   if (r.method === "POST" && r.path === root + "/clear")

@@ -65729,6 +65729,133 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickFormSectionWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "value"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "minutes",
+              "note"
+            ],
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 100000
+              }
+            }
+          }
+        },
+        {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "customFields",
+            "customRecords"
+          ],
+          "properties": {
+            "customFields": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "type"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "number",
+                      "date"
+                    ]
+                  }
+                }
+              }
+            },
+            "customRecords": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickFormSectionWrite = {
+  "base_revision": number;
+  "value": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+} | (
+{
+  [key: string]: unknown;
+}
+)[] | {
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+};
+
 export const LightTickFormDataSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -138713,6 +138840,7 @@ export const GeneratedPublicContractNames = [
   "LightTickFormEnvelope",
   "LightTickFormExport",
   "LightTickFormExportEnvelope",
+  "LightTickFormSectionWrite",
   "LightTickFormSnapshot",
   "LightTickFormWrite",
   "LightTickGitHubCancel",

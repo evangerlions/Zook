@@ -1993,3 +1993,9 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 - `POST /api/v1/lighttick/form-records/clear` 接收 `{ base_revision }` 与原请求编号，只清空上述表单；不删除独立 records、actions、tasks、课程、私人学习、账号设置或浏览器草稿。保留原操作回执，因此不是隐私擦除；完整账号删除走原接口。
 
 写入、版本核对和回执在同一 owner 事务。重复原 key/body 返回原结果；其他 key 的旧版本或同 key 不同命令均409，输入应保留后显式比较。读取及回放均重新校验账号状态；其他账号只读写自己的数据。clear 丢响应后只重放原 key/body，不新建清空命令。本人授权 `review/export` 包含当前 form_records；账号删除同时清理新增表和原回执。新资源不进入旧 sync/pull/push；历史导入属于独立迁移门禁，本切片没有读取或自动迁移旧私人数据。
+
+#### 局部表单按栏提交
+
+`PATCH /api/v1/lighttick/form-records/sections/{section}` 使用同一普通账号权限、`Idempotency-Key` 与整份局部表单修订。section 为 habits/custom/decisions/predictions/reviews/insights/todos；请求 `{ base_revision, value }`，响应仍为完整 `{ revision, data, updated_at }`。habits 的 value 为日期→手工分钟/备注；custom 同时包含 customFields 和 customRecords；其余为该栏记录数组。其他栏逐字保留；并发修改即使发生在另一栏也409，不自动按数组下标合并或重基。
+
+自定义字段删除必须同时核对并移除其关联单元格；保留不属于已删除字段的历史附加内容。日期和已填写数值按字段校验，空自报概率/数值不是0。范围/版本/原请求正文在等待owner锁前冻结；命令、写入和回执一起提交/回滚，回放重新鉴权。保存表单复盘、预测或勾选历史待办不会创建/完成原生任务、原生复盘或课程。历史表单待办与现有共享行动是不同身份，新行动继续使用原行动接口。无新增迁移，也不自动导入旧数据。

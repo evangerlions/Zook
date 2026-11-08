@@ -42,6 +42,57 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/form-records/sections/{section}:
+    patch:
+      operationId: patchFormRecordSection
+      tags:
+      - lighttick-records
+      summary: Save one bounded legacy form section
+      description: Owner-only explicit section replacement with whole-document CAS and
+        original receipt. Preserves other sections, unknown historical fields and source
+        identities; never creates native tasks, reflections or learning completions.
+        custom pairs field definitions and values atomically. Stale revision returns
+        409 even when another section changed. No array-index command may rebase automatically.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFormEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - in: path
+        name: section
+        required: true
+        schema:
+          type: string
+          enum:
+          - habits
+          - custom
+          - decisions
+          - predictions
+          - reviews
+          - insights
+          - todos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickFormSectionWrite'
   /api/v1/lighttick/form-records:
     get:
       operationId: getFormRecords
@@ -6666,6 +6717,75 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickFormSectionWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - value
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        value:
+          oneOf:
+          - type: object
+            additionalProperties:
+              type: object
+              additionalProperties: false
+              required:
+              - minutes
+              - note
+              properties:
+                minutes:
+                  type: integer
+                  minimum: 0
+                  maximum: 1440
+                note:
+                  type: string
+                  maxLength: 100000
+          - type: array
+            maxItems: 5000
+            items:
+              type: object
+              additionalProperties: true
+          - type: object
+            additionalProperties: false
+            required:
+            - customFields
+            - customRecords
+            properties:
+              customFields:
+                type: array
+                maxItems: 100
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                  - key
+                  - label
+                  - type
+                  properties:
+                    key:
+                      type: string
+                      pattern: ^[a-zA-Z0-9_-]{1,128}$
+                    label:
+                      type: string
+                      minLength: 1
+                      maxLength: 100
+                    type:
+                      type: string
+                      enum:
+                      - text
+                      - number
+                      - date
+              customRecords:
+                type: array
+                maxItems: 5000
+                items:
+                  type: object
+                  additionalProperties: true
     LightTickFormData:
       type: object
       additionalProperties: false

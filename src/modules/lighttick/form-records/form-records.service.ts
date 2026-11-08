@@ -1,3 +1,4 @@
+import { formSection, patchFormSection } from "./form-sections.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { FormRecords, FormSnapshot } from "./form-records.types.ts";
@@ -40,21 +41,30 @@ export class FormRecordsService {
   }
   async save(o: LightTickOwner, b: Record<string, unknown>, key: string) {
     keys(b, ["base_revision", "data"]);
-    return this.mutate(o, b, key, "save", formRecords(b.data));
+    return this.mutate(o, b, key, "save");
   }
   async clear(o: LightTickOwner, b: Record<string, unknown>, key: string) {
     keys(b, ["base_revision"]);
-    return this.mutate(o, b, key, "clear", emptyFormRecords());
+    return this.mutate(o, b, key, "clear");
+  }
+  async patch(
+    o: LightTickOwner,
+    section: string,
+    b: Record<string, unknown>,
+    key: string,
+  ) {
+    keys(b, ["base_revision", "value"]);
+    return this.mutate(o, b, key, "section:" + formSection(section));
   }
   private async mutate(
     o: LightTickOwner,
     b: Record<string, unknown>,
     key: string,
     action: string,
-    data: FormRecords,
   ) {
-    const base = integer(b.base_revision, 0, 2147483646),
-      hash = digest({ action, b });
+    const request = structuredClone(b);
+    const base = integer(request.base_revision, 0, 2147483646),
+      hash = digest({ action, b: request });
     if (!/^[a-zA-Z0-9_-]{8,128}$/.test(key)) fail(422, "请保留原请求编号。");
     return this.repo.transaction(o, async () => {
       await this.authorize();
@@ -71,6 +81,16 @@ export class FormRecordsService {
       const current = await this.repo.formRecords.get(o);
       if ((current?.revision ?? 0) !== base)
         fail(409, "局部表单已变化，请保留输入并核对最新版本。");
+      const data =
+        action === "save"
+          ? formRecords(request.data)
+          : action === "clear"
+            ? emptyFormRecords()
+            : patchFormSection(
+                current?.data ?? emptyFormRecords(),
+                formSection(action.slice(8)),
+                request.value,
+              );
       const now = this.clock().toISOString(),
         snapshot = { revision: base + 1, data, updated_at: now };
       await this.repo.formRecords.save(o, snapshot, base);
@@ -82,7 +102,7 @@ export class FormRecordsService {
         entityId: "forms",
         action,
         payloadHash: hash,
-        requestPayload: b,
+        requestPayload: request,
         resultPayload: snapshot as unknown as Record<string, unknown>,
         status: "accepted",
         createdAt: now,
