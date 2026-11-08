@@ -14,7 +14,7 @@ base='127.0.0.1:3107'
 local=threading.local()
 def request(app,method,path,body=None,extra=None):
     if not hasattr(local,'conn'):local.conn=http.client.HTTPConnection(base,timeout=20)
-    headers={'Content-Type':'application/json','X-App-Id':app}
+    headers={'Content-Type':'application/json','X-App-Id':app,'X-LightTick-Task-Schema':'2'}
     if app in tokens:headers['Authorization']='Bearer '+tokens[app]
     headers.update(extra or {})
     raw=None if body is None else json.dumps(body)
@@ -86,7 +86,11 @@ summary={}
 for name in [op[0] for op in ops]:
     values=[s for s in samples if s['op']==name]
     summary[name]={'count':len(values),'non_200':sum(s['status']!=200 for s in values),'5xx':sum(s['status']>=500 for s in values),'p95_ms':percentile([s['ms'] for s in values],.95),'p95_scheduled_ms':percentile([s['schedule_ms'] for s in values],.95),'max_start_lag_ms':max(s['start_lag_ms'] for s in values)}
+# Main-thread preflight connection has been idle throughout the timed workload.
+# Close it before the control read rather than recording keep-alive expiry as a queue error.
+if hasattr(local,'conn'): local.conn.close(); del local.conn
 status,worker=request('', 'GET','/__worker')
+assert status==200 and 'ticks' in worker,(status,worker)
 result={'mode':args.mode,'seconds':args.seconds,'warmup_seconds':args.warmup,'other_app_rps':35,'lighttick_rps':10 if args.mode=='core' else 0,'max_workers':32,'summary':summary,'worker':worker,'samples':samples}
 Path(args.output).write_text(json.dumps(result,indent=2))
 print(json.dumps({k:v for k,v in result.items() if k!='samples'},indent=2))
