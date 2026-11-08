@@ -41,6 +41,10 @@
     {
       "path": "test/fixtures/lighttick/portfolio-golden.json",
       "sha256": "f41cd6f4e1df8d686e2dc08d3e9e5331f2028e248bfab1404d592ed3c8b6502a"
+    },
+    {
+      "path": "test/fixtures/lighttick/form-editors-golden.json",
+      "sha256": "5600b2c604682ae550675222a82d4d8548cf8bb347285fdae9c87f27ad2f5c91"
     }
   ],
   "unit_groups": [
@@ -146,6 +150,12 @@
         "test/unit/lighttick-form-records.test.ts",
         "test/unit/lighttick-form-records.api.test.ts"
       ]
+    },
+    {
+      "id": "form_section_cas_frozen_original_scope_and_validation",
+      "tests": [
+        "test/unit/lighttick-form-sections.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -170,7 +180,8 @@
     "test/integration/lighttick-observations-postgres.test.ts",
     "test/integration/lighttick-strategies-postgres.test.ts",
     "test/integration/lighttick-ledger-corrections-postgres.test.ts",
-    "test/integration/lighttick-portfolio-postgres.test.ts"
+    "test/integration/lighttick-portfolio-postgres.test.ts",
+    "test/integration/lighttick-form-sections-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",

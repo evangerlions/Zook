@@ -1,0 +1,111 @@
+{
+  "scope": "Static old form fields and synthetic golden values; no user data or full parity claim",
+  "source": {
+    "path": "grow/知行成长/server/static/index.html",
+    "sha256": "e94ed77401c29c383d3586f22d99ae2e94326f1c5e020cfaf64d1a57f97d1ecd"
+  },
+  "legacy_fields": {
+    "decisions": [
+      "date",
+      "probability",
+      "title",
+      "context",
+      "options",
+      "reason",
+      "expected",
+      "emotion",
+      "actual",
+      "bias"
+    ],
+    "predictions": [
+      "date",
+      "probability",
+      "statement",
+      "result",
+      "deviation"
+    ],
+    "reviews": [
+      "date",
+      "thought",
+      "actual",
+      "gap",
+      "action"
+    ],
+    "insights": [
+      "date",
+      "source",
+      "insight"
+    ]
+  },
+  "values": {
+    "habits": {
+      "2026-11-08": {
+        "minutes": 0,
+        "note": "Synthetic note only"
+      }
+    },
+    "custom": {
+      "customFields": [
+        {
+          "key": "f-synthetic",
+          "label": "Count",
+          "type": "number"
+        }
+      ],
+      "customRecords": [
+        {
+          "f-synthetic": 0,
+          "legacy_origin": "Retained"
+        }
+      ]
+    },
+    "decisions": [
+      {
+        "date": "2026-11-08",
+        "probability": "",
+        "title": "Synthetic decision",
+        "context": "Constraint",
+        "options": "A/B",
+        "reason": "Evidence",
+        "expected": "Expected",
+        "emotion": "Calm",
+        "actual": "",
+        "bias": "",
+        "legacy_origin": "Retained"
+      }
+    ],
+    "predictions": [
+      {
+        "date": "2026-11-08",
+        "probability": 0,
+        "statement": "Synthetic prediction",
+        "result": "",
+        "deviation": ""
+      }
+    ],
+    "reviews": [
+      {
+        "date": "2026-11-08",
+        "thought": "Before",
+        "actual": "After",
+        "gap": "Difference",
+        "action": "Text only, no automatic schedule"
+      }
+    ],
+    "insights": [
+      {
+        "date": "2026-11-08",
+        "source": "Synthetic source",
+        "insight": "Observation"
+      }
+    ],
+    "todos": [
+      {
+        "date": "2026-11-08",
+        "title": "Historical synthetic todo",
+        "done": false,
+        "legacy_id": "Preserve-original"
+      }
+    ]
+  }
+}

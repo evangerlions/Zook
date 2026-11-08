@@ -204,3 +204,38 @@ test("queued section requests freeze their original body before waiting for the 
   const receipt = await repo.getOperation(o, "section-frozen");
   assert.equal((receipt!.requestPayload as any).value[0].title, decision.title);
 });
+
+test("all seven old form golden values retain fields, zero, unknown probability and legacy identities verbatim", async () => {
+  const { readFileSync } = await import("node:fs");
+  const golden = JSON.parse(
+    readFileSync(
+      new URL(
+        "../fixtures/lighttick/form-editors-golden.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  const repo = new InMemoryLightTickRepository(),
+    s = new FormRecordsService(repo);
+  let revision = 0;
+  for (const [section, value] of Object.entries(golden.values)) {
+    const result = await s.patch(
+      o,
+      section,
+      { base_revision: revision, value },
+      "golden-section-" + section,
+    );
+    revision = result.revision;
+    const actual =
+      section === "custom"
+        ? {
+            customFields: result.data.customFields,
+            customRecords: result.data.customRecords,
+          }
+        : result.data[section as keyof typeof result.data];
+    assert.deepEqual(actual, value);
+  }
+  assert.equal((await repo.listTasks(o)).length, 0);
+  assert.equal((await repo.listReflections(o)).length, 0);
+});
