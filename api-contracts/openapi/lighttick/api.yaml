@@ -645,6 +645,13 @@ paths:
         Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
         not market valuations. No entities enter legacy sync.
       parameters:
+      - name: ledger_schema
+        in: query
+        required: false
+        description: Explicitly negotiate schema2 for immutable correction history. Existing schema1 accounts with corrections return409 LEDGER_SCHEMA_UPGRADE_REQUIRED; retain drafts and pending requests.
+        schema:
+          type: string
+          enum: ['1', '2']
       - name: resourceId
         in: path
         required: true
@@ -16767,6 +16774,53 @@ components:
             - cash
           cash: &ledger007
             $ref: '#/components/schemas/LightTickInvestmentCash'
+      - $ref: '#/components/schemas/LightTickInvestmentLedgerCorrectionInput'
+    LightTickInvestmentLedgerFact:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required: [business_date, kind, fill]
+        properties:
+          business_date: *ledger002
+          kind: *ledger003
+          fill: *ledger004
+      - type: object
+        additionalProperties: false
+        required: [business_date, kind, cash]
+        properties:
+          business_date: *ledger002
+          kind: *ledger006
+          cash: *ledger007
+    LightTickInvestmentLedgerCorrection:
+      type: object
+      additionalProperties: false
+      required: [target_event_id, target_input_digest, reason, replacement]
+      properties:
+        target_event_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        target_input_digest:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        replacement:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentLedgerFact'
+          - type: 'null'
+    LightTickInvestmentLedgerCorrectionInput:
+      type: object
+      additionalProperties: false
+      required: [business_date, kind, correction]
+      properties:
+        business_date: *ledger002
+        kind:
+          type: string
+          enum: [correction]
+        correction:
+          $ref: '#/components/schemas/LightTickInvestmentLedgerCorrection'
     LightTickInvestmentLedgerWrite:
       oneOf:
       - type: object
@@ -16796,6 +16850,17 @@ components:
           business_date: *ledger002
           kind: *ledger006
           cash: *ledger007
+      - type: object
+        additionalProperties: false
+        required: [base_revision, business_date, kind, correction]
+        properties:
+          base_revision: *ledger005
+          business_date: *ledger002
+          kind:
+            type: string
+            enum: [correction]
+          correction:
+            $ref: '#/components/schemas/LightTickInvestmentLedgerCorrection'
     LightTickInvestmentLedgerPosition:
       type: object
       additionalProperties: false
@@ -16911,6 +16976,17 @@ components:
           type: integer
           minimum: 1
           maximum: 10000
+        effective_event_count:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        correction_count:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        projection_version:
+          type: string
+          enum: [immutable-ledger-corrections-v1]
         valuation:
           type: string
           enum:
@@ -16980,6 +17056,25 @@ components:
         input:
           $ref: '#/components/schemas/LightTickInvestmentLedgerInput'
         created_at: *ledger010
+        effective_fact:
+          anyOf:
+          - type: object
+            additionalProperties: false
+            required: [input, input_digest]
+            properties:
+              input:
+                anyOf:
+                - $ref: '#/components/schemas/LightTickInvestmentLedgerFact'
+                - type: 'null'
+              input_digest:
+                type: string
+                pattern: ^[a-f0-9]{64}$
+          - type: 'null'
+        superseded_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+
     LightTickInvestmentLedgerPage:
       type: object
       additionalProperties: false

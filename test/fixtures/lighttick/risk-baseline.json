@@ -120,6 +120,13 @@
         "test/unit/lighttick-strategies.test.ts",
         "test/unit/lighttick-strategies.api.test.ts"
       ]
+    },
+    {
+      "id": "immutable_ledger_corrections_compensation_and_old_schema",
+      "tests": [
+        "test/unit/lighttick-ledger-corrections.test.ts",
+        "test/unit/lighttick-investment-ledger.api.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -142,7 +149,8 @@
     "test/integration/lighttick-materials-postgres.test.ts",
     "test/integration/lighttick-screening-postgres.test.ts",
     "test/integration/lighttick-observations-postgres.test.ts",
-    "test/integration/lighttick-strategies-postgres.test.ts"
+    "test/integration/lighttick-strategies-postgres.test.ts",
+    "test/integration/lighttick-ledger-corrections-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",

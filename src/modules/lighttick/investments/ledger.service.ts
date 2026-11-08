@@ -1,3 +1,4 @@
+import { projectLedger, ledgerRows } from "./ledger.projection.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
@@ -81,6 +82,11 @@ export class InvestmentLedgerService extends InvestmentService {
           fail(422, "An event cannot predate the opening baseline.");
         if ((await this.store.count(o, account)) >= LEDGER_LIMITS.work)
           fail(413, "Ledger work exceeds the bounded account capacity.");
+        if(input.kind==="correction"){
+          const rows=await this.store.events(o,account);
+          projectLedger([...rows,{id,account_id:account,sequence:a.revision+1,input,created_at:now}]);
+          if(input.correction.replacement && input.correction.replacement.business_date<a.baseline_date)fail(422,"Replacement predates opening baseline.");
+        }
         await this.validateInstrument(o, input);
         const row: LedgerWork = {
           ...o,
@@ -107,6 +113,10 @@ export class InvestmentLedgerService extends InvestmentService {
     return this.work(o, result.id);
   }
   async validateInstrument(o: LightTickOwner, input: LedgerWork["input"]) {
+    if(input.kind==="correction") {
+      if(input.correction.replacement)await this.validateInstrument(o,input.correction.replacement);
+      return;
+    }
     if (input.kind !== "fill") return;
     const i = await this.repo.investments.instrument(
       o,
@@ -200,9 +210,10 @@ export class InvestmentLedgerService extends InvestmentService {
       throw Error("Ledger original receipt is unavailable.");
     // Common operation receipts remain immutable; this durable domain row is the terminal receipt.
   }
-  async ledger(o: LightTickOwner, account: string, cursor = "", limit = 50) {
+  async ledger(o: LightTickOwner, account: string, cursor = "", limit = 50, schema = "1") {
     investmentId(account);
     integer(limit, 1, 100);
+    if(!["1","2"].includes(schema))fail(422,"Unsupported ledger_schema.");
     return this.repo.transaction(o, async () => {
       await this.authorize();
       const a = await this.repo.investments.account(o, account);
@@ -210,7 +221,8 @@ export class InvestmentLedgerService extends InvestmentService {
       const rows = await this.store.events(o, account);
       if (rows.length > LEDGER_LIMITS.events)
         fail(413, "Ledger event capacity exceeded.");
-      const revision = digest([account, a.revision, rows]);
+      if(schema!=="2" && rows.some(e=>e.input.kind==="correction"))fail(409,"LEDGER_SCHEMA_UPGRADE_REQUIRED: request ledger_schema=2; retain local drafts and pending requests.");
+      const revision = digest([account, a.revision, rows, ...(schema==="2"?[schema]:[])]);
       let offset = 0;
       if (cursor) {
         try {
@@ -235,7 +247,7 @@ export class InvestmentLedgerService extends InvestmentService {
       const report = await this.store.latest(o, account);
       return {
         account_revision: a.revision,
-        items: rows.slice(offset, offset + limit),
+        items: (schema==="2"?ledgerRows(rows):rows).slice(offset, offset + limit),
         report,
         next_cursor:
           rows.length > offset + limit

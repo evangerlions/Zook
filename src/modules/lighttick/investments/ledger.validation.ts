@@ -11,7 +11,7 @@ export function ledgerInput(
   b: Record<string, unknown>,
   today: string,
 ): LedgerInput {
-  keys(b, ["base_revision", "business_date", "kind", "fill", "cash"]);
+  keys(b, ["base_revision", "business_date", "kind", "fill", "cash", "correction"]);
   const date = text(b.business_date, 10, true);
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
@@ -24,6 +24,17 @@ export function ledgerInput(
       422,
       "Ledger date must be a real date through today in Asia/Shanghai.",
     );
+  if (b.kind === "correction") {
+    if (b.fill !== undefined || b.cash !== undefined) fail(422,"Correction must declare only its correction payload.");
+    const c=object(b.correction);keys(c,["target_event_id","target_input_digest","reason","replacement"]);
+    const h=text(c.target_input_digest,64,true);if(!/^[a-f0-9]{64}$/.test(h))fail(422,"Correction target digest required.");
+    const reason=text(c.reason,4000,true);if(!reason.trim())fail(422,"Correction reason required.");
+    let replacement=null;
+    if(c.replacement!==null){const r=object(c.replacement);if(!["fill","cash"].includes(String(r.kind)))fail(422,"Replacement must be a fill/cash fact or explicit null.");
+      replacement=ledgerInput(r,today);if(replacement.kind==="correction")fail(422,"Nested corrections are not allowed.");}
+    return {business_date:date,kind:"correction",correction:{target_event_id:investmentId(c.target_event_id),target_input_digest:h,reason,replacement}};
+  }
+  if(b.correction!==undefined)fail(422,"Non-correction fact cannot include correction fields.");
   if (b.kind === "fill") {
     if (b.cash !== undefined)
       fail(422, "One event must have one declared kind.");

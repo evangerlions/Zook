@@ -74711,6 +74711,215 @@ export const LightTickInvestmentLedgerInputSchema = {
           }
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "business_date",
+        "kind",
+        "correction"
+      ],
+      "properties": {
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "correction"
+          ]
+        },
+        "correction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target_event_id",
+            "target_input_digest",
+            "reason",
+            "replacement"
+          ],
+          "properties": {
+            "target_event_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "target_input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "replacement": {
+              "anyOf": [
+                {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "business_date",
+                        "kind",
+                        "fill"
+                      ],
+                      "properties": {
+                        "business_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "fill"
+                          ]
+                        },
+                        "fill": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "instrument_id",
+                            "side",
+                            "price",
+                            "quantity",
+                            "fee",
+                            "tax",
+                            "settlement_amount",
+                            "source"
+                          ],
+                          "properties": {
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "side": {
+                              "type": "string",
+                              "enum": [
+                                "buy",
+                                "sell"
+                              ]
+                            },
+                            "price": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            },
+                            "quantity": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            },
+                            "fee": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "settlement_amount": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "csv",
+                                "broker",
+                                "fund_confirmation"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "business_date",
+                        "kind",
+                        "cash"
+                      ],
+                      "properties": {
+                        "business_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "cash"
+                          ]
+                        },
+                        "cash": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "amount"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "deposit",
+                                "withdrawal",
+                                "dividend",
+                                "interest",
+                                "fee",
+                                "fund_receivable_hold",
+                                "fund_receivable_release"
+                              ]
+                            },
+                            "amount": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
     }
   ]
 } as const;
@@ -74734,6 +74943,37 @@ export type LightTickInvestmentLedgerInput = {
   "cash": {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
+};
+} | {
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
 };
 };
 
@@ -74902,6 +75142,221 @@ export const LightTickInvestmentLedgerWriteSchema = {
           }
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_revision",
+        "business_date",
+        "kind",
+        "correction"
+      ],
+      "properties": {
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "business_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "correction"
+          ]
+        },
+        "correction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target_event_id",
+            "target_input_digest",
+            "reason",
+            "replacement"
+          ],
+          "properties": {
+            "target_event_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+            },
+            "target_input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "replacement": {
+              "anyOf": [
+                {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "business_date",
+                        "kind",
+                        "fill"
+                      ],
+                      "properties": {
+                        "business_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "fill"
+                          ]
+                        },
+                        "fill": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "instrument_id",
+                            "side",
+                            "price",
+                            "quantity",
+                            "fee",
+                            "tax",
+                            "settlement_amount",
+                            "source"
+                          ],
+                          "properties": {
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "side": {
+                              "type": "string",
+                              "enum": [
+                                "buy",
+                                "sell"
+                              ]
+                            },
+                            "price": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            },
+                            "quantity": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            },
+                            "fee": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "settlement_amount": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "csv",
+                                "broker",
+                                "fund_confirmation"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "business_date",
+                        "kind",
+                        "cash"
+                      ],
+                      "properties": {
+                        "business_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "cash"
+                          ]
+                        },
+                        "cash": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "amount"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "deposit",
+                                "withdrawal",
+                                "dividend",
+                                "interest",
+                                "fee",
+                                "fund_receivable_hold",
+                                "fund_receivable_release"
+                              ]
+                            },
+                            "amount": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
     }
   ]
 } as const;
@@ -74927,6 +75382,38 @@ export type LightTickInvestmentLedgerWrite = {
   "cash": {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
+};
+} | {
+  "base_revision": number;
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
 };
 };
 
@@ -75267,6 +75754,22 @@ export const LightTickInvestmentLedgerReportSchema = {
       "minimum": 1,
       "maximum": 10000
     },
+    "effective_event_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "correction_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "projection_version": {
+      "type": "string",
+      "enum": [
+        "immutable-ledger-corrections-v1"
+      ]
+    },
     "valuation": {
       "type": "string",
       "enum": [
@@ -75450,6 +75953,9 @@ export type LightTickInvestmentLedgerReport = {
   "algorithm_version": "moving-average-decimal60-half-even-v1";
   "input_digest": string;
   "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
   "valuation": "unpriced";
   "result": {
   "cash": string;
@@ -75693,6 +76199,215 @@ export const LightTickInvestmentLedgerWorkSchema = {
               }
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "business_date",
+            "kind",
+            "correction"
+          ],
+          "properties": {
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "correction"
+              ]
+            },
+            "correction": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "target_event_id",
+                "target_input_digest",
+                "reason",
+                "replacement"
+              ],
+              "properties": {
+                "target_event_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "target_input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000
+                },
+                "replacement": {
+                  "anyOf": [
+                    {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "business_date",
+                            "kind",
+                            "fill"
+                          ],
+                          "properties": {
+                            "business_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "fill"
+                              ]
+                            },
+                            "fill": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "instrument_id",
+                                "side",
+                                "price",
+                                "quantity",
+                                "fee",
+                                "tax",
+                                "settlement_amount",
+                                "source"
+                              ],
+                              "properties": {
+                                "instrument_id": {
+                                  "type": "string",
+                                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                  "maxLength": 100
+                                },
+                                "side": {
+                                  "type": "string",
+                                  "enum": [
+                                    "buy",
+                                    "sell"
+                                  ]
+                                },
+                                "price": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                "quantity": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                "fee": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "tax": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "settlement_amount": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "csv",
+                                    "broker",
+                                    "fund_confirmation"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "business_date",
+                            "kind",
+                            "cash"
+                          ],
+                          "properties": {
+                            "business_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "cash"
+                              ]
+                            },
+                            "cash": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "kind",
+                                "amount"
+                              ],
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "deposit",
+                                    "withdrawal",
+                                    "dividend",
+                                    "interest",
+                                    "fee",
+                                    "fund_receivable_hold",
+                                    "fund_receivable_release"
+                                  ]
+                                },
+                                "amount": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
         }
       ]
     },
@@ -75741,6 +76456,22 @@ export const LightTickInvestmentLedgerWorkSchema = {
               "type": "integer",
               "minimum": 1,
               "maximum": 10000
+            },
+            "effective_event_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "correction_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "projection_version": {
+              "type": "string",
+              "enum": [
+                "immutable-ledger-corrections-v1"
+              ]
             },
             "valuation": {
               "type": "string",
@@ -75961,6 +76692,37 @@ export type LightTickInvestmentLedgerWork = {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
 };
+} | {
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+};
 };
   "output": (
 {
@@ -75970,6 +76732,9 @@ export type LightTickInvestmentLedgerWork = {
   "algorithm_version": "moving-average-decimal60-half-even-v1";
   "input_digest": string;
   "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
   "valuation": "unpriced";
   "result": {
   "cash": string;
@@ -76180,12 +76945,415 @@ export const LightTickInvestmentLedgerEventSchema = {
               }
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "business_date",
+            "kind",
+            "correction"
+          ],
+          "properties": {
+            "business_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "correction"
+              ]
+            },
+            "correction": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "target_event_id",
+                "target_input_digest",
+                "reason",
+                "replacement"
+              ],
+              "properties": {
+                "target_event_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                },
+                "target_input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000
+                },
+                "replacement": {
+                  "anyOf": [
+                    {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "business_date",
+                            "kind",
+                            "fill"
+                          ],
+                          "properties": {
+                            "business_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "fill"
+                              ]
+                            },
+                            "fill": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "instrument_id",
+                                "side",
+                                "price",
+                                "quantity",
+                                "fee",
+                                "tax",
+                                "settlement_amount",
+                                "source"
+                              ],
+                              "properties": {
+                                "instrument_id": {
+                                  "type": "string",
+                                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                  "maxLength": 100
+                                },
+                                "side": {
+                                  "type": "string",
+                                  "enum": [
+                                    "buy",
+                                    "sell"
+                                  ]
+                                },
+                                "price": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                "quantity": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                "fee": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "tax": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "settlement_amount": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "csv",
+                                    "broker",
+                                    "fund_confirmation"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "business_date",
+                            "kind",
+                            "cash"
+                          ],
+                          "properties": {
+                            "business_date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "cash"
+                              ]
+                            },
+                            "cash": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "kind",
+                                "amount"
+                              ],
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "deposit",
+                                    "withdrawal",
+                                    "dividend",
+                                    "interest",
+                                    "fee",
+                                    "fund_receivable_hold",
+                                    "fund_receivable_release"
+                                  ]
+                                },
+                                "amount": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
         }
       ]
     },
     "created_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "effective_fact": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input",
+            "input_digest"
+          ],
+          "properties": {
+            "input": {
+              "anyOf": [
+                {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "business_date",
+                        "kind",
+                        "fill"
+                      ],
+                      "properties": {
+                        "business_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "fill"
+                          ]
+                        },
+                        "fill": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "instrument_id",
+                            "side",
+                            "price",
+                            "quantity",
+                            "fee",
+                            "tax",
+                            "settlement_amount",
+                            "source"
+                          ],
+                          "properties": {
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "side": {
+                              "type": "string",
+                              "enum": [
+                                "buy",
+                                "sell"
+                              ]
+                            },
+                            "price": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            },
+                            "quantity": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            },
+                            "fee": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tax": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "settlement_amount": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "csv",
+                                "broker",
+                                "fund_confirmation"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "business_date",
+                        "kind",
+                        "cash"
+                      ],
+                      "properties": {
+                        "business_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "cash"
+                          ]
+                        },
+                        "cash": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "amount"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "deposit",
+                                "withdrawal",
+                                "dividend",
+                                "interest",
+                                "fee",
+                                "fund_receivable_hold",
+                                "fund_receivable_release"
+                              ]
+                            },
+                            "amount": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "superseded_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -76214,8 +77382,68 @@ export type LightTickInvestmentLedgerEvent = {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
 };
+} | {
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+};
 };
   "created_at": string;
+  "effective_fact"?: (
+{
+  "input": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+  "input_digest": string;
+}
+) | unknown;
+  "superseded_by"?: string | unknown;
 };
 
 export const LightTickInvestmentLedgerPageSchema = {
@@ -76415,12 +77643,415 @@ export const LightTickInvestmentLedgerPageSchema = {
                     }
                   }
                 }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "business_date",
+                  "kind",
+                  "correction"
+                ],
+                "properties": {
+                  "business_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "correction"
+                    ]
+                  },
+                  "correction": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "target_event_id",
+                      "target_input_digest",
+                      "reason",
+                      "replacement"
+                    ],
+                    "properties": {
+                      "target_event_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                      },
+                      "target_input_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000
+                      },
+                      "replacement": {
+                        "anyOf": [
+                          {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "business_date",
+                                  "kind",
+                                  "fill"
+                                ],
+                                "properties": {
+                                  "business_date": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "fill"
+                                    ]
+                                  },
+                                  "fill": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "instrument_id",
+                                      "side",
+                                      "price",
+                                      "quantity",
+                                      "fee",
+                                      "tax",
+                                      "settlement_amount",
+                                      "source"
+                                    ],
+                                    "properties": {
+                                      "instrument_id": {
+                                        "type": "string",
+                                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                        "maxLength": 100
+                                      },
+                                      "side": {
+                                        "type": "string",
+                                        "enum": [
+                                          "buy",
+                                          "sell"
+                                        ]
+                                      },
+                                      "price": {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      "quantity": {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      "fee": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "tax": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "settlement_amount": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "source": {
+                                        "type": "string",
+                                        "enum": [
+                                          "manual",
+                                          "csv",
+                                          "broker",
+                                          "fund_confirmation"
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "business_date",
+                                  "kind",
+                                  "cash"
+                                ],
+                                "properties": {
+                                  "business_date": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "cash"
+                                    ]
+                                  },
+                                  "cash": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "kind",
+                                      "amount"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "deposit",
+                                          "withdrawal",
+                                          "dividend",
+                                          "interest",
+                                          "fee",
+                                          "fund_receivable_hold",
+                                          "fund_receivable_release"
+                                        ]
+                                      },
+                                      "amount": {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
               }
             ]
           },
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "effective_fact": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input",
+                  "input_digest"
+                ],
+                "properties": {
+                  "input": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "business_date",
+                              "kind",
+                              "fill"
+                            ],
+                            "properties": {
+                              "business_date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "fill"
+                                ]
+                              },
+                              "fill": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "instrument_id",
+                                  "side",
+                                  "price",
+                                  "quantity",
+                                  "fee",
+                                  "tax",
+                                  "settlement_amount",
+                                  "source"
+                                ],
+                                "properties": {
+                                  "instrument_id": {
+                                    "type": "string",
+                                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                    "maxLength": 100
+                                  },
+                                  "side": {
+                                    "type": "string",
+                                    "enum": [
+                                      "buy",
+                                      "sell"
+                                    ]
+                                  },
+                                  "price": {
+                                    "type": "string",
+                                    "maxLength": 120,
+                                    "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                  },
+                                  "quantity": {
+                                    "type": "string",
+                                    "maxLength": 120,
+                                    "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                  },
+                                  "fee": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "tax": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "settlement_amount": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "source": {
+                                    "type": "string",
+                                    "enum": [
+                                      "manual",
+                                      "csv",
+                                      "broker",
+                                      "fund_confirmation"
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "business_date",
+                              "kind",
+                              "cash"
+                            ],
+                            "properties": {
+                              "business_date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "cash"
+                                ]
+                              },
+                              "cash": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "kind",
+                                  "amount"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "deposit",
+                                      "withdrawal",
+                                      "dividend",
+                                      "interest",
+                                      "fee",
+                                      "fund_receivable_hold",
+                                      "fund_receivable_release"
+                                    ]
+                                  },
+                                  "amount": {
+                                    "type": "string",
+                                    "maxLength": 120,
+                                    "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "input_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "superseded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -76470,6 +78101,22 @@ export const LightTickInvestmentLedgerPageSchema = {
               "type": "integer",
               "minimum": 1,
               "maximum": 10000
+            },
+            "effective_event_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "correction_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "projection_version": {
+              "type": "string",
+              "enum": [
+                "immutable-ledger-corrections-v1"
+              ]
             },
             "valuation": {
               "type": "string",
@@ -76692,8 +78339,68 @@ export type LightTickInvestmentLedgerPage = {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
 };
+} | {
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+};
 };
   "created_at": string;
+  "effective_fact"?: (
+{
+  "input": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+  "input_digest": string;
+}
+) | unknown;
+  "superseded_by"?: string | unknown;
 }
 )[];
   "report": (
@@ -76704,6 +78411,9 @@ export type LightTickInvestmentLedgerPage = {
   "algorithm_version": "moving-average-decimal60-half-even-v1";
   "input_digest": string;
   "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
   "valuation": "unpriced";
   "result": {
   "cash": string;
@@ -76988,6 +78698,215 @@ export const LightTickInvestmentLedgerWorkEnvelopeSchema = {
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "business_date",
+                "kind",
+                "correction"
+              ],
+              "properties": {
+                "business_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "correction"
+                  ]
+                },
+                "correction": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "target_event_id",
+                    "target_input_digest",
+                    "reason",
+                    "replacement"
+                  ],
+                  "properties": {
+                    "target_event_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                    },
+                    "target_input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4000
+                    },
+                    "replacement": {
+                      "anyOf": [
+                        {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "business_date",
+                                "kind",
+                                "fill"
+                              ],
+                              "properties": {
+                                "business_date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "fill"
+                                  ]
+                                },
+                                "fill": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "instrument_id",
+                                    "side",
+                                    "price",
+                                    "quantity",
+                                    "fee",
+                                    "tax",
+                                    "settlement_amount",
+                                    "source"
+                                  ],
+                                  "properties": {
+                                    "instrument_id": {
+                                      "type": "string",
+                                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                      "maxLength": 100
+                                    },
+                                    "side": {
+                                      "type": "string",
+                                      "enum": [
+                                        "buy",
+                                        "sell"
+                                      ]
+                                    },
+                                    "price": {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    "quantity": {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    },
+                                    "fee": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 120,
+                                          "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "tax": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 120,
+                                          "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "settlement_amount": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 120,
+                                          "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "manual",
+                                        "csv",
+                                        "broker",
+                                        "fund_confirmation"
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "business_date",
+                                "kind",
+                                "cash"
+                              ],
+                              "properties": {
+                                "business_date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "cash"
+                                  ]
+                                },
+                                "cash": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "kind",
+                                    "amount"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "deposit",
+                                        "withdrawal",
+                                        "dividend",
+                                        "interest",
+                                        "fee",
+                                        "fund_receivable_hold",
+                                        "fund_receivable_release"
+                                      ]
+                                    },
+                                    "amount": {
+                                      "type": "string",
+                                      "maxLength": 120,
+                                      "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
             }
           ]
         },
@@ -77036,6 +78955,22 @@ export const LightTickInvestmentLedgerWorkEnvelopeSchema = {
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 10000
+                },
+                "effective_event_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "correction_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "projection_version": {
+                  "type": "string",
+                  "enum": [
+                    "immutable-ledger-corrections-v1"
+                  ]
                 },
                 "valuation": {
                   "type": "string",
@@ -77264,6 +79199,37 @@ export type LightTickInvestmentLedgerWorkEnvelope = {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
 };
+} | {
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+};
 };
   "output": (
 {
@@ -77273,6 +79239,9 @@ export type LightTickInvestmentLedgerWorkEnvelope = {
   "algorithm_version": "moving-average-decimal60-half-even-v1";
   "input_digest": string;
   "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
   "valuation": "unpriced";
   "result": {
   "cash": string;
@@ -77522,12 +79491,415 @@ export const LightTickInvestmentLedgerPageEnvelopeSchema = {
                         }
                       }
                     }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "business_date",
+                      "kind",
+                      "correction"
+                    ],
+                    "properties": {
+                      "business_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "correction"
+                        ]
+                      },
+                      "correction": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "target_event_id",
+                          "target_input_digest",
+                          "reason",
+                          "replacement"
+                        ],
+                        "properties": {
+                          "target_event_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$"
+                          },
+                          "target_input_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                          },
+                          "replacement": {
+                            "anyOf": [
+                              {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "business_date",
+                                      "kind",
+                                      "fill"
+                                    ],
+                                    "properties": {
+                                      "business_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                      },
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "fill"
+                                        ]
+                                      },
+                                      "fill": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "instrument_id",
+                                          "side",
+                                          "price",
+                                          "quantity",
+                                          "fee",
+                                          "tax",
+                                          "settlement_amount",
+                                          "source"
+                                        ],
+                                        "properties": {
+                                          "instrument_id": {
+                                            "type": "string",
+                                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                            "maxLength": 100
+                                          },
+                                          "side": {
+                                            "type": "string",
+                                            "enum": [
+                                              "buy",
+                                              "sell"
+                                            ]
+                                          },
+                                          "price": {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          "quantity": {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          "fee": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 120,
+                                                "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "tax": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 120,
+                                                "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "settlement_amount": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 120,
+                                                "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "source": {
+                                            "type": "string",
+                                            "enum": [
+                                              "manual",
+                                              "csv",
+                                              "broker",
+                                              "fund_confirmation"
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "business_date",
+                                      "kind",
+                                      "cash"
+                                    ],
+                                    "properties": {
+                                      "business_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                      },
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "cash"
+                                        ]
+                                      },
+                                      "cash": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "kind",
+                                          "amount"
+                                        ],
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "deposit",
+                                              "withdrawal",
+                                              "dividend",
+                                              "interest",
+                                              "fee",
+                                              "fund_receivable_hold",
+                                              "fund_receivable_release"
+                                            ]
+                                          },
+                                          "amount": {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
                   }
                 ]
               },
               "created_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "effective_fact": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input",
+                      "input_digest"
+                    ],
+                    "properties": {
+                      "input": {
+                        "anyOf": [
+                          {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "business_date",
+                                  "kind",
+                                  "fill"
+                                ],
+                                "properties": {
+                                  "business_date": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "fill"
+                                    ]
+                                  },
+                                  "fill": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "instrument_id",
+                                      "side",
+                                      "price",
+                                      "quantity",
+                                      "fee",
+                                      "tax",
+                                      "settlement_amount",
+                                      "source"
+                                    ],
+                                    "properties": {
+                                      "instrument_id": {
+                                        "type": "string",
+                                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                        "maxLength": 100
+                                      },
+                                      "side": {
+                                        "type": "string",
+                                        "enum": [
+                                          "buy",
+                                          "sell"
+                                        ]
+                                      },
+                                      "price": {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      "quantity": {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      },
+                                      "fee": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "tax": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "settlement_amount": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 120,
+                                            "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "source": {
+                                        "type": "string",
+                                        "enum": [
+                                          "manual",
+                                          "csv",
+                                          "broker",
+                                          "fund_confirmation"
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "business_date",
+                                  "kind",
+                                  "cash"
+                                ],
+                                "properties": {
+                                  "business_date": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "cash"
+                                    ]
+                                  },
+                                  "cash": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "kind",
+                                      "amount"
+                                    ],
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "deposit",
+                                          "withdrawal",
+                                          "dividend",
+                                          "interest",
+                                          "fee",
+                                          "fund_receivable_hold",
+                                          "fund_receivable_release"
+                                        ]
+                                      },
+                                      "amount": {
+                                        "type": "string",
+                                        "maxLength": 120,
+                                        "pattern": "^[+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?$"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "input_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "superseded_by": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -77577,6 +79949,22 @@ export const LightTickInvestmentLedgerPageEnvelopeSchema = {
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 10000
+                },
+                "effective_event_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "correction_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "projection_version": {
+                  "type": "string",
+                  "enum": [
+                    "immutable-ledger-corrections-v1"
+                  ]
                 },
                 "valuation": {
                   "type": "string",
@@ -77807,8 +80195,68 @@ export type LightTickInvestmentLedgerPageEnvelope = {
   "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
   "amount": string;
 };
+} | {
+  "business_date": string;
+  "kind": "correction";
+  "correction": {
+  "target_event_id": string;
+  "target_input_digest": string;
+  "reason": string;
+  "replacement": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+};
 };
   "created_at": string;
+  "effective_fact"?: (
+{
+  "input": (
+{
+  "business_date": string;
+  "kind": "fill";
+  "fill": {
+  "instrument_id": string;
+  "side": "buy" | "sell";
+  "price": string;
+  "quantity": string;
+  "fee": string | unknown;
+  "tax": string | unknown;
+  "settlement_amount": string | unknown;
+  "source": "manual" | "csv" | "broker" | "fund_confirmation";
+};
+} | {
+  "business_date": string;
+  "kind": "cash";
+  "cash": {
+  "kind": "deposit" | "withdrawal" | "dividend" | "interest" | "fee" | "fund_receivable_hold" | "fund_receivable_release";
+  "amount": string;
+};
+}
+) | unknown;
+  "input_digest": string;
+}
+) | unknown;
+  "superseded_by"?: string | unknown;
 }
 )[];
   "report": (
@@ -77819,6 +80267,9 @@ export type LightTickInvestmentLedgerPageEnvelope = {
   "algorithm_version": "moving-average-decimal60-half-even-v1";
   "input_digest": string;
   "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
   "valuation": "unpriced";
   "result": {
   "cash": string;

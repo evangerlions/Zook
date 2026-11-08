@@ -33,7 +33,7 @@ export async function handleInvestmentRequest(
   if(ledgerMatch||workMatch){
     if(!ledger)fail(503,'Investment worker is unavailable.');
     const work=new InvestmentLedgerService(repo,ledger.queue,authorize,ledger.clock);
-    if(ledgerMatch&&r.method==='GET'&&ledgerMatch[2]==='ledger')return work.ledger(owner,ledgerMatch[1],r.query?.cursor??'',r.query?.limit===undefined?50:integer(Number(r.query.limit),1,100));
+    if(ledgerMatch&&r.method==='GET'&&ledgerMatch[2]==='ledger')return work.ledger(owner,ledgerMatch[1],r.query?.cursor??'',r.query?.limit===undefined?50:integer(Number(r.query.limit),1,100),r.query?.ledger_schema??'1');
     if(workMatch&&r.method==='GET'&&!workMatch[2])return work.work(owner,workMatch[1]);
     const b=object(r.body);if(Buffer.byteLength(JSON.stringify(b))>16000)fail(413,'Ledger command exceeds capacity.');
     if(ledgerMatch&&r.method==='POST'&&ledgerMatch[2]==='events')return work.append(owner,ledgerMatch[1],b,key);

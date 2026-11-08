@@ -1,9 +1,16 @@
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { Fill, CashEvent, reconcile } from "./accounting.ts";
-export type LedgerInput = { business_date: string } & (
+export type LedgerFact = { business_date: string } & (
   | { kind: "fill"; fill: Fill }
   | { kind: "cash"; cash: CashEvent }
 );
+export interface LedgerCorrection {
+  target_event_id: string;
+  target_input_digest: string;
+  reason: string;
+  replacement: LedgerFact | null;
+}
+export type LedgerInput = LedgerFact | {kind: "correction"; business_date: string; correction: LedgerCorrection};
 export interface LedgerEvent {
   id: string;
   account_id: string;
@@ -34,6 +41,9 @@ export interface LedgerReport {
   algorithm_version: string;
   input_digest: string;
   event_count: number;
+  effective_event_count?: number;
+  correction_count?: number;
+  projection_version?: "immutable-ledger-corrections-v1";
   valuation: "unpriced";
   result: ReturnType<typeof reconcile>;
 }

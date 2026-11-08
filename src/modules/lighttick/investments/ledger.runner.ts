@@ -1,3 +1,4 @@
+import { projectLedger, LEDGER_PROJECTION_VERSION } from "./ledger.projection.ts";
 import { randomUUID } from "node:crypto";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { InvestmentAccount } from "./investment.types.ts";
@@ -16,10 +17,11 @@ export function calculateLedger(
       x.input.business_date.localeCompare(y.input.business_date) ||
       x.sequence - y.sequence,
   );
-  const cash = ordered.flatMap((e) =>
+  const effective = projectLedger(events).active;
+  const cash = effective.flatMap((e) =>
       e.input.kind === "cash" ? [e.input.cash] : [],
     ),
-    fills = ordered.flatMap((e) =>
+    fills = effective.flatMap((e) =>
       e.input.kind === "fill" ? [e.input.fill] : [],
     );
   const output: LedgerReport = {
@@ -37,6 +39,7 @@ export function calculateLedger(
       events: ordered,
     }),
     event_count: ordered.length,
+    ...(events.some(e=>e.input.kind==="correction")?{effective_event_count:effective.length,correction_count:events.filter(e=>e.input.kind==="correction").length,projection_version:LEDGER_PROJECTION_VERSION}:{}),
     valuation: "unpriced",
     result: reconcile(a.opening_cash, cash, fills, a.opening_positions, {}),
   };

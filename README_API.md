@@ -1941,3 +1941,13 @@ Canonical 前缀 `/api/v1/lighttick/investments`，合同 `api-contracts/openapi
 任务复用现有worker和受限计算线程，计算在owner事务外；每owner活动1、UTC日20、保留100任务，输入2MiB、报告6MiB，30秒期限/60秒租约/3次尝试。取消、撤权、归档或标的版本变化阻止迟到发布；归档后恢复也不接收旧执行。普通参数改版保留已经冻结的旧参数执行。恢复时若当前worker不支持冻结的算法版本，终态为failed/BACKTEST_ALGORITHM_VERSION_UNAVAILABLE，原输入保留，不用新算法重算原请求。预算429/容量413明确返回；失败不切策略或供应商。报告包含费用/税、资金曲线、信号/订单/成交、逐日条件、原始日线和缺失原因；历史缺失不补零。样本内比较不是样本外质量证明。
 
 本人授权导出包含策略全部版本、完整冻结输入/报告和原创建/取消命令，过滤内部owner/租约/fence；5000项/8MiB超限明确失败，不返回截断包。共用账号删除覆盖新增三表。新领域不进入旧pull，通用sync/push继续task-only；无旧API别名或完整旧行为等价声明。
+
+### LightTick 投资账本追加纠错
+
+`POST /api/v1/lighttick/investments/accounts/{id}/events` 在既有fill/cash命令外支持 `kind=correction`。请求仍带原Idempotency-Key、账户base_revision与business_date；correction字段包含同账户当前目标的target_event_id、target_input_digest、原样reason，以及完整fill/cash replacement或显式null（作废）。不允许嵌套纠错、过期/跨账户目标或自动覆盖；同原key/body返回原工作终态，不创建第二次事实。
+
+复用既有投资worker，成功时原子追加纠错事件、推进账户修订并保存重算报告；失败/取消不改变原事实或期初。有效替换可再次纠错；明确作废的当前状态可通过新补偿事实恢复。所有原记录、命令和历史报告保留，金额继续NUMERIC及API十进制字符串。资料未知继续未知，不虚构反向交易或现金调整。
+
+新客户端用 `GET .../accounts/{id}/ledger?ledger_schema=2` 显式协商完整历史。每行新增effective_fact（当前状态输入/摘要，输入可为null）和superseded_by；报告在有纠错时新增effective_event_count、correction_count及projection_version。存在纠错时未协商schema2的读取返回409 `LEDGER_SCHEMA_UPGRADE_REQUIRED`说明，须保留草稿/原请求并升级；无纠错旧读取保持原语义。新记录不进入旧pull，sync/push仍task-only。分页游标失效须重建已确认读取，不重建写请求。
+
+授权导出覆盖全部原事实、纠错链和原命令终态；共用账号删除覆盖同owner全部记录。此能力不提供行情估值或投资建议，不代表全部旧投资行为等价或允许真实数据迁移/发布。
