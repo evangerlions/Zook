@@ -51,7 +51,7 @@ export class PortfolioRunner {
         }
         catch (e) {
             const reason = (e as Error).message;
-            error = timedOut ? "TIMEOUT" : controller.signal.aborted ? "CANCELLED_OR_CONTEXT_CHANGED" : ["PORTFOLIO_INPUT_INVALID", "PORTFOLIO_RESULT_CAPACITY"].includes(reason) ? reason : "PORTFOLIO_COMPUTATION_FAILED";
+            error = timedOut ? "TIMEOUT" : controller.signal.aborted ? "CANCELLED_OR_CONTEXT_CHANGED" : ["PORTFOLIO_INPUT_INVALID", "PORTFOLIO_RESULT_CAPACITY","PORTFOLIO_CALENDAR_UNAVAILABLE","PORTFOLIO_ALGORITHM_UNAVAILABLE"].includes(reason) ? reason : "PORTFOLIO_COMPUTATION_FAILED";
         }
         finally {
             clearTimeout(timeout);

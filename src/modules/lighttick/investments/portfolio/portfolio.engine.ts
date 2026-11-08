@@ -1,18 +1,17 @@
 import { reconcile } from "../accounting.ts";
 import { LedgerDecimal as D, decimalString as str } from "../decimal.ts";
 import { projectLedger } from "../ledger.projection.ts";
-import { referenceCalendar, CALENDAR_VERSION } from "../market/market.calendar.ts";
+import {frozenCalendar,valuationCalendarStart} from "./portfolio.calendar.ts";
 import { digest, fail } from "../../learning/native-learning.validation.ts";
 import type { PortfolioContext, PortfolioInput, PortfolioResult, ValuationResult, QuoteCandidate, PerformanceResult, PortfolioBalance } from "./portfolio.types.ts";
 import { calculateLedger } from "../ledger.runner.ts";
-export const PORTFOLIO_VERSION = "audited-economic-date-decimal60-v1";
+export const PORTFOLIO_VERSION = "audited-economic-date-decimal60-calendar-v2";
 export function financialDigest(c: Pick<PortfolioContext,"account"|"events"|"facts">, date: string, projected = projectLedger(c.events).active) {
     const a = c.account;
     return digest({ baseline: { version: a.baseline_version, date: a.baseline_date, cash: a.opening_cash, positions: a.opening_positions },
         events: projected.filter(e => e.input.business_date <= date).map(e => ({ id: e.id, sequence: e.sequence, input: e.input })),
         notices: c.facts.filter(f => f.kind === "notice" && f.date <= date) });
 }
-function calendar(c: PortfolioContext, market: string, start: string, end: string) { return referenceCalendar(market, start, end, new Date(c.captured_at)); }
 export function valuation(c: PortfolioContext, b: Extract<PortfolioInput, {
     kind: "valuation";
 }>): ValuationResult {
@@ -25,12 +24,12 @@ export function valuation(c: PortfolioContext, b: Extract<PortfolioInput, {
     if (Object.keys(b.sources).some(id => !held.some(p => p.instrument_id === id)))
         fail(422, "Source selection is outside held instruments.");
     const marks: Record<string, string> = {}, quotes: ValuationResult["quotes"] = [];
-    const start = new Date(Date.parse(b.date) - 31 * 86400000).toISOString().slice(0, 10);
+    const start=valuationCalendarStart(b.date);
     for (const p of held) {
         const i = c.instruments.find(i => i.id === p.instrument_id);
         if (!i)
             fail(422, "Held instrument is unavailable.");
-        const cal = calendar(c, i.kind === "fund" ? "SSE" : i.market, start < "2026-01-01" && b.date >= "2026-01-01" ? "2026-01-01" : start, b.date), expected = Object.keys(cal.sessions).filter(d => cal.sessions[d]).sort().at(-1) ?? null;
+        const cal = frozenCalendar(c, i.kind === "fund" ? "SSE" : i.market,start,b.date), expected = Object.keys(cal.sessions).filter(d => d>=start&&d<=b.date&&cal.sessions[d]).sort().at(-1) ?? null;
         let candidates: QuoteCandidate[] = [];
         if (i.kind === "fund")
             candidates = c.facts.filter(f => f.kind === "fund_nav" && f.instrument_id === i.id && f.date <= b.date).map(f => ({ id: f.id, revision: f.revision, digest: digest(f), kind: "fund_nav", price: f.kind === "fund_nav" ? f.nav : "", date: f.date, source: f.kind === "fund_nav" ? f.source_label : "", price_basis: "confirmed_nav" }));
@@ -68,7 +67,7 @@ export function valuation(c: PortfolioContext, b: Extract<PortfolioInput, {
             }
     }
     const values = balance.positions.map(p => p.market_value), holdings = values.every(v => v !== null) ? str(values.reduce((n, v) => n.plus(v!), new D(0))) : null;
-    const body = { kind: "valuation" as const, date: b.date, account_id: c.account.id, account_revision: b.base_revision, baseline_version: c.account.baseline_version, algorithm_version: PORTFOLIO_VERSION, method: "current_audited_facts_by_economic_date" as const, ledger_digest: financialDigest(c, b.date), input_digest: digest({ context: c, input: b, algorithm: PORTFOLIO_VERSION }), quotes, coverage: { required: held.length, available: Object.keys(marks).length, missing: held.length - Object.keys(marks).length }, holdings_value: holdings, balance, notices, calendar_version: CALENDAR_VERSION };
+    const body = { kind: "valuation" as const, date: b.date, account_id: c.account.id, account_revision: b.base_revision, baseline_version: c.account.baseline_version, algorithm_version: PORTFOLIO_VERSION, method: "current_audited_facts_by_economic_date" as const, ledger_digest: financialDigest(c, b.date), input_digest: digest({ context: c, input: b, algorithm: PORTFOLIO_VERSION }), quotes, coverage: { required: held.length, available: Object.keys(marks).length, missing: held.length - Object.keys(marks).length }, holdings_value: holdings, balance, notices, calendar_version:[...new Set(c.calendars.map(c=>c.version))].join(","),calendars:c.calendars };
     return { ...body, preview_digest: digest(body) };
 }
 export function performance(c: PortfolioContext, b: Extract<PortfolioInput, {
@@ -90,7 +89,7 @@ export function performance(c: PortfolioContext, b: Extract<PortfolioInput, {
         }
     const net = components.deposit.minus(components.withdrawal), first = byDate.get(b.start), last = byDate.get(b.end), valid = (v: typeof first) => !!v && !v.stale && v.equity !== null;
     const profit = valid(first) && valid(last) ? new D(last!.equity!).minus(first!.equity!).minus(net) : null;
-    const cal = calendar(c, "SSE", b.start, b.end), required = [...new Set([b.start, b.end, ...Object.keys(cal.sessions).filter(d => cal.sessions[d])])].sort();
+    const cal = frozenCalendar(c,"SSE",b.start,b.end), required = [...new Set([b.start, b.end, ...Object.keys(cal.sessions).filter(d => d>=b.start&&d<=b.end&&cal.sessions[d])])].sort();
     let drawdown: InstanceType<typeof D> | null = null;
     if (cal.status === "available" && !external && required.every(d => valid(byDate.get(d)) && new D(byDate.get(d)!.equity!).gt(0))) {
         let peak = new D(byDate.get(required[0])!.equity!);
@@ -101,9 +100,10 @@ export function performance(c: PortfolioContext, b: Extract<PortfolioInput, {
             drawdown = D.max(drawdown, peak.minus(value).div(peak).mul(100));
         }
     }
-    return { kind: "performance", start: b.start, end: b.end, algorithm_version: PORTFOLIO_VERSION, input_digest: digest({ context: c, input: b, algorithm: PORTFOLIO_VERSION }), net_profit: str(profit), net_deposit: str(net), cash_components: Object.fromEntries(Object.entries(components).map(([k, v]) => [k, str(v)])), maximum_drawdown_pct: str(drawdown), twr: null, xirr: null, series: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)), limitations: ["收益金额=期末资产−期初资产−期间净入金，并非收益率。", "缺估值、账本/通知已更正或费用未齐时保持未知。", "回撤仅适用于无外部资金流、完整交易日且正资产的区间；TWR/XIRR未提供。"] };
+    return { kind: "performance",calendar:cal, start: b.start, end: b.end, algorithm_version: PORTFOLIO_VERSION, input_digest: digest({ context: c, input: b, algorithm: PORTFOLIO_VERSION }), net_profit: str(profit), net_deposit: str(net), cash_components: Object.fromEntries(Object.entries(components).map(([k, v]) => [k, str(v)])), maximum_drawdown_pct: str(drawdown), twr: null, xirr: null, series: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)), limitations: ["收益金额=期末资产−期初资产−期间净入金，并非收益率。", "缺估值、账本/通知已更正或费用未齐时保持未知。", "回撤仅适用于无外部资金流、完整交易日且正资产的区间；TWR/XIRR未提供。"] };
 }
 export function calculatePortfolio(c: PortfolioContext, b: PortfolioInput): PortfolioResult {
+    if(c.algorithm_version!==PORTFOLIO_VERSION)throw Error("PORTFOLIO_ALGORITHM_UNAVAILABLE");
     if (b.kind === "valuation")
         return valuation(c, b);
     if (b.kind === "performance")

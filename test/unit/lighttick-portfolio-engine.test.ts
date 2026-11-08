@@ -1,11 +1,13 @@
+import {referenceCalendar} from "../../src/modules/lighttick/investments/market/market.calendar.ts";
+import {freezePortfolioCalendars} from "../../src/modules/lighttick/investments/portfolio/portfolio.calendar.ts";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 const golden = JSON.parse(readFileSync(new URL("../fixtures/lighttick/portfolio-golden.json", import.meta.url), "utf8"));
 import assert from "node:assert/strict";
-import { valuation, performance, financialDigest } from "../../src/modules/lighttick/investments/portfolio/portfolio.engine.ts";
+import { valuation, performance, financialDigest, calculatePortfolio,PORTFOLIO_VERSION } from "../../src/modules/lighttick/investments/portfolio/portfolio.engine.ts";
 import type { PortfolioContext, PortfolioFact, SavedPortfolio } from "../../src/modules/lighttick/investments/portfolio/portfolio.types.ts";
 const iid = "inv-portfolio-symbol", aid = "inv-portfolio-account", now = "2026-11-08T04:00:00Z";
-function context(): PortfolioContext { return { account: { id: aid, revision: 1, baseline_version: 1, name: "Synthetic", currency: "CNY", baseline_date: "2026-10-26", opening_cash: golden.baseline.opening_cash, opening_positions: [{ instrument_id: iid, quantity: golden.baseline.quantity, cost: golden.baseline.cost }], opening_instruments: [], archived: false, created_at: now, updated_at: now }, events: [], facts: [], instruments: [{ id: iid, revision: 1, code: "510000", market: "SSE", kind: "etf", name: "Synthetic ETF", archived: false, created_at: now, updated_at: now }], markets: [{ id: "inv-portfolio-source", revision: 1, instrument_id: iid, instrument_revision: 1, work_id: "inv-portfolio-source", created_at: now, dataset: { supplier: "csv", price_basis: "unadjusted", instrument_id: iid, bars: structuredClone(golden.prices.slice(0, 2)), input_digest: "a".repeat(64) } as any, indicators: {} as any }], valuations: [], captured_at: now, context_digest: "t" }; }
+function context(): PortfolioContext { return {algorithm_version:PORTFOLIO_VERSION,calendars:["SSE","SZSE","BSE"].map(m=>referenceCalendar(m,"2026-01-01","2026-12-31",new Date(now))), account: { id: aid, revision: 1, baseline_version: 1, name: "Synthetic", currency: "CNY", baseline_date: "2026-10-26", opening_cash: golden.baseline.opening_cash, opening_positions: [{ instrument_id: iid, quantity: golden.baseline.quantity, cost: golden.baseline.cost }], opening_instruments: [], archived: false, created_at: now, updated_at: now }, events: [], facts: [], instruments: [{ id: iid, revision: 1, code: "510000", market: "SSE", kind: "etf", name: "Synthetic ETF", archived: false, created_at: now, updated_at: now }], markets: [{ id: "inv-portfolio-source", revision: 1, instrument_id: iid, instrument_revision: 1, work_id: "inv-portfolio-source", created_at: now, dataset: { supplier: "csv", price_basis: "unadjusted", instrument_id: iid, bars: structuredClone(golden.prices.slice(0, 2)), input_digest: "a".repeat(64) } as any, indicators: {} as any }], valuations: [], captured_at: now, context_digest: "t" }; }
 const input = (date: string, sources = {}) => ({ kind: "valuation" as const, base_revision: 1, date, sources });
 function saved(id: string, c: PortfolioContext, date: string): SavedPortfolio { return { id, account_id: aid, work_id: id, kind: "valuation", request_key: "synthetic-value-adopt", created_at: now, output: valuation(c, input(date)) }; }
 test("golden: cost is not market value; partial sale and net deposit yield exact profit 99", () => {
@@ -34,7 +36,7 @@ test("missing/conflicting/stale quotes and unknown calendar never fill zero or s
     assert.equal(valuation(c, input("2026-10-28")).quotes[0].status, "conflict");
     c.markets.pop();
     assert.equal(valuation(c, input("2026-10-28")).quotes[0].status, "stale");
-    c.captured_at = "2027-01-06T08:00:00Z";
+    c.captured_at = "2027-01-06T08:00:00Z";c.calendars=freezePortfolioCalendars(input("2027-01-04"),new Date(c.captured_at));
     assert.equal(valuation(c, input("2027-01-04")).balance.equity, null);
 });
 test("fund confirmed NAV and open reconciliation notices retain unknown assurances", () => {
@@ -75,4 +77,14 @@ test("weekend uses the last exchange session and missing fees never become confi
     const unknown = valuation(c, input("2026-10-27"));
     assert.equal(unknown.balance.equity, null);
     assert.equal(unknown.balance.cash_verified, false);
+});
+
+test("portfolio reports carry the frozen calendar and reject an unavailable algorithm instead of recalculating it", () => {
+    const c = context();
+    const report = performance(c, { kind: "performance", base_revision: 1, start: "2026-10-26", end: "2026-10-28" });
+    assert.equal(report.calendar?.version, "cn-exchanges-2026-reviewed-20261105-v1");
+    assert.equal(report.calendar?.sessions["2026-10-27"], true);
+    assert.equal(valuation(c, input("2026-10-26")).calendars?.[0].version, report.calendar?.version);
+    (c as any).algorithm_version = "unavailable-synthetic-version";
+    assert.throws(() => calculatePortfolio(c, input("2026-10-26")), /ALGORITHM_UNAVAILABLE/);
 });

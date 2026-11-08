@@ -1,6 +1,6 @@
 {
   "scope": "synthetic_local_portfolio_not_legacy_parity_or_release",
-  "algorithm_version": "audited-economic-date-decimal60-v1",
+  "algorithm_version": "audited-economic-date-decimal60-calendar-v2",
   "captured_at": "2026-11-08T04:00:00Z",
   "baseline": {
     "opening_cash": "10000",

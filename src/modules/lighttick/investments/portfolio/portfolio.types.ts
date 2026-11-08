@@ -3,6 +3,7 @@ import type { InvestmentAccount, InvestmentInstrument } from "../investment.type
 import type { LedgerEvent, LedgerReport } from "../ledger.types.ts";
 import type { MarketSnapshot } from "../market/market-work.types.ts";
 import type { reconcile } from "../accounting.ts";
+import type { MarketCalendar } from "../market/market.calendar.ts";
 export type Baseline = Pick<InvestmentAccount, "name" | "currency" | "baseline_date" | "opening_cash" | "opening_positions" | "baseline_version">;
 export type PortfolioFact = {
     id: string;
@@ -42,6 +43,8 @@ export type PortfolioInput = {
     end: string;
 });
 export interface PortfolioContext {
+    algorithm_version:string;
+    calendars:MarketCalendar[];
     account: InvestmentAccount;
     events: LedgerEvent[];
     facts: PortfolioFact[];
@@ -75,6 +78,7 @@ export type PortfolioBalance = Omit<ReturnType<typeof reconcile>, "realized" | "
     })[];
 };
 export interface ValuationResult {
+    calendars?:MarketCalendar[];
     kind: "valuation";
     date: string;
     account_id: string;
@@ -106,6 +110,7 @@ export interface BaselineResult {
     preview_digest: string;
 }
 export interface PerformanceResult {
+    calendar?:MarketCalendar;
     kind: "performance";
     start: string;
     end: string;

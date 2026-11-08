@@ -2128,6 +2128,78 @@ export const LightTickInvestmentPortfolioValuationSchema = {
     "preview_digest": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "calendars": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "market",
+          "version",
+          "start",
+          "end",
+          "reviewed_on",
+          "review_until",
+          "source_url",
+          "sessions",
+          "snapshot_hash"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "coverage_unknown",
+              "review_expired"
+            ]
+          },
+          "market": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
+          },
+          "reviewed_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "review_until": {
+            "type": "string",
+            "format": "date"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "snapshot_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
     }
   }
 } as const;
@@ -2236,6 +2308,22 @@ export type LightTickInvestmentPortfolioValuation = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 };
 
 export const LightTickInvestmentPortfolioBaselineResultSchema = {
@@ -2870,6 +2958,74 @@ export const LightTickInvestmentPortfolioPerformanceSchema = {
       "items": {
         "type": "string"
       }
+    },
+    "calendar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "market",
+        "version",
+        "start",
+        "end",
+        "reviewed_on",
+        "review_until",
+        "source_url",
+        "sessions",
+        "snapshot_hash"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "coverage_unknown",
+            "review_expired"
+          ]
+        },
+        "market": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "reviewed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "review_until": {
+          "type": "string",
+          "format": "date"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sessions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "snapshot_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
     }
   }
 } as const;
@@ -2902,6 +3058,20 @@ export type LightTickInvestmentPortfolioPerformance = {
 }
 )[];
   "limitations": string[];
+  "calendar"?: {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
 };
 
 export const LightTickInvestmentPortfolioResultSchema = {
@@ -3529,6 +3699,78 @@ export const LightTickInvestmentPortfolioResultSchema = {
         "preview_digest": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "calendars": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "market",
+              "version",
+              "start",
+              "end",
+              "reviewed_on",
+              "review_until",
+              "source_url",
+              "sessions",
+              "snapshot_hash"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "coverage_unknown",
+                  "review_expired"
+                ]
+              },
+              "market": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              },
+              "reviewed_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "review_until": {
+                "type": "string",
+                "format": "date"
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sessions": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              },
+              "snapshot_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
         }
       }
     },
@@ -4092,6 +4334,74 @@ export const LightTickInvestmentPortfolioResultSchema = {
           "items": {
             "type": "string"
           }
+        },
+        "calendar": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "market",
+            "version",
+            "start",
+            "end",
+            "reviewed_on",
+            "review_until",
+            "source_url",
+            "sessions",
+            "snapshot_hash"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "available",
+                "coverage_unknown",
+                "review_expired"
+              ]
+            },
+            "market": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            },
+            "reviewed_on": {
+              "type": "string",
+              "format": "date"
+            },
+            "review_until": {
+              "type": "string",
+              "format": "date"
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sessions": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "snapshot_hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
         }
       }
     }
@@ -4202,6 +4512,22 @@ export type LightTickInvestmentPortfolioResult = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 } | {
   "kind": "baseline";
   "reason": string;
@@ -4299,6 +4625,20 @@ export type LightTickInvestmentPortfolioResult = {
 }
 )[];
   "limitations": string[];
+  "calendar"?: {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
 };
 
 export const LightTickInvestmentPortfolioWorkSummarySchema = {
@@ -5442,6 +5782,78 @@ export const LightTickInvestmentPortfolioWorkSchema = {
                 "preview_digest": {
                   "type": "string",
                   "pattern": "^[a-f0-9]{64}$"
+                },
+                "calendars": {
+                  "type": "array",
+                  "maxItems": 3,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "market",
+                      "version",
+                      "start",
+                      "end",
+                      "reviewed_on",
+                      "review_until",
+                      "source_url",
+                      "sessions",
+                      "snapshot_hash"
+                    ],
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "available",
+                          "coverage_unknown",
+                          "review_expired"
+                        ]
+                      },
+                      "market": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "reviewed_on": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "review_until": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sessions": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "boolean"
+                        }
+                      },
+                      "snapshot_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -6005,6 +6417,74 @@ export const LightTickInvestmentPortfolioWorkSchema = {
                   "items": {
                     "type": "string"
                   }
+                },
+                "calendar": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "status",
+                    "market",
+                    "version",
+                    "start",
+                    "end",
+                    "reviewed_on",
+                    "review_until",
+                    "source_url",
+                    "sessions",
+                    "snapshot_hash"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "coverage_unknown",
+                        "review_expired"
+                      ]
+                    },
+                    "market": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "reviewed_on": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "review_until": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "source_url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sessions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "boolean"
+                      }
+                    },
+                    "snapshot_hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
                 }
               }
             }
@@ -6163,6 +6643,22 @@ export type LightTickInvestmentPortfolioWork = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 } | {
   "kind": "baseline";
   "reason": string;
@@ -6260,6 +6756,20 @@ export type LightTickInvestmentPortfolioWork = {
 }
 )[];
   "limitations": string[];
+  "calendar"?: {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
 }
 ) | unknown;
 };
@@ -6933,6 +7443,78 @@ export const LightTickInvestmentPortfolioSavedSchema = {
             "preview_digest": {
               "type": "string",
               "pattern": "^[a-f0-9]{64}$"
+            },
+            "calendars": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "market",
+                  "version",
+                  "start",
+                  "end",
+                  "reviewed_on",
+                  "review_until",
+                  "source_url",
+                  "sessions",
+                  "snapshot_hash"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "available",
+                      "coverage_unknown",
+                      "review_expired"
+                    ]
+                  },
+                  "market": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "reviewed_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "review_until": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sessions": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "boolean"
+                    }
+                  },
+                  "snapshot_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
             }
           }
         },
@@ -7457,6 +8039,22 @@ export type LightTickInvestmentPortfolioSaved = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 } | {
   "kind": "baseline";
   "reason": string;
@@ -8196,6 +8794,78 @@ export const LightTickInvestmentPortfolioSavedValuationSchema = {
         "preview_digest": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "calendars": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "market",
+              "version",
+              "start",
+              "end",
+              "reviewed_on",
+              "review_until",
+              "source_url",
+              "sessions",
+              "snapshot_hash"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "coverage_unknown",
+                  "review_expired"
+                ]
+              },
+              "market": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              },
+              "reviewed_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "review_until": {
+                "type": "string",
+                "format": "date"
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sessions": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              },
+              "snapshot_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
         }
       }
     },
@@ -8316,6 +8986,22 @@ export type LightTickInvestmentPortfolioSavedValuation = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 };
   "stale": boolean;
 };
@@ -9947,6 +10633,78 @@ export const LightTickInvestmentPortfolioValuationsSchema = {
               "preview_digest": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{64}$"
+              },
+              "calendars": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "status",
+                    "market",
+                    "version",
+                    "start",
+                    "end",
+                    "reviewed_on",
+                    "review_until",
+                    "source_url",
+                    "sessions",
+                    "snapshot_hash"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "coverage_unknown",
+                        "review_expired"
+                      ]
+                    },
+                    "market": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "reviewed_on": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "review_until": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "source_url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sessions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "boolean"
+                      }
+                    },
+                    "snapshot_hash": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
               }
             }
           },
@@ -10087,6 +10845,22 @@ export type LightTickInvestmentPortfolioValuations = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 };
   "stale": boolean;
 }
@@ -12239,6 +13013,78 @@ export const LightTickInvestmentPortfolioWorkEnvelopeSchema = {
                     "preview_digest": {
                       "type": "string",
                       "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "calendars": {
+                      "type": "array",
+                      "maxItems": 3,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "status",
+                          "market",
+                          "version",
+                          "start",
+                          "end",
+                          "reviewed_on",
+                          "review_until",
+                          "source_url",
+                          "sessions",
+                          "snapshot_hash"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "available",
+                              "coverage_unknown",
+                              "review_expired"
+                            ]
+                          },
+                          "market": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "reviewed_on": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "review_until": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "source_url": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sessions": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "boolean"
+                            }
+                          },
+                          "snapshot_hash": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        }
+                      }
                     }
                   }
                 },
@@ -12802,6 +13648,74 @@ export const LightTickInvestmentPortfolioWorkEnvelopeSchema = {
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "calendar": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status",
+                        "market",
+                        "version",
+                        "start",
+                        "end",
+                        "reviewed_on",
+                        "review_until",
+                        "source_url",
+                        "sessions",
+                        "snapshot_hash"
+                      ],
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "available",
+                            "coverage_unknown",
+                            "review_expired"
+                          ]
+                        },
+                        "market": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "start": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "end": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "reviewed_on": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "review_until": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "source_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "sessions": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "boolean"
+                          }
+                        },
+                        "snapshot_hash": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        }
+                      }
                     }
                   }
                 }
@@ -12968,6 +13882,22 @@ export type LightTickInvestmentPortfolioWorkEnvelope = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 } | {
   "kind": "baseline";
   "reason": string;
@@ -13065,6 +13995,20 @@ export type LightTickInvestmentPortfolioWorkEnvelope = {
 }
 )[];
   "limitations": string[];
+  "calendar"?: {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+};
 }
 ) | unknown;
 };
@@ -13759,6 +14703,78 @@ export const LightTickInvestmentPortfolioSavedEnvelopeSchema = {
                 "preview_digest": {
                   "type": "string",
                   "pattern": "^[a-f0-9]{64}$"
+                },
+                "calendars": {
+                  "type": "array",
+                  "maxItems": 3,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "market",
+                      "version",
+                      "start",
+                      "end",
+                      "reviewed_on",
+                      "review_until",
+                      "source_url",
+                      "sessions",
+                      "snapshot_hash"
+                    ],
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "available",
+                          "coverage_unknown",
+                          "review_expired"
+                        ]
+                      },
+                      "market": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "reviewed_on": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "review_until": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sessions": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "boolean"
+                        }
+                      },
+                      "snapshot_hash": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -14291,6 +15307,22 @@ export type LightTickInvestmentPortfolioSavedEnvelope = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 } | {
   "kind": "baseline";
   "reason": string;
@@ -15051,6 +16083,78 @@ export const LightTickInvestmentPortfolioSavedValuationEnvelopeSchema = {
             "preview_digest": {
               "type": "string",
               "pattern": "^[a-f0-9]{64}$"
+            },
+            "calendars": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "market",
+                  "version",
+                  "start",
+                  "end",
+                  "reviewed_on",
+                  "review_until",
+                  "source_url",
+                  "sessions",
+                  "snapshot_hash"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "available",
+                      "coverage_unknown",
+                      "review_expired"
+                    ]
+                  },
+                  "market": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "reviewed_on": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "review_until": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sessions": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "boolean"
+                    }
+                  },
+                  "snapshot_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
             }
           }
         },
@@ -15179,6 +16283,22 @@ export type LightTickInvestmentPortfolioSavedValuationEnvelope = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 };
   "stale": boolean;
 };
@@ -15883,6 +17003,78 @@ export const LightTickInvestmentPortfolioValuationsEnvelopeSchema = {
                   "preview_digest": {
                     "type": "string",
                     "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "calendars": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status",
+                        "market",
+                        "version",
+                        "start",
+                        "end",
+                        "reviewed_on",
+                        "review_until",
+                        "source_url",
+                        "sessions",
+                        "snapshot_hash"
+                      ],
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "available",
+                            "coverage_unknown",
+                            "review_expired"
+                          ]
+                        },
+                        "market": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "start": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "end": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "reviewed_on": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "review_until": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "source_url": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "sessions": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "boolean"
+                          }
+                        },
+                        "snapshot_hash": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -16031,6 +17223,22 @@ export type LightTickInvestmentPortfolioValuationsEnvelope = {
 )[];
   "calendar_version": string;
   "preview_digest": string;
+  "calendars"?: (
+{
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
+}
+)[];
 };
   "stale": boolean;
 }
@@ -16195,6 +17403,90 @@ export type LightTickInvestmentPortfolioBaselinesEnvelope = {
   "next_cursor": string | unknown;
 };
   "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioCalendarSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "market",
+    "version",
+    "start",
+    "end",
+    "reviewed_on",
+    "review_until",
+    "source_url",
+    "sessions",
+    "snapshot_hash"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "coverage_unknown",
+        "review_expired"
+      ]
+    },
+    "market": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "review_until": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sessions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioCalendar = {
+  "status": "available" | "coverage_unknown" | "review_expired";
+  "market": string;
+  "version": string;
+  "start": string;
+  "end": string;
+  "reviewed_on": string;
+  "review_until": string;
+  "source_url": string | unknown;
+  "sessions": {
+  [key: string]: boolean;
+};
+  "snapshot_hash": string;
 };
 
 export const LightTickInvestmentStrategyConfigSchema = {
@@ -135904,6 +137196,7 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentPortfolioBaselineResult",
   "LightTickInvestmentPortfolioBaselines",
   "LightTickInvestmentPortfolioBaselinesEnvelope",
+  "LightTickInvestmentPortfolioCalendar",
   "LightTickInvestmentPortfolioCancel",
   "LightTickInvestmentPortfolioCandidate",
   "LightTickInvestmentPortfolioFact",

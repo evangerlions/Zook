@@ -40,7 +40,7 @@
     },
     {
       "path": "test/fixtures/lighttick/portfolio-golden.json",
-      "sha256": "104740de2ba9b12957513458349997b9c53c173ecc8f8e9bff862614c9dd7b70"
+      "sha256": "f41cd6f4e1df8d686e2dc08d3e9e5331f2028e248bfab1404d592ed3c8b6502a"
     }
   ],
   "unit_groups": [

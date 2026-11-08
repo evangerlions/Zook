@@ -1130,6 +1130,11 @@ components:
             $ref: '#/components/schemas/LightTickInvestmentPortfolioFact'
         calendar_version: *id028
         preview_digest: *id029
+        calendars:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioCalendar'
     LightTickInvestmentPortfolioBaselineResult:
       type: object
       additionalProperties: false
@@ -1234,6 +1239,8 @@ components:
           type: array
           maxItems: 10
           items: *id028
+        calendar:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioCalendar'
     LightTickInvestmentPortfolioResult:
       oneOf:
       - $ref: '#/components/schemas/LightTickInvestmentPortfolioValuation'
@@ -1647,3 +1654,44 @@ components:
         data:
           $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselines'
         requestId: *id028
+    LightTickInvestmentPortfolioCalendar:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - market
+      - version
+      - start
+      - end
+      - reviewed_on
+      - review_until
+      - source_url
+      - sessions
+      - snapshot_hash
+      properties:
+        status:
+          type: string
+          enum:
+          - available
+          - coverage_unknown
+          - review_expired
+        market: &id037
+          type: string
+        version: *id037
+        start: &id038
+          type: string
+          format: date
+        end: *id038
+        reviewed_on: *id038
+        review_until: *id038
+        source_url:
+          anyOf:
+          - *id037
+          - type: 'null'
+        sessions:
+          type: object
+          additionalProperties:
+            type: boolean
+        snapshot_hash:
+          type: string
+          pattern: ^[a-f0-9]{64}$

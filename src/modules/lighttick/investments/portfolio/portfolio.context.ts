@@ -1,3 +1,4 @@
+import {freezePortfolioCalendars} from "./portfolio.calendar.ts";
 import type { LightTickRepository } from "../../lighttick.repository.ts";
 import type { LightTickOwner } from "../../lighttick.types.ts";
 import type { PortfolioInput, PortfolioContext } from "./portfolio.types.ts";
@@ -40,8 +41,9 @@ export async function portfolioContext(repo: LightTickRepository, o: LightTickOw
     const valuations = input.kind === "performance" ? await repo.investments.portfolio.saved(o, id) : [];
     if (valuations.length > 500)
         fail(413, "Portfolio report catalog exceeds capacity.");
-    const context_digest = digest({ account, events, facts, instruments, summaries, valuations, algorithm: PORTFOLIO_VERSION });
-    const c = { account, events, facts, instruments, markets, valuations, captured_at: now, context_digest };
+    const calendars=freezePortfolioCalendars(input,new Date(now));
+    const context_digest = digest({ account, events, facts, instruments, summaries, valuations,calendars, algorithm: PORTFOLIO_VERSION });
+    const c = { account, events, facts, instruments, markets, valuations,calendars,algorithm_version:PORTFOLIO_VERSION, captured_at: now, context_digest };
     if (Buffer.byteLength(JSON.stringify(c)) > 2 * 1024 * 1024)
         fail(413, "Frozen portfolio input exceeds 2 MiB; narrow the source catalog.");
     return c;
