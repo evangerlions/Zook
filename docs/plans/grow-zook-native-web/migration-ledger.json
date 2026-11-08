@@ -10494,7 +10494,30 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Decompose legacy state into per-domain commands and receipts. Generic sync/push remains task-only. Projection rebuild must preserve drafts and original pending commands."
+      "migration_disposition": "Decompose legacy state into per-domain commands and receipts. Generic sync/push remains task-only. Projection rebuild must preserve drafts and original pending commands.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-08",
+          "contract": "PATCH /api/v1/lighttick/form-records/sections/{section}",
+          "page": "/grow/forms",
+          "report": "../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-editors-verification.md",
+          "behavior_mapping": "../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-editors-evidence/behavior-mapping.json",
+          "tests": [
+            "test/unit/lighttick-form-sections.test.ts",
+            "test/unit/lighttick-form-records.api.test.ts",
+            "test/integration/lighttick-form-sections-postgres.test.ts",
+            "test/support/grow_web_form_editors_acceptance.py",
+            "test/support/grow_web_form_editor_tabs.py",
+            "test/support/grow_web_form_editor_limit.py",
+            "test/support/grow_web_form_editor_restart.ts"
+          ]
+        }
+      ],
+      "implementation_gap": {
+        "status": "partially_resolved",
+        "reason": "Seven bounded form editors and section CAS/receipt/frozen-body protocol verified. Original legacy _revision/section protocol, historical owner/IDs/source mappings and migration reconciliation remain pending; generic sync stays task-only."
+      }
     },
     {
       "method": "POST",

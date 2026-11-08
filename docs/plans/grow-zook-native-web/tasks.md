@@ -166,3 +166,7 @@ U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fix
 ## 2026-11-08：plan G2.3统计分类与局部表单（3/3）
 
 本工程切片通过，见[Plan子任务](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/tasks.md)和[证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-records-verification.md)。固定Zook/合同b7e5445a、Web e56a8e0；迁移105隔离局部表单、稳定分类身份、CAS/原请求、本人导出/共用删除和明确范围清空接线完成。全量单测2580通过/1既有跳过、风险202、Web54、真实PG故事、Chrome保存/清空丢响应/切号/冲突/离线/下载/多宽度与同库重启通过。当前origin/main aa8885c6与既有Grow分支已在候选合入；保留双方文档并修复中文worktree测试路径，非LightTick公开schema不变。516原账本仅追加GET/PUT /api/data部分证据，不关闭其余表单编辑/派生统计、个人数据源/其余AI/全域迁移/联合/真实/发布门禁，仍21/27。没有导入真实历史或发布。
+
+## 2026-11-08：plan G2.4旧表单编辑与按栏提交（4/4）
+
+固定后端/合同55fec671、Web e4e2fc3f；七栏基础编辑、四组旧字段黄金样本、其他栏保留/整份CAS、等待锁前冻结正文、回执回滚、删除撤回、历史待办来源边界及最大INT32修订可读恢复完成。见[Plan验收](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-editors-verification.md)及[逐操作补充映射](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-editors-evidence/behavior-mapping.json)。后端2590通过/1既有跳过，风险214/11黄金，Web63，真实PG3故事、Chrome主流程/双页面/最后修订与HTTP/PG同库重启通过，合同/类型/构建/1039文件行数通过。无新迁移。原516项仅增加PATCH /api/data部分工程证据；课程派生全局统计、个人数据源、GitHub内容存储、其余AI/专题、全域迁移/联合/真实/发布门禁仍未代签，整体21/27。
