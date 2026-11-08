@@ -28,7 +28,7 @@
     },
     {
       "path": "test/fixtures/lighttick/other-app-contract-baseline.json",
-      "sha256": "75b210c72e6ea2cf7f93f3fe517422ec247662cc8bc25ca978b9980fe9602a01"
+      "sha256": "7387ba3b6565bad4da6580842bbafd547b42f4178f86edc5a9a8a5683f339cf5"
     },
     {
       "path": "test/fixtures/lighttick/screening-golden.json",
@@ -138,6 +138,13 @@
         "test/unit/lighttick-portfolio-engine.test.ts",
         "test/unit/lighttick-portfolio-service.test.ts",
         "test/unit/lighttick-portfolio.api.test.ts"
+      ]
+    },
+    {
+      "id": "form_scope_cas_receipt_clear_rollback",
+      "tests": [
+        "test/unit/lighttick-form-records.test.ts",
+        "test/unit/lighttick-form-records.api.test.ts"
       ]
     }
   ],

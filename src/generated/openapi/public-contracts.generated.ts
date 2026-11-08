@@ -65729,6 +65729,1625 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickFormDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "modules",
+    "checkins",
+    "habits",
+    "customFields",
+    "customRecords",
+    "decisions",
+    "predictions",
+    "reviews",
+    "insights",
+    "todos"
+  ],
+  "properties": {
+    "modules": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "color",
+          "order"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          }
+        }
+      }
+    },
+    "checkins": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      }
+    },
+    "habits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "minutes",
+          "note"
+        ],
+        "properties": {
+          "minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 100000
+          }
+        }
+      }
+    },
+    "customFields": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "type"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "number",
+              "date"
+            ]
+          }
+        }
+      }
+    },
+    "customRecords": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "predictions": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "insights": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "todos": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+} as const;
+
+export type LightTickFormData = {
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "color": string;
+  "order": number;
+}
+)[];
+  "checkins": {
+  [key: string]: {
+  [key: string]: number;
+};
+};
+  "habits": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+};
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "decisions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "predictions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "insights": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "todos": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+
+export const LightTickFormSnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "revision",
+    "data",
+    "updated_at"
+  ],
+  "properties": {
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modules",
+        "checkins",
+        "habits",
+        "customFields",
+        "customRecords",
+        "decisions",
+        "predictions",
+        "reviews",
+        "insights",
+        "todos"
+      ],
+      "properties": {
+        "modules": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "color",
+              "order"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              "order": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              }
+            }
+          }
+        },
+        "checkins": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            }
+          }
+        },
+        "habits": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "minutes",
+              "note"
+            ],
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 100000
+              }
+            }
+          }
+        },
+        "customFields": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "label",
+              "type"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "number",
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "customRecords": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "predictions": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "reviews": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "insights": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "todos": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickFormSnapshot = {
+  "revision": number;
+  "data": {
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "color": string;
+  "order": number;
+}
+)[];
+  "checkins": {
+  [key: string]: {
+  [key: string]: number;
+};
+};
+  "habits": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+};
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "decisions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "predictions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "insights": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "todos": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+  "updated_at": string | null;
+};
+
+export const LightTickFormWriteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "data"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modules",
+        "checkins",
+        "habits",
+        "customFields",
+        "customRecords",
+        "decisions",
+        "predictions",
+        "reviews",
+        "insights",
+        "todos"
+      ],
+      "properties": {
+        "modules": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "color",
+              "order"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              "order": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              }
+            }
+          }
+        },
+        "checkins": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3
+            }
+          }
+        },
+        "habits": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "minutes",
+              "note"
+            ],
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 100000
+              }
+            }
+          }
+        },
+        "customFields": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "label",
+              "type"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "number",
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "customRecords": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "predictions": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "reviews": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "insights": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "todos": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickFormWrite = {
+  "base_revision": number;
+  "data": {
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "color": string;
+  "order": number;
+}
+)[];
+  "checkins": {
+  [key: string]: {
+  [key: string]: number;
+};
+};
+  "habits": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+};
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "decisions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "predictions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "insights": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "todos": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+};
+
+export const LightTickFormClearSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483646
+    }
+  }
+} as const;
+
+export type LightTickFormClear = {
+  "base_revision": number;
+};
+
+export const LightTickFormExportSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "scope",
+    "exported_at",
+    "snapshot"
+  ],
+  "properties": {
+    "format_version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "lighttick_partial_form_records"
+      ]
+    },
+    "exported_at": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "data",
+        "updated_at"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "modules",
+            "checkins",
+            "habits",
+            "customFields",
+            "customRecords",
+            "decisions",
+            "predictions",
+            "reviews",
+            "insights",
+            "todos"
+          ],
+          "properties": {
+            "modules": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "color",
+                  "order"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  }
+                }
+              }
+            },
+            "checkins": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3
+                }
+              }
+            },
+            "habits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "minutes",
+                  "note"
+                ],
+                "properties": {
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1440
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 100000
+                  }
+                }
+              }
+            },
+            "customFields": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "type"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "number",
+                      "date"
+                    ]
+                  }
+                }
+              }
+            },
+            "customRecords": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "decisions": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "predictions": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "reviews": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "insights": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "todos": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickFormExport = {
+  "format_version": 1;
+  "scope": "lighttick_partial_form_records";
+  "exported_at": string;
+  "snapshot": {
+  "revision": number;
+  "data": {
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "color": string;
+  "order": number;
+}
+)[];
+  "checkins": {
+  [key: string]: {
+  [key: string]: number;
+};
+};
+  "habits": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+};
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "decisions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "predictions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "insights": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "todos": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+  "updated_at": string | null;
+};
+};
+
+export const LightTickFormEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "data",
+        "updated_at"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "modules",
+            "checkins",
+            "habits",
+            "customFields",
+            "customRecords",
+            "decisions",
+            "predictions",
+            "reviews",
+            "insights",
+            "todos"
+          ],
+          "properties": {
+            "modules": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name",
+                  "color",
+                  "order"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "color": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-fA-F]{6}$"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  }
+                }
+              }
+            },
+            "checkins": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3
+                }
+              }
+            },
+            "habits": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "minutes",
+                  "note"
+                ],
+                "properties": {
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1440
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 100000
+                  }
+                }
+              }
+            },
+            "customFields": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label",
+                  "type"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "number",
+                      "date"
+                    ]
+                  }
+                }
+              }
+            },
+            "customRecords": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "decisions": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "predictions": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "reviews": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "insights": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "todos": {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickFormEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "revision": number;
+  "data": {
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "color": string;
+  "order": number;
+}
+)[];
+  "checkins": {
+  [key: string]: {
+  [key: string]: number;
+};
+};
+  "habits": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+};
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "decisions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "predictions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "insights": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "todos": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+  "updated_at": string | null;
+};
+  "requestId": string;
+};
+
+export const LightTickFormExportEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "scope",
+        "exported_at",
+        "snapshot"
+      ],
+      "properties": {
+        "format_version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "lighttick_partial_form_records"
+          ]
+        },
+        "exported_at": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "data",
+            "updated_at"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483646
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "modules",
+                "checkins",
+                "habits",
+                "customFields",
+                "customRecords",
+                "decisions",
+                "predictions",
+                "reviews",
+                "insights",
+                "todos"
+              ],
+              "properties": {
+                "modules": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "name",
+                      "color",
+                      "order"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "color": {
+                        "type": "string",
+                        "pattern": "^#[0-9a-fA-F]{6}$"
+                      },
+                      "order": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10000
+                      }
+                    }
+                  }
+                },
+                "checkins": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3
+                    }
+                  }
+                },
+                "habits": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "minutes",
+                      "note"
+                    ],
+                    "properties": {
+                      "minutes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1440
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 100000
+                      }
+                    }
+                  }
+                },
+                "customFields": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "key",
+                      "label",
+                      "type"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]{1,128}$"
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "text",
+                          "number",
+                          "date"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "customRecords": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "decisions": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "predictions": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "reviews": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "insights": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "todos": {
+                  "type": "array",
+                  "maxItems": 5000,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            "updated_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickFormExportEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "format_version": 1;
+  "scope": "lighttick_partial_form_records";
+  "exported_at": string;
+  "snapshot": {
+  "revision": number;
+  "data": {
+  "modules": (
+{
+  "id": string;
+  "name": string;
+  "color": string;
+  "order": number;
+}
+)[];
+  "checkins": {
+  [key: string]: {
+  [key: string]: number;
+};
+};
+  "habits": {
+  [key: string]: {
+  "minutes": number;
+  "note": string;
+};
+};
+  "customFields": (
+{
+  "key": string;
+  "label": string;
+  "type": "text" | "number" | "date";
+}
+)[];
+  "customRecords": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "decisions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "predictions": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "reviews": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "insights": (
+{
+  [key: string]: unknown;
+}
+)[];
+  "todos": (
+{
+  [key: string]: unknown;
+}
+)[];
+};
+  "updated_at": string | null;
+};
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentMaterialSourceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -137089,6 +138708,13 @@ export const GeneratedPublicContractNames = [
   "LightTickFirstActionEnvelope",
   "LightTickFirstActionFeedback",
   "LightTickFirstActionRequest",
+  "LightTickFormClear",
+  "LightTickFormData",
+  "LightTickFormEnvelope",
+  "LightTickFormExport",
+  "LightTickFormExportEnvelope",
+  "LightTickFormSnapshot",
+  "LightTickFormWrite",
   "LightTickGitHubCancel",
   "LightTickGitHubSettings",
   "LightTickGitHubSettingsEnvelope",

@@ -1,3 +1,5 @@
+import { handleFormRecordsRequest } from "./lighttick-form-records-routes.ts";
+import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import {handlePortfolio} from "./lighttick-portfolio-routes.ts";
 import type {PortfolioService} from "../modules/lighttick/investments/portfolio/portfolio.service.ts";
 import {handleStrategies} from "./lighttick-strategy-routes.ts";
@@ -16,6 +18,7 @@ import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { HttpRequest } from "../shared/types.ts";
 export async function handleAccountSettingsRequest(
   runtime: {
+    repository: LightTickRepository;
     portfolio?:PortfolioService;
     strategies?:StrategyService;
     observations?:ObservationWorkService;
@@ -28,6 +31,7 @@ export async function handleAccountSettingsRequest(
   request: HttpRequest,
   authorize: () => Promise<void>,
 ) {
+  if(request.path === "/api/v1/lighttick/form-records" || request.path.startsWith("/api/v1/lighttick/form-records/")) return handleFormRecordsRequest(runtime.repository,owner,request,authorize);
   if(/^\/api\/v1\/lighttick\/investments\/accounts\/inv-[a-zA-Z0-9_-]+\/(portfolio|valuations)(?:\/|$)/.test(request.path))return handlePortfolio(runtime,owner,request,authorize);
   if(/^\/api\/v1\/lighttick\/investments\/(strategies|backtests)(?:\/|$)/.test(request.path))return handleStrategies(runtime,owner,request,authorize);
   if(request.path==="/api/v1/lighttick/investments/observations"||request.path.startsWith("/api/v1/lighttick/investments/observations/"))return handleObservations(runtime,owner,request,authorize);

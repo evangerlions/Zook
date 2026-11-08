@@ -42,6 +42,141 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/form-records:
+    get:
+      operationId: getFormRecords
+      tags:
+      - lighttick-records
+      summary: getFormRecords
+      description: Owner-only partial form records. Categories and legacy form fields
+        only; excludes independent records, actions, learning content, credentials and
+        browser drafts. Whole-document CAS and exact original request replay. Clear
+        does not erase prior operation receipts. No generic sync or automatic historical
+        import.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFormEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: saveFormRecords
+      tags:
+      - lighttick-records
+      summary: saveFormRecords
+      description: Owner-only partial form records. Categories and legacy form fields
+        only; excludes independent records, actions, learning content, credentials and
+        browser drafts. Whole-document CAS and exact original request replay. Clear
+        does not erase prior operation receipts. No generic sync or automatic historical
+        import.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFormEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickFormWrite'
+  /api/v1/lighttick/form-records/export:
+    get:
+      operationId: exportFormRecords
+      tags:
+      - lighttick-records
+      summary: exportFormRecords
+      description: Owner-only partial form records. Categories and legacy form fields
+        only; excludes independent records, actions, learning content, credentials and
+        browser drafts. Whole-document CAS and exact original request replay. Clear
+        does not erase prior operation receipts. No generic sync or automatic historical
+        import.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFormExportEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/form-records/clear:
+    post:
+      operationId: clearFormRecords
+      tags:
+      - lighttick-records
+      summary: clearFormRecords
+      description: Owner-only partial form records. Categories and legacy form fields
+        only; excludes independent records, actions, learning content, credentials and
+        browser drafts. Whole-document CAS and exact original request replay. Clear
+        does not erase prior operation receipts. No generic sync or automatic historical
+        import.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFormEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickFormClear'
   /api/v1/lighttick/investments/research:
     get:
       operationId: listInvestmentResearch
@@ -6531,6 +6666,234 @@ components:
           schema:
             $ref: '#/components/schemas/LightTickErrorEnvelope'
   schemas:
+    LightTickFormData:
+      type: object
+      additionalProperties: false
+      required:
+      - modules
+      - checkins
+      - habits
+      - customFields
+      - customRecords
+      - decisions
+      - predictions
+      - reviews
+      - insights
+      - todos
+      properties:
+        modules:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - name
+            - color
+            - order
+            properties:
+              id:
+                type: string
+                pattern: ^[a-zA-Z0-9_-]{1,128}$
+              name:
+                type: string
+                minLength: 1
+                maxLength: 100
+              color:
+                type: string
+                pattern: ^#[0-9a-fA-F]{6}$
+              order:
+                type: integer
+                minimum: 0
+                maximum: 10000
+        checkins:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+              minimum: 0
+              maximum: 3
+        habits:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: false
+            required:
+            - minutes
+            - note
+            properties:
+              minutes:
+                type: integer
+                minimum: 0
+                maximum: 1440
+              note:
+                type: string
+                maxLength: 100000
+        customFields:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - key
+            - label
+            - type
+            properties:
+              key:
+                type: string
+                pattern: ^[a-zA-Z0-9_-]{1,128}$
+              label:
+                type: string
+                minLength: 1
+                maxLength: 100
+              type:
+                type: string
+                enum:
+                - text
+                - number
+                - date
+        customRecords:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            additionalProperties: true
+        decisions:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            additionalProperties: true
+        predictions:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            additionalProperties: true
+        reviews:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            additionalProperties: true
+        insights:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            additionalProperties: true
+        todos:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            additionalProperties: true
+    LightTickFormSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - data
+      - updated_at
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        data:
+          $ref: '#/components/schemas/LightTickFormData'
+        updated_at:
+          type: [string, "null"]
+    LightTickFormWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - data
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        data:
+          $ref: '#/components/schemas/LightTickFormData'
+    LightTickFormClear:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+    LightTickFormExport:
+      type: object
+      additionalProperties: false
+      required:
+      - format_version
+      - scope
+      - exported_at
+      - snapshot
+      properties:
+        format_version:
+          type: integer
+          enum:
+          - 1
+        scope:
+          type: string
+          enum:
+          - lighttick_partial_form_records
+        exported_at:
+          type: string
+          maxLength: 40
+        snapshot:
+          $ref: '#/components/schemas/LightTickFormSnapshot'
+    LightTickFormEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickFormSnapshot'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickFormExportEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickFormExport'
+        requestId:
+          type: string
+          maxLength: 128
     LightTickInvestmentOpening:
       type: object
       additionalProperties: false

@@ -1982,3 +1982,14 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 沿用worker队列及恢复扫描，固定Node计算线程：128MiB老生代/16MiB新生代、30秒期限/60秒租约/最多3次。owner活动1、UTC日20、保留200任务；账户500来源/通知、每通知最多500版本、500采用记录，冻结输入2MiB/结果6MiB/请求64KiB。超容量明确拒绝，不截断为完成。分页cursor绑定owner/账户/目录摘要，失效只重建读取；原请求不重新生成。本人导出含期初历史、来源/通知版本、冻结输入、报告和原请求，省略秘密和内部租约；共用账号删除覆盖新表。全域分块迁移与正式发布仍单独验收。
 
 授权导出覆盖全部原事实、纠错链和原命令终态；共用账号删除覆盖同owner全部记录。此能力不提供行情估值或投资建议，不代表全部旧投资行为等价或允许真实数据迁移/发布。
+
+### LightTick 统计分类与局部表单（工程候选）
+
+普通已注册 LightTick 账号使用现有 Bearer 与 app membership，全部响应 `Cache-Control: no-store`；访客不可用。唯一合同在 `api-contracts/openapi/lighttick/api.yaml`。
+
+- `GET /api/v1/lighttick/form-records` 返回 `{ revision, data, updated_at }`，未建立时 revision=0。data 只含 modules、checkins、habits、customFields、customRecords、decisions、predictions、reviews、insights、todos。
+- `PUT` 同路径接收 `{ base_revision, data }` 和稳定 `Idempotency-Key`（8–128字母/数字/下划线/连字符），明确替换本人整份局部表单。分类保留 id/name/color/order；最多100分类/字段、每类5000记录、10000日期、2MiB UTF-8。分类名称100字、颜色六位十六进制、打卡必须引用存在分类及真实日期。未知顶层字段拒绝。
+- `GET /api/v1/lighttick/form-records/export` 返回 format_version=1、scope=`lighttick_partial_form_records`、exported_at 与同一事务读取的 snapshot；不是全账号备份，不提供自动导入或恢复。
+- `POST /api/v1/lighttick/form-records/clear` 接收 `{ base_revision }` 与原请求编号，只清空上述表单；不删除独立 records、actions、tasks、课程、私人学习、账号设置或浏览器草稿。保留原操作回执，因此不是隐私擦除；完整账号删除走原接口。
+
+写入、版本核对和回执在同一 owner 事务。重复原 key/body 返回原结果；其他 key 的旧版本或同 key 不同命令均409，输入应保留后显式比较。读取及回放均重新校验账号状态；其他账号只读写自己的数据。clear 丢响应后只重放原 key/body，不新建清空命令。本人授权 `review/export` 包含当前 form_records；账号删除同时清理新增表和原回执。新资源不进入旧 sync/pull/push；历史导入属于独立迁移门禁，本切片没有读取或自动迁移旧私人数据。

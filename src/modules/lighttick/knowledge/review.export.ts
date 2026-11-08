@@ -50,11 +50,13 @@ export async function exportReview(
         }),
       );
     const investments=await exportInvestments(repo,o);
+    const form_records=await repo.formRecords.get(o) ?? null;
     const data = {
       format_version: 1,
       owner_id: o.userId,
       exported_at: clock().toISOString(),
-      revision: digest({review:view.revision,investments}),
+      revision: digest({review:view.revision,investments,form_records}),
+      form_records,
       investments,
       metrics_version: "confirmed-facts-v1",
       facts: view.facts,
