@@ -1,3 +1,4 @@
+import {projectLedger} from "../ledger.projection.ts";
 import type { LightTickRepository } from "../../lighttick.repository.ts";
 import type { LightTickOwner } from "../../lighttick.types.ts";
 import type { JobQueue } from "../../../../infrastructure/queue/job-queue.ts";
@@ -121,10 +122,21 @@ export class PortfolioService extends InvestmentService {
         fail(404, "Portfolio fact not found."); return portfolioPage(o, account + id, (await this.store.history(o, id)).map(v => ({ ...v, id: String(v.revision).padStart(10, "0"), fact_id: v.id })), cursor, limit); }); }
     async readFact(o: LightTickOwner, account: string, id: string) { investmentId(id); return this.repo.transaction(o, async () => { await this.authorize(); await this.account(o, account); const f = await this.store.fact(o, id); if (!f || f.account_id !== account)
         fail(404, "Portfolio fact not found."); return f; }); }
-    async valuations(o: LightTickOwner, account: string, cursor = "", limit = 20, id?: string) { return this.repo.transaction(o, async () => { await this.authorize(); const a = await this.account(o, account), context = { account: a, events: await this.repo.investments.ledger.events(o, account), facts: await this.store.facts(o, account) }; const rows = (await this.store.saved(o, account)).filter(v => v.kind === "valuation").map(v => ({ ...v, stale: v.output.kind === "valuation" && v.output.ledger_digest !== financialDigest(context as any, v.output.date) })); if (id) {
-        const v = rows.find(v => v.id === id);
-        if (!v)
-            fail(404, "Valuation not found.");
-        return v;
-    } return portfolioPage(o, account + "valuations", rows, cursor, limit); }); }
+    async valuations(o:LightTickOwner,account:string,cursor="",limit=20,id?:string){
+      if(id)investmentId(id);
+      const snapshot=await this.repo.transaction(o,async()=>{
+        await this.authorize();
+        const a=await this.account(o,account),events=await this.repo.investments.ledger.events(o,account),facts=await this.store.facts(o,account),saved=await this.store.saved(o,account);
+        if(events.length>10000||facts.length>500||saved.length>500)fail(413,"Portfolio history exceeds bounded capacity.");
+        return{account:a,events,facts,saved};
+      });
+      // Release the owner snapshot before projection/hashing. Only enrich the requested page,
+      // reuse the correction graph and memoize dates; unrelated history is never recalculated.
+      const rows=snapshot.saved.filter((v):v is SavedPortfolio&{output:import("./portfolio.types.ts").ValuationResult}=>v.kind==="valuation"&&v.output.kind==="valuation");
+      const projected=projectLedger(snapshot.events).active,digests=new Map<string,string>();
+      const enrich=(v:typeof rows[number])=>{const date=v.output.date;if(!digests.has(date))digests.set(date,financialDigest(snapshot,date,projected));return{...v,stale:v.output.ledger_digest!==digests.get(date)};};
+      if(id){const v=rows.find(v=>v.id===id);if(!v)fail(404,"Valuation not found.");return enrich(v);}
+      const page=portfolioPage(o,account+"valuations:"+snapshot.account.revision,rows,cursor,limit);
+      return{...page,items:page.items.map(enrich)};
+    }
 }

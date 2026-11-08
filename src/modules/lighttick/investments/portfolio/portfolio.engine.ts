@@ -6,10 +6,10 @@ import { digest, fail } from "../../learning/native-learning.validation.ts";
 import type { PortfolioContext, PortfolioInput, PortfolioResult, ValuationResult, QuoteCandidate, PerformanceResult, PortfolioBalance } from "./portfolio.types.ts";
 import { calculateLedger } from "../ledger.runner.ts";
 export const PORTFOLIO_VERSION = "audited-economic-date-decimal60-v1";
-export function financialDigest(c: PortfolioContext, date: string) {
+export function financialDigest(c: Pick<PortfolioContext,"account"|"events"|"facts">, date: string, projected = projectLedger(c.events).active) {
     const a = c.account;
     return digest({ baseline: { version: a.baseline_version, date: a.baseline_date, cash: a.opening_cash, positions: a.opening_positions },
-        events: projectLedger(c.events).active.filter(e => e.input.business_date <= date).map(e => ({ id: e.id, sequence: e.sequence, input: e.input })),
+        events: projected.filter(e => e.input.business_date <= date).map(e => ({ id: e.id, sequence: e.sequence, input: e.input })),
         notices: c.facts.filter(f => f.kind === "notice" && f.date <= date) });
 }
 function calendar(c: PortfolioContext, market: string, start: string, end: string) { return referenceCalendar(market, start, end, new Date(c.captured_at)); }
