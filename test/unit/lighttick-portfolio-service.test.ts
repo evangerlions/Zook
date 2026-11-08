@@ -125,3 +125,18 @@ test("daily work budget counts accepted originals once and cancellation does not
     await assert.rejects(() => f.s.create(f.o, f.id, body, "portfolio-budget-still-exhausted"), (e: any) => e.statusCode === 429);
     assert.equal(await f.repo.investments.portfolio.count(f.o), 20);
 });
+
+test("open portfolio notices fence old ledger readers and expose current verification limits without rewriting reports", async () => {
+    const f = await fixture(), instrument = (await f.s.createInstrument(f.o, { code: "000555", kind: "fund", market: "FUND", name: "Synthetic reconciliation" }, "portfolio-notice-gate-symbol")).instrument;
+    await f.append(f.cash("1"));
+    const body = { kind: "notice", base_revision: 0, base_account_revision: 2, instrument_id: instrument.id, date: "2026-11-01", notice_kind: "missing_fact", reason: "Synthetic unresolved accounting fact", status: "open", resolution: "", source_url: null };
+    await f.s.writeFact(f.o, f.id, "inv-notice-ledger-reader", body, "portfolio-notice-ledger-open");
+    await assert.rejects(() => f.l.ledger(f.o, f.id), /SCHEMA_UPGRADE_REQUIRED/);
+    const unresolved = await f.l.ledger(f.o, f.id, "", 100, "2");
+    assert.equal(unresolved.unresolved_portfolio_notices, 1);
+    const historical = structuredClone(unresolved.report);
+    await f.s.writeFact(f.o, f.id, "inv-notice-ledger-reader", { ...body, base_revision: 1, base_account_revision: 3, status: "resolved", resolution: "Synthetic records reconciled by owner" }, "portfolio-notice-ledger-resolve");
+    const resolved = await f.l.ledger(f.o, f.id);
+    assert.equal(resolved.unresolved_portfolio_notices, undefined);
+    assert.deepEqual(resolved.report, historical);
+});

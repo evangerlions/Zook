@@ -17084,6 +17084,10 @@ components:
       - report
       - next_cursor
       properties:
+        unresolved_portfolio_notices:
+          type: integer
+          minimum: 1
+          maximum: 500
         account_revision: *ledger005
         items:
           type: array

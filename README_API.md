@@ -1948,7 +1948,7 @@ Canonical 前缀 `/api/v1/lighttick/investments`，合同 `api-contracts/openapi
 
 复用既有投资worker，成功时原子追加纠错事件、推进账户修订并保存重算报告；失败/取消不改变原事实或期初。有效替换可再次纠错；明确作废的当前状态可通过新补偿事实恢复。所有原记录、命令和历史报告保留，金额继续NUMERIC及API十进制字符串。资料未知继续未知，不虚构反向交易或现金调整。
 
-新客户端用 `GET .../accounts/{id}/ledger?ledger_schema=2` 显式协商完整历史。每行新增effective_fact（当前状态输入/摘要，输入可为null）和superseded_by；报告在有纠错时新增effective_event_count、correction_count及projection_version。存在纠错或期初已修正（baseline_version>1）时未协商schema2的读取返回409（既有错误码`LIGHTTICK_VERSION_CONFLICT`，message含`LEDGER_SCHEMA_UPGRADE_REQUIRED`升级说明），须保留草稿/原请求并升级；原始期初且无纠错的旧读取保持原语义。报告event_count允许0，以承接无流水的期初修正核算。新记录不进入旧pull，sync/push仍task-only。分页游标失效须重建已确认读取，不重建写请求。
+新客户端用 `GET .../accounts/{id}/ledger?ledger_schema=2` 显式协商完整历史。每行新增effective_fact（当前状态输入/摘要，输入可为null）和superseded_by；报告在有纠错时新增effective_event_count、correction_count及projection_version。存在纠错、未解除账实事项或期初已修正（baseline_version>1）时未协商schema2的读取返回409（既有错误码`LIGHTTICK_VERSION_CONFLICT`，message含`LEDGER_SCHEMA_UPGRADE_REQUIRED`升级说明），须保留草稿/原请求并升级；原始期初且无纠错的旧读取保持原语义。报告event_count允许0，以承接无流水的期初修正核算。schema2当前有未解除事项时额外返回unresolved_portfolio_notices数量；report仍是保存时的原始核算快照，不能把其费用齐备状态当作当前数量/成本/可用现金已核对。解除后原报告不重写。新记录不进入旧pull，sync/push仍task-only。分页游标失效须重建已确认读取，不重建写请求。
 
 ### LightTick 估值、绩效与账实核对
 

@@ -94944,6 +94944,11 @@ export const LightTickInvestmentLedgerPageSchema = {
     "next_cursor"
   ],
   "properties": {
+    "unresolved_portfolio_notices": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    },
     "account_revision": {
       "type": "integer",
       "minimum": 1,
@@ -95801,6 +95806,7 @@ export const LightTickInvestmentLedgerPageSchema = {
 } as const;
 
 export type LightTickInvestmentLedgerPage = {
+  "unresolved_portfolio_notices"?: number;
   "account_revision": number;
   "items": (
 {
@@ -96792,6 +96798,11 @@ export const LightTickInvestmentLedgerPageEnvelopeSchema = {
         "next_cursor"
       ],
       "properties": {
+        "unresolved_portfolio_notices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
         "account_revision": {
           "type": "integer",
           "minimum": 1,
@@ -97657,6 +97668,7 @@ export type LightTickInvestmentLedgerPageEnvelope = {
   "code": "OK";
   "message": string;
   "data": {
+  "unresolved_portfolio_notices"?: number;
   "account_revision": number;
   "items": (
 {
