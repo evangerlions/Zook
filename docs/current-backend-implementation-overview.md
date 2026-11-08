@@ -923,4 +923,4 @@ U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长
 
 2026-11-07 策略/持久回测工程接线：strategies合同与102迁移，完整受控参数CAS/不可变版本、同输入比较与最多16组合，现有worker受限计算线程/取消/租约恢复，报告与冻结事实分页。原始日线缺少历史执行条件时明确incomplete，不自动补正常。React和最终联合验收已通过，见[策略验收](verification/grow-react-u1-20261103/strategies.md)：后端2525/1既有跳过、PG23、Grow39及Chrome三组/旧13组通过，同库重启摘要一致。仅关闭有界策略4/4，不代签完整U5、估值/纠错、迁移或发布；主任务21/27不变。
 
-2026-11-08追加式账本纠错工程：103幂等迁移、不可变目标/摘要及补偿链、同账户FK/NUMERIC列、原key/body/CAS和既有投资worker。schema2显式协商历史，无协商不接收新kind；React位于plan/LightTick-Web。领域与专库PG初步通过，完整联合验收和证据仍待本切片完成，不关闭21/27剩余门禁。
+2026-11-08追加式账本纠错切片3/3验收通过：103幂等迁移、不可变目标/摘要及补偿链、同账户FK/NUMERIC列、原key/body/CAS与既有worker。schema2显式协商完整历史，同日替换沿用原目标核算顺序；React位于plan/LightTick-Web。后端2532/1既有跳过、PG/Redis25、风险181、Web48与最终Chrome通过，17资源/同库重启摘要一致，见[Plan验收](../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md)。只为9条旧操作补部分证据；估值/绩效、期初等旧功能、逐操作等价/全域迁移/原生兼容/混合P95及真实专项发布仍未完成，不关闭21/27剩余门禁。

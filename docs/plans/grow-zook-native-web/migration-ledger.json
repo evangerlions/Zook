@@ -3751,6 +3751,30 @@
           "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
           "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
         ]
+      },
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/ledger?ledger_schema=2"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
       }
     },
     {
@@ -3786,7 +3810,31 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/ledger?ledger_schema=2"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3821,7 +3869,31 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/ledger?ledger_schema=2"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -4503,6 +4575,30 @@
           "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
           "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
         ]
+      },
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/ledger?ledger_schema=2"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
       }
     },
     {
@@ -4538,7 +4634,31 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/ledger?ledger_schema=2"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -4573,7 +4693,31 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "GET",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/ledger?ledger_schema=2"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -13216,6 +13360,30 @@
           "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
           "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
         ]
+      },
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/events"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
       }
     },
     {
@@ -13532,6 +13700,30 @@
           "Ledger reads are per-account confirmed facts with owner/version-bound pagination; current reports are unpriced snapshots, not legacy live balance parity.",
           "Unknown fee/cost/settlement/market data remain explicit; no Python fallback or arbitrary strategy code."
         ]
+      },
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/events"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
       }
     },
     {
@@ -13568,7 +13760,31 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "ledger_correction_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contract": {
+          "method": "POST",
+          "path": "/api/v1/lighttick/investments/accounts/{id}/events"
+        },
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "868b1dafe5abdd40582af586df0b4ac1fbd7aa5f",
+        "frontend_commit": "c7e71874eebf90efa4d18b3f79704b378e40a194",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md",
+        "tests": [
+          "test/unit/lighttick-ledger-corrections.test.ts",
+          "test/unit/lighttick-investment-ledger.api.test.ts",
+          "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+          "test/support/grow_web_ledger_corrections_acceptance.py"
+        ],
+        "remaining": [
+          "Original operation request/response and side-effect parity including effective uncommitted legacy behavior is not accepted.",
+          "Legacy object ID/version/source and original command/receipt migration is not exercised by this slice.",
+          "Per-object legacy endpoints are mapped to paginated per-account immutable history; schema2 is required after corrections, no silent old-client projection.",
+          "Baseline correction, valuations/performance, corporate actions, fund NAV and full client/regression gates remain incomplete."
+        ]
+      }
     },
     {
       "method": "POST",

@@ -152,3 +152,8 @@ U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fix
 ### 2026-11-08 Grow Web源码迁入plan
 
 用户明确更新目录决策：Grow React唯一开发入口迁入plan/LightTick-Web，由plan Git管理；原grow保留历史及未提交旧功能，不维护React平行副本。目录迁移4/4验收见[plan记录](../../../../plan/docs/03-technical/grow-web-plan-migration-2026-11-08.md)：134文件转移、133原文件摘要不变，Web45测试/类型/构建、17运行资源相同及实际服务摘要、静态兼容4项、Chrome来源/旧报告与同库重启通过。固定plan206712ab，合同仍80b89823，无生产API/数据库改动。业务仍21/27，下一项账本纠错/补偿及估值/绩效；不以迁移目录代签其余门禁，未迁移真实数据或发布。
+
+
+### 2026-11-08 追加式账本纠错与补偿
+
+本切片3/3验收通过，由plan统一任务协调，见[Plan子任务与后续依赖](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/tasks.md)及[验收证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md)。Zook868b1daf/合同215b42af、plan Web c7e71874；不可变原事实、精确替换/作废/补偿链、同日核算顺序、CAS/原请求、schema2协商、103幂等迁移和既有worker接线完成。后端2532通过/1既有跳过、PG/Redis联合25、风险181、Web48与最终Chrome通过；17实际资源摘要一致、同库重启原始事实/纠错/报告/回执不变。9条旧操作仅追加部分实现证据，全部516仍未签署等价；当前候选旧13组Chrome重新通过，原生/混合P95未新验收。下一项为估值/绩效及期初/公司行动/基金净值等依赖，完整G1–G6未代签，仍21/27。原未提交及暂存patch保留，未迁移真实数据或发布。
