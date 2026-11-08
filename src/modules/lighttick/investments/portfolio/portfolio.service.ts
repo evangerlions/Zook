@@ -115,9 +115,14 @@ export class PortfolioService extends InvestmentService {
             return saved;
         });
     }
-    async listPortfolio(o: LightTickOwner, account: string, kind: "facts" | "work" | "baselines", cursor = "", limit = 20) { return this.repo.transaction(o, async () => { await this.authorize(); await this.account(o, account); if (kind === "facts")
-        return portfolioPage(o, account + kind, await this.store.facts(o, account), cursor, limit); if (kind === "work")
-        return portfolioPage(o, account + kind, await this.store.summaries(o, account), cursor, limit); return portfolioPage(o, account + kind, (await this.repo.investments.baselines(o, account)).map(b => ({ ...b, id: String(b.baseline_version).padStart(10, "0") })), cursor, limit); }); }
+    async listPortfolio(o:LightTickOwner,account:string,kind:"facts"|"work"|"baselines",cursor="",limit=20){
+      return this.repo.transaction(o,async()=>{
+        await this.authorize();await this.account(o,account);
+        if(kind==="facts"){const rows=await this.store.facts(o,account);if(rows.length>500)fail(413,"Portfolio facts exceed capacity.");return portfolioPage(o,account+kind,rows,cursor,limit);}
+        if(kind==="work"){const rows=await this.store.summaries(o,account);if(rows.length>200)fail(413,"Portfolio tasks exceed capacity.");return portfolioPage(o,account+kind,rows,cursor,limit);}
+        const rows=await this.repo.investments.baselines(o,account);if(rows.length>500)fail(413,"Portfolio baseline history exceeds capacity.");return portfolioPage(o,account+kind,rows.map(b=>({...b,id:String(b.baseline_version).padStart(10,"0")})),cursor,limit);
+      });
+    }
     async history(o: LightTickOwner, account: string, id: string, cursor = "", limit = 20) { investmentId(id); return this.repo.transaction(o, async () => { await this.authorize(); await this.account(o, account); const f = await this.store.fact(o, id); if (!f || f.account_id !== account)
         fail(404, "Portfolio fact not found."); return portfolioPage(o, account + id, (await this.store.history(o, id)).map(v => ({ ...v, id: String(v.revision).padStart(10, "0"), fact_id: v.id })), cursor, limit); }); }
     async readFact(o: LightTickOwner, account: string, id: string) { investmentId(id); return this.repo.transaction(o, async () => { await this.authorize(); await this.account(o, account); const f = await this.store.fact(o, id); if (!f || f.account_id !== account)

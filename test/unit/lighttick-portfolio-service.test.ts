@@ -113,3 +113,15 @@ test("terminal crash rolls back before durable original recovery; revocation pre
     assert.equal((await f.s.readWork(f.o, f.id, next.id)).status, "failed");
     assert.equal((await f.s.valuations(f.o, f.id) as any).items.length, 0);
 });
+
+test("daily work budget counts accepted originals once and cancellation does not create a fresh allowance", async () => {
+    const f = await fixture(), body = { kind: "valuation", base_revision: 1, date: "2026-10-26", sources: {} };
+    const first = await f.s.create(f.o, f.id, body, "portfolio-budget-original-0");
+    for (let n = 1; n < 20; n++) await f.s.create(f.o, f.id, body, "portfolio-budget-original-" + n);
+    await assert.rejects(() => f.s.create(f.o, f.id, body, "portfolio-budget-new-21"), (e: any) => e.statusCode === 429);
+    assert.equal((await f.s.create(f.o, f.id, body, "portfolio-budget-original-0")).id, first.id);
+    await f.s.cancel(f.o, f.id, first.id, { base_revision: first.revision }, "portfolio-budget-cancel");
+    assert.equal((await f.s.create(f.o, f.id, body, "portfolio-budget-original-0")).status, "cancelled");
+    await assert.rejects(() => f.s.create(f.o, f.id, body, "portfolio-budget-still-exhausted"), (e: any) => e.statusCode === 429);
+    assert.equal(await f.repo.investments.portfolio.count(f.o), 20);
+});
