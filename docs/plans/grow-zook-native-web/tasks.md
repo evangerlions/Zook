@@ -1,5 +1,7 @@
 # Grow / LightTick 统一重构任务
 
+> 2026-11-08验收分层：按用户确认保留完整21/27及516条，当前基础版本另按[plan验收清单](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/version-acceptance.md)执行。先固定候选开放矩阵并补核心G1／跨端／共享后端证据，高级G2和全域G3按模块继续；不降低原性能门槛、不以延期代替运行时隔离、不解除发布HOLD。
+
 用户确认Grow是LightTick Web端。完整产品/三端规划归[plan U0–U5](../../../../plan/docs/04-planning/grow-lighttick-unified-architecture-2026-11-02.md)，本页维护对应工程任务，不重编号历史I/N或代勾已有change。每项实施前继续拆成有具体文件、依赖、测试命令和最多三条标准的小切片。
 
 ## 已完成：旧接入清理与本轮规划
