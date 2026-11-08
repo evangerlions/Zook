@@ -1,3 +1,5 @@
+import type {PortfolioRunner} from "./investments/portfolio/portfolio.runner.ts";
+import {PORTFOLIO_JOB} from "./investments/portfolio/portfolio.service.ts";
 import type {StrategyRunner} from "./investments/strategies/strategy.runner.ts";
 import {BACKTEST_JOB} from "./investments/strategies/strategy.service.ts";
 import type {ObservationRunner} from "./investments/observations/observation.runner.ts";
@@ -63,12 +65,13 @@ export class LightTickJobService {
 export class LightTickWorker {
   constructor(private readonly aiRunner: LightTickAiRunner,
     private readonly recordTerminalFailure: (job: QueueJob, error: unknown) => Promise<void> = async () => undefined,
-    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner,readonly modelTests?:PersonalModelTestRunner,readonly githubTests?:GitHubTestRunner,readonly researchAI?:ResearchAIRunner,readonly screening?:ScreeningRunner,readonly observations?:ObservationRunner,readonly strategies?:StrategyRunner) {}
+    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner,readonly modelTests?:PersonalModelTestRunner,readonly githubTests?:GitHubTestRunner,readonly researchAI?:ResearchAIRunner,readonly screening?:ScreeningRunner,readonly observations?:ObservationRunner,readonly strategies?:StrategyRunner,readonly portfolio?:PortfolioRunner) {}
 
-  async recover(){return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0)+(await this.modelTests?.recover()??0)+(await this.githubTests?.recover()??0)+(await this.researchAI?.recover()??0)+(await this.screening?.recover()??0)+(await this.observations?.recover()??0)+(await this.strategies?.recover()??0);}
+  async recover(){return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0)+(await this.modelTests?.recover()??0)+(await this.githubTests?.recover()??0)+(await this.researchAI?.recover()??0)+(await this.screening?.recover()??0)+(await this.observations?.recover()??0)+(await this.strategies?.recover()??0)+(await this.portfolio?.recover()??0);}
 
   async process(job: QueueJob): Promise<void> {
     try {
+      if(job.name===PORTFOLIO_JOB){if(!this.portfolio||job.payload.app_id!=="lighttick")throw Error("Portfolio worker unavailable");await this.portfolio.execute({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.work_id));return;}
       if(job.name===BACKTEST_JOB){if(!this.strategies||job.payload.app_id!=="lighttick")throw Error("Strategy worker unavailable");await this.strategies.execute({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.work_id));return;}
       if(job.name===OBSERVATION_JOB){if(!this.observations||job.payload.app_id!=="lighttick")throw Error("Observation worker unavailable");await this.observations.execute({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.work_id));return;}
       if(job.name===SCREEN_JOB){if(!this.screening||job.payload.app_id!=="lighttick")throw Error("Screening unavailable");await this.screening.execute({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.work_id));return;}

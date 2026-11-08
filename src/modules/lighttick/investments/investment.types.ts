@@ -26,6 +26,8 @@ export interface InvestmentAccount {
   updated_at: string;
 }
 export interface InvestmentRepository {
+ readonly portfolio:import("./portfolio/portfolio.types.ts").PortfolioRepository;
+ baselines(o:LightTickOwner,account:string):Promise<import("./portfolio/portfolio.types.ts").Baseline[]>;
  readonly strategies: import("./strategies/strategy.types.ts").StrategyRepository;
  readonly observations: import("./observations/observation.types.ts").ObservationStore;
  readonly screening: import("./screening/screen.types.ts").ScreeningRepository;
@@ -57,5 +59,6 @@ export interface InvestmentRepository {
     o: LightTickOwner,
     a: InvestmentAccount,
     base: number,
+    previousBaselineVersion?:number,
   ): Promise<void>;
 }

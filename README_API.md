@@ -1948,6 +1948,33 @@ Canonical 前缀 `/api/v1/lighttick/investments`，合同 `api-contracts/openapi
 
 复用既有投资worker，成功时原子追加纠错事件、推进账户修订并保存重算报告；失败/取消不改变原事实或期初。有效替换可再次纠错；明确作废的当前状态可通过新补偿事实恢复。所有原记录、命令和历史报告保留，金额继续NUMERIC及API十进制字符串。资料未知继续未知，不虚构反向交易或现金调整。
 
-新客户端用 `GET .../accounts/{id}/ledger?ledger_schema=2` 显式协商完整历史。每行新增effective_fact（当前状态输入/摘要，输入可为null）和superseded_by；报告在有纠错时新增effective_event_count、correction_count及projection_version。存在纠错时未协商schema2的读取返回409（既有错误码`LIGHTTICK_VERSION_CONFLICT`，message含`LEDGER_SCHEMA_UPGRADE_REQUIRED`升级说明），须保留草稿/原请求并升级；无纠错旧读取保持原语义。新记录不进入旧pull，sync/push仍task-only。分页游标失效须重建已确认读取，不重建写请求。
+新客户端用 `GET .../accounts/{id}/ledger?ledger_schema=2` 显式协商完整历史。每行新增effective_fact（当前状态输入/摘要，输入可为null）和superseded_by；报告在有纠错时新增effective_event_count、correction_count及projection_version。存在纠错或期初已修正（baseline_version>1）时未协商schema2的读取返回409（既有错误码`LIGHTTICK_VERSION_CONFLICT`，message含`LEDGER_SCHEMA_UPGRADE_REQUIRED`升级说明），须保留草稿/原请求并升级；原始期初且无纠错的旧读取保持原语义。报告event_count允许0，以承接无流水的期初修正核算。新记录不进入旧pull，sync/push仍task-only。分页游标失效须重建已确认读取，不重建写请求。
+
+### LightTick 估值、绩效与账实核对
+
+正式合同为`api-contracts/openapi/lighttick/portfolio.yaml`。下表路径均接在`/api/v1/lighttick/investments/accounts/{accountId}`，由同一LightTick owner身份授权，使用现有worker。
+
+| 方法 | 路径 | 行为 |
+| --- | --- | --- |
+| GET | `/portfolio/facts` | 本账户确认净值与账实通知分页 |
+| PUT | `/portfolio/facts/{factId}` | 确认净值或CAS写通知；原Idempotency-Key、base_revision及base_account_revision |
+| GET | `/portfolio/facts/{factId}` | 本账户当前确认来源/通知，用于显式三方核对 |
+| GET | `/portfolio/facts/{factId}/history` | 通知不可变版本；history行id为补零版本号，fact_id保留资源身份 |
+| POST / GET | `/portfolio/work` | 创建估值/期初预览或绩效任务；分页查询持久任务 |
+| GET | `/portfolio/work/{workId}` | 持久回执与成功结果，不含内部冻结上下文、租约或fence |
+| POST | `/portfolio/work/{workId}/cancel` | 按工作base_revision取消；原请求保持 |
+| POST | `/portfolio/work/{workId}/adopt` | 明确采用成功估值/期初预览，匹配账户base_revision和preview_digest；绩效不走此入口 |
+| GET | `/portfolio/baselines` | 期初版本分页，旧版本不覆写 |
+| GET | `/valuations`、`/valuations/{valuationId}` | 已明确采用估值及当前stale判断；旧报告原文不改写 |
+
+任务Input的kind为`valuation`（date、sources标的到来源ID映射）、`baseline`（完整baseline、reason）或`performance`（start/end，最多366天），均匹配账户base_revision。估值与期初预览成功不代表已采用；必须在页面核对结果后提交原预览摘要。源/账户/通知/版本变化拒绝迟到发布或采用，保留原命令并重新核对。期初采用保留原流水、旧baseline和历史报告，追加新版本及核算结果。
+
+基金净值kind=fund_nav，显式提交正十进制nav、已公布date和source_label，只接受基金标的，不可原地修改；订正另建来源ID。通知kind=notice，保存notice_kind、date、reason、status、resolution及明确HTTP(S) source_url或null；解除必须保留说明，不自动补造持仓/交易。写入同时核对账户与事实修订，保留完整历史及原key/body。金额事实使用NUMERIC(28,10)，API十进制字符串，计算为独立Decimal60/half-even上下文。
+
+估值使用上海15:30之后的已完成日期、已存未复权股票/ETF收盘或本人确认基金净值，固定ID/版本/摘要和参考交易日历。不发起网络取数、不换供应商；仅同标的最新日期的来源可入选，多来源未选择为conflict，缺失/过期/未知日历保留未知。quantity_verified、cash_verified与费用/结算完备分别呈现；未解除通知使相关数量/成本/净结果及账户equity不可确认。期初成本不充当市值。
+
+历史口径是`current_audited_facts_by_economic_date`，不是当时可获知数据的回测。基线或相关有效流水/通知变化使旧估值stale，晚于估值日的新普通流水不使旧估值无故过期。绩效固定同一owner快照下的估值与当前事实，净收益金额=期末资产−期初资产−期间净入金；缺端点/过期/未知资产保持null。只有参考交易日连续、正资产、无外部入出金时展示最大回撤；TWR/XIRR继续null，不把收益金额当收益率。
+
+沿用worker队列及恢复扫描，固定Node计算线程：128MiB老生代/16MiB新生代、30秒期限/60秒租约/最多3次。owner活动1、UTC日20、保留200任务；账户500来源/通知、每通知最多500版本、500采用记录，冻结输入2MiB/结果6MiB/请求64KiB。超容量明确拒绝，不截断为完成。分页cursor绑定owner/账户/目录摘要，失效只重建读取；原请求不重新生成。本人导出含期初历史、来源/通知版本、冻结输入、报告和原请求，省略秘密和内部租约；共用账号删除覆盖新表。全域分块迁移与正式发布仍单独验收。
 
 授权导出覆盖全部原事实、纠错链和原命令终态；共用账号删除覆盖同owner全部记录。此能力不提供行情估值或投资建议，不代表全部旧投资行为等价或允许真实数据迁移/发布。

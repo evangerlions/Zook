@@ -16974,7 +16974,7 @@ components:
           pattern: ^[a-f0-9]{64}$
         event_count:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 10000
         effective_event_count:
           type: integer

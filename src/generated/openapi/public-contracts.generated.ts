@@ -1,6 +1,16202 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
 // Generated from api-contracts/openapi for Zook public API boundaries.
 
+export const LightTickInvestmentPortfolioBaselineFieldsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "currency",
+    "baseline_date",
+    "opening_cash",
+    "opening_positions"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "CNY"
+      ]
+    },
+    "baseline_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "opening_cash": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+    },
+    "opening_positions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBaselineFields = {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+
+export const LightTickInvestmentPortfolioBaselineSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "currency",
+    "baseline_date",
+    "opening_cash",
+    "opening_positions",
+    "baseline_version"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "CNY"
+      ]
+    },
+    "baseline_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "opening_cash": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+    },
+    "opening_positions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          }
+        }
+      }
+    },
+    "baseline_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBaseline = {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+
+export const LightTickInvestmentPortfolioFactSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "revision",
+        "instrument_id",
+        "request_key",
+        "created_at",
+        "updated_at",
+        "kind",
+        "date",
+        "nav",
+        "source_label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fund_nav"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "nav": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "source_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "revision",
+        "instrument_id",
+        "request_key",
+        "created_at",
+        "updated_at",
+        "kind",
+        "date",
+        "notice_kind",
+        "reason",
+        "status",
+        "resolution",
+        "source_url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "notice"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "notice_kind": {
+          "type": "string",
+          "enum": [
+            "corporate_action",
+            "missing_fact",
+            "cost_or_fee",
+            "other"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved"
+          ]
+        },
+        "resolution": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentPortfolioFact = {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioFactWriteSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_revision",
+        "base_account_revision",
+        "instrument_id",
+        "kind",
+        "date",
+        "nav",
+        "source_label"
+      ],
+      "properties": {
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "base_account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fund_nav"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "nav": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "source_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_revision",
+        "base_account_revision",
+        "instrument_id",
+        "kind",
+        "date",
+        "notice_kind",
+        "reason",
+        "status",
+        "resolution",
+        "source_url"
+      ],
+      "properties": {
+        "base_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483646
+        },
+        "base_account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "notice"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "notice_kind": {
+          "type": "string",
+          "enum": [
+            "corporate_action",
+            "missing_fact",
+            "cost_or_fee",
+            "other"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved"
+          ]
+        },
+        "resolution": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentPortfolioFactWrite = {
+  "base_revision": number;
+  "base_account_revision": number;
+  "instrument_id": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "base_revision": number;
+  "base_account_revision": number;
+  "instrument_id": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioFactHistorySchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "revision",
+        "instrument_id",
+        "request_key",
+        "created_at",
+        "updated_at",
+        "kind",
+        "date",
+        "nav",
+        "source_label",
+        "fact_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^\\d{10}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fund_nav"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "nav": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "source_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "fact_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "revision",
+        "instrument_id",
+        "request_key",
+        "created_at",
+        "updated_at",
+        "kind",
+        "date",
+        "notice_kind",
+        "reason",
+        "status",
+        "resolution",
+        "source_url",
+        "fact_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^\\d{10}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "instrument_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "notice"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "notice_kind": {
+          "type": "string",
+          "enum": [
+            "corporate_action",
+            "missing_fact",
+            "cost_or_fee",
+            "other"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved"
+          ]
+        },
+        "resolution": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fact_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentPortfolioFactHistory = {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+  "fact_id": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+  "fact_id": string;
+};
+
+export const LightTickInvestmentPortfolioInputSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "base_revision",
+        "date",
+        "sources"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "valuation"
+          ]
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "sources": {
+          "type": "object",
+          "maxProperties": 100,
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "base_revision",
+        "reason",
+        "baseline"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "baseline"
+          ]
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "currency",
+            "baseline_date",
+            "opening_cash",
+            "opening_positions"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "currency": {
+              "type": "string",
+              "enum": [
+                "CNY"
+              ]
+            },
+            "baseline_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "opening_cash": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+            },
+            "opening_positions": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "quantity"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                  },
+                  "cost": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 120
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "base_revision",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "performance"
+          ]
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentPortfolioInput = {
+  "kind": "valuation";
+  "base_revision": number;
+  "date": string;
+  "sources": {
+  [key: string]: string;
+};
+} | {
+  "kind": "baseline";
+  "base_revision": number;
+  "reason": string;
+  "baseline": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+} | {
+  "kind": "performance";
+  "base_revision": number;
+  "start": string;
+  "end": string;
+};
+
+export const LightTickInvestmentPortfolioCandidateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "digest",
+    "kind",
+    "price",
+    "date",
+    "source",
+    "price_basis"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "market",
+        "fund_nav"
+      ]
+    },
+    "price": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "source": {
+      "type": "string"
+    },
+    "price_basis": {
+      "type": "string",
+      "enum": [
+        "unadjusted",
+        "confirmed_nav"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioCandidate = {
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+};
+
+export const LightTickInvestmentPortfolioQuoteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "expected_session",
+    "status",
+    "selected",
+    "candidates"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "expected_session": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "missing",
+        "conflict",
+        "stale",
+        "calendar_unknown"
+      ]
+    },
+    "selected": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "digest",
+            "kind",
+            "price",
+            "date",
+            "source",
+            "price_basis"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "market",
+                "fund_nav"
+              ]
+            },
+            "price": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "source": {
+              "type": "string"
+            },
+            "price_basis": {
+              "type": "string",
+              "enum": [
+                "unadjusted",
+                "confirmed_nav"
+              ]
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "digest",
+          "kind",
+          "price",
+          "date",
+          "source",
+          "price_basis"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "market",
+              "fund_nav"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "source": {
+            "type": "string"
+          },
+          "price_basis": {
+            "type": "string",
+            "enum": [
+              "unadjusted",
+              "confirmed_nav"
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioQuote = {
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+};
+
+export const LightTickInvestmentPortfolioPositionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "instrument_id",
+    "quantity",
+    "cost",
+    "realized",
+    "fees_complete",
+    "settlements_complete",
+    "market_value",
+    "unrealized",
+    "mark",
+    "quantity_verified"
+  ],
+  "properties": {
+    "instrument_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "quantity": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "cost": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "realized": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fees_complete": {
+      "type": "boolean"
+    },
+    "settlements_complete": {
+      "type": "boolean"
+    },
+    "market_value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unrealized": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mark": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "quantity_verified": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioPosition = {
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+};
+
+export const LightTickInvestmentPortfolioBalanceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cash",
+    "cash_verified",
+    "receivables",
+    "positions",
+    "realized",
+    "fees_complete",
+    "net_realized",
+    "equity",
+    "settlements_complete",
+    "warnings"
+  ],
+  "properties": {
+    "cash": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "cash_verified": {
+      "type": "boolean"
+    },
+    "receivables": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "positions": {
+      "type": "array",
+      "maxItems": 10100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity",
+          "cost",
+          "realized",
+          "fees_complete",
+          "settlements_complete",
+          "market_value",
+          "unrealized",
+          "mark",
+          "quantity_verified"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "realized": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fees_complete": {
+            "type": "boolean"
+          },
+          "settlements_complete": {
+            "type": "boolean"
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unrealized": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mark": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity_verified": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "realized": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fees_complete": {
+      "type": "boolean"
+    },
+    "net_realized": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "equity": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "settlements_complete": {
+      "type": "boolean"
+    },
+    "warnings": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "maxLength": 1000
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBalance = {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+
+export const LightTickInvestmentPortfolioValuationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "date",
+    "account_id",
+    "account_revision",
+    "baseline_version",
+    "algorithm_version",
+    "method",
+    "ledger_digest",
+    "input_digest",
+    "quotes",
+    "coverage",
+    "holdings_value",
+    "balance",
+    "notices",
+    "calendar_version",
+    "preview_digest"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "valuation"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "baseline_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "algorithm_version": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "current_audited_facts_by_economic_date"
+      ]
+    },
+    "ledger_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "quotes": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "expected_session",
+          "status",
+          "selected",
+          "candidates"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "expected_session": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "missing",
+              "conflict",
+              "stale",
+              "calendar_unknown"
+            ]
+          },
+          "selected": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "digest",
+                  "kind",
+                  "price",
+                  "date",
+                  "source",
+                  "price_basis"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "market",
+                      "fund_nav"
+                    ]
+                  },
+                  "price": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "price_basis": {
+                    "type": "string",
+                    "enum": [
+                      "unadjusted",
+                      "confirmed_nav"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidates": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "digest",
+                "kind",
+                "price",
+                "date",
+                "source",
+                "price_basis"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "market",
+                    "fund_nav"
+                  ]
+                },
+                "price": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "price_basis": {
+                  "type": "string",
+                  "enum": [
+                    "unadjusted",
+                    "confirmed_nav"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "available",
+        "missing"
+      ],
+      "properties": {
+        "required": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "available": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "missing": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "holdings_value": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "balance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cash",
+        "cash_verified",
+        "receivables",
+        "positions",
+        "realized",
+        "fees_complete",
+        "net_realized",
+        "equity",
+        "settlements_complete",
+        "warnings"
+      ],
+      "properties": {
+        "cash": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "cash_verified": {
+          "type": "boolean"
+        },
+        "receivables": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "positions": {
+          "type": "array",
+          "maxItems": 10100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "quantity",
+              "cost",
+              "realized",
+              "fees_complete",
+              "settlements_complete",
+              "market_value",
+              "unrealized",
+              "mark",
+              "quantity_verified"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "quantity": {
+                "type": "string",
+                "maxLength": 240
+              },
+              "cost": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "realized": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fees_complete": {
+                "type": "boolean"
+              },
+              "settlements_complete": {
+                "type": "boolean"
+              },
+              "market_value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unrealized": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mark": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "quantity_verified": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "realized": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fees_complete": {
+          "type": "boolean"
+        },
+        "net_realized": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "equity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "settlements_complete": {
+          "type": "boolean"
+        },
+        "warnings": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "notices": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "instrument_id",
+              "request_key",
+              "created_at",
+              "updated_at",
+              "kind",
+              "date",
+              "nav",
+              "source_label"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fund_nav"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "nav": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "source_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "instrument_id",
+              "request_key",
+              "created_at",
+              "updated_at",
+              "kind",
+              "date",
+              "notice_kind",
+              "reason",
+              "status",
+              "resolution",
+              "source_url"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "notice"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "notice_kind": {
+                "type": "string",
+                "enum": [
+                  "corporate_action",
+                  "missing_fact",
+                  "cost_or_fee",
+                  "other"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "resolved"
+                ]
+              },
+              "resolution": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "calendar_version": {
+      "type": "string"
+    },
+    "preview_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioValuation = {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+};
+
+export const LightTickInvestmentPortfolioBaselineResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "reason",
+    "before",
+    "after",
+    "ledger_report",
+    "input_digest",
+    "preview_digest"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "baseline"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "before": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "currency",
+        "baseline_date",
+        "opening_cash",
+        "opening_positions",
+        "baseline_version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "CNY"
+          ]
+        },
+        "baseline_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "opening_cash": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+        },
+        "opening_positions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "quantity"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "quantity": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+              },
+              "cost": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 120
+              }
+            }
+          }
+        },
+        "baseline_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "after": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "currency",
+        "baseline_date",
+        "opening_cash",
+        "opening_positions",
+        "baseline_version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "CNY"
+          ]
+        },
+        "baseline_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "opening_cash": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+        },
+        "opening_positions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "quantity"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "quantity": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+              },
+              "cost": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 120
+              }
+            }
+          }
+        },
+        "baseline_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "ledger_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "account_id",
+        "account_revision",
+        "baseline_version",
+        "algorithm_version",
+        "input_digest",
+        "event_count",
+        "valuation",
+        "result"
+      ],
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "baseline_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "algorithm_version": {
+          "type": "string",
+          "enum": [
+            "moving-average-decimal60-half-even-v1"
+          ]
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "event_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "effective_event_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "correction_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "projection_version": {
+          "type": "string",
+          "enum": [
+            "immutable-ledger-corrections-v1"
+          ]
+        },
+        "valuation": {
+          "type": "string",
+          "enum": [
+            "unpriced"
+          ]
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cash",
+            "cash_verified",
+            "receivables",
+            "positions",
+            "realized",
+            "fees_complete",
+            "net_realized",
+            "equity",
+            "settlements_complete",
+            "warnings"
+          ],
+          "properties": {
+            "cash": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "cash_verified": {
+              "type": "boolean"
+            },
+            "receivables": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "positions": {
+              "type": "array",
+              "maxItems": 10100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "quantity",
+                  "cost",
+                  "realized",
+                  "fees_complete",
+                  "settlements_complete",
+                  "market_value",
+                  "unrealized",
+                  "mark"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "cost": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "realized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fees_complete": {
+                    "type": "boolean"
+                  },
+                  "settlements_complete": {
+                    "type": "boolean"
+                  },
+                  "market_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "unrealized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mark": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "realized": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fees_complete": {
+              "type": "boolean"
+            },
+            "net_realized": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "equity": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "settlements_complete": {
+              "type": "boolean"
+            },
+            "warnings": {
+              "type": "array",
+              "maxItems": 2,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        }
+      }
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "preview_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBaselineResult = {
+  "kind": "baseline";
+  "reason": string;
+  "before": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "after": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "ledger_report": {
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": "moving-average-decimal60-half-even-v1";
+  "input_digest": string;
+  "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
+  "valuation": "unpriced";
+  "result": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+};
+  "input_digest": string;
+  "preview_digest": string;
+};
+
+export const LightTickInvestmentPortfolioPerformanceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "start",
+    "end",
+    "algorithm_version",
+    "input_digest",
+    "net_profit",
+    "net_deposit",
+    "cash_components",
+    "maximum_drawdown_pct",
+    "twr",
+    "xirr",
+    "series",
+    "limitations"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "performance"
+      ]
+    },
+    "start": {
+      "type": "string",
+      "format": "date"
+    },
+    "end": {
+      "type": "string",
+      "format": "date"
+    },
+    "algorithm_version": {
+      "type": "string"
+    },
+    "input_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "net_profit": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "net_deposit": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "cash_components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deposit",
+        "withdrawal",
+        "dividend",
+        "interest",
+        "fee"
+      ],
+      "properties": {
+        "deposit": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "withdrawal": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "dividend": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "interest": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "fee": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "maximum_drawdown_pct": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 240
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "twr": {
+      "type": "null"
+    },
+    "xirr": {
+      "type": "null"
+    },
+    "series": {
+      "type": "array",
+      "maxItems": 367,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "date",
+          "stale",
+          "equity",
+          "ledger_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "equity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 240
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ledger_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioPerformance = {
+  "kind": "performance";
+  "start": string;
+  "end": string;
+  "algorithm_version": string;
+  "input_digest": string;
+  "net_profit": string | unknown;
+  "net_deposit": string;
+  "cash_components": {
+  "deposit": string;
+  "withdrawal": string;
+  "dividend": string;
+  "interest": string;
+  "fee": string;
+};
+  "maximum_drawdown_pct": string | unknown;
+  "twr": unknown;
+  "xirr": unknown;
+  "series": (
+{
+  "id": string;
+  "date": string;
+  "stale": boolean;
+  "equity": string | unknown;
+  "ledger_digest": string;
+}
+)[];
+  "limitations": string[];
+};
+
+export const LightTickInvestmentPortfolioResultSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "date",
+        "account_id",
+        "account_revision",
+        "baseline_version",
+        "algorithm_version",
+        "method",
+        "ledger_digest",
+        "input_digest",
+        "quotes",
+        "coverage",
+        "holdings_value",
+        "balance",
+        "notices",
+        "calendar_version",
+        "preview_digest"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "valuation"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "baseline_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "algorithm_version": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "current_audited_facts_by_economic_date"
+          ]
+        },
+        "ledger_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "quotes": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "expected_session",
+              "status",
+              "selected",
+              "candidates"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "expected_session": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "missing",
+                  "conflict",
+                  "stale",
+                  "calendar_unknown"
+                ]
+              },
+              "selected": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "revision",
+                      "digest",
+                      "kind",
+                      "price",
+                      "date",
+                      "source",
+                      "price_basis"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "market",
+                          "fund_nav"
+                        ]
+                      },
+                      "price": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "source": {
+                        "type": "string"
+                      },
+                      "price_basis": {
+                        "type": "string",
+                        "enum": [
+                          "unadjusted",
+                          "confirmed_nav"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "candidates": {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "revision",
+                    "digest",
+                    "kind",
+                    "price",
+                    "date",
+                    "source",
+                    "price_basis"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "market",
+                        "fund_nav"
+                      ]
+                    },
+                    "price": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "price_basis": {
+                      "type": "string",
+                      "enum": [
+                        "unadjusted",
+                        "confirmed_nav"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required",
+            "available",
+            "missing"
+          ],
+          "properties": {
+            "required": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "available": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "missing": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "holdings_value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "balance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cash",
+            "cash_verified",
+            "receivables",
+            "positions",
+            "realized",
+            "fees_complete",
+            "net_realized",
+            "equity",
+            "settlements_complete",
+            "warnings"
+          ],
+          "properties": {
+            "cash": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "cash_verified": {
+              "type": "boolean"
+            },
+            "receivables": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "positions": {
+              "type": "array",
+              "maxItems": 10100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "quantity",
+                  "cost",
+                  "realized",
+                  "fees_complete",
+                  "settlements_complete",
+                  "market_value",
+                  "unrealized",
+                  "mark",
+                  "quantity_verified"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "cost": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "realized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fees_complete": {
+                    "type": "boolean"
+                  },
+                  "settlements_complete": {
+                    "type": "boolean"
+                  },
+                  "market_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "unrealized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mark": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "quantity_verified": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "realized": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fees_complete": {
+              "type": "boolean"
+            },
+            "net_realized": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "equity": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "settlements_complete": {
+              "type": "boolean"
+            },
+            "warnings": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        "notices": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "nav",
+                  "source_label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fund_nav"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "nav": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "source_label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "notice_kind",
+                  "reason",
+                  "status",
+                  "resolution",
+                  "source_url"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "notice"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "notice_kind": {
+                    "type": "string",
+                    "enum": [
+                      "corporate_action",
+                      "missing_fact",
+                      "cost_or_fee",
+                      "other"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "resolved"
+                    ]
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "calendar_version": {
+          "type": "string"
+        },
+        "preview_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "reason",
+        "before",
+        "after",
+        "ledger_report",
+        "input_digest",
+        "preview_digest"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "baseline"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "currency",
+            "baseline_date",
+            "opening_cash",
+            "opening_positions",
+            "baseline_version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "currency": {
+              "type": "string",
+              "enum": [
+                "CNY"
+              ]
+            },
+            "baseline_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "opening_cash": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+            },
+            "opening_positions": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "quantity"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                  },
+                  "cost": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 120
+                  }
+                }
+              }
+            },
+            "baseline_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "currency",
+            "baseline_date",
+            "opening_cash",
+            "opening_positions",
+            "baseline_version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "currency": {
+              "type": "string",
+              "enum": [
+                "CNY"
+              ]
+            },
+            "baseline_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "opening_cash": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+            },
+            "opening_positions": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "quantity"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                  },
+                  "cost": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 120
+                  }
+                }
+              }
+            },
+            "baseline_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "ledger_report": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account_id",
+            "account_revision",
+            "baseline_version",
+            "algorithm_version",
+            "input_digest",
+            "event_count",
+            "valuation",
+            "result"
+          ],
+          "properties": {
+            "account_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "account_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "baseline_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "algorithm_version": {
+              "type": "string",
+              "enum": [
+                "moving-average-decimal60-half-even-v1"
+              ]
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "event_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "effective_event_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "correction_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "projection_version": {
+              "type": "string",
+              "enum": [
+                "immutable-ledger-corrections-v1"
+              ]
+            },
+            "valuation": {
+              "type": "string",
+              "enum": [
+                "unpriced"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cash",
+                "cash_verified",
+                "receivables",
+                "positions",
+                "realized",
+                "fees_complete",
+                "net_realized",
+                "equity",
+                "settlements_complete",
+                "warnings"
+              ],
+              "properties": {
+                "cash": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "cash_verified": {
+                  "type": "boolean"
+                },
+                "receivables": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "positions": {
+                  "type": "array",
+                  "maxItems": 10100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity",
+                      "cost",
+                      "realized",
+                      "fees_complete",
+                      "settlements_complete",
+                      "market_value",
+                      "unrealized",
+                      "mark"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "cost": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "realized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fees_complete": {
+                        "type": "boolean"
+                      },
+                      "settlements_complete": {
+                        "type": "boolean"
+                      },
+                      "market_value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "unrealized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mark": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "realized": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fees_complete": {
+                  "type": "boolean"
+                },
+                "net_realized": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equity": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "settlements_complete": {
+                  "type": "boolean"
+                },
+                "warnings": {
+                  "type": "array",
+                  "maxItems": 2,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "preview_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "start",
+        "end",
+        "algorithm_version",
+        "input_digest",
+        "net_profit",
+        "net_deposit",
+        "cash_components",
+        "maximum_drawdown_pct",
+        "twr",
+        "xirr",
+        "series",
+        "limitations"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "performance"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "algorithm_version": {
+          "type": "string"
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "net_profit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "net_deposit": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "cash_components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deposit",
+            "withdrawal",
+            "dividend",
+            "interest",
+            "fee"
+          ],
+          "properties": {
+            "deposit": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "withdrawal": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "dividend": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "interest": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "fee": {
+              "type": "string",
+              "maxLength": 240
+            }
+          }
+        },
+        "maximum_drawdown_pct": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "twr": {
+          "type": "null"
+        },
+        "xirr": {
+          "type": "null"
+        },
+        "series": {
+          "type": "array",
+          "maxItems": 367,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "date",
+              "stale",
+              "equity",
+              "ledger_digest"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "stale": {
+                "type": "boolean"
+              },
+              "equity": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ledger_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickInvestmentPortfolioResult = {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+} | {
+  "kind": "baseline";
+  "reason": string;
+  "before": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "after": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "ledger_report": {
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": "moving-average-decimal60-half-even-v1";
+  "input_digest": string;
+  "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
+  "valuation": "unpriced";
+  "result": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+};
+  "input_digest": string;
+  "preview_digest": string;
+} | {
+  "kind": "performance";
+  "start": string;
+  "end": string;
+  "algorithm_version": string;
+  "input_digest": string;
+  "net_profit": string | unknown;
+  "net_deposit": string;
+  "cash_components": {
+  "deposit": string;
+  "withdrawal": string;
+  "dividend": string;
+  "interest": string;
+  "fee": string;
+};
+  "maximum_drawdown_pct": string | unknown;
+  "twr": unknown;
+  "xirr": unknown;
+  "series": (
+{
+  "id": string;
+  "date": string;
+  "stale": boolean;
+  "equity": string | unknown;
+  "ledger_digest": string;
+}
+)[];
+  "limitations": string[];
+};
+
+export const LightTickInvestmentPortfolioWorkSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "account_id",
+    "revision",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "has_output"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "input": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_revision",
+            "date",
+            "sources"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "valuation"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "sources": {
+              "type": "object",
+              "maxProperties": 100,
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_revision",
+            "reason",
+            "baseline"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "baseline"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "currency",
+                "baseline_date",
+                "opening_cash",
+                "opening_positions"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "currency": {
+                  "type": "string",
+                  "enum": [
+                    "CNY"
+                  ]
+                },
+                "baseline_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "opening_cash": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                },
+                "opening_positions": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                      },
+                      "cost": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_revision",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "performance"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "has_output": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioWorkSummary = {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "input": {
+  "kind": "valuation";
+  "base_revision": number;
+  "date": string;
+  "sources": {
+  [key: string]: string;
+};
+} | {
+  "kind": "baseline";
+  "base_revision": number;
+  "reason": string;
+  "baseline": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+} | {
+  "kind": "performance";
+  "base_revision": number;
+  "start": string;
+  "end": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "has_output": boolean;
+};
+
+export const LightTickInvestmentPortfolioWorkSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "account_id",
+    "revision",
+    "input",
+    "status",
+    "attempt",
+    "error_code",
+    "created_at",
+    "updated_at",
+    "has_output",
+    "output"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "input": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_revision",
+            "date",
+            "sources"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "valuation"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "sources": {
+              "type": "object",
+              "maxProperties": 100,
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_revision",
+            "reason",
+            "baseline"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "baseline"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "baseline": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "currency",
+                "baseline_date",
+                "opening_cash",
+                "opening_positions"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "currency": {
+                  "type": "string",
+                  "enum": [
+                    "CNY"
+                  ]
+                },
+                "baseline_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "opening_cash": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                },
+                "opening_positions": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                      },
+                      "cost": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_revision",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "performance"
+              ]
+            },
+            "base_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "has_output": {
+      "type": "boolean"
+    },
+    "output": {
+      "anyOf": [
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "date",
+                "account_id",
+                "account_revision",
+                "baseline_version",
+                "algorithm_version",
+                "method",
+                "ledger_digest",
+                "input_digest",
+                "quotes",
+                "coverage",
+                "holdings_value",
+                "balance",
+                "notices",
+                "calendar_version",
+                "preview_digest"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "valuation"
+                  ]
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "account_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "account_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "baseline_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "algorithm_version": {
+                  "type": "string"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "current_audited_facts_by_economic_date"
+                  ]
+                },
+                "ledger_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "quotes": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "expected_session",
+                      "status",
+                      "selected",
+                      "candidates"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "expected_session": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "available",
+                          "missing",
+                          "conflict",
+                          "stale",
+                          "calendar_unknown"
+                        ]
+                      },
+                      "selected": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "digest",
+                              "kind",
+                              "price",
+                              "date",
+                              "source",
+                              "price_basis"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "market",
+                                  "fund_nav"
+                                ]
+                              },
+                              "price": {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "source": {
+                                "type": "string"
+                              },
+                              "price_basis": {
+                                "type": "string",
+                                "enum": [
+                                  "unadjusted",
+                                  "confirmed_nav"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "candidates": {
+                        "type": "array",
+                        "maxItems": 500,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "revision",
+                            "digest",
+                            "kind",
+                            "price",
+                            "date",
+                            "source",
+                            "price_basis"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "market",
+                                "fund_nav"
+                              ]
+                            },
+                            "price": {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "price_basis": {
+                              "type": "string",
+                              "enum": [
+                                "unadjusted",
+                                "confirmed_nav"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "coverage": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "required",
+                    "available",
+                    "missing"
+                  ],
+                  "properties": {
+                    "required": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "available": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "missing": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  }
+                },
+                "holdings_value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "balance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "cash",
+                    "cash_verified",
+                    "receivables",
+                    "positions",
+                    "realized",
+                    "fees_complete",
+                    "net_realized",
+                    "equity",
+                    "settlements_complete",
+                    "warnings"
+                  ],
+                  "properties": {
+                    "cash": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "cash_verified": {
+                      "type": "boolean"
+                    },
+                    "receivables": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "positions": {
+                      "type": "array",
+                      "maxItems": 10100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity",
+                          "cost",
+                          "realized",
+                          "fees_complete",
+                          "settlements_complete",
+                          "market_value",
+                          "unrealized",
+                          "mark",
+                          "quantity_verified"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          "cost": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "realized": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fees_complete": {
+                            "type": "boolean"
+                          },
+                          "settlements_complete": {
+                            "type": "boolean"
+                          },
+                          "market_value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "unrealized": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "mark": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "quantity_verified": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "realized": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fees_complete": {
+                      "type": "boolean"
+                    },
+                    "net_realized": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "equity": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "settlements_complete": {
+                      "type": "boolean"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
+                  }
+                },
+                "notices": {
+                  "type": "array",
+                  "maxItems": 500,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "account_id",
+                          "revision",
+                          "instrument_id",
+                          "request_key",
+                          "created_at",
+                          "updated_at",
+                          "kind",
+                          "date",
+                          "nav",
+                          "source_label"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "account_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "request_key": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fund_nav"
+                            ]
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "nav": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "source_label": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "account_id",
+                          "revision",
+                          "instrument_id",
+                          "request_key",
+                          "created_at",
+                          "updated_at",
+                          "kind",
+                          "date",
+                          "notice_kind",
+                          "reason",
+                          "status",
+                          "resolution",
+                          "source_url"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "account_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "request_key": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "notice"
+                            ]
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "notice_kind": {
+                            "type": "string",
+                            "enum": [
+                              "corporate_action",
+                              "missing_fact",
+                              "cost_or_fee",
+                              "other"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "resolved"
+                            ]
+                          },
+                          "resolution": {
+                            "type": "string",
+                            "maxLength": 4000
+                          },
+                          "source_url": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uri",
+                                "maxLength": 2048
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "calendar_version": {
+                  "type": "string"
+                },
+                "preview_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "reason",
+                "before",
+                "after",
+                "ledger_report",
+                "input_digest",
+                "preview_digest"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "baseline"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "before": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "currency",
+                    "baseline_date",
+                    "opening_cash",
+                    "opening_positions",
+                    "baseline_version"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "CNY"
+                      ]
+                    },
+                    "baseline_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "opening_cash": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "opening_positions": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                          },
+                          "cost": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 120
+                          }
+                        }
+                      }
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                },
+                "after": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "currency",
+                    "baseline_date",
+                    "opening_cash",
+                    "opening_positions",
+                    "baseline_version"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "CNY"
+                      ]
+                    },
+                    "baseline_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "opening_cash": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "opening_positions": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                          },
+                          "cost": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 120
+                          }
+                        }
+                      }
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                },
+                "ledger_report": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "account_id",
+                    "account_revision",
+                    "baseline_version",
+                    "algorithm_version",
+                    "input_digest",
+                    "event_count",
+                    "valuation",
+                    "result"
+                  ],
+                  "properties": {
+                    "account_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "account_revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "algorithm_version": {
+                      "type": "string",
+                      "enum": [
+                        "moving-average-decimal60-half-even-v1"
+                      ]
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "effective_event_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "correction_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "projection_version": {
+                      "type": "string",
+                      "enum": [
+                        "immutable-ledger-corrections-v1"
+                      ]
+                    },
+                    "valuation": {
+                      "type": "string",
+                      "enum": [
+                        "unpriced"
+                      ]
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "cash",
+                        "cash_verified",
+                        "receivables",
+                        "positions",
+                        "realized",
+                        "fees_complete",
+                        "net_realized",
+                        "equity",
+                        "settlements_complete",
+                        "warnings"
+                      ],
+                      "properties": {
+                        "cash": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "cash_verified": {
+                          "type": "boolean"
+                        },
+                        "receivables": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "positions": {
+                          "type": "array",
+                          "maxItems": 10100,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "instrument_id",
+                              "quantity",
+                              "cost",
+                              "realized",
+                              "fees_complete",
+                              "settlements_complete",
+                              "market_value",
+                              "unrealized",
+                              "mark"
+                            ],
+                            "properties": {
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "quantity": {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              "cost": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "realized": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fees_complete": {
+                                "type": "boolean"
+                              },
+                              "settlements_complete": {
+                                "type": "boolean"
+                              },
+                              "market_value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "unrealized": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "mark": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "fees_complete": {
+                          "type": "boolean"
+                        },
+                        "net_realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "equity": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "settlements_complete": {
+                          "type": "boolean"
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "maxItems": 2,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "preview_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "start",
+                "end",
+                "algorithm_version",
+                "input_digest",
+                "net_profit",
+                "net_deposit",
+                "cash_components",
+                "maximum_drawdown_pct",
+                "twr",
+                "xirr",
+                "series",
+                "limitations"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "performance"
+                  ]
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "algorithm_version": {
+                  "type": "string"
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "net_profit": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "net_deposit": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "cash_components": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "deposit",
+                    "withdrawal",
+                    "dividend",
+                    "interest",
+                    "fee"
+                  ],
+                  "properties": {
+                    "deposit": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "withdrawal": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "dividend": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "interest": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "fee": {
+                      "type": "string",
+                      "maxLength": 240
+                    }
+                  }
+                },
+                "maximum_drawdown_pct": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "twr": {
+                  "type": "null"
+                },
+                "xirr": {
+                  "type": "null"
+                },
+                "series": {
+                  "type": "array",
+                  "maxItems": 367,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "date",
+                      "stale",
+                      "equity",
+                      "ledger_digest"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "stale": {
+                        "type": "boolean"
+                      },
+                      "equity": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "ledger_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
+                },
+                "limitations": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioWork = {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "input": {
+  "kind": "valuation";
+  "base_revision": number;
+  "date": string;
+  "sources": {
+  [key: string]: string;
+};
+} | {
+  "kind": "baseline";
+  "base_revision": number;
+  "reason": string;
+  "baseline": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+} | {
+  "kind": "performance";
+  "base_revision": number;
+  "start": string;
+  "end": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "has_output": boolean;
+  "output": (
+{
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+} | {
+  "kind": "baseline";
+  "reason": string;
+  "before": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "after": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "ledger_report": {
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": "moving-average-decimal60-half-even-v1";
+  "input_digest": string;
+  "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
+  "valuation": "unpriced";
+  "result": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+};
+  "input_digest": string;
+  "preview_digest": string;
+} | {
+  "kind": "performance";
+  "start": string;
+  "end": string;
+  "algorithm_version": string;
+  "input_digest": string;
+  "net_profit": string | unknown;
+  "net_deposit": string;
+  "cash_components": {
+  "deposit": string;
+  "withdrawal": string;
+  "dividend": string;
+  "interest": string;
+  "fee": string;
+};
+  "maximum_drawdown_pct": string | unknown;
+  "twr": unknown;
+  "xirr": unknown;
+  "series": (
+{
+  "id": string;
+  "date": string;
+  "stale": boolean;
+  "equity": string | unknown;
+  "ledger_digest": string;
+}
+)[];
+  "limitations": string[];
+}
+) | unknown;
+};
+
+export const LightTickInvestmentPortfolioSavedSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "account_id",
+    "work_id",
+    "request_key",
+    "kind",
+    "created_at",
+    "output"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "request_key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "valuation",
+        "baseline"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "output": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "date",
+            "account_id",
+            "account_revision",
+            "baseline_version",
+            "algorithm_version",
+            "method",
+            "ledger_digest",
+            "input_digest",
+            "quotes",
+            "coverage",
+            "holdings_value",
+            "balance",
+            "notices",
+            "calendar_version",
+            "preview_digest"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "valuation"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "account_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "account_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "baseline_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "algorithm_version": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "current_audited_facts_by_economic_date"
+              ]
+            },
+            "ledger_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "quotes": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "expected_session",
+                  "status",
+                  "selected",
+                  "candidates"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "expected_session": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "available",
+                      "missing",
+                      "conflict",
+                      "stale",
+                      "calendar_unknown"
+                    ]
+                  },
+                  "selected": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "digest",
+                          "kind",
+                          "price",
+                          "date",
+                          "source",
+                          "price_basis"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "market",
+                              "fund_nav"
+                            ]
+                          },
+                          "price": {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "price_basis": {
+                            "type": "string",
+                            "enum": [
+                              "unadjusted",
+                              "confirmed_nav"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "candidates": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "revision",
+                        "digest",
+                        "kind",
+                        "price",
+                        "date",
+                        "source",
+                        "price_basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "market",
+                            "fund_nav"
+                          ]
+                        },
+                        "price": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "source": {
+                          "type": "string"
+                        },
+                        "price_basis": {
+                          "type": "string",
+                          "enum": [
+                            "unadjusted",
+                            "confirmed_nav"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "required",
+                "available",
+                "missing"
+              ],
+              "properties": {
+                "required": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "available": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "missing": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            },
+            "holdings_value": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "balance": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cash",
+                "cash_verified",
+                "receivables",
+                "positions",
+                "realized",
+                "fees_complete",
+                "net_realized",
+                "equity",
+                "settlements_complete",
+                "warnings"
+              ],
+              "properties": {
+                "cash": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "cash_verified": {
+                  "type": "boolean"
+                },
+                "receivables": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "positions": {
+                  "type": "array",
+                  "maxItems": 10100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity",
+                      "cost",
+                      "realized",
+                      "fees_complete",
+                      "settlements_complete",
+                      "market_value",
+                      "unrealized",
+                      "mark",
+                      "quantity_verified"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "cost": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "realized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fees_complete": {
+                        "type": "boolean"
+                      },
+                      "settlements_complete": {
+                        "type": "boolean"
+                      },
+                      "market_value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "unrealized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mark": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quantity_verified": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "realized": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fees_complete": {
+                  "type": "boolean"
+                },
+                "net_realized": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equity": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "settlements_complete": {
+                  "type": "boolean"
+                },
+                "warnings": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            },
+            "notices": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "account_id",
+                      "revision",
+                      "instrument_id",
+                      "request_key",
+                      "created_at",
+                      "updated_at",
+                      "kind",
+                      "date",
+                      "nav",
+                      "source_label"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "account_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "request_key": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "fund_nav"
+                        ]
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "nav": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "source_label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "account_id",
+                      "revision",
+                      "instrument_id",
+                      "request_key",
+                      "created_at",
+                      "updated_at",
+                      "kind",
+                      "date",
+                      "notice_kind",
+                      "reason",
+                      "status",
+                      "resolution",
+                      "source_url"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "account_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "request_key": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "notice"
+                        ]
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "notice_kind": {
+                        "type": "string",
+                        "enum": [
+                          "corporate_action",
+                          "missing_fact",
+                          "cost_or_fee",
+                          "other"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "resolved"
+                        ]
+                      },
+                      "resolution": {
+                        "type": "string",
+                        "maxLength": 4000
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uri",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "calendar_version": {
+              "type": "string"
+            },
+            "preview_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "reason",
+            "before",
+            "after",
+            "ledger_report",
+            "input_digest",
+            "preview_digest"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "baseline"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            },
+            "before": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "currency",
+                "baseline_date",
+                "opening_cash",
+                "opening_positions",
+                "baseline_version"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "currency": {
+                  "type": "string",
+                  "enum": [
+                    "CNY"
+                  ]
+                },
+                "baseline_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "opening_cash": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                },
+                "opening_positions": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                      },
+                      "cost": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                },
+                "baseline_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "after": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "currency",
+                "baseline_date",
+                "opening_cash",
+                "opening_positions",
+                "baseline_version"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "currency": {
+                  "type": "string",
+                  "enum": [
+                    "CNY"
+                  ]
+                },
+                "baseline_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "opening_cash": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                },
+                "opening_positions": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                      },
+                      "cost": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                },
+                "baseline_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              }
+            },
+            "ledger_report": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "account_id",
+                "account_revision",
+                "baseline_version",
+                "algorithm_version",
+                "input_digest",
+                "event_count",
+                "valuation",
+                "result"
+              ],
+              "properties": {
+                "account_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "account_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "baseline_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "algorithm_version": {
+                  "type": "string",
+                  "enum": [
+                    "moving-average-decimal60-half-even-v1"
+                  ]
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "event_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "effective_event_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "correction_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "projection_version": {
+                  "type": "string",
+                  "enum": [
+                    "immutable-ledger-corrections-v1"
+                  ]
+                },
+                "valuation": {
+                  "type": "string",
+                  "enum": [
+                    "unpriced"
+                  ]
+                },
+                "result": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "cash",
+                    "cash_verified",
+                    "receivables",
+                    "positions",
+                    "realized",
+                    "fees_complete",
+                    "net_realized",
+                    "equity",
+                    "settlements_complete",
+                    "warnings"
+                  ],
+                  "properties": {
+                    "cash": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "cash_verified": {
+                      "type": "boolean"
+                    },
+                    "receivables": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "positions": {
+                      "type": "array",
+                      "maxItems": 10100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity",
+                          "cost",
+                          "realized",
+                          "fees_complete",
+                          "settlements_complete",
+                          "market_value",
+                          "unrealized",
+                          "mark"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          "cost": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "realized": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fees_complete": {
+                            "type": "boolean"
+                          },
+                          "settlements_complete": {
+                            "type": "boolean"
+                          },
+                          "market_value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "unrealized": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "mark": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "realized": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fees_complete": {
+                      "type": "boolean"
+                    },
+                    "net_realized": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "equity": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "settlements_complete": {
+                      "type": "boolean"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "maxItems": 2,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "preview_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioSaved = {
+  "id": string;
+  "account_id": string;
+  "work_id": string;
+  "request_key": string;
+  "kind": "valuation" | "baseline";
+  "created_at": string;
+  "output": {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+} | {
+  "kind": "baseline";
+  "reason": string;
+  "before": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "after": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "ledger_report": {
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": "moving-average-decimal60-half-even-v1";
+  "input_digest": string;
+  "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
+  "valuation": "unpriced";
+  "result": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+};
+  "input_digest": string;
+  "preview_digest": string;
+};
+};
+
+export const LightTickInvestmentPortfolioSavedValuationSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "account_id",
+    "work_id",
+    "request_key",
+    "kind",
+    "created_at",
+    "output",
+    "stale"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "work_id": {
+      "type": "string",
+      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+      "maxLength": 100
+    },
+    "request_key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "valuation"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "date",
+        "account_id",
+        "account_revision",
+        "baseline_version",
+        "algorithm_version",
+        "method",
+        "ledger_digest",
+        "input_digest",
+        "quotes",
+        "coverage",
+        "holdings_value",
+        "balance",
+        "notices",
+        "calendar_version",
+        "preview_digest"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "valuation"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "baseline_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "algorithm_version": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "current_audited_facts_by_economic_date"
+          ]
+        },
+        "ledger_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "input_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "quotes": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instrument_id",
+              "expected_session",
+              "status",
+              "selected",
+              "candidates"
+            ],
+            "properties": {
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "expected_session": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "missing",
+                  "conflict",
+                  "stale",
+                  "calendar_unknown"
+                ]
+              },
+              "selected": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "revision",
+                      "digest",
+                      "kind",
+                      "price",
+                      "date",
+                      "source",
+                      "price_basis"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "market",
+                          "fund_nav"
+                        ]
+                      },
+                      "price": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "source": {
+                        "type": "string"
+                      },
+                      "price_basis": {
+                        "type": "string",
+                        "enum": [
+                          "unadjusted",
+                          "confirmed_nav"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "candidates": {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "revision",
+                    "digest",
+                    "kind",
+                    "price",
+                    "date",
+                    "source",
+                    "price_basis"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "market",
+                        "fund_nav"
+                      ]
+                    },
+                    "price": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "price_basis": {
+                      "type": "string",
+                      "enum": [
+                        "unadjusted",
+                        "confirmed_nav"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required",
+            "available",
+            "missing"
+          ],
+          "properties": {
+            "required": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "available": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "missing": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "holdings_value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 240
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "balance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cash",
+            "cash_verified",
+            "receivables",
+            "positions",
+            "realized",
+            "fees_complete",
+            "net_realized",
+            "equity",
+            "settlements_complete",
+            "warnings"
+          ],
+          "properties": {
+            "cash": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "cash_verified": {
+              "type": "boolean"
+            },
+            "receivables": {
+              "type": "string",
+              "maxLength": 240
+            },
+            "positions": {
+              "type": "array",
+              "maxItems": 10100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "quantity",
+                  "cost",
+                  "realized",
+                  "fees_complete",
+                  "settlements_complete",
+                  "market_value",
+                  "unrealized",
+                  "mark",
+                  "quantity_verified"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "quantity": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "cost": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "realized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fees_complete": {
+                    "type": "boolean"
+                  },
+                  "settlements_complete": {
+                    "type": "boolean"
+                  },
+                  "market_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "unrealized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mark": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "quantity_verified": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "realized": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fees_complete": {
+              "type": "boolean"
+            },
+            "net_realized": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "equity": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "settlements_complete": {
+              "type": "boolean"
+            },
+            "warnings": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        "notices": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "nav",
+                  "source_label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fund_nav"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "nav": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "source_label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "notice_kind",
+                  "reason",
+                  "status",
+                  "resolution",
+                  "source_url"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "notice"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "notice_kind": {
+                    "type": "string",
+                    "enum": [
+                      "corporate_action",
+                      "missing_fact",
+                      "cost_or_fee",
+                      "other"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "resolved"
+                    ]
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "calendar_version": {
+          "type": "string"
+        },
+        "preview_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "stale": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioSavedValuation = {
+  "id": string;
+  "account_id": string;
+  "work_id": string;
+  "request_key": string;
+  "kind": "valuation";
+  "created_at": string;
+  "output": {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+};
+  "stale": boolean;
+};
+
+export const LightTickInvestmentPortfolioAdoptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "preview_digest"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "preview_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioAdopt = {
+  "base_revision": number;
+  "preview_digest": string;
+};
+
+export const LightTickInvestmentPortfolioCancelSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioCancel = {
+  "base_revision": number;
+};
+
+export const LightTickInvestmentPortfolioBaselineHistoryItemSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "currency",
+    "baseline_date",
+    "opening_cash",
+    "opening_positions",
+    "baseline_version",
+    "id"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "CNY"
+      ]
+    },
+    "baseline_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "opening_cash": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+    },
+    "opening_positions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_id",
+          "quantity"
+        ],
+        "properties": {
+          "instrument_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "quantity": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          }
+        }
+      }
+    },
+    "baseline_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^\\d{10}$"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBaselineHistoryItem = {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+  "id": string;
+};
+
+export const LightTickInvestmentPortfolioFactsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "instrument_id",
+              "request_key",
+              "created_at",
+              "updated_at",
+              "kind",
+              "date",
+              "nav",
+              "source_label"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fund_nav"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "nav": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "source_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "instrument_id",
+              "request_key",
+              "created_at",
+              "updated_at",
+              "kind",
+              "date",
+              "notice_kind",
+              "reason",
+              "status",
+              "resolution",
+              "source_url"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "notice"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "notice_kind": {
+                "type": "string",
+                "enum": [
+                  "corporate_action",
+                  "missing_fact",
+                  "cost_or_fee",
+                  "other"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "resolved"
+                ]
+              },
+              "resolution": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioFacts = {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioHistorySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "instrument_id",
+              "request_key",
+              "created_at",
+              "updated_at",
+              "kind",
+              "date",
+              "nav",
+              "source_label",
+              "fact_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^\\d{10}$"
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fund_nav"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "nav": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "source_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "fact_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "instrument_id",
+              "request_key",
+              "created_at",
+              "updated_at",
+              "kind",
+              "date",
+              "notice_kind",
+              "reason",
+              "status",
+              "resolution",
+              "source_url",
+              "fact_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^\\d{10}$"
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "instrument_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "notice"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "notice_kind": {
+                "type": "string",
+                "enum": [
+                  "corporate_action",
+                  "missing_fact",
+                  "cost_or_fee",
+                  "other"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "resolved"
+                ]
+              },
+              "resolution": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fact_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioHistory = {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+  "fact_id": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+  "fact_id": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioWorksSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "account_id",
+          "revision",
+          "input",
+          "status",
+          "attempt",
+          "error_code",
+          "created_at",
+          "updated_at",
+          "has_output"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "account_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "input": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "base_revision",
+                  "date",
+                  "sources"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "valuation"
+                    ]
+                  },
+                  "base_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "sources": {
+                    "type": "object",
+                    "maxProperties": 100,
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "base_revision",
+                  "reason",
+                  "baseline"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "baseline"
+                    ]
+                  },
+                  "base_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "baseline": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "currency",
+                      "baseline_date",
+                      "opening_cash",
+                      "opening_positions"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "CNY"
+                        ]
+                      },
+                      "baseline_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "opening_cash": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                      },
+                      "opening_positions": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "instrument_id",
+                            "quantity"
+                          ],
+                          "properties": {
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "quantity": {
+                              "type": "string",
+                              "maxLength": 120,
+                              "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                            },
+                            "cost": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 120
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "base_revision",
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "performance"
+                    ]
+                  },
+                  "base_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "start": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "has_output": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioWorks = {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "input": {
+  "kind": "valuation";
+  "base_revision": number;
+  "date": string;
+  "sources": {
+  [key: string]: string;
+};
+} | {
+  "kind": "baseline";
+  "base_revision": number;
+  "reason": string;
+  "baseline": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+} | {
+  "kind": "performance";
+  "base_revision": number;
+  "start": string;
+  "end": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "has_output": boolean;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioValuationsSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "account_id",
+          "work_id",
+          "request_key",
+          "kind",
+          "created_at",
+          "output",
+          "stale"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "account_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "work_id": {
+            "type": "string",
+            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+            "maxLength": 100
+          },
+          "request_key": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "valuation"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "output": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "date",
+              "account_id",
+              "account_revision",
+              "baseline_version",
+              "algorithm_version",
+              "method",
+              "ledger_digest",
+              "input_digest",
+              "quotes",
+              "coverage",
+              "holdings_value",
+              "balance",
+              "notices",
+              "calendar_version",
+              "preview_digest"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "valuation"
+                ]
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "baseline_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "algorithm_version": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "current_audited_facts_by_economic_date"
+                ]
+              },
+              "ledger_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "input_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "quotes": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "instrument_id",
+                    "expected_session",
+                    "status",
+                    "selected",
+                    "candidates"
+                  ],
+                  "properties": {
+                    "instrument_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "expected_session": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "missing",
+                        "conflict",
+                        "stale",
+                        "calendar_unknown"
+                      ]
+                    },
+                    "selected": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "revision",
+                            "digest",
+                            "kind",
+                            "price",
+                            "date",
+                            "source",
+                            "price_basis"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "market",
+                                "fund_nav"
+                              ]
+                            },
+                            "price": {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "price_basis": {
+                              "type": "string",
+                              "enum": [
+                                "unadjusted",
+                                "confirmed_nav"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "candidates": {
+                      "type": "array",
+                      "maxItems": 500,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "digest",
+                          "kind",
+                          "price",
+                          "date",
+                          "source",
+                          "price_basis"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "market",
+                              "fund_nav"
+                            ]
+                          },
+                          "price": {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "price_basis": {
+                            "type": "string",
+                            "enum": [
+                              "unadjusted",
+                              "confirmed_nav"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "coverage": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "required",
+                  "available",
+                  "missing"
+                ],
+                "properties": {
+                  "required": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "available": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "missing": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                }
+              },
+              "holdings_value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "balance": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "cash",
+                  "cash_verified",
+                  "receivables",
+                  "positions",
+                  "realized",
+                  "fees_complete",
+                  "net_realized",
+                  "equity",
+                  "settlements_complete",
+                  "warnings"
+                ],
+                "properties": {
+                  "cash": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "cash_verified": {
+                    "type": "boolean"
+                  },
+                  "receivables": {
+                    "type": "string",
+                    "maxLength": 240
+                  },
+                  "positions": {
+                    "type": "array",
+                    "maxItems": 10100,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "instrument_id",
+                        "quantity",
+                        "cost",
+                        "realized",
+                        "fees_complete",
+                        "settlements_complete",
+                        "market_value",
+                        "unrealized",
+                        "mark",
+                        "quantity_verified"
+                      ],
+                      "properties": {
+                        "instrument_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "quantity": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "cost": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "fees_complete": {
+                          "type": "boolean"
+                        },
+                        "settlements_complete": {
+                          "type": "boolean"
+                        },
+                        "market_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "unrealized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "mark": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "quantity_verified": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "realized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fees_complete": {
+                    "type": "boolean"
+                  },
+                  "net_realized": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "equity": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "settlements_complete": {
+                    "type": "boolean"
+                  },
+                  "warnings": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 1000
+                    }
+                  }
+                }
+              },
+              "notices": {
+                "type": "array",
+                "maxItems": 500,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "account_id",
+                        "revision",
+                        "instrument_id",
+                        "request_key",
+                        "created_at",
+                        "updated_at",
+                        "kind",
+                        "date",
+                        "nav",
+                        "source_label"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "account_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "instrument_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "request_key": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "fund_nav"
+                          ]
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "nav": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "source_label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "account_id",
+                        "revision",
+                        "instrument_id",
+                        "request_key",
+                        "created_at",
+                        "updated_at",
+                        "kind",
+                        "date",
+                        "notice_kind",
+                        "reason",
+                        "status",
+                        "resolution",
+                        "source_url"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "account_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "instrument_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "request_key": {
+                          "type": "string",
+                          "minLength": 8,
+                          "maxLength": 128
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "notice"
+                          ]
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "notice_kind": {
+                          "type": "string",
+                          "enum": [
+                            "corporate_action",
+                            "missing_fact",
+                            "cost_or_fee",
+                            "other"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "resolved"
+                          ]
+                        },
+                        "resolution": {
+                          "type": "string",
+                          "maxLength": 4000
+                        },
+                        "source_url": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uri",
+                              "maxLength": 2048
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "calendar_version": {
+                "type": "string"
+              },
+              "preview_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "stale": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioValuations = {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "work_id": string;
+  "request_key": string;
+  "kind": "valuation";
+  "created_at": string;
+  "output": {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+};
+  "stale": boolean;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioBaselinesSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "revision",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "currency",
+          "baseline_date",
+          "opening_cash",
+          "opening_positions",
+          "baseline_version",
+          "id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "CNY"
+            ]
+          },
+          "baseline_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "opening_cash": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+          },
+          "opening_positions": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "instrument_id",
+                "quantity"
+              ],
+              "properties": {
+                "instrument_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "quantity": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                },
+                "cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 120
+                }
+              }
+            }
+          },
+          "baseline_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^\\d{10}$"
+          }
+        }
+      }
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBaselines = {
+  "items": (
+{
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+  "id": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+
+export const LightTickInvestmentPortfolioFactEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "account_id",
+            "revision",
+            "instrument_id",
+            "request_key",
+            "created_at",
+            "updated_at",
+            "kind",
+            "date",
+            "nav",
+            "source_label"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "account_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "request_key": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "fund_nav"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "nav": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "source_label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "account_id",
+            "revision",
+            "instrument_id",
+            "request_key",
+            "created_at",
+            "updated_at",
+            "kind",
+            "date",
+            "notice_kind",
+            "reason",
+            "status",
+            "resolution",
+            "source_url"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "account_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "instrument_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "request_key": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "notice"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "notice_kind": {
+              "type": "string",
+              "enum": [
+                "corporate_action",
+                "missing_fact",
+                "cost_or_fee",
+                "other"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "open",
+                "resolved"
+              ]
+            },
+            "resolution": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uri",
+                  "maxLength": 2048
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioFactEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioHistoryEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "nav",
+                  "source_label",
+                  "fact_id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fund_nav"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "nav": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "source_label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "fact_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "notice_kind",
+                  "reason",
+                  "status",
+                  "resolution",
+                  "source_url",
+                  "fact_id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^\\d{10}$"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "notice"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "notice_kind": {
+                    "type": "string",
+                    "enum": [
+                      "corporate_action",
+                      "missing_fact",
+                      "cost_or_fee",
+                      "other"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "resolved"
+                    ]
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fact_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioHistoryEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+  "fact_id": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+  "fact_id": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioFactsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "nav",
+                  "source_label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fund_nav"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "nav": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "source_label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "account_id",
+                  "revision",
+                  "instrument_id",
+                  "request_key",
+                  "created_at",
+                  "updated_at",
+                  "kind",
+                  "date",
+                  "notice_kind",
+                  "reason",
+                  "status",
+                  "resolution",
+                  "source_url"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "request_key": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "notice"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "notice_kind": {
+                    "type": "string",
+                    "enum": [
+                      "corporate_action",
+                      "missing_fact",
+                      "cost_or_fee",
+                      "other"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "resolved"
+                    ]
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioFactsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioWorksEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "revision",
+              "input",
+              "status",
+              "attempt",
+              "error_code",
+              "created_at",
+              "updated_at",
+              "has_output"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "input": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "base_revision",
+                      "date",
+                      "sources"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "valuation"
+                        ]
+                      },
+                      "base_revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "sources": {
+                        "type": "object",
+                        "maxProperties": 100,
+                        "propertyNames": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "additionalProperties": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "base_revision",
+                      "reason",
+                      "baseline"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "baseline"
+                        ]
+                      },
+                      "base_revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "baseline": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "name",
+                          "currency",
+                          "baseline_date",
+                          "opening_cash",
+                          "opening_positions"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "CNY"
+                            ]
+                          },
+                          "baseline_date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "opening_cash": {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                          },
+                          "opening_positions": {
+                            "type": "array",
+                            "maxItems": 100,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "instrument_id",
+                                "quantity"
+                              ],
+                              "properties": {
+                                "instrument_id": {
+                                  "type": "string",
+                                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                  "maxLength": 100
+                                },
+                                "quantity": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                                },
+                                "cost": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "maxLength": 120
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "base_revision",
+                      "start",
+                      "end"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "performance"
+                        ]
+                      },
+                      "base_revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "start": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "end": {
+                        "type": "string",
+                        "format": "date"
+                      }
+                    }
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "attempt": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "has_output": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioWorksEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "input": {
+  "kind": "valuation";
+  "base_revision": number;
+  "date": string;
+  "sources": {
+  [key: string]: string;
+};
+} | {
+  "kind": "baseline";
+  "base_revision": number;
+  "reason": string;
+  "baseline": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+} | {
+  "kind": "performance";
+  "base_revision": number;
+  "start": string;
+  "end": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "has_output": boolean;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioWorkEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "revision",
+        "input",
+        "status",
+        "attempt",
+        "error_code",
+        "created_at",
+        "updated_at",
+        "has_output",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "input": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "base_revision",
+                "date",
+                "sources"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "valuation"
+                  ]
+                },
+                "base_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "sources": {
+                  "type": "object",
+                  "maxProperties": 100,
+                  "propertyNames": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "base_revision",
+                "reason",
+                "baseline"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "baseline"
+                  ]
+                },
+                "base_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "baseline": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "currency",
+                    "baseline_date",
+                    "opening_cash",
+                    "opening_positions"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "CNY"
+                      ]
+                    },
+                    "baseline_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "opening_cash": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "opening_positions": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                          },
+                          "cost": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 120
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "base_revision",
+                "start",
+                "end"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "performance"
+                  ]
+                },
+                "base_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "has_output": {
+          "type": "boolean"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "date",
+                    "account_id",
+                    "account_revision",
+                    "baseline_version",
+                    "algorithm_version",
+                    "method",
+                    "ledger_digest",
+                    "input_digest",
+                    "quotes",
+                    "coverage",
+                    "holdings_value",
+                    "balance",
+                    "notices",
+                    "calendar_version",
+                    "preview_digest"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "valuation"
+                      ]
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "account_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "account_revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "algorithm_version": {
+                      "type": "string"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "current_audited_facts_by_economic_date"
+                      ]
+                    },
+                    "ledger_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "quotes": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "expected_session",
+                          "status",
+                          "selected",
+                          "candidates"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "expected_session": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "available",
+                              "missing",
+                              "conflict",
+                              "stale",
+                              "calendar_unknown"
+                            ]
+                          },
+                          "selected": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "revision",
+                                  "digest",
+                                  "kind",
+                                  "price",
+                                  "date",
+                                  "source",
+                                  "price_basis"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                    "maxLength": 100
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  "digest": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "market",
+                                      "fund_nav"
+                                    ]
+                                  },
+                                  "price": {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  "date": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "source": {
+                                    "type": "string"
+                                  },
+                                  "price_basis": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unadjusted",
+                                      "confirmed_nav"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "candidates": {
+                            "type": "array",
+                            "maxItems": 500,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "revision",
+                                "digest",
+                                "kind",
+                                "price",
+                                "date",
+                                "source",
+                                "price_basis"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                  "maxLength": 100
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "market",
+                                    "fund_nav"
+                                  ]
+                                },
+                                "price": {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                "date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "source": {
+                                  "type": "string"
+                                },
+                                "price_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "unadjusted",
+                                    "confirmed_nav"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "coverage": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "required",
+                        "available",
+                        "missing"
+                      ],
+                      "properties": {
+                        "required": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "available": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "missing": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      }
+                    },
+                    "holdings_value": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "balance": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "cash",
+                        "cash_verified",
+                        "receivables",
+                        "positions",
+                        "realized",
+                        "fees_complete",
+                        "net_realized",
+                        "equity",
+                        "settlements_complete",
+                        "warnings"
+                      ],
+                      "properties": {
+                        "cash": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "cash_verified": {
+                          "type": "boolean"
+                        },
+                        "receivables": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "positions": {
+                          "type": "array",
+                          "maxItems": 10100,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "instrument_id",
+                              "quantity",
+                              "cost",
+                              "realized",
+                              "fees_complete",
+                              "settlements_complete",
+                              "market_value",
+                              "unrealized",
+                              "mark",
+                              "quantity_verified"
+                            ],
+                            "properties": {
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "quantity": {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              "cost": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "realized": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fees_complete": {
+                                "type": "boolean"
+                              },
+                              "settlements_complete": {
+                                "type": "boolean"
+                              },
+                              "market_value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "unrealized": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "mark": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "quantity_verified": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "fees_complete": {
+                          "type": "boolean"
+                        },
+                        "net_realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "equity": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "settlements_complete": {
+                          "type": "boolean"
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "maxItems": 10,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
+                      }
+                    },
+                    "notices": {
+                      "type": "array",
+                      "maxItems": 500,
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "account_id",
+                              "revision",
+                              "instrument_id",
+                              "request_key",
+                              "created_at",
+                              "updated_at",
+                              "kind",
+                              "date",
+                              "nav",
+                              "source_label"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "account_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "request_key": {
+                                "type": "string",
+                                "minLength": 8,
+                                "maxLength": 128
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "fund_nav"
+                                ]
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "nav": {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              "source_label": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "account_id",
+                              "revision",
+                              "instrument_id",
+                              "request_key",
+                              "created_at",
+                              "updated_at",
+                              "kind",
+                              "date",
+                              "notice_kind",
+                              "reason",
+                              "status",
+                              "resolution",
+                              "source_url"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "account_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "request_key": {
+                                "type": "string",
+                                "minLength": 8,
+                                "maxLength": 128
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "notice"
+                                ]
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "notice_kind": {
+                                "type": "string",
+                                "enum": [
+                                  "corporate_action",
+                                  "missing_fact",
+                                  "cost_or_fee",
+                                  "other"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "open",
+                                  "resolved"
+                                ]
+                              },
+                              "resolution": {
+                                "type": "string",
+                                "maxLength": 4000
+                              },
+                              "source_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "maxLength": 2048
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "calendar_version": {
+                      "type": "string"
+                    },
+                    "preview_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "reason",
+                    "before",
+                    "after",
+                    "ledger_report",
+                    "input_digest",
+                    "preview_digest"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "baseline"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "before": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "name",
+                        "currency",
+                        "baseline_date",
+                        "opening_cash",
+                        "opening_positions",
+                        "baseline_version"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "CNY"
+                          ]
+                        },
+                        "baseline_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "opening_cash": {
+                          "type": "string",
+                          "maxLength": 120,
+                          "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                        },
+                        "opening_positions": {
+                          "type": "array",
+                          "maxItems": 100,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "instrument_id",
+                              "quantity"
+                            ],
+                            "properties": {
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "quantity": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                              },
+                              "cost": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "maxLength": 120
+                              }
+                            }
+                          }
+                        },
+                        "baseline_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        }
+                      }
+                    },
+                    "after": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "name",
+                        "currency",
+                        "baseline_date",
+                        "opening_cash",
+                        "opening_positions",
+                        "baseline_version"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "CNY"
+                          ]
+                        },
+                        "baseline_date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "opening_cash": {
+                          "type": "string",
+                          "maxLength": 120,
+                          "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                        },
+                        "opening_positions": {
+                          "type": "array",
+                          "maxItems": 100,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "instrument_id",
+                              "quantity"
+                            ],
+                            "properties": {
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "quantity": {
+                                "type": "string",
+                                "maxLength": 120,
+                                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                              },
+                              "cost": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "maxLength": 120
+                              }
+                            }
+                          }
+                        },
+                        "baseline_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        }
+                      }
+                    },
+                    "ledger_report": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "account_id",
+                        "account_revision",
+                        "baseline_version",
+                        "algorithm_version",
+                        "input_digest",
+                        "event_count",
+                        "valuation",
+                        "result"
+                      ],
+                      "properties": {
+                        "account_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "account_revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "baseline_version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "algorithm_version": {
+                          "type": "string",
+                          "enum": [
+                            "moving-average-decimal60-half-even-v1"
+                          ]
+                        },
+                        "input_digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "event_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "effective_event_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "correction_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "projection_version": {
+                          "type": "string",
+                          "enum": [
+                            "immutable-ledger-corrections-v1"
+                          ]
+                        },
+                        "valuation": {
+                          "type": "string",
+                          "enum": [
+                            "unpriced"
+                          ]
+                        },
+                        "result": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "cash",
+                            "cash_verified",
+                            "receivables",
+                            "positions",
+                            "realized",
+                            "fees_complete",
+                            "net_realized",
+                            "equity",
+                            "settlements_complete",
+                            "warnings"
+                          ],
+                          "properties": {
+                            "cash": {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            "cash_verified": {
+                              "type": "boolean"
+                            },
+                            "receivables": {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            "positions": {
+                              "type": "array",
+                              "maxItems": 10100,
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "instrument_id",
+                                  "quantity",
+                                  "cost",
+                                  "realized",
+                                  "fees_complete",
+                                  "settlements_complete",
+                                  "market_value",
+                                  "unrealized",
+                                  "mark"
+                                ],
+                                "properties": {
+                                  "instrument_id": {
+                                    "type": "string",
+                                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                    "maxLength": 100
+                                  },
+                                  "quantity": {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  "cost": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 240
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "realized": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 240
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "fees_complete": {
+                                    "type": "boolean"
+                                  },
+                                  "settlements_complete": {
+                                    "type": "boolean"
+                                  },
+                                  "market_value": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 240
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "unrealized": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 240
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "mark": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 240
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "realized": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "fees_complete": {
+                              "type": "boolean"
+                            },
+                            "net_realized": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "equity": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "settlements_complete": {
+                              "type": "boolean"
+                            },
+                            "warnings": {
+                              "type": "array",
+                              "maxItems": 2,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 1000
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "preview_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "start",
+                    "end",
+                    "algorithm_version",
+                    "input_digest",
+                    "net_profit",
+                    "net_deposit",
+                    "cash_components",
+                    "maximum_drawdown_pct",
+                    "twr",
+                    "xirr",
+                    "series",
+                    "limitations"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "performance"
+                      ]
+                    },
+                    "start": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "end": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "algorithm_version": {
+                      "type": "string"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "net_profit": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "net_deposit": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "cash_components": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "deposit",
+                        "withdrawal",
+                        "dividend",
+                        "interest",
+                        "fee"
+                      ],
+                      "properties": {
+                        "deposit": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "withdrawal": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "dividend": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "interest": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "fee": {
+                          "type": "string",
+                          "maxLength": 240
+                        }
+                      }
+                    },
+                    "maximum_drawdown_pct": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "twr": {
+                      "type": "null"
+                    },
+                    "xirr": {
+                      "type": "null"
+                    },
+                    "series": {
+                      "type": "array",
+                      "maxItems": 367,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "date",
+                          "stale",
+                          "equity",
+                          "ledger_digest"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "stale": {
+                            "type": "boolean"
+                          },
+                          "equity": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ledger_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          }
+                        }
+                      }
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioWorkEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "input": {
+  "kind": "valuation";
+  "base_revision": number;
+  "date": string;
+  "sources": {
+  [key: string]: string;
+};
+} | {
+  "kind": "baseline";
+  "base_revision": number;
+  "reason": string;
+  "baseline": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+};
+} | {
+  "kind": "performance";
+  "base_revision": number;
+  "start": string;
+  "end": string;
+};
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "has_output": boolean;
+  "output": (
+{
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+} | {
+  "kind": "baseline";
+  "reason": string;
+  "before": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "after": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "ledger_report": {
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": "moving-average-decimal60-half-even-v1";
+  "input_digest": string;
+  "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
+  "valuation": "unpriced";
+  "result": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+};
+  "input_digest": string;
+  "preview_digest": string;
+} | {
+  "kind": "performance";
+  "start": string;
+  "end": string;
+  "algorithm_version": string;
+  "input_digest": string;
+  "net_profit": string | unknown;
+  "net_deposit": string;
+  "cash_components": {
+  "deposit": string;
+  "withdrawal": string;
+  "dividend": string;
+  "interest": string;
+  "fee": string;
+};
+  "maximum_drawdown_pct": string | unknown;
+  "twr": unknown;
+  "xirr": unknown;
+  "series": (
+{
+  "id": string;
+  "date": string;
+  "stale": boolean;
+  "equity": string | unknown;
+  "ledger_digest": string;
+}
+)[];
+  "limitations": string[];
+}
+) | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioSavedEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "work_id",
+        "request_key",
+        "kind",
+        "created_at",
+        "output"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "work_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "valuation",
+            "baseline"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "output": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "date",
+                "account_id",
+                "account_revision",
+                "baseline_version",
+                "algorithm_version",
+                "method",
+                "ledger_digest",
+                "input_digest",
+                "quotes",
+                "coverage",
+                "holdings_value",
+                "balance",
+                "notices",
+                "calendar_version",
+                "preview_digest"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "valuation"
+                  ]
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "account_id": {
+                  "type": "string",
+                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                  "maxLength": 100
+                },
+                "account_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "baseline_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "algorithm_version": {
+                  "type": "string"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "current_audited_facts_by_economic_date"
+                  ]
+                },
+                "ledger_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "quotes": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "expected_session",
+                      "status",
+                      "selected",
+                      "candidates"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "expected_session": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "available",
+                          "missing",
+                          "conflict",
+                          "stale",
+                          "calendar_unknown"
+                        ]
+                      },
+                      "selected": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "digest",
+                              "kind",
+                              "price",
+                              "date",
+                              "source",
+                              "price_basis"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "market",
+                                  "fund_nav"
+                                ]
+                              },
+                              "price": {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "source": {
+                                "type": "string"
+                              },
+                              "price_basis": {
+                                "type": "string",
+                                "enum": [
+                                  "unadjusted",
+                                  "confirmed_nav"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "candidates": {
+                        "type": "array",
+                        "maxItems": 500,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "revision",
+                            "digest",
+                            "kind",
+                            "price",
+                            "date",
+                            "source",
+                            "price_basis"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "market",
+                                "fund_nav"
+                              ]
+                            },
+                            "price": {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "price_basis": {
+                              "type": "string",
+                              "enum": [
+                                "unadjusted",
+                                "confirmed_nav"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "coverage": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "required",
+                    "available",
+                    "missing"
+                  ],
+                  "properties": {
+                    "required": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "available": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "missing": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  }
+                },
+                "holdings_value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "balance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "cash",
+                    "cash_verified",
+                    "receivables",
+                    "positions",
+                    "realized",
+                    "fees_complete",
+                    "net_realized",
+                    "equity",
+                    "settlements_complete",
+                    "warnings"
+                  ],
+                  "properties": {
+                    "cash": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "cash_verified": {
+                      "type": "boolean"
+                    },
+                    "receivables": {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    "positions": {
+                      "type": "array",
+                      "maxItems": 10100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity",
+                          "cost",
+                          "realized",
+                          "fees_complete",
+                          "settlements_complete",
+                          "market_value",
+                          "unrealized",
+                          "mark",
+                          "quantity_verified"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          "cost": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "realized": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "fees_complete": {
+                            "type": "boolean"
+                          },
+                          "settlements_complete": {
+                            "type": "boolean"
+                          },
+                          "market_value": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "unrealized": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "mark": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "quantity_verified": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "realized": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fees_complete": {
+                      "type": "boolean"
+                    },
+                    "net_realized": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "equity": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "settlements_complete": {
+                      "type": "boolean"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
+                  }
+                },
+                "notices": {
+                  "type": "array",
+                  "maxItems": 500,
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "account_id",
+                          "revision",
+                          "instrument_id",
+                          "request_key",
+                          "created_at",
+                          "updated_at",
+                          "kind",
+                          "date",
+                          "nav",
+                          "source_label"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "account_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "request_key": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fund_nav"
+                            ]
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "nav": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "source_label": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "account_id",
+                          "revision",
+                          "instrument_id",
+                          "request_key",
+                          "created_at",
+                          "updated_at",
+                          "kind",
+                          "date",
+                          "notice_kind",
+                          "reason",
+                          "status",
+                          "resolution",
+                          "source_url"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "account_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "request_key": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 128
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "notice"
+                            ]
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "notice_kind": {
+                            "type": "string",
+                            "enum": [
+                              "corporate_action",
+                              "missing_fact",
+                              "cost_or_fee",
+                              "other"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "resolved"
+                            ]
+                          },
+                          "resolution": {
+                            "type": "string",
+                            "maxLength": 4000
+                          },
+                          "source_url": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uri",
+                                "maxLength": 2048
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "calendar_version": {
+                  "type": "string"
+                },
+                "preview_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "reason",
+                "before",
+                "after",
+                "ledger_report",
+                "input_digest",
+                "preview_digest"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "baseline"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "before": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "currency",
+                    "baseline_date",
+                    "opening_cash",
+                    "opening_positions",
+                    "baseline_version"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "CNY"
+                      ]
+                    },
+                    "baseline_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "opening_cash": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "opening_positions": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                          },
+                          "cost": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 120
+                          }
+                        }
+                      }
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                },
+                "after": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "currency",
+                    "baseline_date",
+                    "opening_cash",
+                    "opening_positions",
+                    "baseline_version"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "CNY"
+                      ]
+                    },
+                    "baseline_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "opening_cash": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "opening_positions": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "instrument_id",
+                          "quantity"
+                        ],
+                        "properties": {
+                          "instrument_id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "quantity": {
+                            "type": "string",
+                            "maxLength": 120,
+                            "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                          },
+                          "cost": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "maxLength": 120
+                          }
+                        }
+                      }
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    }
+                  }
+                },
+                "ledger_report": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "account_id",
+                    "account_revision",
+                    "baseline_version",
+                    "algorithm_version",
+                    "input_digest",
+                    "event_count",
+                    "valuation",
+                    "result"
+                  ],
+                  "properties": {
+                    "account_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "account_revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "baseline_version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "algorithm_version": {
+                      "type": "string",
+                      "enum": [
+                        "moving-average-decimal60-half-even-v1"
+                      ]
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "effective_event_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "correction_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "projection_version": {
+                      "type": "string",
+                      "enum": [
+                        "immutable-ledger-corrections-v1"
+                      ]
+                    },
+                    "valuation": {
+                      "type": "string",
+                      "enum": [
+                        "unpriced"
+                      ]
+                    },
+                    "result": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "cash",
+                        "cash_verified",
+                        "receivables",
+                        "positions",
+                        "realized",
+                        "fees_complete",
+                        "net_realized",
+                        "equity",
+                        "settlements_complete",
+                        "warnings"
+                      ],
+                      "properties": {
+                        "cash": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "cash_verified": {
+                          "type": "boolean"
+                        },
+                        "receivables": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "positions": {
+                          "type": "array",
+                          "maxItems": 10100,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "instrument_id",
+                              "quantity",
+                              "cost",
+                              "realized",
+                              "fees_complete",
+                              "settlements_complete",
+                              "market_value",
+                              "unrealized",
+                              "mark"
+                            ],
+                            "properties": {
+                              "instrument_id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "quantity": {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              "cost": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "realized": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "fees_complete": {
+                                "type": "boolean"
+                              },
+                              "settlements_complete": {
+                                "type": "boolean"
+                              },
+                              "market_value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "unrealized": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "mark": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 240
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "fees_complete": {
+                          "type": "boolean"
+                        },
+                        "net_realized": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "equity": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "settlements_complete": {
+                          "type": "boolean"
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "maxItems": 2,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "input_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "preview_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioSavedEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "account_id": string;
+  "work_id": string;
+  "request_key": string;
+  "kind": "valuation" | "baseline";
+  "created_at": string;
+  "output": {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+} | {
+  "kind": "baseline";
+  "reason": string;
+  "before": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "after": {
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+};
+  "ledger_report": {
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": "moving-average-decimal60-half-even-v1";
+  "input_digest": string;
+  "event_count": number;
+  "effective_event_count"?: number;
+  "correction_count"?: number;
+  "projection_version"?: "immutable-ledger-corrections-v1";
+  "valuation": "unpriced";
+  "result": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+};
+  "input_digest": string;
+  "preview_digest": string;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioSavedValuationEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "account_id",
+        "work_id",
+        "request_key",
+        "kind",
+        "created_at",
+        "output",
+        "stale"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "work_id": {
+          "type": "string",
+          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+          "maxLength": 100
+        },
+        "request_key": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "valuation"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "date",
+            "account_id",
+            "account_revision",
+            "baseline_version",
+            "algorithm_version",
+            "method",
+            "ledger_digest",
+            "input_digest",
+            "quotes",
+            "coverage",
+            "holdings_value",
+            "balance",
+            "notices",
+            "calendar_version",
+            "preview_digest"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "valuation"
+              ]
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "account_id": {
+              "type": "string",
+              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+              "maxLength": 100
+            },
+            "account_revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "baseline_version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "algorithm_version": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "current_audited_facts_by_economic_date"
+              ]
+            },
+            "ledger_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "quotes": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "instrument_id",
+                  "expected_session",
+                  "status",
+                  "selected",
+                  "candidates"
+                ],
+                "properties": {
+                  "instrument_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "expected_session": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "available",
+                      "missing",
+                      "conflict",
+                      "stale",
+                      "calendar_unknown"
+                    ]
+                  },
+                  "selected": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "digest",
+                          "kind",
+                          "price",
+                          "date",
+                          "source",
+                          "price_basis"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                            "maxLength": 100
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "market",
+                              "fund_nav"
+                            ]
+                          },
+                          "price": {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "price_basis": {
+                            "type": "string",
+                            "enum": [
+                              "unadjusted",
+                              "confirmed_nav"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "candidates": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "revision",
+                        "digest",
+                        "kind",
+                        "price",
+                        "date",
+                        "source",
+                        "price_basis"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "market",
+                            "fund_nav"
+                          ]
+                        },
+                        "price": {
+                          "type": "string",
+                          "maxLength": 240
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "source": {
+                          "type": "string"
+                        },
+                        "price_basis": {
+                          "type": "string",
+                          "enum": [
+                            "unadjusted",
+                            "confirmed_nav"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "coverage": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "required",
+                "available",
+                "missing"
+              ],
+              "properties": {
+                "required": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "available": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "missing": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            },
+            "holdings_value": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "balance": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cash",
+                "cash_verified",
+                "receivables",
+                "positions",
+                "realized",
+                "fees_complete",
+                "net_realized",
+                "equity",
+                "settlements_complete",
+                "warnings"
+              ],
+              "properties": {
+                "cash": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "cash_verified": {
+                  "type": "boolean"
+                },
+                "receivables": {
+                  "type": "string",
+                  "maxLength": 240
+                },
+                "positions": {
+                  "type": "array",
+                  "maxItems": 10100,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "instrument_id",
+                      "quantity",
+                      "cost",
+                      "realized",
+                      "fees_complete",
+                      "settlements_complete",
+                      "market_value",
+                      "unrealized",
+                      "mark",
+                      "quantity_verified"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "quantity": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "cost": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "realized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fees_complete": {
+                        "type": "boolean"
+                      },
+                      "settlements_complete": {
+                        "type": "boolean"
+                      },
+                      "market_value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "unrealized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "mark": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "quantity_verified": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "realized": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fees_complete": {
+                  "type": "boolean"
+                },
+                "net_realized": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equity": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "settlements_complete": {
+                  "type": "boolean"
+                },
+                "warnings": {
+                  "type": "array",
+                  "maxItems": 10,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            },
+            "notices": {
+              "type": "array",
+              "maxItems": 500,
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "account_id",
+                      "revision",
+                      "instrument_id",
+                      "request_key",
+                      "created_at",
+                      "updated_at",
+                      "kind",
+                      "date",
+                      "nav",
+                      "source_label"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "account_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "request_key": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "fund_nav"
+                        ]
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "nav": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "source_label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "account_id",
+                      "revision",
+                      "instrument_id",
+                      "request_key",
+                      "created_at",
+                      "updated_at",
+                      "kind",
+                      "date",
+                      "notice_kind",
+                      "reason",
+                      "status",
+                      "resolution",
+                      "source_url"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "account_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "instrument_id": {
+                        "type": "string",
+                        "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                        "maxLength": 100
+                      },
+                      "request_key": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "notice"
+                        ]
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "notice_kind": {
+                        "type": "string",
+                        "enum": [
+                          "corporate_action",
+                          "missing_fact",
+                          "cost_or_fee",
+                          "other"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "resolved"
+                        ]
+                      },
+                      "resolution": {
+                        "type": "string",
+                        "maxLength": 4000
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "uri",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "calendar_version": {
+              "type": "string"
+            },
+            "preview_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioSavedValuationEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "account_id": string;
+  "work_id": string;
+  "request_key": string;
+  "kind": "valuation";
+  "created_at": string;
+  "output": {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+};
+  "stale": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioValuationsEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "account_id",
+              "work_id",
+              "request_key",
+              "kind",
+              "created_at",
+              "output",
+              "stale"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "account_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "work_id": {
+                "type": "string",
+                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                "maxLength": 100
+              },
+              "request_key": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "valuation"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "output": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "date",
+                  "account_id",
+                  "account_revision",
+                  "baseline_version",
+                  "algorithm_version",
+                  "method",
+                  "ledger_digest",
+                  "input_digest",
+                  "quotes",
+                  "coverage",
+                  "holdings_value",
+                  "balance",
+                  "notices",
+                  "calendar_version",
+                  "preview_digest"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "valuation"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                    "maxLength": 100
+                  },
+                  "account_revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "baseline_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "algorithm_version": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "current_audited_facts_by_economic_date"
+                    ]
+                  },
+                  "ledger_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "input_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "quotes": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "instrument_id",
+                        "expected_session",
+                        "status",
+                        "selected",
+                        "candidates"
+                      ],
+                      "properties": {
+                        "instrument_id": {
+                          "type": "string",
+                          "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                          "maxLength": 100
+                        },
+                        "expected_session": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "available",
+                            "missing",
+                            "conflict",
+                            "stale",
+                            "calendar_unknown"
+                          ]
+                        },
+                        "selected": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "revision",
+                                "digest",
+                                "kind",
+                                "price",
+                                "date",
+                                "source",
+                                "price_basis"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                  "maxLength": 100
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "market",
+                                    "fund_nav"
+                                  ]
+                                },
+                                "price": {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                "date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "source": {
+                                  "type": "string"
+                                },
+                                "price_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "unadjusted",
+                                    "confirmed_nav"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "candidates": {
+                          "type": "array",
+                          "maxItems": 500,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "digest",
+                              "kind",
+                              "price",
+                              "date",
+                              "source",
+                              "price_basis"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                                "maxLength": 100
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "market",
+                                  "fund_nav"
+                                ]
+                              },
+                              "price": {
+                                "type": "string",
+                                "maxLength": 240
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "source": {
+                                "type": "string"
+                              },
+                              "price_basis": {
+                                "type": "string",
+                                "enum": [
+                                  "unadjusted",
+                                  "confirmed_nav"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "coverage": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "required",
+                      "available",
+                      "missing"
+                    ],
+                    "properties": {
+                      "required": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "available": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "missing": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    }
+                  },
+                  "holdings_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "balance": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "cash",
+                      "cash_verified",
+                      "receivables",
+                      "positions",
+                      "realized",
+                      "fees_complete",
+                      "net_realized",
+                      "equity",
+                      "settlements_complete",
+                      "warnings"
+                    ],
+                    "properties": {
+                      "cash": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "cash_verified": {
+                        "type": "boolean"
+                      },
+                      "receivables": {
+                        "type": "string",
+                        "maxLength": 240
+                      },
+                      "positions": {
+                        "type": "array",
+                        "maxItems": 10100,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "instrument_id",
+                            "quantity",
+                            "cost",
+                            "realized",
+                            "fees_complete",
+                            "settlements_complete",
+                            "market_value",
+                            "unrealized",
+                            "mark",
+                            "quantity_verified"
+                          ],
+                          "properties": {
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "quantity": {
+                              "type": "string",
+                              "maxLength": 240
+                            },
+                            "cost": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "realized": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "fees_complete": {
+                              "type": "boolean"
+                            },
+                            "settlements_complete": {
+                              "type": "boolean"
+                            },
+                            "market_value": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "unrealized": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "mark": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 240
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "quantity_verified": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      },
+                      "realized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "fees_complete": {
+                        "type": "boolean"
+                      },
+                      "net_realized": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "equity": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 240
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "settlements_complete": {
+                        "type": "boolean"
+                      },
+                      "warnings": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 1000
+                        }
+                      }
+                    }
+                  },
+                  "notices": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "account_id",
+                            "revision",
+                            "instrument_id",
+                            "request_key",
+                            "created_at",
+                            "updated_at",
+                            "kind",
+                            "date",
+                            "nav",
+                            "source_label"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "account_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "request_key": {
+                              "type": "string",
+                              "minLength": 8,
+                              "maxLength": 128
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "fund_nav"
+                              ]
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "nav": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "source_label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "account_id",
+                            "revision",
+                            "instrument_id",
+                            "request_key",
+                            "created_at",
+                            "updated_at",
+                            "kind",
+                            "date",
+                            "notice_kind",
+                            "reason",
+                            "status",
+                            "resolution",
+                            "source_url"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "account_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "instrument_id": {
+                              "type": "string",
+                              "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                              "maxLength": 100
+                            },
+                            "request_key": {
+                              "type": "string",
+                              "minLength": 8,
+                              "maxLength": 128
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "notice"
+                              ]
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "notice_kind": {
+                              "type": "string",
+                              "enum": [
+                                "corporate_action",
+                                "missing_fact",
+                                "cost_or_fee",
+                                "other"
+                              ]
+                            },
+                            "reason": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2000
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "open",
+                                "resolved"
+                              ]
+                            },
+                            "resolution": {
+                              "type": "string",
+                              "maxLength": 4000
+                            },
+                            "source_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "uri",
+                                  "maxLength": 2048
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "calendar_version": {
+                    "type": "string"
+                  },
+                  "preview_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "stale": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioValuationsEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "account_id": string;
+  "work_id": string;
+  "request_key": string;
+  "kind": "valuation";
+  "created_at": string;
+  "output": {
+  "kind": "valuation";
+  "date": string;
+  "account_id": string;
+  "account_revision": number;
+  "baseline_version": number;
+  "algorithm_version": string;
+  "method": "current_audited_facts_by_economic_date";
+  "ledger_digest": string;
+  "input_digest": string;
+  "quotes": (
+{
+  "instrument_id": string;
+  "expected_session": string | unknown;
+  "status": "available" | "missing" | "conflict" | "stale" | "calendar_unknown";
+  "selected": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+) | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "digest": string;
+  "kind": "market" | "fund_nav";
+  "price": string;
+  "date": string;
+  "source": string;
+  "price_basis": "unadjusted" | "confirmed_nav";
+}
+)[];
+}
+)[];
+  "coverage": {
+  "required": number;
+  "available": number;
+  "missing": number;
+};
+  "holdings_value": string | unknown;
+  "balance": {
+  "cash": string;
+  "cash_verified": boolean;
+  "receivables": string;
+  "positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost": string | unknown;
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "settlements_complete": boolean;
+  "market_value": string | unknown;
+  "unrealized": string | unknown;
+  "mark": string | unknown;
+  "quantity_verified": boolean;
+}
+)[];
+  "realized": string | unknown;
+  "fees_complete": boolean;
+  "net_realized": string | unknown;
+  "equity": string | unknown;
+  "settlements_complete": boolean;
+  "warnings": string[];
+};
+  "notices": (
+{
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "fund_nav";
+  "date": string;
+  "nav": string;
+  "source_label": string;
+} | {
+  "id": string;
+  "account_id": string;
+  "revision": number;
+  "instrument_id": string;
+  "request_key": string;
+  "created_at": string;
+  "updated_at": string;
+  "kind": "notice";
+  "date": string;
+  "notice_kind": "corporate_action" | "missing_fact" | "cost_or_fee" | "other";
+  "reason": string;
+  "status": "open" | "resolved";
+  "resolution": string;
+  "source_url": string | unknown;
+}
+)[];
+  "calendar_version": string;
+  "preview_digest": string;
+};
+  "stale": boolean;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickInvestmentPortfolioBaselinesEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "revision",
+        "next_cursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "currency",
+              "baseline_date",
+              "opening_cash",
+              "opening_positions",
+              "baseline_version",
+              "id"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "CNY"
+                ]
+              },
+              "baseline_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "opening_cash": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+              },
+              "opening_positions": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "instrument_id",
+                    "quantity"
+                  ],
+                  "properties": {
+                    "instrument_id": {
+                      "type": "string",
+                      "pattern": "^inv-[a-zA-Z0-9_-]{8,96}$",
+                      "maxLength": 100
+                    },
+                    "quantity": {
+                      "type": "string",
+                      "maxLength": 120,
+                      "description": "Exact nonnegative decimal string, at most 18 integer and 10 fractional places; numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded."
+                    },
+                    "cost": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 120
+                    }
+                  }
+                }
+              },
+              "baseline_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^\\d{10}$"
+              }
+            }
+          }
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickInvestmentPortfolioBaselinesEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "name": string;
+  "currency": "CNY";
+  "baseline_date": string;
+  "opening_cash": string;
+  "opening_positions": (
+{
+  "instrument_id": string;
+  "quantity": string;
+  "cost"?: string | null;
+}
+)[];
+  "baseline_version": number;
+  "id": string;
+}
+)[];
+  "revision": string;
+  "next_cursor": string | unknown;
+};
+  "requestId": string;
+};
+
 export const LightTickInvestmentStrategyConfigSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -75751,7 +91947,7 @@ export const LightTickInvestmentLedgerReportSchema = {
     },
     "event_count": {
       "type": "integer",
-      "minimum": 1,
+      "minimum": 0,
       "maximum": 10000
     },
     "effective_event_count": {
@@ -76454,7 +92650,7 @@ export const LightTickInvestmentLedgerWorkSchema = {
             },
             "event_count": {
               "type": "integer",
-              "minimum": 1,
+              "minimum": 0,
               "maximum": 10000
             },
             "effective_event_count": {
@@ -78099,7 +94295,7 @@ export const LightTickInvestmentLedgerPageSchema = {
             },
             "event_count": {
               "type": "integer",
-              "minimum": 1,
+              "minimum": 0,
               "maximum": 10000
             },
             "effective_event_count": {
@@ -78953,7 +95149,7 @@ export const LightTickInvestmentLedgerWorkEnvelopeSchema = {
                 },
                 "event_count": {
                   "type": "integer",
-                  "minimum": 1,
+                  "minimum": 0,
                   "maximum": 10000
                 },
                 "effective_event_count": {
@@ -79947,7 +96143,7 @@ export const LightTickInvestmentLedgerPageEnvelopeSchema = {
                 },
                 "event_count": {
                   "type": "integer",
-                  "minimum": 1,
+                  "minimum": 0,
                   "maximum": 10000
                 },
                 "effective_event_count": {
@@ -119700,6 +135896,41 @@ export const GeneratedPublicContractNames = [
   "LightTickInvestmentObservationWorkPageEnvelope",
   "LightTickInvestmentObservationWorkSummary",
   "LightTickInvestmentOpening",
+  "LightTickInvestmentPortfolioAdopt",
+  "LightTickInvestmentPortfolioBalance",
+  "LightTickInvestmentPortfolioBaseline",
+  "LightTickInvestmentPortfolioBaselineFields",
+  "LightTickInvestmentPortfolioBaselineHistoryItem",
+  "LightTickInvestmentPortfolioBaselineResult",
+  "LightTickInvestmentPortfolioBaselines",
+  "LightTickInvestmentPortfolioBaselinesEnvelope",
+  "LightTickInvestmentPortfolioCancel",
+  "LightTickInvestmentPortfolioCandidate",
+  "LightTickInvestmentPortfolioFact",
+  "LightTickInvestmentPortfolioFactEnvelope",
+  "LightTickInvestmentPortfolioFactHistory",
+  "LightTickInvestmentPortfolioFactWrite",
+  "LightTickInvestmentPortfolioFacts",
+  "LightTickInvestmentPortfolioFactsEnvelope",
+  "LightTickInvestmentPortfolioHistory",
+  "LightTickInvestmentPortfolioHistoryEnvelope",
+  "LightTickInvestmentPortfolioInput",
+  "LightTickInvestmentPortfolioPerformance",
+  "LightTickInvestmentPortfolioPosition",
+  "LightTickInvestmentPortfolioQuote",
+  "LightTickInvestmentPortfolioResult",
+  "LightTickInvestmentPortfolioSaved",
+  "LightTickInvestmentPortfolioSavedEnvelope",
+  "LightTickInvestmentPortfolioSavedValuation",
+  "LightTickInvestmentPortfolioSavedValuationEnvelope",
+  "LightTickInvestmentPortfolioValuation",
+  "LightTickInvestmentPortfolioValuations",
+  "LightTickInvestmentPortfolioValuationsEnvelope",
+  "LightTickInvestmentPortfolioWork",
+  "LightTickInvestmentPortfolioWorkEnvelope",
+  "LightTickInvestmentPortfolioWorkSummary",
+  "LightTickInvestmentPortfolioWorks",
+  "LightTickInvestmentPortfolioWorksEnvelope",
   "LightTickInvestmentResearchAICommand",
   "LightTickInvestmentResearchAIPage",
   "LightTickInvestmentResearchAIPageEnvelope",

@@ -1,3 +1,4 @@
+import {PostgresPortfolioStore} from "./postgres-portfolio-store.ts";
 import {PostgresStrategyStore} from "./postgres-strategy-store.ts";
 import {PostgresObservationStore} from "./postgres-observation-store.ts";
 import {PostgresScreeningStore} from "./postgres-screening-store.ts";
@@ -25,6 +26,7 @@ const conflict = () => {
   );
 };
 export class PostgresInvestmentStore implements InvestmentRepository {
+  readonly portfolio:PostgresPortfolioStore;
   readonly strategies:PostgresStrategyStore;
   readonly observations:PostgresObservationStore;
   readonly screening:PostgresScreeningStore;
@@ -32,7 +34,7 @@ export class PostgresInvestmentStore implements InvestmentRepository {
   readonly research:PostgresResearchStore;
   readonly market:PostgresMarketStore;
   readonly ledger:PostgresInvestmentLedgerStore;
-  constructor(readonly query: Query) {this.strategies=new PostgresStrategyStore(query);this.observations=new PostgresObservationStore(query);this.screening=new PostgresScreeningStore(query);this.materials=new PostgresMaterialStore(query);this.research=new PostgresResearchStore(query);this.market=new PostgresMarketStore(query);this.ledger=new PostgresInvestmentLedgerStore(query); }
+  constructor(readonly query: Query) {this.portfolio=new PostgresPortfolioStore(query);this.strategies=new PostgresStrategyStore(query);this.observations=new PostgresObservationStore(query);this.screening=new PostgresScreeningStore(query);this.materials=new PostgresMaterialStore(query);this.research=new PostgresResearchStore(query);this.market=new PostgresMarketStore(query);this.ledger=new PostgresInvestmentLedgerStore(query); }
   async instrument(o: LightTickOwner, id: string) {
     return (
       await this.query(
@@ -120,22 +122,11 @@ export class PostgresInvestmentStore implements InvestmentRepository {
   accounts(o: LightTickOwner) {
     return this.readAccounts(o);
   }
-  async saveAccount(o: LightTickOwner, a: InvestmentAccount, base: number) {
-    if (base === 0) {
-      const inserted = await this.query(
-        "INSERT INTO zook_lighttick_investment_accounts VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING id",
-        [
-          o.appId,
-          o.userId,
-          a.id,
-          a.revision,
-          a.baseline_version,
-          a.archived,
-          a.created_at,
-          a.updated_at,
-        ],
-      );
-      if (!inserted.rows.length) conflict();
+  async baselines(o:LightTickOwner,account:string){
+    const rows=(await this.query(`SELECT b.*,COALESCE((SELECT jsonb_agg(jsonb_build_object('instrument_id',p.instrument_id,'quantity',p.quantity::text,'cost',p.cost::text) ORDER BY p.instrument_id COLLATE "C") FROM zook_lighttick_investment_openings p WHERE (p.app_id,p.user_id,p.account_id,p.baseline_version)=(b.app_id,b.user_id,b.account_id,b.version)),'[]'::jsonb) AS positions,b.baseline_date::text AS day,b.opening_cash::text AS cash FROM zook_lighttick_investment_baselines b WHERE b.app_id=$1 AND b.user_id=$2 AND b.account_id=$3 ORDER BY version DESC LIMIT 501`,[o.appId,o.userId,account])).rows;
+    return rows.map(r=>({baseline_version:r.version,name:r.name,currency:r.currency as "CNY",baseline_date:r.day,opening_cash:decimalInput(r.cash),opening_positions:r.positions.map((p:any)=>({...p,quantity:decimalInput(p.quantity,true),cost:p.cost===null?null:decimalInput(p.cost)}))}));
+  }
+  private async insertBaseline(o:LightTickOwner,a:InvestmentAccount){
       await this.query(
         "INSERT INTO zook_lighttick_investment_baselines VALUES($1,$2,$3,$4,$5,$6,$7,$8::numeric)",
         [
@@ -162,9 +153,28 @@ export class PostgresInvestmentStore implements InvestmentRepository {
             p.cost,
           ],
         );
+  }
+  async saveAccount(o: LightTickOwner, a: InvestmentAccount, base: number,previousBaselineVersion=a.baseline_version) {
+    if (base === 0) {
+      const inserted = await this.query(
+        "INSERT INTO zook_lighttick_investment_accounts VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING id",
+        [
+          o.appId,
+          o.userId,
+          a.id,
+          a.revision,
+          a.baseline_version,
+          a.archived,
+          a.created_at,
+          a.updated_at,
+        ],
+      );
+      if (!inserted.rows.length) conflict();
+      await this.insertBaseline(o,a);
     } else {
+      if(a.baseline_version!==previousBaselineVersion){if(a.baseline_version!==previousBaselineVersion+1)conflict();await this.insertBaseline(o,a);}
       const result = await this.query(
-        "UPDATE zook_lighttick_investment_accounts SET revision=$4,archived=$5,updated_at=$6 WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$7 AND baseline_version=$8 RETURNING id",
+        "UPDATE zook_lighttick_investment_accounts SET revision=$4,archived=$5,updated_at=$6,baseline_version=$9 WHERE app_id=$1 AND user_id=$2 AND id=$3 AND revision=$7 AND baseline_version=$8 RETURNING id",
         [
           o.appId,
           o.userId,
@@ -173,6 +183,7 @@ export class PostgresInvestmentStore implements InvestmentRepository {
           a.archived,
           a.updated_at,
           base,
+          previousBaselineVersion,
           a.baseline_version,
         ],
       );

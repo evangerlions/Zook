@@ -221,7 +221,7 @@ export class InvestmentLedgerService extends InvestmentService {
       const rows = await this.store.events(o, account);
       if (rows.length > LEDGER_LIMITS.events)
         fail(413, "Ledger event capacity exceeded.");
-      if(schema!=="2" && rows.some(e=>e.input.kind==="correction"))fail(409,"LEDGER_SCHEMA_UPGRADE_REQUIRED: request ledger_schema=2; retain local drafts and pending requests.");
+      if(schema!=="2" && (a.baseline_version>1||rows.some(e=>e.input.kind==="correction")))fail(409,"LEDGER_SCHEMA_UPGRADE_REQUIRED: request ledger_schema=2; retain local drafts and pending requests.");
       const revision = digest([account, a.revision, rows, ...(schema==="2"?[schema]:[])]);
       let offset = 0;
       if (cursor) {
@@ -244,7 +244,8 @@ export class InvestmentLedgerService extends InvestmentService {
           );
         }
       }
-      const report = await this.store.latest(o, account);
+      const originalReport = await this.store.latest(o, account),baselineReport=await this.repo.investments.portfolio.baselineReport(o,account);
+      const report=baselineReport&&baselineReport.account_revision>(originalReport?.account_revision??0)?baselineReport:originalReport;
       return {
         account_revision: a.revision,
         items: (schema==="2"?ledgerRows(rows):rows).slice(offset, offset + limit),

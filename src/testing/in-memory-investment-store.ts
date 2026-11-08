@@ -1,3 +1,4 @@
+import {InMemoryPortfolioStore} from "./in-memory-portfolio-store.ts";
 import {InMemoryStrategyStore} from "./in-memory-strategy-store.ts";
 import {InMemoryObservationStore} from "./in-memory-observation-store.ts";
 import {InMemoryScreeningStore} from "./in-memory-screening-store.ts";
@@ -17,6 +18,9 @@ const key = (o: LightTickOwner, id: string) =>
   prefix = (o: LightTickOwner) =>
     JSON.stringify([o.appId, o.userId]).slice(0, -1) + ",";
 export class InMemoryInvestmentStore implements InvestmentRepository {
+  readonly portfolio=new InMemoryPortfolioStore();
+  private baselineRows=new Map<string,import("../modules/lighttick/investments/portfolio/portfolio.types.ts").Baseline[]>();
+  async baselines(o:LightTickOwner,account:string){return structuredClone([...(this.baselineRows.get(key(o,account))??[])].reverse());}
   readonly strategies=new InMemoryStrategyStore();
   readonly observations=new InMemoryObservationStore();
   readonly screening=new InMemoryScreeningStore();
@@ -77,17 +81,21 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
       .slice(0, 1001);
     return Promise.all(rows.map((r) => this.account(o, r.id).then((v) => v!)));
   }
-  async saveAccount(o: LightTickOwner, a: InvestmentAccount, base: number) {
+  async saveAccount(o: LightTickOwner, a: InvestmentAccount, base: number,previousBaselineVersion=a.baseline_version) {
     if ((this.wallets.get(key(o, a.id))?.revision ?? 0) !== base)
       throw new ApplicationError(
         409,
         "LIGHTTICK_VERSION_CONFLICT",
         "Account changed.",
       );
+    const prior=this.wallets.get(key(o,a.id));
+    if(prior&&prior.baseline_version!==previousBaselineVersion)throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Baseline changed.");
+    if(!prior||prior.baseline_version!==a.baseline_version){const {name,currency,baseline_date,opening_cash,opening_positions,baseline_version}=a;const k=key(o,a.id);this.baselineRows.set(k,[...(this.baselineRows.get(k)??[]),structuredClone({name,currency,baseline_date,opening_cash,opening_positions,baseline_version})]);}
     this.wallets.set(key(o, a.id), structuredClone(a));
   }
   snapshot() {
     return structuredClone({
+      portfolio:this.portfolio.snapshot(),baselineRows:[...this.baselineRows],
       strategies:this.strategies.snapshot(),observations:this.observations.snapshot(),screening:this.screening.snapshot(),
       materials:this.materials.snapshot(),
       research:this.research.snapshot(),
@@ -98,6 +106,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     });
   }
   restore(v: ReturnType<InMemoryInvestmentStore["snapshot"]>) {
+    this.portfolio.restore(v.portfolio);this.baselineRows=new Map(v.baselineRows);
     this.strategies.restore(v.strategies);this.observations.restore(v.observations);this.screening.restore(v.screening);
     this.materials.restore(v.materials);
     this.research.restore(v.research);
@@ -107,6 +116,7 @@ export class InMemoryInvestmentStore implements InvestmentRepository {
     this.wallets = new Map(v.wallets);
   }
   deleteOwner(o: LightTickOwner) {
+    this.portfolio.deleteOwner(o);for(const k of this.baselineRows.keys())if(k.startsWith(prefix(o)))this.baselineRows.delete(k);
     this.strategies.deleteOwner(o);this.observations.deleteOwner(o);this.screening.deleteOwner(o);
     this.materials.deleteOwner(o);
     this.research.deleteOwner(o);

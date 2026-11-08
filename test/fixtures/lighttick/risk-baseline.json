@@ -37,6 +37,10 @@
     {
       "path": "test/fixtures/lighttick/prediction-monitor-golden.json",
       "sha256": "912e8d751e211379e767135f3e7d36522975170cdaa49b310a0886d807dc2b2c"
+    },
+    {
+      "path": "test/fixtures/lighttick/portfolio-golden.json",
+      "sha256": "104740de2ba9b12957513458349997b9c53c173ecc8f8e9bff862614c9dd7b70"
     }
   ],
   "unit_groups": [
@@ -127,6 +131,14 @@
         "test/unit/lighttick-ledger-corrections.test.ts",
         "test/unit/lighttick-investment-ledger.api.test.ts"
       ]
+    },
+    {
+      "id": "audited_portfolio_baseline_nav_valuation_performance",
+      "tests": [
+        "test/unit/lighttick-portfolio-engine.test.ts",
+        "test/unit/lighttick-portfolio-service.test.ts",
+        "test/unit/lighttick-portfolio.api.test.ts"
+      ]
     }
   ],
   "postgres_tests": [
@@ -150,7 +162,8 @@
     "test/integration/lighttick-screening-postgres.test.ts",
     "test/integration/lighttick-observations-postgres.test.ts",
     "test/integration/lighttick-strategies-postgres.test.ts",
-    "test/integration/lighttick-ledger-corrections-postgres.test.ts"
+    "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+    "test/integration/lighttick-portfolio-postgres.test.ts"
   ],
   "unclosed_gates": [
     "per_operation_legacy_parity",
