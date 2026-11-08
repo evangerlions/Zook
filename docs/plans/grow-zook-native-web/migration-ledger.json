@@ -2590,7 +2590,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Decompose legacy state into per-domain commands and receipts. Generic sync/push remains task-only. Projection rebuild must preserve drafts and original pending commands."
+      "migration_disposition": "Decompose legacy state into per-domain commands and receipts. Generic sync/push remains task-only. Projection rebuild must preserve drafts and original pending commands.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-08",
+          "contract": "/api/v1/lighttick/form-records",
+          "page": "/grow/settings",
+          "report": "../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-records-verification.md",
+          "tests": [
+            "test/unit/lighttick-form-records.test.ts",
+            "test/unit/lighttick-form-records.api.test.ts",
+            "test/integration/lighttick-form-records-postgres.test.ts",
+            "test/support/grow_web_form_records_acceptance.py"
+          ]
+        }
+      ],
+      "implementation_gap": {
+        "status": "partially_resolved",
+        "reason": "Statistics category CRUD and bounded legacy form storage/export/clear implemented with native owner/CAS/receipt semantics. Other legacy form editing, course completion-derived statistics, per-section PATCH, historical source identity/revision mapping and migration reconciliation remain pending."
+      }
     },
     {
       "method": "GET",
@@ -19871,7 +19890,26 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Decompose legacy state into per-domain commands and receipts. Generic sync/push remains task-only. Projection rebuild must preserve drafts and original pending commands."
+      "migration_disposition": "Decompose legacy state into per-domain commands and receipts. Generic sync/push remains task-only. Projection rebuild must preserve drafts and original pending commands.",
+      "implementation_evidence": [
+        {
+          "status": "partial_not_parity",
+          "date": "2026-11-08",
+          "contract": "/api/v1/lighttick/form-records",
+          "page": "/grow/settings",
+          "report": "../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-records-verification.md",
+          "tests": [
+            "test/unit/lighttick-form-records.test.ts",
+            "test/unit/lighttick-form-records.api.test.ts",
+            "test/integration/lighttick-form-records-postgres.test.ts",
+            "test/support/grow_web_form_records_acceptance.py"
+          ]
+        }
+      ],
+      "implementation_gap": {
+        "status": "partially_resolved",
+        "reason": "Statistics category CRUD and bounded legacy form storage/export/clear implemented with native owner/CAS/receipt semantics. Other legacy form editing, course completion-derived statistics, per-section PATCH, historical source identity/revision mapping and migration reconciliation remain pending."
+      }
     },
     {
       "method": "PUT",

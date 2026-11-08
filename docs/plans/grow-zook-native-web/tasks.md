@@ -162,3 +162,7 @@ U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fix
 ## 2026-11-08：plan G2.2估值/绩效及依赖（4/4）
 
 本有界切片验收通过，见[Plan子任务](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/tasks.md)与[证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md)。固定Zook/合同c2191960、Web3b386d0；104幂等迁移、不可变NAV/通知CAS历史、期初预览及明确采用、不可变估值/过期提示、扣净入金收益与有界回撤接既有worker和React。实际参考日历/算法/来源冻结，原请求/owner/fence/取消/恢复/分页/导出保留；未决通知对旧schema明确升级。后端2548通过/1既有跳过、真实PG/Redis26、风险197、Web51、Chrome两专项和旧13故事通过，17实际资源摘要及同库重启原事实/v1/v2报告/回执不变。扩展应用132条既有类型诊断无新增，专用领域/Web检查通过；课程预算隔离完整复跑，不调额度或清库。13条旧操作只增加部分映射，全部516仍待逐行为签署。主任务仍21/27，G1–G6/全域迁移/原生与其他App混合P95/真实专项/发布未代签；保留原未提交修改，不迁移真实数据、不发布。
+
+## 2026-11-08：plan G2.3统计分类与局部表单（3/3）
+
+本工程切片通过，见[Plan子任务](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/tasks.md)和[证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-records-verification.md)。固定Zook/合同b7e5445a、Web e56a8e0；迁移105隔离局部表单、稳定分类身份、CAS/原请求、本人导出/共用删除和明确范围清空接线完成。全量单测2580通过/1既有跳过、风险202、Web54、真实PG故事、Chrome保存/清空丢响应/切号/冲突/离线/下载/多宽度与同库重启通过。当前origin/main aa8885c6与既有Grow分支已在候选合入；保留双方文档并修复中文worktree测试路径，非LightTick公开schema不变。516原账本仅追加GET/PUT /api/data部分证据，不关闭其余表单编辑/派生统计、个人数据源/其余AI/全域迁移/联合/真实/发布门禁，仍21/27。没有导入真实历史或发布。

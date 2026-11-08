@@ -48,3 +48,9 @@
 ## 2026-11-08 数据源设置审查修复
 
 数据源页面改为读取Zook已存四类日线能力和凭据状态，供应商实际取数仍通过标的行情任务，不自动测试或换源。个人Tushare凭据、AKShare/BaoStock与分钟线继续为未完成缺口，不能将平台admin凭据当作个人配置保留完成。旧未提交Python功能保留作追溯，不接回运行路径。详见[审查修复](../../verification/grow-react-u1-20261103/review-remediation.md)；全部516条继续逐项处置，总进度21/27。
+
+## 2026-11-08 统计分类及局部表单增量
+
+`/grow/settings` 现可新增/改名/颜色/顺序/删除统计分类，保留稳定编号，删除仅连带此分类的局部表单打卡。`form-records` 独立原生存储覆盖旧局部副本十个字段；读取、整份CAS、原请求恢复、导出及明确范围清空已接通，保留独立 records/actions/learning 等领域，账号删除和本人授权导出同步覆盖。页面补齐完成与进度说明，不把分类/打卡冒充课程学完或成果。
+
+见[Plan验收](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-records-verification.md)。旧 `/api/data` GET/PUT 仅增加部分工程证据，原516项 disposition 仍待逐项等价复核；未签署旧其余表单编辑/派生统计、分区PATCH、历史版本/ID映射、全域恢复或原生双端等价。没有读取旧私人表单，也没有自动导入。个人Tushare、GitHub实际内容存储及其余AI调用点继续待做；主进度21/27不变。
