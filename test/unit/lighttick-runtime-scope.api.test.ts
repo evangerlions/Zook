@@ -6,7 +6,7 @@ import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/defau
 
 async function fixture(scope?: string) {
   const seed = buildDefaultSeed(undefined, { includeLightTick: true });
-  seed.appUsers.push({ id: "scope-alice", appId: "lighttick", userId: "user_alice", status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString() });
+  for(const userId of ["user_alice","user_bob"]) seed.appUsers.push({ id: "scope-"+userId, appId: "lighttick", userId, status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString() });
   const app = await createApplication({ seed, lighttickEnabled: true, appEnvironment: "test", databaseFactory: s => new InMemoryDatabase(s) });
   const setScope = async (value?: string) => app.services.appConfigService.setValue("lighttick", "admin.delivery_config", JSON.stringify({ enabled: true, settings: value === undefined ? {} : { runtimeScope: value } }));
   await setScope(scope);
@@ -89,5 +89,26 @@ test("scope shrink preserves settings receipts and allows durable cancellation, 
  assert.deepEqual((await runtime.repository.investments.ledger.get(owner,work.id))!.input,before);
  assert.equal((await runtime.repository.investments.ledger.events(owner,"inv-scope-account")).length,0);
  const bobToken=app.services.tokenService.issueAccessToken("user_bob","lighttick");
- assert.ok([403,404].includes((await call("ai/model-settings/receipts/scope-original-request","GET",undefined,bobToken)).statusCode));
+ assert.equal((await call("ai/model-settings/receipts/scope-original-request","GET",undefined,bobToken)).statusCode,404);
+});
+
+test("core scope keeps published learning, private notes and explicit completion independently writable", async () => {
+ const {runtime,call,setScope}=await fixture("full");
+ const {NativeLearningService}=await import("../../src/modules/lighttick/learning/native-learning.service.ts");
+ runtime.nativeLearning=new NativeLearningService(runtime.repository,true);
+ const collection=await call("learning/collections/collection-scope-api","PUT",{title:"Synthetic published course",archived:false,base_revision:0},undefined,"scope-create-collection");
+ assert.equal(collection.statusCode,200,JSON.stringify(collection.body));
+ const publication=await call("learning/lessons/lesson-scope-api/publications","PUT",{collection_id:"collection-scope-api",number:1,title:"Published lesson",content:"Synthetic published content",references:"",base_revision:0},undefined,"scope-publish-original");
+ assert.equal(publication.statusCode,200,JSON.stringify(publication.body));
+ const lesson=publication.body.data as any;
+ await setScope("core");
+ assert.equal((await call("learning/lessons/"+lesson.id)).statusCode,200);
+ const notes=await call("learning-library/"+lesson.id+"/private","POST",{id:"scope-note-original",content_version:lesson.content_version,revision:1,action:"save",notes:"Core private note",answers:[],position:0},undefined,"scope-note-original");
+ assert.equal(notes.statusCode,200,JSON.stringify(notes.body));assert.equal((notes.body.data as any).operations[0].status,"applied");
+ const before=(await call("learning-library/"+lesson.id+"/private")).body.data as any;
+ assert.equal(before.state.notes,"Core private note");assert.equal(before.state.completed,false);
+ const completion=await call("learning-library/"+lesson.id+"/private","POST",{id:"scope-complete-original",content_version:lesson.content_version,revision:before.state.revision,action:"complete",notes:before.state.notes,answers:[],position:0},undefined,"scope-complete-original");
+ assert.equal(completion.statusCode,200,JSON.stringify(completion.body));assert.equal((completion.body.data as any).operations[0].status,"applied");
+ assert.equal(((await call("learning-library/"+lesson.id+"/private")).body.data as any).state.completed,true);
+ assert.equal((await call("learning/work","POST",{},undefined,"scope-no-generate")).body.code,"LIGHTTICK_CAPABILITY_UNAVAILABLE");
 });
