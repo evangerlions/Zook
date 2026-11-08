@@ -172,3 +172,8 @@ U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fix
 ## 2026-11-08：plan G2.4旧表单编辑与按栏提交（4/4）
 
 固定后端/合同55fec671、Web e4e2fc3f；七栏基础编辑、四组旧字段黄金样本、其他栏保留/整份CAS、等待锁前冻结正文、回执回滚、删除撤回、历史待办来源边界及最大INT32修订可读恢复完成。见[Plan验收](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-editors-verification.md)及[逐操作补充映射](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/form-editors-evidence/behavior-mapping.json)。后端2590通过/1既有跳过，风险214/11黄金，Web63，真实PG3故事、Chrome主流程/双页面/最后修订与HTTP/PG同库重启通过，合同/类型/构建/1039文件行数通过。无新迁移。原516项仅增加PATCH /api/data部分工程证据；课程派生全局统计、个人数据源、GitHub内容存储、其余AI/专题、全域迁移/联合/真实/发布门禁仍未代签，整体21/27。
+
+
+## 2026-11-08：当前版本运行时隔离G2.5（4/4）
+
+默认core的settings.runtimeScope复用版本化配置；API／事务、页面／深链、入队／扫描调度／消费／迟到结果统一裁决，原回执／取消／历史保留。只读表单历史回执已补齐，通用AI删除owner后不重建run。固定后端代码01712f75、合同5d5a13bf、Web7a64273；合并后unit2603通过／1既有跳过、G1 227／11黄金、Web65、真实PG完整故事、最终浏览器两故事及18资源／同库重启通过。见[Plan证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/runtime-isolation-verification.md)。原516条和G1–G6不代签，仍21/27；双端组合／其他App混合P95／真实专项及迁移发布保持待办。原用户修改保留，专用HTTP／PG已停止，未调用真实模型、导入真实历史或发布。
