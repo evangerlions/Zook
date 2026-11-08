@@ -1,0 +1,19 @@
+{
+  "scope": "synthetic_exact_forecast_session_outcomes_not_live_market",
+  "registered_at": "2026-11-02T08:00:00Z",
+  "baseline_date": "2026-11-02",
+  "baseline_price": "10",
+  "as_of": "2026-11-06",
+  "horizons": [1, 3, 5, 10],
+  "target_dates": ["2026-11-03", "2026-11-05", "2026-11-09", "2026-11-16"],
+  "unreviewed_states": ["unknown", "unknown", "pending", "pending"],
+  "reviewed_states": ["resolved", "resolved", "pending", "pending"],
+  "raw_returns": ["10", "30", null, null],
+  "correct": [true, true, null, null],
+  "probability": 80,
+  "calibration": {"resolved": 2, "unresolved": 2, "correct": 2, "accuracy": "1", "probability_samples": 2, "brier_score": "0.04"},
+  "flat_up_and_down_both_incorrect": true,
+  "review_does_not_verify_corporate_actions_independently": true,
+  "monitor_duplicate_key": "monitor_id + configuration_revision + source_date",
+  "no_account_required": true
+}

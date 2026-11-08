@@ -1,136 +1,111 @@
 ## Context
 
-基线：Zook `aae6160`。Grow 包含191个 Python 文件，以及网页脚本、样式和教材。OpenAPI 导出511个 method/path 操作，AST 扫描429个装饰器声明；`api_route` 多方法、隐藏路由及框架声明使两种口径不同。清单是范围证据，不是行为兼容证明。
+2026-11-02，修订基线Zook `5be5175`。用户明确Grow是LightTick Web端，上一版独立Grow App/API/数据设计撤销；旧Python部署清理保留。当前原生/Grow工作树存在原改动，读取HEAD不等于已验收组合。
 
-已完成的工作是源码纳入仓库、独立 Python 运行兼容、PostgreSQL 内容后端和本地验证库接入。它们没有实现统一账号、统一业务 API 或取消独立运行进程。上一轮dev `/grow` 的兼容代理返回过未启用503；不能将该状态当作最终产品。
-
-用户约束：原 Grow 的历史数据及配置保留；新 Grow 与 admin-web 并行，由当前服务部署；复用 Zook 系统服务；不影响其他 API、产品和管理后台。
+产品/跨端完整设计见[plan统一架构](../../../../plan/docs/04-planning/grow-lighttick-unified-architecture-2026-11-02.md)，现行PRD是产品主文档。本文约束Zook实现与交付，不重新定义另一产品。
 
 ## Goals / Non-Goals
 
-**Goals:**
-- 同一 Zook 镜像与既有 api、worker、admin-web 进程交付两套 Web；不新增 Grow 容器、后端进程或独立部署端口。
-- Grow 所有业务能力都有目标归属和验收；现有用户认证、服务、数据库和任务设施成为新版唯一权威。
-- 现有 API 响应、权限、默认开关和管理页面路由兼容；新增任务有资源边界和可观测性。
+目标：同产品同对象同规则；三端可写，由唯一服务端权威裁决；保留原生本机模式与无Web/AI基础闭环；React前端归plan/LightTick-Web并与原生协同规划；复用Zook既有服务；不丢原功能、版本和历史。
 
-**Non-Goals:**
-- 本轮不导入旧 Grow/Render/Supabase/GitHub 历史数据，不修改其账号、密钥或浏览器配置，不停旧服务。
-- 不合并管理员和普通用户身份，不按同名账号自动关联，不把管理权限赋给 Grow 用户。
-- 不在首阶段重构后台全局主题、认证模块、既有产品路由或默认模型配置。
-- 不承诺同镜像部署零重启或同进程绝对故障隔离；这些需要另外的部署能力。
+非目标：新增grow appId/平行API、第二套主数据双写、恢复services/grow、重建原生客户端、引入微服务或通用插件框架。Web独有复杂工具不要求首批原生全量复制UI。
 
 ## Decisions
 
-### 1. 保留现有 Web 入口，增量承载两套前端
+### 1. 身份和目录
 
-新增 `apps/grow-web`，使用与后台兼容的 React/TypeScript/React Router/Ant Design。沿用 `apps/admin-web/server.ts` 和既有端口；本轮不搬迁成 web-server，也不把两套应用嵌套在同一个 AdminSessionProvider 中。
+沿用现有LightTick appId与membership，Web/iOS/Android是设备会话维度。服务端以token/app membership确定owner；URL命名、clientKind和deviceId不能授权。其他Zook App仍保持隔离。
 
-```text
-app-dev.youwoai.net
- ├─ /login、/config、既有路径 → 原 admin-web build
- ├─ /grow/、/grow/login、/grow/learning → grow-web build
- ├─ /grow/assets/* → Grow 独立资源目录
- └─ /api/* → 原 Zook API 代理
+后端新增/扩展落在 `src/modules/lighttick/{records,manual,actions,learning,reading,knowledge,cognition,investments,research}` 及既有基础设施。按实际领域复用，不强行把记录、共享行动、执行task、学习路线并表。纯算法确实复用时才提取中立服务。
 
-Zook API → 普通用户认证 → LightTick业务/系统服务 → 现有PostgreSQL
-既有worker → Grow任务专属类型、并发和配额
-```
+Grow前端位于plan/LightTick-Web，由plan仓库与原生协同管理，使用React+TypeScript+Vite，按feature组织；服务器数据、本地表单、URL状态分开，路由级懒加载。跨页服务器草稿有显式保存语义，本机草稿不默认上传。Zook不维护另一份前端源码。
 
-Grow router basename与资源base均为 `/grow/`。请求按解析后的 pathname 匹配精确 `/grow` 或 `/grow/` 前缀，不能匹配 `/grower`。`/grow`定向到`/grow/`；只有 Grow 页面 GET/HEAD 才使用 Grow SPA fallback。缺失资源、API、非法路径和不支持方法不得返回 SPA 200。处理 URL 编码、路径穿越、缓存和 HEAD；所有现有 health/handoff 处理顺序和行为保持原状。
+### 2. 同步覆盖必须逐领域验证
 
-新增 Grow build stage，现有 Admin build命令与锁文件继续保留。初期两个前端维持各自依赖安装，不改根workspace、不重解后台依赖树；只有确有共享模块时再增量建立明确的本地包构建方式。Grow缺失/开关关闭时只影响 `/grow`，后台始终可启动。开启且产物缺失时预检拒绝候选切流。
+代码事实：LightTickSyncService的push只处理task命令；OpenAPI entity enum虽包含record，并不等于运行时接受其写入。记录通过LightTickRecordService和原生持久RecordPending请求提交，PostgresRecordStore写版本和change_log。learning-library为来源镜像，privateLearning将命令置pending，exchangePrivate才处理旧来源回执。
 
-备选：新容器不符合目标；iframe或仅提供静态旧HTML不能解决Python API依赖；移动既有入口会扩大回归面，均不采用。
+实施前建立矩阵：每种命令的领域入口、事务/版本、幂等与终态回执、变更日志、pull读取及客户端投影。先复用既有领域API；不为统一形式绕过领域校验，不让领域队列和通用push以不同key重复执行同一意图。
 
-### 2. 普通用户身份、产品作用域和管理员权限
+### 3. 事务、增量和离线恢复
 
-新版复用 `/api/v1/auth/*` 的用户认证及现有Web刷新约定；访问令牌保存在内存，使用现有Bearer鉴权与HttpOnly刷新Cookie机制，前端刷新单飞、注销及多标签切号状态独立于Admin会话。编码前核实多app刷新Cookie的scope与并存行为，不能直接改变全平台Cookie名称、Path或SameSite来适配Grow。
+统一owner内的正式变更、version、回执和change_log需要可证明的一致性；task命令与sync操作持久化跨调用的崩溃窗口须专项验证，不能宣称当前已无风险。
 
-Grow是现有LightTick产品Web端，沿用 `LIGHTTICK_APP_ID` 与应用成员关系。所有数据由服务端确认 `(appId,userId)`；前端请求中的owner字段不能替代鉴权。所有新查询、文件和任务均验证归属，已删除/禁用成员的异步任务在执行和提交前复查权限。管理员入口和session保持原实现。
+pull使用owner-bound cursor与服务端顺序。分页应用到本机持久存储后才推进cursor，重放幂等；验证晚提交事务不被提前推进游标漏掉。bootstrap快照与增量水位一致。过期游标显式要求重建服务端投影，保留未决请求/草稿。删除tombstone和撤权控制旧缓存恢复，不无界扫描全历史。
 
-新版登录后的用户获得新的产品数据空间。现有 `grow_h5_local` 演示账号和schema不自动映射到Zook账号；若仍需演示数据，单独导出、经双身份确认后关联。旧Grow账户、密码、邀请和恢复逻辑不搬到新版作为第二权威。
+现有客户端对实体/字段的兼容需fixture证明；新实体能力协商或过滤后再放量，不能给旧版本推不可解析负载。前台/联网/手动刷新和成功写入触发补齐；可选SSE只做失效通知，丢失仍用cursor恢复，不以常驻连接保证后台实时。
 
-### 3. 系统服务接入清单
+### 4. 冲突与对象不变量
 
-| 能力 | Zook目标 | 接入约束 |
-|---|---|---|
-| 登录/注册/找回/会话/成员状态 | 现有auth、users、app registry | 不修改现有登录响应和管理员认证 |
-| 手动记录、复盘 | LightTick record/reflection | 逐字段比对日期、版本、标签和归档语义 |
-| 目标、行动、日程、周月节奏 | LightTick goal/action/manual/planning/rhythm | 对齐ID、完成定义、日期与幂等；新旧含义不同则新增合同 |
-| 草稿、课程规划与内容发布 | 扩展LightTick learning/planning | 数据库版本与发布日志，保留来源和显式发布流程 |
-| 课程阅读、笔记、答题、学完、反馈 | 现有learning-library/private + 缺口扩展 | 打开/计时/有笔记不等于学完 |
-| 文章采集/导读/词汇复习 | 新增LightTick reading子模块 | 抓取来源安全、正文清洗、持久任务与复习状态 |
-| 认知副驾驶、多轮建议、反思 | 现有AI场景/提案 + 新增业务场景 | 模型输出先校验，涉及正式写入须保留原确认语义 |
-| 行为应用、重复错误、认知校准 | 新增LightTick cognition子模块 | 保留事件、校准和统计公式，不等价替换成普通记录 |
-| 知识索引/图谱/检索/时间线 | 新增LightTick knowledge/查询投影 | 来源版本可追溯，所有搜索限制owner范围 |
-| 股票复盘、投资台账/持仓/估值/预测 | 新增LightTick investments子模块 | 金额精度、交易日期、版本、预览确认和审计专项验证 |
-| 数据集、CSV、回测、策略IDE、研究归档 | investments/research + worker | 能力较大，单独验收；不得在API事件循环做CPU重计算 |
-| LLM生成/流式输出/预算 | 现有LLM manager、逻辑模型与provider路由、usage/日志 | 注册专属sceneKey；保留既有模型key/provider配置，不覆盖其他产品默认模型 |
-| 凭证与AI设置 | 现有服务端配置/密钥管理 | 新版使用平台模型选择；旧浏览器API key不上传、不迁入日志；BYOK另行明确合同 |
-| 文件/上传/教材/导出 | 现有file service/PersistentFileStore | 路径仅服务端生成、owner授权、备份；禁止任意路径导入和任意URL抓取 |
-| 后台采集/生成/重试/监控 | 现有worker、JobQueue/持久任务机制 | 验证租约、取消、幂等和重启恢复能力，缺失先补；仅接口存在不算已支持 |
-| 日志/安全/审计/埋点/通知 | 现有服务及产品适配 | scene/app/user/requestId关联；正文和秘密脱敏；不自动开启发送通知 |
+- records/notes/answers：CAS版本冲突保留本机、基线和服务端副本，由用户确认新的修改；不能自动LWW覆盖长文本。
+- tasks/actions：状态机与当前版本裁决，不用“完成永远优先”；暂停/结束约束仍生效。
+- manual/planning：同goalId/planId/taskId；草案保存/AI对话不等于确认；确认核算当前约束并原子生效。
+- learning：发布正文不可变；notes/answers、显式学完、阅读位置、实践完成各自独立。正文新版不覆盖旧答案；同lessonId的contentVersion与privateRevision分别校验。
+- progress：设备/版本作用域；支持向后阅读，不能取max(position)推断正确位置或课程完成。
+- practice：稳定来源kind/id/version；反馈不自动创建下一步，课程学完不自动完成现实实践。
+- investment/research：金额精确表示，交易日/复权、数据集/参数和结果版本可复现，CPU任务不占API事件循环。
 
-矩阵中的“新增/扩展”不表示已经实现。每个旧操作在ledger中记录目标、差异、fixture与验收结果；语义相同才归并，不能用同名接口推断能力等价。
+### 5. 课程与私人学习权威切换
 
-Python依赖单独列账：AkShare行情、网页抽取、PDF/字体、Markdown/词汇处理、CSV及回测逻辑需要Node可运行实现或既有受控外部数据API。不能以隐藏Python子进程/sidecar恢复独立后端，也不能未经审核开放任意策略代码执行或网络访问。未找到合适实现时该能力标记阻塞，最终整体迁移不能宣布完成。
+新增Zook原生内容/私人仓储和按owner+module权威路由，不能把已有JSONB镜像表改名就当完成。课程路线、lesson、发布版本、notes版本、完成事实、旧来源映射/授权/终态回执分别保留。
 
-### 4. API与数据模型
+规划状态 `legacy→frozen→imported→verified→zook` 带单调epoch；冻结旧新增写/后台任务，登记待决操作，按原key迁移或核对，不一边排空一边开放新写。数量/摘要/关系/样本通过后原子激活；旧bridge迟到写受屏障拒绝。
 
-新增产品接口均在 `/api/v1/lighttick/...`。先复用现有records/actions/learning等合同，缺口按独立子模块加法扩展。投资域优先 `/api/v1/lighttick/investments/...`，不创建根 `/api/investments` 平台接口。现有App字段、鉴权、错误码、默认功能开关、排序、分页和完成语义保持兼容；必要时新建子资源或显式版本协商，不改变旧客户端结果。
+保持旧learning-library/private响应含义；Zook原生handler可直接写入并给兼容终态，新用户无需旧Grow配对或等待Python服务。旧App不会因服务清理永久卡pending；旧授权不扩大，历史源binding映射到canonical来源保持实践可追溯。旧接口退出要有版本/能力依据，不直接删LightTick公共合同。
 
-`/grow/api/*` 仅作为有范围和退出条件的过渡适配路径；不新增永久平行协议。不通过全局catch-all重写其他产品API。既有旧网页兼容代理只在旧模式继续工作；迁移模块使用显式入口，各模块仅一个写入方。
+### 6. 认证与前端交付
 
-元数据、笔记、正文、版本、发布日志、任务和幂等记录存现有PostgreSQL仓储。较大二进制/导出/数据集使用既有文件服务，表内保存归属、版本、摘要和文件ID。新表带app_id/user_id及适合查询的复合索引。迁移均加法DDL，不重命名/删除既有字段；大索引考虑线上锁和迁移runner的事务能力。仅关闭功能或回退应用，不回滚/恢复整库，不运行down迁移破坏已写数据。
+Web使用同LightTick身份的独立安全会话，不共享手机token、不共享Admin权限。精确复用/新增会话接口在合同设计时核实；刷新凭证不进localStorage，通过Zook受控HttpOnly等现有规范适配，不新增BFF服务。CSRF/Origin、host-only cookie、多App会话及dev/online隔离专项验证。
 
-### 5. 资源隔离与“不影响”的验证定义
+本机模式和云端身份分别表达，登录不自动上传。缓存作用域包含canonical environment/appId/userId；切号取消旧请求并隔离草稿/队列，不能把A的请求交给B重试。删除云端账户覆盖共同云端数据与任务；离线设备恢复连接后按协议清理，不能承诺立即远程清除本机副本。
 
-新增前端挂载开关和独立Web功能开关，不使用或自动翻转 `LIGHTTICK_ENABLED` 等现有总开关。复用能力仍遵循已有产品开关，缺失时报告对应能力不可用，不能为Grow静默放开App功能。前端配置仅含公开能力，秘密只在服务端。
+Grow静态包带commit/digest/合同范围，既有Web挂载/grow/，前后端组合可复现；无SSR/新增服务。精确前缀、深链、HEAD、资源404、API不落SPA、路径安全、后台/handoff/SSE兼容。运行时不读取相邻源码仓库或合同源目录。
 
-Grow关闭：不注册/启动Grow专属任务、不探测外部数据源、不要求Grow凭证、不建立额外连接；原服务启动与响应保持基线。
+### 7. 平台扩展与开发规范
 
-Grow开启：对请求体、上传、超时、分页、AI预算、抓取并发、任务重试和CPU研究任务设专属上限。复用数据库连接池但以并发信号量限制Grow使用量；现有队列若无公平调度/配额，先在既有worker内补专属队列或handler预算，不能声称已隔离。CPU密集任务可用现有worker内有界worker_threads，不能阻塞API事件循环。
+平台auth/App/config/files/LLM/logging/worker复用，LightTick内按sceneKey和handler划分新领域预算。逻辑模型身份/provider routes遵循Zook规范；请求/user/stream/job状态局部化，不存单例。
 
-记录固定机器和负载的基线P95、错误率、连接等待与队列延迟。暂定门禁：既有产品P95增加超过10%或出现新增5xx即拒绝放量；阈值在基线采集阶段固化，同轮对照验证。相同进程/数据库仍有共同故障域，该方案降低并验证风险，不保证数学意义零影响。
+新增领域按合同→规则/仓储→必要任务→前端feature→原生适用视图→联合fixture扩展。行情/抓取/文档通过adapter；不用隐藏Python/sidecar填缺口，不执行任意策略代码。文件仅fileId/owner授权，私文不自动进入模型。
 
-### 6. 组件复用与用户状态
-
-初期直接使用相同Ant Design版本及少量独立tokens，Grow保持阅读和移动布局。只有不依赖AdminSessionProvider、app选择器及admin API的Field/Notice等组件才抽取为共享模块；不优先重写后台组件以追求形式统一。HTTP envelope/error/requestId处理可复用机制，认证重试和错误事件按普通用户/Admin分别适配。
-
-`GrowSessionProvider`只包裹Grow入口。加载、空态、错误、重试、401/403、慢请求、请求取消、切号、未保存草稿保护必须具备。关闭/卸载模块不得重放有副作用的提交或自动生成付费AI请求。
-
-## Risks / Trade-offs
-
-- [能力漏迁] → ledger覆盖全部511操作及非HTTP任务、导出和静态教材；每项标记已复用/已实现/明确替代/待处理，未完成项不能以隐藏菜单消除。
-- [账号误关联] → 新用户空间与旧账号分离，历史关联需要双身份确认及专门数据迁移协议。
-- [同域Cookie冲突] → 保留Admin cookie约定，验证现有普通用户刷新cookie多app并存；不扩大任何cookie作用域。
-- [单进程资源争用] → 配额、预算、有界线程、限流和混合负载回归，不在API进程执行回测。
-- [AI成本与信息泄漏] → 场景预算、输入校验、取消、敏感信息脱敏；不改其他产品模型路由，不导入旧密钥。
-- [DDL或shared组件影响存量] → 加法迁移、固定后台依赖、旧合同快照和关闭/开启双态回归。
-- [同镜像部署会重启现有容器] → 沿用现有健康检查/自动回退；发布中断窗口单列，零停机另行建设。
+后端遵循AGENTS/CLAUDE，DDL用既有migrations与runner；OpenAPI唯一源 `api-contracts/openapi/lighttick`，同轮generate/check、客户端快照及README_API更新，运行时只用src/generated，管理API仅写admin spec。feature→main→dev→同SHA online，合同兼容范围含已发布原生版本，不能假定服务器发布会升级App二进制。
 
 ## Migration Plan
 
-P0：冻结当前路由、API合同、后台构建和任务/数据基线；为ledger填候选映射、差异和测试fixture；验证旧系统只读边界。
+对应plan的U0–U5：基线与同步覆盖→React/记录三端闭环→基础计划/行动→学习原生权威→实践/回看→Web专题及全量门禁。风险较高的数据源、游标原子性与未决来源命令先做合成fixture。
 
-P1：仅新增Grow构建、静态挂载与能力配置；默认关闭；不移动后台文件或改既有接口。实际部署镜像可在无Python条件下启动两套静态入口。
+每切片包含合同、后端、React、双端适配及真实PG/浏览器/适用原生验收。关闭Web和AI时原生基础故事仍通过。未迁功能须显式处置，历史511路由和269测试文件是核对起点，不是完成度。
 
-P2：接入Zook普通用户认证，完成登录/刷新/退出/禁用/跨账号隔离/草稿保护；新用户空数据空间。
+## Risks / Trade-offs
 
-P3：完成首页→记录保存→回读→编辑归档→重启恢复这一条原生Node闭环。实际请求不得落到Python代理。
+账号误关联、长文本冲突覆盖、旧源迟到写、课程版本与实践引用丢失、通用push覆盖误判、游标推进漏读是关键风险。使用显式归属映射、CAS/回执/事务/增量与authority屏障逐项证明；不靠重命名或页面可见认定完成。
 
-P4：行动/目标/手动计划/节奏/复盘；逐项比对原生App语义和幂等，保留旧客户端行为。
-
-P5：课程规划/副驾驶/发布/阅读/笔记/词汇/教材；接入平台LLM和worker并做无凭证、故障、取消、重启演练。
-
-P6：知识/检索/认知校准/行为报告、股票/投资台账/研究/数据源/策略IDE与导出。研究功能全部过精度、性能、权限和回放验收才能完成整体迁移。
-
-P7：ledger全部处置、无Python运行依赖、关闭/开启回归和混合负载通过后，明确切换 `/grow` 为原生模式。检查既有环境Grow组状态、journal、挂载卷和回退依赖；仅清理新部署路径中不再需要的overlay/代理/开关。旧独立服务继续保留，其数据和配置不删除。
-
-发布仍执行 feature→main→release_dev.sh→dev验证；online仅在同一已验证main SHA且全部门禁通过时发布。逐模块失败时保持当前写入方，禁止回退到旧服务写入新版用户数据。切流后关闭Grow或恢复兼容应用版本，保留数据库和文件；若数据所有权/协议变化使旧版本无法安全访问，使用前向修复，不假定整组回退自动安全。
+服务共享有资源共同故障域。Grow/学习/研究预算与其他App混合负载要验证；初始P95增幅10%门槛在基线固化，无新增5xx，开启/关闭两态回归。不承诺绝对隔离或零停机。
 
 ## Open Questions
 
-- P0实测需固化Node数据源与重计算替代方案、各模块历史API精确语义、普通用户refreshCookie多app行为，以及队列公平调度/租约支持情况。
-- dev验证需有专用Zook普通账号A/B与一次性注销账号；不得用真实用户验证删除或跨账号清理。
-- 历史账号、GitHub课程、Supabase私有数据、浏览器AI key均不在本次迁移范围。未来接入需用户另行明确授权。
+Web受控会话现有能力、实体读取/未知类型兼容、游标过期/保留策略、任务租约公平配额、真实旧源待处理操作与授权历史范围仍待实施核验。只读代码与历史报告不替代当前生产状态检查。
+
+### U5 版本化筛选切片（2026-11-07）
+
+规则与模板为独立 owner 资源，规则参数、条件来源及模板固定引用均进入不可变版本。模板只通过显式核对选择规则 id/version/digest；普通编辑不改变已冻结执行，归档/停用、撤权或标的版本变化阻止未完成结果发布。新能力统一在 screening.yaml，不扩展 task-only push 或旧 pull。
+
+显式池最多20标的；复用既有 CSV/Node 日线快照和 worker，固定完整输入、交易日历、未复权口径、可获知/决策时点、算法和结果摘要。条件采用精确有理数和三值逻辑，缺失为未知，主次排序与日期窗口可解释；四配方为有限受控函数，不执行策略代码。本人声明 ST/停牌仍标注未独立验证。不需要资产账户，不生成交易/行动，不自动调用 AI。
+
+owner 写锁与原回执包住定义/任务变更，计算和队列提交在事务外；30秒期限/60秒租约、最多三次执行，恢复与取消使用 fence 拒绝迟到结果。导出包含完整冻结输入和创建/取消原请求，省略内部 owner/租约/fence；超出有界容量明确失败，后续分块迁移仍单列。React 表单沿用 owner/环境/文档隔离的本机草稿、原 key/body、三方 CAS，云端列表重建不覆盖草稿。模板编辑和执行组件使用不同 key，防止保存版本后的重复旧 DOM。
+
+
+### U5 不可变预测、复盘与日线监控切片（2026-11-07）
+
+预测登记原判断、完整已知基准与来源精确版本后不可改写；实际核对和复盘各自为独立持久资源。核对固定后续交易日、行情、日历、算法和本人公司行动声明，原始未复权变化与方向判定分开；无声明/缺失/冲突/未到期不作为确认命中。复盘固定成功结果和周期，以CAS保留原文/历史；校准仅按已解决事实计算，不自动产生行动或交易。没有资产账户也可研究。
+
+日线监控仅使用明确供应商的既有快照，自动选择当前来源必须唯一；供应商缺失、歧义、未收盘、零分母明确呈现，不自动取数/换源。复用worker的恢复扫描、持久任务和owner写锁，计算外置，按配置版本/来源日去重和冷却。owner UTC40/日、保留300、活动2，30秒期限/60秒租约/3次尝试；原请求重放不能消耗尚未过期租约的下一恢复队列ID。取消/停止/撤权/资源版本变化均拒绝迟到发布，恢复归档不自动重新启用。
+
+独立observations合同及101三表承接当前资源/不可变版本/任务；新类型不加入旧pull、task-only push不变。导出原请求和完整冻结来源有明确容量上限，不含内部租约/fence/秘密，账号清理由共用owner入口覆盖。React以环境/owner/表单隔离草稿和原请求；读取序号使快速模式切换加载新范围并丢弃旧结果，游标失效重建保留本机输入。私人HTTPS报价/凭据/成本偏离、全账户简报与完整旧行为等价继续为后续工作，不能由此有界实现代签U5。
+
+
+### U5 策略版本与有界回测切片（2026-11-07）
+
+独立owner策略保留完整参数/说明的不可变版本、摘要、CAS、原请求和archive_epoch。执行采用精确版本而非隐式最新值，固定已存未复权日线/参考日历/标的版本/决策区间/执行事实/算法；threshold与ma_cross受控函数支持单次、2–4比较或双轴最多16组。本人历史执行/复权与公司行动声明未独立验证，缺事实或日历明确incomplete，不补正常、不自动采用最高收益、不生成交易/行动。任意代码和其他旧模板未认证等价。
+
+复用现有worker队列与owner事务入口，计算在固定Node worker_threads模块执行且在锁外，输入2MiB/输出6MiB、30秒期限/60秒租约/3次尝试；owner活动1/UTC20日/保留100。归档epoch/撤权/标的变更/取消和冻结算法版本均参与发布屏障，普通改版不篡改历史；重复请求不抢占未过期恢复租约。102迁移三表及共享删除/授权导出覆盖持久定义/版本/任务。公共投影省略内部租约及整批输入，报告曲线/订单/成交/事实/原始行情分页且游标绑定摘要。导出有5000项/8MiB显式边界；完整分块迁移另行实现。独立strategies合同不加入旧pull或task-only push。
+
+React沿用隔离草稿和原key/body、三方CAS、版本明确采用、逐日事实、不完整报告与局部横向表格；过期分页重建保留未决输入。此切片验收4/4不改变21/27，详见策略报告；估值/纠错、全域迁移/兼容/混合性能及外部发布门禁不代签。

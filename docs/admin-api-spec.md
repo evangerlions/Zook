@@ -1,5 +1,8 @@
 # Admin API Spec
 
+LightTick 原生 Web 地址复用既有版本化 `admin.delivery_config.settings.growWebUrl`，通过原管理配置写入/历史/回滚路径维护，不新增 env 或密钥字段。值为现有 Zook Web 进程的 `/grow/` 绝对基础地址；online 只允许 HTTPS，local/dev 可使用 loopback HTTP，禁止账号密码、query、fragment 和其他挂载路径。未配置/非法或 App 关闭时公开配置省略可选字段 `grow_web_url`（客户端将缺失/null 视为不可用），原生权威不得从旧来源进度回退取得地址。设置前必须核对目标静态产物 SHA/digest、同源 API 会话和实际部署 namespace；本轮只在 localhost fixture 配置，未配置或发布真实地址。
+
+Grow静态承载（2026-11-03本地候选）：既有Web进程在`GROW_WEB_ENABLED=1`时加载`GROW_WEB_ROOT`（默认static/grow）的固定manifest和白名单资源，仅在/grow命名空间分发页面/资源，运行配置仅含公开产品/版本。关闭时/grow返回503且无产物依赖；开启缺包/摘要不符在监听前失败。它不使用Admin会话，不代理到Python；用户业务沿用LightTick公共API。页面深链新增 `/grow/planning`（AI 规划）和 `/grow/goals`（目标续排），同样分发固定静态包。详见首批和 U2 验证报告。
 ## AINovel Apple sandbox admission
 
 Server → SMS → Test Account is the sole admission source. Its existing
@@ -20,13 +23,6 @@ membership exists. Web/other platforms and ordinary accounts keep production.
 Explicit online sandbox headers remain forbidden; sandbox financial history remains isolated.
 Google/Alipay sandbox and unknown deployments receive no new permission.
 
-Grow H5 承载：Admin HTTP server 将 `/grow` 和 `/grow/*` 转交同槽位
-`ADMIN_GROW_PROXY_TARGET`，其鉴权由 Grow 独立处理，不使用 Admin session。
-未配置该私有目标时返回503；配置后保留方法、查询参数、状态码、多条 Cookie、
-下载与 SSE 流。`/config` 和 `/api/v1/admin/*` 继续沿用原管理系统行为。
-详见 [Grow H5 部署](grow-h5-deployment.md)。
-Grow 的 `/api/account/github` 兼容响应新增 `storage_backend`。PostgreSQL 模式的
-网页设置显示平台账号数据库，不要求用户填写 GitHub 仓库；该接口仍由 Grow 会话鉴权。
 
 LLM monitoring aggregates (overview and model details) exclude upstream calls
 explicitly marked with internal `callPurpose: "content_safety"`. This applies to
@@ -756,3 +752,49 @@ All endpoints require an Admin session and use the server-selected billing envir
 - `GET /api/v1/admin/apps/ai_novel/credit-grants?offset=0` returns `{ items, hasMore, offset }` with up to 50 records, newest first. Each item contains `id`, `uid`, `points`, `adminUser`, `at`, nullable `phone` and `email`, and `contactSource` (`snapshot`, `current`, or `unavailable`). New admin grants save contact details as a snapshot in the same ledger event as the grant. Legacy records use current user details when available and label them `current`; missing users are `unavailable`. Records are isolated by billing environment.
 
 For accounts without an existing credit account, a grant does not start a weekly window. The regular credit flow starts that window on first use. For existing accounts, grants do not refresh or modify the stored subscription allowance, usage, or refresh time.
+
+## LightTick learning migration control (2026-11-03 local candidate)
+
+`POST /api/v1/admin/apps/lighttick/learning-migrations/{ownerId}/{preflight|freeze|import|verify|activate|abort}` uses the existing adminSession. Product bearer/Basic alone is insufficient. Target must be an ACTIVE registered member. Preflight is read-only with metadata audit; every mutation requires the existing sensitive-operation grant `lighttick.learning.migrate`, checked again inside the owner transaction, including replay. Bodies: bundle, expected_digest; mutations also base_revision and immutable Idempotency-Key. No private bodies, notes or credentials enter audit payloads.
+
+Manifest format 1/module learning contains explicit verified source instance/account→target user mapping, sealed frozen_at and library/private watermarks, independent original reading/private consent, original collection/lesson identities and all immutable publications, private states/history with draft anchors, original receipt keys/hashes/bodies. Pending receipts require original bodies and become applied or conflict before activation. Missing proof, stale watermarks, nonempty target, digest/relationship/count differences fail without overwrite. The current bounded tool accepts at most 6 MiB/200 lessons/2000 private states/10000 history entries/1000 receipts; larger migrations must wait for a reviewed chunk protocol, never truncate.
+
+Format 1 also accepts optional `routes` (omitted preserves the original format). Each route retains id/revision/published_version/status, the current unpublished brief/document, consecutive immutable versions (version/brief/document/created_at), and lesson_links (number/lesson_id/route_version/first_content_version). Unknown historical publication time is null. Limits: 100 routes and 1000 route versions within the same 6 MiB/200-lesson bundle. Published routes must match the preserved collection and every published lesson mapping; later history cannot rewrite a frozen lesson blueprint. Verification includes route/version/link counts and digests, plus zero native worker jobs in staging. Abort clears these staging relations before lessons. Worker jobs are not imported as executable historical background tasks. Source receipts and pending private commands retain the original migration protocol. See the synthetic fixture `test/support/learning-route-migration-fixture.ts` and PostgreSQL route migration test; these do not authorize actual historical imports.
+
+State: legacy → frozen → imported → verified → zook. Freeze and activate/abort increase epoch; every transition uses authority CAS. Existing old bridge writes recheck this gate inside the owner transaction. **The source frozen flag is an operator attestation, not remote control of the historical service**: operators must actually stop the old writer and seal/reconcile its final export before freeze/activation. Native activation never enables dual write. Abort is supported before activation, removes only staging/imported receipts and preserves old mirrors; after activation (including any new write) return 409 and use reviewed export/compensation, never restore an old database over new writes.
+
+Tool (no DB access, no secret env additions):
+
+```
+node --experimental-transform-types scripts/lighttick-learning-migration.ts --bundle /absolute/path/reviewed-synthetic.json
+```
+
+Default is offline dry-run: validates the manifest and prints digest/counts, without checking server watermarks. Add `--endpoint https://reviewed-origin --cookie-file /private/admin.cookie` for remote read-only preflight. Cookie file must have mode 600 and contain only adminSession=value. Use the existing admin sensitive verification flow beforehand; the CLI does not bypass it. To execute a reviewed transition, add `--apply --action freeze --expected-digest <reviewed SHA256> --base-revision <current revision> --request-id <original command ID>`. Reuse the exact manifest/base/request ID on lost-response retry. Repeat import/verify/activate with their own reviewed current revision and command identity. No script auto-activates or publishes.
+
+Local synthetic tests: `test/unit/lighttick-learning-migration*.test.ts` and `test/integration/lighttick-native-learning-postgres.test.ts`; the PG test requires a disposable localhost grow_web_u1_* database through LIGHTTICK_TEST_DATABASE_URL. Real historical data, production sessions, deployment and actual source shutdown were not exercised.
+
+
+### LightTick 学习场景补充
+
+现有 lighttick.ai_routing 增加 learning_route / learning_lesson；仍使用平台逻辑 modelAlias 与 routes，不新增 Provider 密钥或 env。旧版本化文档缺少这两个新增键时使用代码中的场景默认值，管理端明确保存后才写入版本化配置。运行时再将输入、输出和超时收紧到学习场景硬上限；既有 daily_review 的重复声明已删除被覆盖项，保留原本实际生效的值。学习任务的 owner 预算、最多三次租约尝试及取消/重启恢复不另开管理写接口；迁移控制仍走原 sensitive grant。没有在本轮改动真实运营配置或凭证。
+
+### 本人数据与文件清理（本地候选）
+
+LightTick 的专属与平台通用账号删除复用同一领域表清单，包含记录、行动/规划、课程/私人历史、知识/历史及任务回执。PostgreSQL 账号删除先取得现有 LightTick owner gate，再锁 membership；元数据、membership/session 处理及文件删除 outbox 在现有平台事务中提交。全 App 删除也复用同一清单，不遗漏新增领域表。local adoption claim 取消账号/云端映射，防止旧本机身份重新导入已删除数据。
+
+文件物理清理由既有 worker tick 处理 `zook_owner_file_purges`，每批最多 20、45 秒租约、fence、有限退避重试；不新增服务/队列凭据或 env。删除元数据时登记明确的 owner/storage_key，磁盘 IO 不占 owner 事务。仍有平台元数据引用的路径保留；只删除持久根内单个文件，不递归、不扫描其他历史、不跟随父目录逃逸。迟到学习文本上传必须重新核验有效 membership 与元数据，删除后不能确认上传；失败再次登记清理，防止先删后写遗留。平台文件只在 worker 恢复后最终清除，不能宣称事务提交瞬间物理擦除，也不覆盖数据库/文件备份的独立保留策略。
+
+验证只使用专用 localhost 数据库与临时合成文件；本轮未执行真实账号或真实文件清理。监控应观察 worker 聚合清理/重试/保留计数，不把正文、磁盘路径或凭据写入日志。
+
+## LightTick 行情供应商与凭据
+
+供应商开关复用现有 LightTick 项目版本化 `admin.delivery_config`（原 GET/PUT config 及 revisions/restore），字段 `investment_market.providers.{csv,tushare,eastmoney,tencent}.enabled`，不新增配置库或 env。同一供应商只能有 enabled，不接受 token、host、重试或备用源字段；写入和恢复都会校验，凭据不能进入这段配置的版本历史。缺省 CSV=true，其余=false；一个来源失败不切到另一个来源。
+
+服务端凭据使用平台 KVManager 的单值秘密路径，单独权限与审计：
+
+- `GET /api/v1/admin/apps/lighttick/market-providers/tushare-credential`：必须现有 adminSession；仅 revision/configured/updated_at，no-store，不提供 reveal。
+- `PUT` 同路径：必须 adminSession＋`lighttick.market.credentials.write` 敏感授权；原 Idempotency-Key 8–128、base_revision（0 为未配置）、token 字符串或 null（移除）。CASKV 原子写，冲突 409 保留原请求。最近 32 次原回执只保存 key/body hash 与结果元数据，旧回执淘汰后仍受版本拒绝，不再次旋转。token 不进版本历史、审计 payload、公开能力或任务输入；响应永不返回明文。
+
+Admin LightTick 页面使用 Ant Design 提供状态核对、更新/移除、二次授权和原请求重试；输入只留当前页内存，不写 localStorage 或自动重发。未知结果需保留此页并重试原 key/body；关闭页面丢失敏感输入后先核对版本，不能假定上一请求未生效。关闭未发送的授权弹窗可重新编辑；已发出的不确定请求保留到核对处理。权限/审计复用原体系。
+
+唯一管理合同为 `api-contracts/openapi/common/lighttick-market-admin.yaml`；不混入普通客户端配置或 Grow 合同快照。用户端只知道所选来源是否启用及凭据是否具备，不接收凭据值。当前本地验收仅合成凭据，无真实供应商网络请求或配置/发布变更。

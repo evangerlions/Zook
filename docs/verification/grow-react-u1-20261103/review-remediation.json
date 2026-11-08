@@ -1,0 +1,367 @@
+{
+  "date": "2026-11-08",
+  "status": "bounded_review_remediation_verified_not_full_U5",
+  "parent_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "remediation_subtasks": {
+    "complete": 6,
+    "total": 6
+  },
+  "frontend": "8c81adc0635403a447fe9fa6de5dbac2ac9a3f26",
+  "contract": "80b89823c4f157a2c772dc5c2a0d377316531322",
+  "backend_candidate": "faa79cf416b74b9a336189d58c35a51615aa2ece",
+  "backend_runtime_changes": "none; existing689bea57 runtime logic reused",
+  "verification": {
+    "grow": {
+      "passed": 43,
+      "failed": 0
+    },
+    "backend_market_and_risk": {
+      "passed": 59,
+      "failed": 0
+    },
+    "clean_static_build": true,
+    "served_assets_verified": 17,
+    "docs_static_checks": {
+      "passed": true,
+      "scope": "static_proposal_corrections_only_not_external_acceptance",
+      "checks": {
+        "canonical_count_21_27": true,
+        "completion_claim_retracted": true,
+        "node_only_plan": true,
+        "all_operations_not_sampled": true,
+        "native_not_browser_substitute": true,
+        "relative_performance_gate": true,
+        "destructive_rollback_pseudocode_removed": true,
+        "post_activation_compensation_required": true,
+        "516_not_parity_signed": true
+      }
+    },
+    "source_browser": {
+      "passed": true,
+      "served_revision": "8c81adc0635403a447fe9fa6de5dbac2ac9a3f26",
+      "chrome_version": "157.0.8103.38",
+      "actual_server_states": {
+        "csv": "available",
+        "eastmoney": "available",
+        "tushare": "disabled",
+        "tencent": "disabled"
+      },
+      "transport_fault_cases": [
+        "503",
+        "enabled_without_credential",
+        "invalid_schema",
+        "offline"
+      ],
+      "fault_cases_do_not_change_server_config": true,
+      "errors_clear_readiness_and_retry_recovers": true,
+      "account_switch_does_not_restore_prior_state": true,
+      "no_token_fields_or_legacy_admin_calls": true,
+      "responsive_widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "http_errors_expected_bootstrap_or_injected": [
+        {
+          "path": "/api/v1/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/api/v1/lighttick/investments/market/capabilities",
+          "status": 503
+        }
+      ],
+      "browser_cleanup_completed": true
+    },
+    "existing_report_browser": {
+      "passed": true,
+      "served_revision": "8c81adc0635403a447fe9fa6de5dbac2ac9a3f26",
+      "chrome_version": "157.0.8103.38",
+      "readonly_existing_grid_report": true,
+      "mobile_table_scroll_is_local_and_data_remains_accessible": true,
+      "bootstrap_before_login": {
+        "console": [
+          {
+            "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+            "url": "http://127.0.0.1:58631/api/v1/auth/refresh"
+          }
+        ],
+        "responses": [
+          {
+            "url": "http://127.0.0.1:58631/api/v1/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "authenticated_console_errors": [],
+      "authenticated_http_errors": [],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "same_database_restart": {
+      "synthetic": true,
+      "database": "grow_web_u1_20261107d1",
+      "sha256": "7d90be1292befa0134d7d1667daba3d0e40435b90c70308eb9ef0c6a9c051aa4",
+      "strategies": 6,
+      "versions": 31,
+      "runs": 16,
+      "definition_receipts": 31,
+      "run_statuses": {
+        "cancelled": 5,
+        "succeeded": 11
+      },
+      "observations": 5,
+      "same_database_restart_preserved_versions_reports_sources_receipts": true
+    }
+  },
+  "checks_and_logs": {
+    "contracts": {
+      "path": ".artifacts/review-remediation-20261108/contracts.log",
+      "sha256": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1"
+    },
+    "risk_check": {
+      "path": ".artifacts/review-remediation-20261108/risk.log",
+      "sha256": "cc89a111ce06ace6d7ef477fe2fd91a00ff0d4d17633da754d3ad22ff5ce3b41"
+    },
+    "line_gate": {
+      "path": ".artifacts/review-remediation-20261108/lines.log",
+      "sha256": "68ebe3b0d210e8b26306e79e6da0e8d16b50d8c0d3e5785c5ad1d84f5fc2a2bb"
+    },
+    "backend_unit": {
+      "path": ".artifacts/review-remediation-20261108/market-risk-unit.log",
+      "sha256": "16488a84791a6143b72246ecbff0de3c0a8e7d8cfe2f77d3ac599056e12a7263"
+    },
+    "grow_tests": {
+      "path": "/tmp/grow-review-remediation-20261108/pinned-unit.log",
+      "sha256": "43ad74bb99125be93cbb6de6fd97a634919a8e08855f64185cd2e83a5799e9d3"
+    },
+    "build": {
+      "path": "/tmp/grow-review-remediation-20261108/build.log",
+      "sha256": "a4fafac6703533db2abb0489995a2b392ace8265e8691002d87ed4905eeda9df"
+    }
+  },
+  "preservation": {
+    "private_backups": "/tmp/grow-review-remediation-20261108",
+    "grow_original_staged_patch_identical": true,
+    "zook_original_staged_patch_identical": true,
+    "preexisting_legacy_python_and_plan_changes": "retained; not executed or included in source commit",
+    "corrected_provisional_docs": "remain uncommitted working drafts; no partial parity or final approval asserted"
+  },
+  "unclosed": [
+    "Personal Tushare secrets and AKShare/BaoStock/minute data are not implemented by a readiness page.",
+    "Valuation/performance, ledger correction/compensation and remaining valid old operations still require implementation or explicit disposition.",
+    "Full516 parity, all-domain synthetic migration/rollback, native/old-client compatibility and other-App off/on mixed P95<=10% not signed.",
+    "Migration rollback change is a design correction only, no new full-domain executable tool.",
+    "Real histories/credentials/models/providers, native devices/readers, long observation and releases not run."
+  ],
+  "screenshots": [
+    {
+      "path": "review-remediation/capabilities-375.png",
+      "sha256": "364e0256d3f5ce5af84e28a0cc93c05d69f56fbeaf61b338ece3526ad2a5c432"
+    },
+    {
+      "path": "review-remediation/capabilities.png",
+      "sha256": "4db8a6b99713dda8f9d09458c93007515330c6e8b169aabd223f526697b1336c"
+    },
+    {
+      "path": "review-remediation/report-375.png",
+      "sha256": "3637b11a2f2cd69a956fffbf4fe9794335366166d8b71b65cd6a1b4351c0af52"
+    }
+  ],
+  "corrected_provisional_docs": [
+    {
+      "repo": "grow",
+      "path": "docs/implementation/hybrid-data-source-strategy.md",
+      "before_sha256": "8f38d983d737bc48d0f611d56ae18f2a16c6bdbfac13f6efe531376b9c8a8ce8",
+      "after_sha256": "22d65bcf5060b4de02efde7a74ff1f5f1d90866ca8d8bbac29ca4b7919d888ef",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/next-steps-tracker.md",
+      "before_sha256": "572125df892a949434e3178e1892b9b52ada6b79d6b7fdbb723af9860bda36c6",
+      "after_sha256": "78b3d685128c6e1c8430559894894fa5783703bed9ebcb001f6f15d69065917d",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/phase2-progress-report.md",
+      "before_sha256": "f2db3b2faaf887ad9abf9e25a8e6cb0dc3f1572380f8eb253e7ca264d084778e",
+      "after_sha256": "706dc020393e9a5e215be15876faadc8304a8325117c169812b2e093542b8a17",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/phase2-web-config-plan.md",
+      "before_sha256": "2449ae746c5aa0894ef715bf52937bae01631fe13d8d633dcd655fe61e02ea55",
+      "after_sha256": "d9cd31f09bee15929a42cb273413cb7ad132539c064aab9756a232aa50b5126c",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/phase3-python-data-service-plan.md",
+      "before_sha256": "92d6faf9ed2c159fc077bcfd83b288f1d4ce97c13141a053f987e931da619827",
+      "after_sha256": "9a1da13ce97c45ced4690268e6f6f0d5b7b7a489dab9a5a3446faa30fd194400",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/source-code-classification-plan.md",
+      "before_sha256": "25dfe0dabca7011f6133ff2a0283702efca74ac4fda1046640f0a59170ea28aa",
+      "after_sha256": "62ba2c05130fc45b9f72fd68b503cca0e6f742b6bd1b9e13a9fb726eb7f8df44",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/tushare-integration-plan.md",
+      "before_sha256": "3ea24760baa88667963f4bbbd0b39c70d5fd7ba2ed90d1ebdc96d767e8a3aef1",
+      "after_sha256": "ef17c0b79d7bc8f85bb0a0b4799f711dad045e816f9eb66cb078a85c7131ad03",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/implementation/user-testing-plan.md",
+      "before_sha256": "7eb79f9e96d40adb44d23494cd8ed69938346b939b2e1c71d43f2ae649afc579",
+      "after_sha256": "75a3b350a34fbe4f47121c372df84ac300ddcd30d8e607130452ddd879f0cb2b",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/backtest-engine.md",
+      "before_sha256": "5b1fb4dc9e44762091319641fed460dde2b55ee314bae51c5ccfbdd566f1214e",
+      "after_sha256": "6ff67eca25c82437f7984ce23b1c02b0da8ba9f55e656d06bbbff49647ed6e69",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/completion-report.md",
+      "before_sha256": "dd0400916897ec7e22d3b8065031ba768defb70d450cb627aec3e63741ecc5fa",
+      "after_sha256": "5439f443117cdba672587dced08ca223470a368b26e193d59bd40fd1674a9ae8",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/full-system-verification.md",
+      "before_sha256": "8af55b6149e6b8fdc590380eb752005e8a78deaf7c5593f26be14b702056611e",
+      "after_sha256": "2070a44e79e9cc7c8efdbe88aad3415798fd1eb7a311eaeccc099e5fe6104401",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/model-acceptance-decision.md",
+      "before_sha256": "544054b71323216343eaa7848864a746992270de382846cc5b4dd35f38a232c7",
+      "after_sha256": "278e880454bac48e9fb3776c94c6b2d385c0d0da775928079c87e57aba09ecd6",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/p2-degradation.md",
+      "before_sha256": "c35e591c953392738e0c9d3232fad56dd783c42ed6160c921d6b7a51ff11e130",
+      "after_sha256": "b439ddba96b58728204d4a0f52ffdc4b1aeb12816ee38eeda112d46476ac05a7",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/popup-performance.md",
+      "before_sha256": "f3d8bf291219f142eb3704a7b16dd3e7ba3d5ab9542f156e08f090205b099365",
+      "after_sha256": "ea28f85b2592ce176b6c7e341f6c8e82b3cc5bd8a4222ff0950099d184926085",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/provider-decision.md",
+      "before_sha256": "36f7de8599d97f758f852e71927f96e751bdd5d4b47f47e5e69e66d35cdd54d5",
+      "after_sha256": "c13f68c3629e4919ae49655fd1814644ba3882a1f09fd7bba9e3f35d64aa4635",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/README.md",
+      "before_sha256": "32d58e861743a64da20318d3c2d76d41bd8ba9c1c15e4c7cc868ead06c08efa5",
+      "after_sha256": "a9e3bd6a0377381f6998e88fd5551777b0e8e7362854ecd7a3f129f58a662acb",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/realtime-monitor.md",
+      "before_sha256": "70de6f6b57613d38663f11ef06915f2e471e6b8ea87fc69bc564d2476bb5db4b",
+      "after_sha256": "ca7afbb7901f58aaa1f00db6cc14b96e3238b792c6e25422ce5c5e2b897df03e",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/realtime-provider.md",
+      "before_sha256": "0d9511bee29f2df69a975e38c3741ee1e9099454ee78e4aaff33a4b4b4244a75",
+      "after_sha256": "5e975934260ccb907300eb8b0e18217fce003c6fce6ee8709a19d40d4a9a3785",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/source-equivalence-decision.md",
+      "before_sha256": "d3e2dee31a92744d2ccf440c0a4ae0865b792f3ed5e45f2832c57b3d7a0aae84",
+      "after_sha256": "7f311fbfbd381aa316b0c5703c52a498997961dfb1aecb0b4ae3c7b611138843",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/strategy-experimentation.md",
+      "before_sha256": "3f64637bf95c903672e07dde5f4fcf823d1a03ae846981b6c88942cd53ddde1b",
+      "after_sha256": "f8327353df1f238769914a052c8464eba4b9f9b77f0cfd8382f27ac2b417b9a2",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "grow",
+      "path": "docs/verification/end-to-end-20261107/unified-verification-framework.md",
+      "before_sha256": "4bb0ce7dd48c34809c5afd05da20e957439891189db077ca8c525a8eb519154f",
+      "after_sha256": "c0a0f456dc8c0d247a759d492e6bdf1ae8b54b219558bfbc033aa0a2bc7e1519",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "Zook",
+      "path": "docs/verification/grow-react-u1-20261103/u0-baseline.md",
+      "before_sha256": "18043c87b31bca48074455a0014d9db0a472f43af89b062d1ef035101eed59a4",
+      "after_sha256": "69b1ed8985b80893f5e8205bb641e1bc02d59aff500888624d1c797762e0cf51",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "Zook",
+      "path": "docs/verification/grow-react-u1-20261103/u5-investment-react.md",
+      "before_sha256": "300c76ecc2e0720e3dfb99620419e5aa935d07f17c7914bf354c7c40ea52e3be",
+      "after_sha256": "6ef8bd55d8fdbc886f30537b9e2d938f030a20929ac144ebde788fd3301cf507",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "Zook",
+      "path": "docs/verification/grow-react-u1-20261103/u5-ledger-contract.md",
+      "before_sha256": "115558375d23bf955705221451ee378a956de758dfdfeeccbc72b72669efa0bb",
+      "after_sha256": "fc9b2170ea6214282688e41eed304cec70e0a5aaaac33e0752d006b519c98d0f",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "Zook",
+      "path": "docs/verification/grow-react-u1-20261103/u5-migration-authorization.md",
+      "before_sha256": "51a3f7497f80ff0a91c1f3754108e7b47d3fda3da47e345c0231a032933f0f77",
+      "after_sha256": "72734d778316c349e3badabaacf497dedf3b93dca0a4c1893ed63e54756419c1",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "Zook",
+      "path": "docs/verification/grow-react-u1-20261103/u5-real-device-model.md",
+      "before_sha256": "5bcb78843ab6f00f90d1d1a712d0b341afbd9775769ee80a2c2d82b5f45cb066",
+      "after_sha256": "a10dfe0871d561aaf9bfb0d90b8ccc5074f462b55086dfe478acafe2e48de70d",
+      "still_uncommitted_draft": true
+    },
+    {
+      "repo": "Zook",
+      "path": "docs/verification/grow-react-u1-20261103/u5-release.md",
+      "before_sha256": "7e2408a65ff9881a3da9f0b49c258bc77d7c63be6b64f988f75f7abe566eab48",
+      "after_sha256": "acfb652599b655f149d6384a35c59e752d72b5361e8cfefdab3ef53445e7d93f",
+      "still_uncommitted_draft": true
+    }
+  ]
+}

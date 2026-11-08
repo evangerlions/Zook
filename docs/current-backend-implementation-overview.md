@@ -1,12 +1,22 @@
 # 当前后端实现概览
 
-## Grow H5 存储补充（2026-11-02）
+## LightTick 原生学习、知识与回看（2026-11-04，本地候选）
 
-Zook 内的 `services/grow` 支持 PostgreSQL 内容后端：账号记录、规划、课程正文和不可变版本
-使用同槽位数据库的独立 `grow_*` schema；每个 Grow 账号继续隔离数据空间。
-这是现有 Python H5 的兼容承载，并未合并 Grow/Zook 账号或改变原生 LightTick 的数据权威。
-旧服务的历史账号、数据和配置保留不动；本次只接通本地新版供验证。
-操作及验收见 [Grow H5 部署](grow-h5-deployment.md)。
+U1–U4 本地工程切片已验收。正式课程路线/阶段/不可变版本、私人学习历史、位置/明确学完及兼容进度由 Zook 原生承接；AI、文本文件、资料采集复用既有 worker，有预算、取消、租约/fence、恢复和显式采纳。旧镜像身份必须冻结/导入/对账/激活后切换，不恢复 Python 或独立 Grow 服务。
+
+知识/认知有 CAS、原请求回执、历史与精确来源；统一回看只聚合本人已保存/确认事实，分别统计学完、行动/任务完成、执行和自述反馈，不由数量推断能力。Grow 提供完整表单与授权导出，双端提供可信 Web 接续入口。平台/产品/全 App 删除共用领域表清单，文件物理删除由既有 worker 处理持久 outbox，拒绝迟到上传确认；不保证立即擦除离线设备或改变备份保留策略。
+
+085–091 已在专用 localhost PG 与合成账号验证，Chrome 八组及双端适用专项通过。导出/投影有明确容量上限，超限拒绝；分块迁移、旧专题逐行为等价、金融/混合负载及真实模型/真机/长期/真实迁移/发布仍独立待执行。见 [U4 证据](verification/grow-react-u1-20261103/u4-review-cleanup.md)。学习/知识新实体均不进入旧 task-only sync。
+
+投资 U5 正在实施：已固定旧纯记账算法 11 组黄金向量，Node 独立 60 位十进制上下文与边界测试；新标的/期初账户采用 owner CAS、精确 NUMERIC 和不可变期初关系。已接成交/现金命令、领域终态回执、现有 worker 事务外核算与 CAS/fence 提交，正式流水精确 NUMERIC，React 明确核对/未决恢复/取消与未估值快照。行情、研究和回测仍未交付，U5 整项未勾选。内部已补四种 Node 日线 adapter、指标与内置回测依赖（47 项专项、全量 unit 2420 通过/1 跳过）；日线部分现已接公共 API、精确不可变快照、平台配置/单值秘密和既有 worker，Grow 可在无资产账户下导入/读取与核对历史资料；完整研究/规则/筛选/预测/监控、复权与正式回测页面仍未交付，不计整个 U5 完成。
+
+## Grow React Web 首批实现（2026-11-03，本地候选）
+
+Grow沿用LightTick appId/公共认证与`/api/v1/lighttick/...`，现有Web进程可默认关闭地承载固定SHA/digest静态包，无独立Grow服务。React源码保留Grow仓库，已接记录、手动基础计划、今日任务、AI 规划会话、共享行动完整字段/层级/复盘和目标审阅续排；正式学习、知识与回看另见上节；复杂投资/研究专题仍按 U5 推进，旧Python部署不恢复。
+
+本轮修复task sync状态/变更/回执的事务边界，并保持冲突/拒绝原结果重放；不把task-only push扩大为全实体同步。共享Web代理使用可重放请求体，保留POST认证401及二进制语义。通用 LightTick REST 回执补齐资源类型/ID 匹配，跨目标/任务复用同 key 不再误回另一资源的成功回执。字段合同和原生版本不改变。
+
+实际测试与未完成范围见[首批报告](verification/grow-react-u1-20261103/README.md)及[同步覆盖表](verification/grow-react-u1-20261103/sync-coverage.md)。未发布、未迁移真实数据；历史账号的真实权威切换及全专题等价尚未验收。
 
 ## BodyLog 小组邀请码闭环（2026-11-01）
 
@@ -895,3 +905,25 @@ PlanningSession 新增同一 AI 草案逐项编辑（PATCH draft），保留会�
 新增 `health/close-sessions` 和迁移 083，使用本设备签名关闭持久化创建 UUID；支持创建前取消及响应丢失后的撤销，已撤设备仍可关闭自己的会话。会话/关闭同账号→主体事务锁串行化，普通账号 Bearer 和不可变公钥绑定仍必需。协议变更详见 README_API；不新增医疗内容同步。iOS 已用原生 CryptoKit、Keychain 和真实本地 HTTP 联调，不等同于真机或发布批准。
 
 BodyLog group admission follow-up: deterministic stale-pending interleavings now recover the same-account membership after a peer reaches capacity/quota. The release gate invokes the isolated group PostgreSQL runner as its own step (requires initdb/pg_ctl/createdb), rather than passing the retention database connection into that suite.
+
+
+2026-11-04 LightTick U3 候选增量：正式课程路线/阶段/不可变发布版本与课次映射已新增；旧进度可从原生显式完成事实投影。学习 AI/授权文本文件/HTTPS 资料在现有 LightTick worker 和共享队列内执行，持久预算/租约/fencing/取消/重启扫描；AI 产物须显式采用/发布。此处为工程实现，联合客户端、浏览器及原任务表验收独立记录，不表示 U4/U5 或真实迁移/生产发布完成。
+
+U5 后续研究档案切片：新增 owner＋instrument 研究档案、明确长字段与资料/观察证据、不可变行情来源版本/摘要；无需资产账本，可选账户引用。独立 CAS/原请求、历史分页、归档/恢复与本人导出；095 纳入平台共用删除，不扩展旧 task sync。React 与真实 PG/Chrome 验收单独留证，完整规则/筛选/预测/监控/回测和迁移/性能门禁仍未完成。
+
+2026-11-06 个人模型设置切片已通过本地验收：普通用户的配置/原请求回执、服务端独立私有 KV 主密钥＋AES-GCM 账号加密、先测未保存输入/测试已保存配置、持久连接测试与取消及 React 三步设置页已接入。课程和规划任务冻结模型选择并通过同一 dispatcher；没有静默换源/模板兜底。真实 PG/Redis、Chrome、进程重启与旧功能回归见[个人模型验收](verification/grow-react-u1-20261103/personal-model.md)。研究三类 AI 闭环见后续增量证据，其余通用 AI 调用、完整旧设置/GitHub 存储仍待迁移，不能代签全部 U5；21/27、无真实数据切换或发布。
+
+个人 GitHub 仓库设置已新增账号加密、仓库/分支只读检查、CAS/原请求和持久测试/取消，复用 LightTick worker；default 明确对应 Zook 原生内容。旧课程的 GitHub 内容读写、发布和来源映射尚未接入，本切片不能关闭全部存储等价门禁。OpenAPI 与 README_API 同轮维护；只使用合成仓库/Token 验证，不读取真实历史或调用真实 GitHub 仓库。PG/Redis、Chrome/重启和风险基线证据见[GitHub 设置与基线验收](verification/grow-react-u1-20261103/github-and-risk-baseline.md)，完整任务仍为 21/27。
+
+研究 AI、资料导读、研究报告已新增独立持久任务、冻结研究/标的/行情/模型及场景版本、既有 worker 和个人模型 dispatcher 接线，生成后待审、明确采用为独立分析成果，不写入交易或覆盖原事实。React 页面、真实 PG/Chrome 和联合回归已通过本地验收，见[研究 AI 证据](verification/grow-react-u1-20261103/research-ai.md)；外部真实模型质量、其余投资专题与完整 U5 保持待执行。
+
+2026-11-07 独立研究资料切片：新增 owner 资料 ID/不可变历史/内容摘要、领域 CAS 和持久原请求、分页读取及归档恢复；研究可固定跨标的复用的资料版本，旧客户端省略引用字段保留原引用。研究 AI 冻结原文/版本，授权导出和共用删除覆盖新资料表（099）。React、真实 PG/Chrome 与旧十三组验收通过，四项子任务已关闭；资料/范围/切号恢复和保留风险见[资料验收](verification/grow-react-u1-20261103/materials.md)。完整 U0/U5 仍未代签，21/27。
+
+2026-11-07 预测/反馈/日线监控工程接线：新增 observations 合同和101迁移；不可变预测与原始基准/来源版本、1/3/5/10后续交易日的持久核对、公司行动未确认时不计命中、版本化复盘和只读概率校准。日线监控复用现有worker恢复扫描、明确供应商/唯一来源、冷却/去重/站内事件已读/停止屏障，无资产账户也可使用；不执行任意代码或自动交易。长任务有预算/取消/租约/恢复，导出与共用删除覆盖。React/PG/Chrome最终验收已通过（后端2517/PG联合22/Grow35，三组新Chrome及旧13组等回归、同库重启/产物校验），见[预测监控证据](verification/grow-react-u1-20261103/prediction-monitor.md)，不代表私人HTTPS实时报价/成本偏离、全账户简报、策略回测或完整迁移已完成；主任务21/27不变。
+
+2026-11-07 策略/持久回测工程接线：strategies合同与102迁移，完整受控参数CAS/不可变版本、同输入比较与最多16组合，现有worker受限计算线程/取消/租约恢复，报告与冻结事实分页。原始日线缺少历史执行条件时明确incomplete，不自动补正常。React和最终联合验收已通过，见[策略验收](verification/grow-react-u1-20261103/strategies.md)：后端2525/1既有跳过、PG23、Grow39及Chrome三组/旧13组通过，同库重启摘要一致。仅关闭有界策略4/4，不代签完整U5、估值/纠错、迁移或发布；主任务21/27不变。
+
+2026-11-08追加式账本纠错切片3/3验收通过：103幂等迁移、不可变目标/摘要及补偿链、同账户FK/NUMERIC列、原key/body/CAS与既有worker。schema2显式协商完整历史，同日替换沿用原目标核算顺序；React位于plan/LightTick-Web。后端2532/1既有跳过、PG/Redis25、风险181、Web48与最终Chrome通过，17资源/同库重启摘要一致，见[Plan验收](../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md)。只为9条旧操作补部分证据；估值/绩效、期初等旧功能、逐操作等价/全域迁移/原生兼容/混合P95及真实专项发布仍未完成，不关闭21/27剩余门禁。
+
+
+2026-11-08 G2.2估值/绩效有界切片4/4验收：portfolio合同/104幂等迁移、基金净值/账实通知CAS历史、期初预览及显式采用、不可变估值和当前过期判断、扣净入金绩效/有界回撤接既有worker固定计算线程及plan/LightTick-Web。v2冻结实际交易日历/算法与精确输入，历史v1兼容保留；未决通知触发旧schema升级提示。后端2548通过/1既有跳过、PG/Redis26、风险197、Web51、Chrome两专项及旧13故事通过，17实际资源/同库重启摘要一致。专用领域/Web类型通过，扩展应用132条既有错误无新增，不能称全应用类型通过。见[Plan证据](../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md)。13条旧操作仅追加部分证据，516逐行为/全域迁移/原生兼容/其他App混合P95及真实专项发布仍待办，主进度21/27不变。未迁移真实数据或发布。

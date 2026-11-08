@@ -1,0 +1,481 @@
+{
+  "date": "2026-11-06",
+  "status": "research_AI_guide_report_slice_verified_not_full_U5",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "slice_subtasks": {
+    "complete": 3,
+    "total": 3,
+    "file": "docs/plans/grow-zook-native-web/research-ai-subtasks.md"
+  },
+  "implementation_and_contract": "d6f92c0bf53bd92fbcffdba523a88909093b7adc",
+  "final_backend_fix": "7ff1a3481cb598bf443a1737b1c0cbb4261a7155",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2",
+    "contract_revision": "d6f92c0bf53bd92fbcffdba523a88909093b7adc",
+    "source_dirty": false,
+    "files": {
+      "index.html": "993a85b17c0984eee4f5023894299ac9022f51abceeb60a48cf5bca9044b0585",
+      "assets/ActionsPage-DZIM91qt.js": "8aed3a99fe6913bbfe01114bfddcf58045ec0188963c36295a61032edb62974f",
+      "assets/GoalsPage-CCj7__ry.js": "eb29c0dc785937b42282936a327ed328b34526fb82dc7d48306bdb15d266a919",
+      "assets/InvestmentPage-BcajLccj.js": "3ec8d52f7ed74e5f1953a2fb5ee63ca951e1170ef0feeeb0964a5b6834d9e4e4",
+      "assets/LearningPage-UXcNG-XH.js": "f353af72f6449624b99dd28a10f9224bcc304332f443c34576c4a09f873283de",
+      "assets/PendingNotice-BJn5DlFP.js": "1d59789ab084bfe41e1ac3c1f19447d044b6ff92d306a49739f5ffc1c456d632",
+      "assets/PlanningPage-CPpQz8FF.js": "821f201d540c16dda2e426fec9b7df78315d2ca2737ab2644dbcf22e9b1e10a2",
+      "assets/PlansPage-4iFRTEdY.js": "1bd154bbd8d673bd79d231149865e67142a7cec002769b0fc62ac213260f5240",
+      "assets/PracticePage-RzqX1CBp.js": "4582d122fa827e5c8e29ca62cca64a796a314c88d94f24f9ed7e1aaefff917f4",
+      "assets/RecordsPage-u5iZ3rJp.js": "985db1a92cf829f2418fea9301aab576b7e0e3d40916081da0a0a70e66959572",
+      "assets/ReviewPage-FBMKSvGN.js": "8d63f494d71a1e8f77636fdb42ee6f7ee53cb0462f8792fca762efaaebe60ec7",
+      "assets/SettingsPage-BTSW5Y3e.js": "5c52b2d5a82650c8588899dc9db89cdc9ad40e333b37ab59eaa325ad0e77caa2",
+      "assets/TodayPage-rAizcZn-.js": "5d1dd6e849c0c7542aadd219c3465e1bf3b9aa2d1b40a853e86e78181325e408",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index-C0m2P388.css": "5463563c1b2f15ddb4f5f60e2b55040a2b312cf8b6983c213516ccb8d5e74be3",
+      "assets/index-DDH7H2Da.js": "a353aa8a35b6bcbcd92d53843b871b1656fe24263cbcf2c4cfd3277bfa685f41",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "migration": {
+    "path": "src/infrastructure/database/postgres/migrations/098_lighttick_research_ai.sql",
+    "sha256": "c9853d0d9e2b8318c6e58890ce6101e8e6ebc8e5fcdb96d15c88e93e3d18a6b8"
+  },
+  "checks": {
+    "backend_full": {
+      "passed": 2458,
+      "existing_skipped": 1,
+      "failed": 0
+    },
+    "research_AI_domain_HTTP": {
+      "passed": 5
+    },
+    "joint_domain_research_baseline": {
+      "passed": 11
+    },
+    "PG_Redis_joint": {
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    "risk_focused_unit": {
+      "passed": 106
+    },
+    "grow_unit": {
+      "passed": 28
+    },
+    "Chrome_main": {
+      "passed": true,
+      "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2",
+      "research_id": "inv-research-ai-efc15f479552",
+      "account": "course9@example.com",
+      "lost_response_exact_original_after_reload": true,
+      "analysis_guide_report_explicit_adoption": true,
+      "selected_personal_model_used": true,
+      "no_account_required": true,
+      "cancel_fences_late_results": true,
+      "provider_failure_no_fallback": true,
+      "source_change_refuses_result_and_adoption": true,
+      "model_change_refuses_result": true,
+      "original_facts_not_automatically_modified": true,
+      "export_no_secret": true,
+      "quota_refusal_keeps_draft_and_explicit_release": true,
+      "no_browser_secret": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "legacy_first_attempt": [
+      {
+        "story": "u2",
+        "exit": 0
+      },
+      {
+        "story": "learning",
+        "exit": 0
+      },
+      {
+        "story": "records",
+        "exit": 0
+      },
+      {
+        "story": "plans",
+        "exit": 0
+      },
+      {
+        "story": "actions",
+        "exit": 0
+      },
+      {
+        "story": "practice",
+        "exit": 1
+      },
+      {
+        "story": "review",
+        "exit": 0
+      },
+      {
+        "story": "course",
+        "exit": 0
+      },
+      {
+        "story": "investment_accounts",
+        "exit": 0
+      },
+      {
+        "story": "investment_ledger",
+        "exit": 0
+      },
+      {
+        "story": "market",
+        "exit": 0
+      },
+      {
+        "story": "market_admin",
+        "exit": 0
+      },
+      {
+        "story": "research",
+        "exit": 0
+      }
+    ],
+    "legacy_final": [
+      {
+        "story": "u2",
+        "passed": true,
+        "source": "regression-final/u2/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "learning",
+        "passed": true,
+        "source": "regression-final/learning/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "records",
+        "passed": true,
+        "source": "regression-final/records/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "plans",
+        "passed": true,
+        "source": "regression-final/plans/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "actions",
+        "passed": true,
+        "source": "regression-final/actions/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "practice",
+        "passed": true,
+        "source": "regression-final/practice/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "review",
+        "passed": true,
+        "source": "regression-final/review/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "course",
+        "passed": true,
+        "source": "regression-final/course/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "investment_accounts",
+        "passed": true,
+        "source": "regression-final/investment_accounts/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "investment_ledger",
+        "passed": true,
+        "source": "regression-final/investment_ledger/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "market",
+        "passed": true,
+        "source": "regression-final/market/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "market_admin",
+        "passed": true,
+        "source": "regression-final/market_admin/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      },
+      {
+        "story": "research",
+        "passed": true,
+        "source": "regression-final/research/result.json",
+        "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2"
+      }
+    ],
+    "runtime_restart_and_truncation": {
+      "passed": true,
+      "platform_truncated_response_rejected": true,
+      "same_adopted_analysis_guide_report_after_restart": true,
+      "frozen_old_version_retained": true,
+      "current_research_revision": 2,
+      "no_model_call_for_reads": true
+    },
+    "authorized_export": {
+      "passed": true,
+      "confirmed_artifacts_only": true,
+      "count": 3,
+      "all_three_kinds": true,
+      "successful_unadopted_excluded": true,
+      "failed_cancelled_excluded": true,
+      "envelope_sha256_valid": true,
+      "managed_model_keys_excluded": true
+    },
+    "personal_model_regression": {
+      "passed": true,
+      "unsaved_test_no_activation": true,
+      "lost_test_and_save_response_recovered_by_receipt": true,
+      "exact_original_body_and_key_after_secret_reentry": true,
+      "wrong_reentered_secret_not_sent": true,
+      "no_plaintext_credentials_in_browser_storage_or_response": true,
+      "live_cancel_fenced": true,
+      "settings_CAS_preserves_input": true,
+      "actual_course_worker_selected_model": true,
+      "actual_planning_selected_model": true,
+      "truncated_response_rejected_no_fallback": true,
+      "explicit_clear_to_platform": true,
+      "widths_320_375_768_1024": true,
+      "page_errors": [],
+      "synthetic_account": "course11@example.com",
+      "course_work_id": "work-7e6fec230465c394bbcaf175b2f30a2c0f5a5d82",
+      "planning_session_id": "planning_bd6b83cdbc054440890ee405a49542b2",
+      "served_revision": "1827a52ab5fe18bf3bb863fa8ae8c65ded64012b"
+    },
+    "GitHub_regression": {
+      "passed": true,
+      "account": "course4@example.com",
+      "unsaved_test_no_activation": true,
+      "lost_save_response_receipt_recovery": true,
+      "retained_token_without_echo": true,
+      "CAS_preserves_local_input": true,
+      "exact_original_after_token_reentry": true,
+      "wrong_token_not_sent": true,
+      "running_cancel_fenced": true,
+      "failed_read_does_not_save": true,
+      "explicit_native_clear": true,
+      "no_token_in_storage_or_response": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "corrupt_baseline_blocks_without_deleting_raw": true,
+      "served_grow_revision": "1827a52ab5fe18bf3bb863fa8ae8c65ded64012b",
+      "served_revision": "1827a52ab5fe18bf3bb863fa8ae8c65ded64012b"
+    },
+    "Chrome_pre_capacity_fix": {
+      "passed": true,
+      "served_revision": "1827a52ab5fe18bf3bb863fa8ae8c65ded64012b",
+      "research_id": "inv-research-ai-3b0c110b8de6",
+      "account": "course8@example.com",
+      "lost_response_exact_original_after_reload": true,
+      "analysis_guide_report_explicit_adoption": true,
+      "selected_personal_model_used": true,
+      "no_account_required": true,
+      "cancel_fences_late_results": true,
+      "provider_failure_no_fallback": true,
+      "source_change_refuses_result_and_adoption": true,
+      "model_change_refuses_result": true,
+      "original_facts_not_automatically_modified": true,
+      "export_no_secret": true,
+      "no_browser_secret": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "Chrome_input_capacity": {
+      "passed": true,
+      "served_revision": "6243f874553f1eaca1f19d4277d771efd3afb4a2",
+      "actual_http_status": 413,
+      "zero_jobs_created": true,
+      "saved_sources_unmodified": true,
+      "draft_kind_preserved": true,
+      "explicit_release_enables_editing": true,
+      "page_errors": []
+    },
+    "legacy_final_on_previous_frontend": [
+      {
+        "story": "u2",
+        "passed": true,
+        "source": "regression/u2/result.json"
+      },
+      {
+        "story": "learning",
+        "passed": true,
+        "source": "regression/learning/result.json"
+      },
+      {
+        "story": "records",
+        "passed": true,
+        "source": "regression/records/result.json"
+      },
+      {
+        "story": "plans",
+        "passed": true,
+        "source": "regression/plans/result.json"
+      },
+      {
+        "story": "actions",
+        "passed": true,
+        "source": "regression/actions/result.json"
+      },
+      {
+        "story": "practice",
+        "passed": true,
+        "source": "practice-canonical/result.json"
+      },
+      {
+        "story": "review",
+        "passed": true,
+        "source": "regression/review/result.json"
+      },
+      {
+        "story": "course",
+        "passed": true,
+        "source": "regression/course/result.json"
+      },
+      {
+        "story": "investment_accounts",
+        "passed": true,
+        "source": "regression/investment_accounts/result.json"
+      },
+      {
+        "story": "investment_ledger",
+        "passed": true,
+        "source": "regression/investment_ledger/result.json"
+      },
+      {
+        "story": "market",
+        "passed": true,
+        "source": "regression/market/result.json"
+      },
+      {
+        "story": "market_admin",
+        "passed": true,
+        "source": "regression/market_admin/result.json"
+      },
+      {
+        "story": "research",
+        "passed": true,
+        "source": "regression/research/result.json"
+      }
+    ]
+  },
+  "static_baseline_correction": {
+    "actual_foreign_schema_count": 221,
+    "excluded_metadata": "GeneratedPublicContractNames",
+    "all_actual_schema_payloads_unchanged_against": "bfeb2e6f"
+  },
+  "artifact_root": ".artifacts/research-ai-20261106",
+  "artifact_sha256": {
+    "full-unit.log": "550d3f8e5ff0dd2a558b5b2212ffdfbb538a997a918e2886157161d37d2d7186",
+    "full-fixed.log": "7e24369bef5fb3b4bda5b11e1e66d5f42b7eb41b26786f6fc1f435d8e0b80691",
+    "full-final.log": "9aaedc20be8857e47b8b2772899b16eb9dcb1b4252c7855780ab5227c54fddc4",
+    "full-accepted.log": "c7995c2498d54d678c80d85a2179b0043e2cebdc9efde40d20b0aff1a3ef7e0d",
+    "ai-guard-verified.log": "9076e0867f064dc1e4c33cca3c4bdfb58b8cd140d56b42d4b34476343b41783a",
+    "domain-accepted.log": "9c6e58108b318d6cb65ea75c3e2e6ad4e321aea97af79c6fd85d537687cfb5dc",
+    "http-scene.log": "dd82b6882b2a1aaec0b5e7f15ed29bd557e2440030f54cc06d03ba1c81241359",
+    "types-final-accepted.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lint-close.log": "1143f3f38a869baf4d595af8e5d3e6fede1cea1b22ae64f4715b992a8925c3ee",
+    "check-accepted.log": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1",
+    "lines-accepted.log": "c6f529a17e09c6ce8e8cdbaf3f66fd08f3e48bdb643159f714fe733de0e6f831",
+    "pg-joint.log": "55a28a9b78d6dbe4baca9970c02ebeea3c442d647cb75e3f82fce0037044556a",
+    "risk-unit.log": "dba5c252917b69bc73850c6df4bbb7b4e0464929734e4348f6f5f06b1bbeebb0",
+    "grow-unit.log": "2626279ee567502d976b357154e77c5179ec66f9505be634a69e7f71848808db",
+    "grow-build.log": "3c0a4e6db9da3afae9ff517639f7ac2a26d9bfdf8d4ca072962af90c5109eb40",
+    "front-types-candidate.log": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c",
+    "import.log": "a933443c72acf3c9e522cf4d080e87800c98f82162ef7d486e9ef660159fc8fd",
+    "browser-first.log": "eaabbdae6245e320952397ebd40d1f85284ad3c799741db3d33fec5f08a634b7",
+    "browser-second/result.json": "d912cec8cf642dfd404acf8d37d2fc3ec61442830572af93a39548db0ae11e1e",
+    "browser-canonical/result.json": "c8820c2fed0d1b18995042919fab2e036a9baaa5cab30579930a988aa4e15185",
+    "browser-final/result.json": "266d85a21817cb5a94d8fd43557220e044c1080be0ceed71938dcb2129d21883",
+    "browser-final/research-ai-desktop.png": "a4e6e48696ba824e0e94b761cf5d65fab474b08cb7ee629f298cfc86a0128d7a",
+    "browser-final/research-ai-320.png": "855be9422dc5fc13f7d21fa6310a3b0ec78c1e82b0b354461adecab2ac2c6273",
+    "regression/results.json": "18e34acd7cde7158fff296ea590b05f64e63df4d8bb0119ebd3751695d2fc985",
+    "regression/practice.log": "497e4460ef73401e7cefafb354c99e67cf995680cc001efab47890b79372757a",
+    "practice-canonical/result.json": "3b917f8a9b3a532a1ae02502b80b32f65c9110ef5e0677f0e97c007159397c3d",
+    "runtime-proof.json": "c90e3d1c71392b728ced0133ef9da5ea5fc9a860a0a391d07e7d53d0de2fef2f",
+    "export-proof.json": "5effbcdd5c6af04f7eb0ce717c97ff36cc99e3b185a1f9bfaf97f261e3265caa",
+    "model-regression/result.json": "30a0827aac77aaa0552f8a65dfd6372717c1dd95fdbd7dab0cadb27df91484eb",
+    "github-regression/result.json": "72309fdb9245a0f2b05f05f2cc725c5d079c91c96b252bafe3f8fc04c7e72b63",
+    "grow-index-final.patch": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f",
+    "grow-build-final.log": "6fc9c8444ca24f0930b54cab0340a72f07a2bdf89500f24ddd79dd713a616c1e",
+    "grow-unit-quota.log": "0179dce16c40dafdbc75a50cb6e82d89391d23998edb6891add6ca82c182086a",
+    "grow-types-quota.log": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c",
+    "browser-quota-final/result.json": "2d2908afc450a8f26eb2c17527c518fec32818cb81d4bb4042df6318783b450d",
+    "browser-quota-final/research-ai-desktop.png": "361c16327a512045a16874754558880d89096f778ebf35515485e087b29ebb80",
+    "browser-quota-final/research-ai-320.png": "c221a9275875c34ad076ea5a4d3b2686bad708f898e583ea24cb0a24df310ce4",
+    "capacity-413.py": "64cde100c7ad77fa8b388220b01e831e0c45e536c93142fd6570a332b248a165",
+    "capacity-413/result.json": "031f05a2e9dbee1b1108fca3e9c830ee7911a7b153d699a6cf16fa1b49153590",
+    "capacity-413/refused-retained.png": "3cfec07ae413a141dce0d925bd0f70878e9a1122dc3ea37cb217dd252ef90d77",
+    "export-quota-final.json": "5f13d9f0b6c85314e8373b49f91455880f4ade164604b0655e0478c52966bc89",
+    "regression-final/results.json": "42a963671973eb8eb5246997b94a8a830383122b27fa492d44272d1de7a750d6",
+    "contracts-doc-final.log": "aba8532d1579303a617ea282bc8ea276bfcf8987683f59707d4dbac225ff75cc",
+    "grow-index-verified.patch": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f",
+    "regression-final/u2/result.json": "378746151dfe450a521f89e0107713e3b523031123712078eabfa20e1d53250d",
+    "regression-final/learning/result.json": "fef3add74aa377cee73d8dc0dcbc94c1a8ca66c3f56e7710a34187a7abf97829",
+    "regression-final/records/result.json": "9ded9f78d695eb9d1a132521729db9b3ce8bbdee375d330f9799ce6746d68c2c",
+    "regression-final/plans/result.json": "baa529ade3a986fed7f3d63c14da00ee37ddb1347b88b273f362993161ec0744",
+    "regression-final/actions/result.json": "9534b49d73202a3a591b24fd2786acdf81cd2915f85130db72734a19f0ff25c3",
+    "regression-final/practice/result.json": "4c22353510210df0a604f1dc11d000dd1b11aed4804e1605db89457de22dbe3d",
+    "regression-final/review/result.json": "687b50bdcccf1882cd93338712afdae97a00281ce2bd0daa0081e68a5ab21eb7",
+    "regression-final/course/result.json": "0b8a42d1d6cdfbc548a905356a8b192b3dbedb796be5ae6621b7cc7da7a51400",
+    "regression-final/investment_accounts/result.json": "0785c0294e4ff418017c22ef1cb689a62c46142415885209de7b74800fb1b7fe",
+    "regression-final/investment_ledger/result.json": "d7f32872c65c44fc2b9984b52a8c6277114983ec5e4d6edb39e05d88d7c438a3",
+    "regression-final/market/result.json": "8e34b26a439d7b51b4de021429b4998b649a22aece3a29eb289bee6e7b0d8a37",
+    "regression-final/market_admin/result.json": "0c5cd43587e1823627aac0f429b959b7934e9376a93e5df783e88eb47ed20865",
+    "regression-final/research/result.json": "d22eefccabf37d6aa222b00381cc7ecf3af3491184f2576b03176fbc4053b0a1",
+    "risk-check-closed.json": "d7dd709cf52cb2c55287d1323df70930c32b2e5c54964b0f8a4ae1ed0508768f",
+    "lines-closed.log": "c6f529a17e09c6ce8e8cdbaf3f66fd08f3e48bdb643159f714fe733de0e6f831"
+  },
+  "preserved_existing_grow_index_sha256": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f",
+  "local_runtime": {
+    "url": "http://127.0.0.1:58631/grow/investments",
+    "HTTP_pid": 91554,
+    "database": "grow_web_u1_20261106a1",
+    "isolated_PG_suite_database": "grow_web_u1_20261106a2",
+    "postgres_port": 58630,
+    "redis_port": 58632,
+    "synthetic_account": "course9@example.com",
+    "all_model_calls": "deterministic_fixture_only"
+  },
+  "real_history_read": false,
+  "real_provider_called": false,
+  "real_migration_executed": false,
+  "dev_online_released": false,
+  "remaining": [
+    "legacy_AI_relay_and_other_callers",
+    "materials_rules_screening_prediction_monitoring_complete_backtests",
+    "other_settings_GitHub_content_storage",
+    "all_module_migration_compatibility_mixed_P95",
+    "real_model_quality_devices_accessibility_long_window_real_migration_release"
+  ],
+  "verification_candidate": "e5d038ba1b71b988e7794241fa83a03b349499cc"
+}

@@ -1,0 +1,675 @@
+openapi: 3.1.0
+info:
+  title: LightTick independent research materials
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-materials
+  description: Versioned owner research sources
+paths:
+  /api/v1/lighttick/investments/materials:
+    get:
+      operationId: listInvestmentMaterials
+      summary: listInvestmentMaterials
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - &id002
+        name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: include_archived
+        in: query
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/materials/{id}:
+    get:
+      operationId: readInvestmentMaterial
+      summary: readInvestmentMaterial
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - &id001
+        name: id
+        in: path
+        required: true
+        schema: &id010
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+    put:
+      operationId: saveInvestmentMaterial
+      summary: saveInvestmentMaterial
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - *id001
+      - &id003
+        name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentMaterialWrite'
+  /api/v1/lighttick/investments/materials/{id}/versions/{revision}:
+    get:
+      operationId: readInvestmentMaterialVersion
+      summary: readInvestmentMaterialVersion
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - *id001
+      - name: revision
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/materials/{id}/history:
+    get:
+      operationId: readInvestmentMaterialHistory
+      summary: readInvestmentMaterialHistory
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - *id001
+      - *id002
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/materials/{id}/references:
+    get:
+      operationId: readInvestmentMaterialReferences
+      summary: readInvestmentMaterialReferences
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - *id001
+      - *id002
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialReferencesEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/materials/{id}/archive:
+    post:
+      operationId: archiveInvestmentMaterial
+      summary: archiveInvestmentMaterial
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - *id001
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentMaterialRevision'
+  /api/v1/lighttick/investments/materials/{id}/restore:
+    post:
+      operationId: restoreInvestmentMaterial
+      summary: restoreInvestmentMaterial
+      description: Owner-only independent text/source material. Immutable revisions
+        and content digests; CAS and persistent exact original receipts. No asset
+        account required. 500 materials, 100 versions each; bounded paginated reads
+        and whole-owner export. Archive hides from active catalog and prevents new
+        references/AI work, retains existing pinned research/history; restore keeps
+        the same ID. References lists current research heads including archived research;
+        historical links remain in immutable research versions. No URL fetch, private
+        migration, task sync or automatic facts. Omitted research material_sources
+        retains existing references; explicit [] removes them. Conflicts/expired cursors
+        retain local drafts and pending originals.
+      tags:
+      - lighttick-materials
+      parameters:
+      - *id001
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentMaterialEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentMaterialRevision'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickInvestmentMaterialWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - title
+      - content
+      - locator
+      - source_url
+      - available_at
+      - contrary_evidence
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        title: &id004
+          type: string
+          maxLength: 200
+          minLength: 1
+        content: &id005
+          type: string
+          maxLength: 12000
+          minLength: 1
+        locator: &id006
+          type: string
+          maxLength: 1000
+        source_url: &id007
+          anyOf:
+          - type: string
+            maxLength: 2000
+            format: uri
+            pattern: ^https?://
+          - type: 'null'
+        available_at: &id008
+          type: string
+          maxLength: 40
+          format: date-time
+        contrary_evidence: &id009
+          type: string
+          maxLength: 12000
+        instrument_id: &id011
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        account_id: &id012
+          anyOf:
+          - type: string
+            pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+            maxLength: 100
+          - type: 'null'
+        period_end: &id013
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+    LightTickInvestmentMaterialRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 99
+    LightTickInvestmentMaterialEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - content
+      - locator
+      - source_url
+      - available_at
+      - contrary_evidence
+      - id
+      - revision
+      - request_key
+      - content_digest
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        title: *id004
+        content: *id005
+        locator: *id006
+        source_url: *id007
+        available_at: *id008
+        contrary_evidence: *id009
+        id: *id010
+        revision: &id014
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key: &id018
+          type: string
+        content_digest: &id015
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        archived: &id016
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at: &id017
+          type: string
+          format: date-time
+        instrument_id: *id011
+        account_id: *id012
+        period_end: *id013
+    LightTickInvestmentMaterialSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - title
+      - content_digest
+      - archived
+      - available_at
+      - updated_at
+      properties:
+        id: *id010
+        revision: *id014
+        title: *id004
+        content_digest: *id015
+        archived: *id016
+        available_at: *id008
+        updated_at: *id017
+    LightTickInvestmentMaterialReference:
+      type: object
+      additionalProperties: false
+      required:
+      - research_id
+      - research_revision
+      - title
+      - instrument_id
+      - archived
+      - material_version
+      properties:
+        research_id: *id010
+        research_revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        title: *id018
+        instrument_id: *id010
+        archived:
+          type: boolean
+        material_version:
+          type: integer
+          minimum: 1
+          maximum: 100
+    LightTickInvestmentMaterialPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMaterialSummary'
+        revision: *id018
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentMaterialHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMaterialEntry'
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentMaterialReferences:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentMaterialReference'
+        revision: *id018
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentMaterialEntryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMaterialEntry'
+        requestId:
+          type: string
+    LightTickInvestmentMaterialPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMaterialPage'
+        requestId:
+          type: string
+    LightTickInvestmentMaterialHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMaterialHistory'
+        requestId:
+          type: string
+    LightTickInvestmentMaterialReferencesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentMaterialReferences'
+        requestId:
+          type: string

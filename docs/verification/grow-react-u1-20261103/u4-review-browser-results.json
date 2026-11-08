@@ -1,0 +1,134 @@
+{
+  "review": {
+    "passed": true,
+    "entry_id": "knowledge-1cc04249-ddb1-41ff-8940-54b3507f60a4",
+    "lost_response_exact_replay": true,
+    "CAS_keeps_three_copies": true,
+    "exact_old_source_read": true,
+    "authorized_export_history": true,
+    "cursor_rebuild_keeps_draft": true,
+    "archive_restore": true,
+    "source_withdrawal": true,
+    "owner_isolation": true,
+    "console_errors": []
+  },
+  "course": {
+    "passed": true,
+    "manual_route": "plan-afc602d7-9b92-4987-b107-44af3c6e52d4",
+    "ai_route": "plan-b927a247-5d70-4bec-a037-a7bf62e39e91",
+    "lost_response_exact_replay": true,
+    "route_cas_preserves_local": true,
+    "per_content_completion": true,
+    "file_source_worker_review": true,
+    "explicit_ai_adoption": true,
+    "cancel_no_publication": true,
+    "legacy_progress": true,
+    "console_errors": []
+  },
+  "u2": {
+    "passed": true,
+    "goal_id": "lighttick_goal_ef676af2ce8e451fa1ab88cee9769b56",
+    "session_id": "planning_aad8b10f8ea047548c6efc7dc632671e",
+    "plan_id": "lighttick_plan_83e8df35ac54493187d101f4b0661b78",
+    "action_id": "action-5f3aad201f4749b1b41bc5681627634a",
+    "checks": [
+      "AI_actual_queue_runner_synthetic_provider",
+      "clarification_history",
+      "delivery_disabled_history_readable",
+      "draft_no_tasks",
+      "draft_edit",
+      "planning_context_CAS_retains_local",
+      "draft_CAS_explicit_rebase",
+      "accepted_context_response_lost_exact_retry",
+      "explicit_confirm_same_task",
+      "pause",
+      "confirmed_capacity",
+      "reflection_source_revision",
+      "reviewed_replacement_resumes_goal",
+      "original_task_cancelled",
+      "full_period_edit",
+      "explicit_child_identity",
+      "manual_action_review",
+      "mobile_no_overflow"
+    ],
+    "limits": "Synthetic model output, native canonical HTTP, no physical devices or live model quality claim"
+  },
+  "learning": {
+    "passed": true,
+    "lesson_id": "lesson-6d98ed77-1ff2-4a30-ab6f-314e0c2dd221",
+    "old_version": "1487d86e6779c37a7f777afe8692d8abe4da37407aed2083d01cc5a434b641a5",
+    "new_version": "ff892f3c2f58bf6079426dba56a0301abb63d52d303546d436b7578a84e7b85a",
+    "lost_response_replay": true,
+    "component_cas": true,
+    "old_answers_preserved": true,
+    "console_errors": []
+  },
+  "records": {
+    "passed": true,
+    "record_id": "1f2b955a-1ad6-4786-a826-1b65780d8df1",
+    "versions_before_archive": 4,
+    "final_version": 6,
+    "browser_errors": [],
+    "checks": [
+      "real_web_login",
+      "same_native_contract_object",
+      "CAS_conflict_preserves_both_inputs",
+      "HttpOnly_refresh",
+      "multi_tab_session_rotation",
+      "sequential_tag_input",
+      "offline_original_key_recovery",
+      "history",
+      "archive_restore_versions",
+      "browser_account_switch",
+      "mobile_no_overflow",
+      "cross_owner_denied",
+      "no_tokens_in_storage"
+    ],
+    "native_scope": "existing native HTTP contract exercised; not native device UI"
+  },
+  "plans": {
+    "passed": true,
+    "plan_id": "lighttick_plan_512ed1da21d74f86bde46e63e2d2b83e",
+    "task_id": "lighttick_task_f03d2402874b4a4aadb41c23bceaca9a",
+    "plan_version": 4,
+    "checks": [
+      "draft_creates_no_tasks",
+      "native_same_plan",
+      "cross_client_CAS",
+      "explicit_confirmation",
+      "single_canonical_task",
+      "web_completion_visible_to_native",
+      "mobile_no_overflow"
+    ],
+    "native_scope": "native canonical HTTP, not device UI"
+  },
+  "actions": {
+    "passed": true,
+    "check_id": "action-6ce336bb0e124fd09d752184113c8b34",
+    "time_id": "action-30d99069402c40bebe5e05d98a7d29b0",
+    "checks": [
+      "native_same_identity",
+      "unsubmitted_form_reload",
+      "other_owner_isolated",
+      "stale_revision_preserved",
+      "pause_resume",
+      "check_complete_reopen_retains_facts",
+      "lost_accepted_response_exact_replay_after_reload",
+      "no_duplicate_create",
+      "explicit_actual_minutes",
+      "native_reads_same_execution",
+      "mobile_no_overflow"
+    ],
+    "native_scope": "canonical HTTP, not native device UI"
+  },
+  "practice": {
+    "passed": true,
+    "practice_id": "action-750b7a9d9997467ab70f122e5101d278",
+    "follow_up_id": "action-eee6dbe7992a4d279d034def8a3ee832",
+    "lost_response_exact_replay": true,
+    "feedback_does_not_schedule": true,
+    "course_completion_independent": true,
+    "immutable_source_and_withdrawal": true,
+    "console_errors": []
+  }
+}

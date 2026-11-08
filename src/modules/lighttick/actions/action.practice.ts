@@ -3,6 +3,7 @@ import type {LightTickRepository} from '../lighttick.repository.ts';
 import type {ActionWorkspace,ActionPlan,Json} from './action.types.ts';
 import {createPlans} from './action.commands.ts';
 import {keys,text,reject,getPlan} from './action.validation.ts';
+import {nativeLessonSource} from './action-native-lesson-source.ts';
 
 /** The caller holds record -> action locks for record sources, or the action lock for lessons. */
 export async function createPractice(repo:LightTickRepository,owner:LightTickOwner,w:ActionWorkspace,b:Json,now:Date):Promise<Json>{
@@ -11,12 +12,19 @@ export async function createPractice(repo:LightTickRepository,owner:LightTickOwn
  if(!['lesson','record'].includes(kind)||!Object.hasOwn(b,'date'))reject(422,'Select a source and an explicit date or null.');
  let binding_id:string|null=null;
  if(kind==='lesson'){
+  const native=await nativeLessonSource(repo,owner,id);
+  if(native.native){
+   if(!native.lesson||!native.publication)reject(404,'The source lesson is unavailable or reading consent was withdrawn.');
+   if(native.publication.contentVersion!==version)reject(409,'The source changed. Keep the draft and review its current version.','REVISION_CONFLICT');
+   binding_id=native.binding!;
+  }else{
   const link=await repo.getOwnerActionLink(owner),library=await repo.getLearningLibrary(owner);
   if(link?.phase!=='active')reject(409,'Connect the action workspace before creating a practice.','CONTRACT_UPGRADE_REQUIRED');
   const lesson=library?.consent_enabled&&library.binding_id===link!.binding_id&&library.lessons.find((l:Json)=>l.id===id);
   if(!lesson)reject(404,'The source lesson is unavailable or reading consent was withdrawn.');
   if(lesson.content_version!==version)reject(409,'The source changed. Keep the draft and review its current version.','REVISION_CONFLICT');
   binding_id=link!.binding_id;
+  }
  }else{
   const row=await repo.getRecord(owner,id);
   if(!row||row.payload.archived_at)reject(404,'The source record is unavailable.');
@@ -33,8 +41,11 @@ export async function practiceSource(repo:LightTickRepository,owner:LightTickOwn
  const p=getPlan(w.plans,id),source=p.practice_source;if(!source)reject(404,'Practice source is unavailable.');
  if(source!.kind==='record'){
   const row=await repo.getRecord(owner,source!.id);
-  return row?{available:true,title:'记录原文',text:row.payload.raw_text,current_version:String(row.version)}:{available:false};
+  const original=row&&/^[1-9][0-9]{0,9}$/.test(source!.version)&&Number(source!.version)<=2147483647?await repo.getRecordVersion(owner,source!.id,Number(source!.version)):undefined;
+  return row&&original?{available:true,title:'记录原文',text:original.raw_text,source_version:String(original.version),current_version:String(row.version)}:{available:false};
  }
+ const native=await nativeLessonSource(repo,owner,source!.id,source!.version);
+ if(native.native)return native.lesson&&native.publication&&native.binding===source!.binding_id?{available:true,title:native.lesson.title,text:native.publication.content,source_version:native.publication.contentVersion,current_version:native.lesson.publishedVersion}:{available:false};
  const link=await repo.getOwnerActionLink(owner),library=await repo.getLearningLibrary(owner);
  const lesson=link?.binding_id===source!.binding_id&&library?.consent_enabled&&library.binding_id===link.binding_id&&library.lessons.find((l:Json)=>l.id===source!.id);
  return lesson?{available:true,title:lesson.title,text:lesson.content,current_version:lesson.content_version}:{available:false};

@@ -26,12 +26,12 @@ export function learningProgress(input:Json):Json {
  });
  return {source_revision,observed_at,web_url:url!.toString(),plans};
 }
-export async function receiveLearningProgress(actions:ActionService,initial:ActionLink,input:Json):Promise<Json> {
+export async function receiveLearningProgress(actions:ActionService,initial:ActionLink,input:Json,authorize:()=>Promise<void>=async()=>{}):Promise<Json> {
  if(input.action_schema_version!==2||input.binding_id!==initial.binding_id)reject(403,'Learning progress binding does not match.');
  const value=learningProgress(input),hash=digest(value);
  if(Date.parse(value.observed_at)>actions.clock().getTime()+120000)reject(422,'Source observation is in the future.');
  return actions.repository.transaction(initial,async()=>{
-  await actions.repository.lockActionOwner(initial);const link=await actions.repository.getActionLink(initial.source_account_id);
+  await actions.repository.lockActionOwner(initial);await authorize();const link=await actions.repository.getActionLink(initial.source_account_id);
   if(!link||link.phase!=='active'||link.binding_id!==initial.binding_id||link.userId!==initial.userId)reject(409,'Learning progress requires the same active binding.');
   const row=await actions.readWorkspace(link),previous=(row.data as Json).learning_progress;
   if(previous&&(previous.source_revision>value.source_revision||previous.source_revision===value.source_revision&&previous.payload_hash!==hash))reject(409,'Source progress revision changed.','REVISION_CONFLICT');

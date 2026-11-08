@@ -68,7 +68,7 @@ export class ActionService {
    const plans=listing(w,now,version,this.p0WriteEnabled).plans;
    return {follow_up_enabled:this.p0WriteEnabled,practices:plans.filter((p:Json)=>p.practice_source&&(!q.source_kind||p.practice_source.kind===q.source_kind)&&(!q.source_id||p.practice_source.id===q.source_id))};
   }
-  if(path==='/learning-progress')return {progress:publicLearningProgress(w)};
+  if(path==='/learning-progress'){const authority=await this.repository.getLearningAuthority(owner);return {progress:authority?.phase==='zook'?null:publicLearningProgress(w)};}
   if(path.startsWith('/requests/')){const key=text(path.slice(10),160,true),old=await this.repository.getOperation(owner,'action:'+key),legacy=w.legacy_operations&&Object.hasOwn(w.legacy_operations,key)?w.legacy_operations[key]:undefined;return {found:!!old||!!legacy,result:old?.resultPayload??legacy?.result??null};}
   if(path==='/records'){
    if(q.plan_id)getPlan(w.plans,q.plan_id);const page=integer(Number(q.page??1),1,100000),records=w.records.filter(r=>!q.plan_id||r.plan_id===q.plan_id).sort((a,b)=>(b.started_at+b.id).localeCompare(a.started_at+a.id));return {records:records.slice((page-1)*30,page*30),total:records.length,page};

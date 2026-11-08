@@ -1,0 +1,193 @@
+{
+  "accounts": {
+    "result": {
+      "passed": true,
+      "account_id": "inv-b1989afb-1191-45fb-b1e7-a0483197ba85",
+      "instrument_id": "inv-36425277edfc0b7d60e8a8da9cff57099edaa815",
+      "decimals_are_strings": true,
+      "null_cost_stays_unknown": true,
+      "lost_response_exact_replay": true,
+      "account_CAS_explicit_rebase": true,
+      "instrument_three_copies": true,
+      "immutable_baseline_on_status_edit": true,
+      "owner_isolation": true,
+      "console_errors": []
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/accounts-browser-ledger-clean"
+  },
+  "ledger": {
+    "result": {
+      "passed": true,
+      "account_id": "inv-7e63ac05-6174-4421-8028-8585f0235524",
+      "instrument_id": "inv-27152f7366c8d84e25b0c4f8f2448818e922f6c7",
+      "worker_commit_count": 28,
+      "lost_response_exact_replay": true,
+      "pending_work_recovers_on_reload": true,
+      "unknown_fee_and_cost_stay_unknown": true,
+      "cash_decimal_precision": true,
+      "oversell_no_fact": true,
+      "expired_cursor_rebuild_keeps_draft": true,
+      "offline_draft_kept": true,
+      "authorized_export_original_receipts": true,
+      "owner_isolation": true,
+      "console_errors": []
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/ledger-browser-fourth"
+  },
+  "u2": {
+    "result": {
+      "passed": true,
+      "goal_id": "lighttick_goal_6b5fb032bda04767a0f284bf9386edb7",
+      "session_id": "planning_56f5d63f96724eccbdbfc8b37822f4d6",
+      "plan_id": "lighttick_plan_f776b32a5178481fa48939f2815ef740",
+      "action_id": "action-8bc8893bd6c64c9d907cecf186d5dff7",
+      "checks": [
+        "AI_actual_queue_runner_synthetic_provider",
+        "clarification_history",
+        "delivery_disabled_history_readable",
+        "draft_no_tasks",
+        "draft_edit",
+        "planning_context_CAS_retains_local",
+        "draft_CAS_explicit_rebase",
+        "accepted_context_response_lost_exact_retry",
+        "explicit_confirm_same_task",
+        "pause",
+        "confirmed_capacity",
+        "reflection_source_revision",
+        "reviewed_replacement_resumes_goal",
+        "original_task_cancelled",
+        "full_period_edit",
+        "explicit_child_identity",
+        "manual_action_review",
+        "mobile_no_overflow"
+      ],
+      "limits": "Synthetic model output, native canonical HTTP, no physical devices or live model quality claim"
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/u2-browser-final"
+  },
+  "learning": {
+    "result": {
+      "passed": true,
+      "lesson_id": "lesson-39d2a823-66d5-4551-a873-b5e0a5aa2f73",
+      "old_version": "1487d86e6779c37a7f777afe8692d8abe4da37407aed2083d01cc5a434b641a5",
+      "new_version": "ff892f3c2f58bf6079426dba56a0301abb63d52d303546d436b7578a84e7b85a",
+      "lost_response_replay": true,
+      "component_cas": true,
+      "old_answers_preserved": true,
+      "console_errors": []
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/learning-browser-final"
+  },
+  "records": {
+    "result": {
+      "passed": true,
+      "record_id": "5548dff9-38ca-4809-b8d4-e6d39a3af00d",
+      "versions_before_archive": 4,
+      "final_version": 6,
+      "browser_errors": [],
+      "checks": [
+        "real_web_login",
+        "same_native_contract_object",
+        "CAS_conflict_preserves_both_inputs",
+        "HttpOnly_refresh",
+        "multi_tab_session_rotation",
+        "sequential_tag_input",
+        "offline_original_key_recovery",
+        "history",
+        "archive_restore_versions",
+        "browser_account_switch",
+        "mobile_no_overflow",
+        "cross_owner_denied",
+        "no_tokens_in_storage"
+      ],
+      "native_scope": "existing native HTTP contract exercised; not native device UI"
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/records-browser-final"
+  },
+  "plans": {
+    "result": {
+      "passed": true,
+      "plan_id": "lighttick_plan_1d95f67c012542608245c1ef5c194211",
+      "task_id": "lighttick_task_3a327afed91940c0bf27e2ab1f10ebc7",
+      "plan_version": 4,
+      "checks": [
+        "draft_creates_no_tasks",
+        "native_same_plan",
+        "cross_client_CAS",
+        "explicit_confirmation",
+        "single_canonical_task",
+        "web_completion_visible_to_native",
+        "mobile_no_overflow"
+      ],
+      "native_scope": "native canonical HTTP, not device UI"
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/plans-browser-final"
+  },
+  "actions": {
+    "result": {
+      "passed": true,
+      "check_id": "action-b2999bacf3564b0eb7c5d79b8a670661",
+      "time_id": "action-b25d68009f644a92ab548765365f5dad",
+      "checks": [
+        "native_same_identity",
+        "unsubmitted_form_reload",
+        "other_owner_isolated",
+        "stale_revision_preserved",
+        "pause_resume",
+        "check_complete_reopen_retains_facts",
+        "lost_accepted_response_exact_replay_after_reload",
+        "no_duplicate_create",
+        "explicit_actual_minutes",
+        "native_reads_same_execution",
+        "mobile_no_overflow"
+      ],
+      "native_scope": "canonical HTTP, not native device UI"
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/actions-browser-final"
+  },
+  "practice": {
+    "result": {
+      "passed": true,
+      "practice_id": "action-04140eebe2c642559a4dcb6e9d609913",
+      "follow_up_id": "action-dd0a348e8ff24074bb9049e308d0c84d",
+      "lost_response_exact_replay": true,
+      "feedback_does_not_schedule": true,
+      "course_completion_independent": true,
+      "immutable_source_and_withdrawal": true,
+      "console_errors": []
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/practice-browser-final"
+  },
+  "review": {
+    "result": {
+      "passed": true,
+      "entry_id": "knowledge-f3081eed-ddd0-4cb5-8aa6-b19db2f66e07",
+      "lost_response_exact_replay": true,
+      "CAS_keeps_three_copies": true,
+      "exact_old_source_read": true,
+      "authorized_export_history": true,
+      "cursor_rebuild_keeps_draft": true,
+      "archive_restore": true,
+      "source_withdrawal": true,
+      "owner_isolation": true,
+      "console_errors": []
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/review-browser-final"
+  },
+  "course": {
+    "result": {
+      "passed": true,
+      "manual_route": "plan-864745b4-02d6-4ab7-b6ef-2c62262f639b",
+      "ai_route": "plan-59c5f7ba-73cc-4d42-abc0-4bd316bc3ed5",
+      "lost_response_exact_replay": true,
+      "route_cas_preserves_local": true,
+      "per_content_completion": true,
+      "file_source_worker_review": true,
+      "explicit_ai_adoption": true,
+      "cancel_no_publication": true,
+      "legacy_progress": true,
+      "console_errors": []
+    },
+    "artifacts": ".artifacts/grow-u5-20261104/course-browser-final"
+  }
+}

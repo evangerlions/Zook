@@ -68,7 +68,7 @@ class EnableTest(unittest.TestCase):
             self.assertEqual(kwargs["cwd"], root.resolve())
             self.assertIn(RELEASE, command)
             self.assertEqual(command[command.index("--image-name") + 1], root.name)
-            self.assertEqual(kwargs["env"]["GROW_DEPLOY_ENABLED"], "0")
+            self.assertNotIn("GROW_DEPLOY_ENABLED", kwargs["env"])
             self.assertNotIn("COMPOSE_PROJECT_NAME", kwargs["env"])
             self.assertNotIn("DATABASE_URL", kwargs["env"])
             self.assertIn(b"LIGHTTICK_ENABLED=1", dev.read_bytes())
@@ -81,7 +81,7 @@ class EnableTest(unittest.TestCase):
             self.assertEqual(backups[0].stat().st_mode & 0o777, 0o600)
 
     def test_unsafe_targets_stop_before_env_change(self):
-        scenarios = ["database", "direct", "redis", "files", "empty-files", "project", "grow", "state", "group", "missing", "image", "revision", "head", "dirty", "no-online", "env-slot", "query-host", "relative-files"]
+        scenarios = ["database", "direct", "redis", "files", "empty-files", "project", "state", "group", "missing", "image", "revision", "head", "dirty", "no-online", "env-slot", "query-host", "relative-files"]
         for scenario in scenarios:
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp); self.setup_repo(root)
@@ -91,7 +91,6 @@ class EnableTest(unittest.TestCase):
                 if scenario == "files": self.dev["ZOOK_APP_RUN_DATA_HOST_PATH"] = self.prod["ZOOK_APP_RUN_DATA_HOST_PATH"]
                 if scenario == "empty-files": self.dev["ZOOK_APP_RUN_DATA_HOST_PATH"] = self.prod["ZOOK_APP_RUN_DATA_HOST_PATH"] = ""
                 if scenario == "project": self.dev["COMPOSE_PROJECT_NAME"] = self.prod["COMPOSE_PROJECT_NAME"] = "same"
-                if scenario == "grow": self.dev["GROW_DEPLOY_ENABLED"] = "1"
                 if scenario == "env-slot": self.dev["APP_ENV"] = "online"
                 if scenario == "query-host":
                     self.dev["DATABASE_URL"] = "postgresql://qa:PRIVATE@dev-host/shared?host=online-host"

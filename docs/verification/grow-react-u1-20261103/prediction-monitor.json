@@ -1,0 +1,417 @@
+{
+  "date": "2026-11-07",
+  "status": "prediction_feedback_daily_monitor_slice_verified_not_full_U5",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "slice_subtasks": {
+    "complete": 4,
+    "total": 4,
+    "file": "docs/plans/grow-zook-native-web/prediction-monitor-subtasks.md"
+  },
+  "implementation": "4f3b20aade53c784f9d876c3b992785573cd1c02",
+  "backend_runtime": "0001a77015ebfa5b784051672ee2c6e78a3d724c",
+  "verification_candidate": "e4c71b7a98a845bd54289556ec305191b6f0e1c9",
+  "frontend_implementation": "8b1b155cf75e6679b11a246e00d60c5f9e67e7a0",
+  "frontend_read_scope_fix": "acd346b9faa841890061558541b9f3712b74b5b2",
+  "counts": {
+    "backend": {
+      "passed": 2517,
+      "failed": 0,
+      "skipped": 1,
+      "log": ".artifacts/predictions-20261107/full-unit-verified.log",
+      "sha256": "0b9ebbb336ca11967e13cc8494c2fd5972125beb37f149e894736b8940d8152c"
+    },
+    "observations": {
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/predictions-20261107/domain-recovery.log",
+      "sha256": "43c35b738e12a8e1d7235ca6ec917695197070e4f84e200d5941f7e15522eba2"
+    },
+    "postgres": {
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/predictions-20261107/pg-joint-final.log",
+      "sha256": "6698339804317517c0a32f4f12a90d6e2352e3c58294f3eb4fbbcb7cf6588936"
+    },
+    "risk": {
+      "passed": 165,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/predictions-20261107/risk-unit-accepted.log",
+      "sha256": "91f2c98248d30cabcafd902448482f5216f489d57314aa0c086c7c96f93f38d1"
+    },
+    "grow": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/predictions-20261107/grow-unit-read.log",
+      "sha256": "4aee7de74917f78d1f749d9df2e0309295075855f84726b02549a30936cc1d54"
+    }
+  },
+  "browser": {
+    "browser-accepted": {
+      "passed": true,
+      "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+      "synthetic_history_clock_declared": true,
+      "prediction_id": "inv-81f874c5-371f-4ccb-8739-2ffd38f8c8be",
+      "historical_prediction_id": "inv-observe-prediction",
+      "evaluation_id": "inv-observe-ab11f76aa0fc5baa2765fbcf8d335cdc0009aecc",
+      "feedback_id": "inv-99a9a0be-04e2-4f88-ab4a-57d3a8ea2bdd",
+      "stopped_work_id": "inv-observe-4ed158eb97d674ab970e8f961caaf9f054b460c7",
+      "prediction_loss_exact_original_and_immutable": true,
+      "rapid_mode_switch_drops_stale_read_and_loads_new_scope": true,
+      "server_versioned_reference_adoption": true,
+      "evaluation_loss_original_after_reload": true,
+      "resolved_and_pending_correct_calibration": true,
+      "feedback_versions_and_three_way_CAS": true,
+      "event_read_and_unread_filter": true,
+      "monitor_stop_fences_late_result_and_restore_retains_disabled": true,
+      "offline_and_owner_switch_exact_pending_recovery": true,
+      "authorized_export_original_sources_versions_receipts": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "boundaries-accepted": {
+      "passed": true,
+      "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+      "feedback_id": "inv-99a9a0be-04e2-4f88-ab4a-57d3a8ea2bdd",
+      "cancelled_work_id": "inv-observe-0f26176bca24233f1c1e334e25d472ea077027c1",
+      "paginated_history_and_expired_cursor_keep_local_input": true,
+      "running_cancel_rejects_late_result": true,
+      "export_retains_create_and_cancel_originals": true,
+      "unsaved_draft_not_exported": true,
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "monitor-accepted": {
+      "passed": true,
+      "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+      "monitor_id": "inv-ecbe02f9-538e-4ddb-b819-37075595cc8a",
+      "structured_create_no_account_exact_decimal_and_explicit_supplier": true,
+      "controlled_boolean_condition_enable_stop_and_history": true,
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "research-ai": {
+      "passed": true,
+      "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+      "research_id": "inv-research-ai-96469fa3d3d8",
+      "account": "course10@example.com",
+      "lost_response_exact_original_after_reload": true,
+      "analysis_guide_report_explicit_adoption": true,
+      "selected_personal_model_used": true,
+      "no_account_required": true,
+      "cancel_fences_late_results": true,
+      "provider_failure_no_fallback": true,
+      "source_change_refuses_result_and_adoption": true,
+      "model_change_refuses_result": true,
+      "original_facts_not_automatically_modified": true,
+      "export_no_secret": true,
+      "quota_refusal_keeps_draft_and_explicit_release": true,
+      "no_browser_secret": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "materials": {
+      "passed": true,
+      "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+      "synthetic_account": "course4@example.com",
+      "material_id": "inv-40884fbf-d60e-449a-aa92-f25fdbf1e58a",
+      "lost_response_exact_original_after_reload": true,
+      "baseline_local_cloud_CAS": true,
+      "cross_instrument_research_pins_different_versions": true,
+      "source_update_does_not_replace_research_refs": true,
+      "archive_rejects_new_refs_retains_old_client_and_history": true,
+      "restore_same_identity": true,
+      "optional_period_end_preserved": true,
+      "paginated_history_original_content": true,
+      "offline_reload_preserves_unsaved_draft": true,
+      "authorized_export_versions_receipts_and_relations": true,
+      "no_asset_account_required": true,
+      "cross_owner_denied": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "screening": {
+      "passed": true,
+      "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+      "rule_id": "inv-fe8ac7c7-b165-48c7-be3d-00a1a5e5ff25",
+      "template_id": "inv-b77f6c52-ef1c-4124-b351-6685f3db3ed6",
+      "run_id": "inv-screen-75bd67d7f1fee246f860818ca1f1bfca6949d8dd",
+      "cancelled_id": "inv-screen-5bcd488588090ea959c1e0545338b324fc504e1e",
+      "output_digest": "91dd8520acdf5fba219bcc149ece38994942fc9da55188007df5ec23c468761b",
+      "lost_definition_and_run_response_exact_original_after_reload": true,
+      "baseline_local_cloud_CAS": true,
+      "template_pins_historical_rule": true,
+      "actual_existing_worker_CSV_source": true,
+      "matched_and_unknown_explained": true,
+      "running_cancel_no_late_result": true,
+      "disable_archive_restore_retains_report": true,
+      "offline_reload_preserves_draft": true,
+      "paginated_history_expired_cursor_rebuild_retains_local": true,
+      "one_template_editor_after_each_save": true,
+      "export_full_frozen_input_and_original_commands": true,
+      "no_asset_account": true,
+      "cross_owner_denied": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    }
+  },
+  "regression": {
+    "database": "grow_web_u1_20261107c3",
+    "served_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+    "runtime_code": "0001a770",
+    "old_stories": [
+      {
+        "story": "u2",
+        "exit": 0
+      },
+      {
+        "story": "learning",
+        "exit": 0
+      },
+      {
+        "story": "records",
+        "exit": 0
+      },
+      {
+        "story": "plans",
+        "exit": 0
+      },
+      {
+        "story": "actions",
+        "exit": 0
+      },
+      {
+        "story": "practice",
+        "exit": 0
+      },
+      {
+        "story": "review",
+        "exit": 0
+      },
+      {
+        "story": "course",
+        "exit": 0
+      },
+      {
+        "story": "investment_accounts",
+        "exit": 0
+      },
+      {
+        "story": "investment_ledger",
+        "exit": 0
+      },
+      {
+        "story": "market",
+        "exit": 0
+      },
+      {
+        "story": "market_admin",
+        "exit": 0
+      },
+      {
+        "story": "research",
+        "exit": 0
+      }
+    ],
+    "research_ai_materials_screening_repeated": true
+  },
+  "fixture": {
+    "synthetic": true,
+    "controlled_registration_clock": "2026-11-02T08:00:00Z",
+    "controlled_check_clock": "2026-11-06T08:00:00Z",
+    "owner": "user_course_9",
+    "prediction_id": "inv-observe-prediction",
+    "monitor_id": "inv-historical-daily-monitor",
+    "event_id": "inv-event-7c1d390441ed1294a6a3c987cc9da3940940e343",
+    "instrument": {
+      "code": "600000",
+      "market": "SSE",
+      "kind": "stock",
+      "name": "Synthetic observation",
+      "id": "inv-ef559602e75d9246c729158442b498d92a1d5a31",
+      "revision": 1,
+      "archived": false,
+      "created_at": "2026-11-02T08:00:00.000Z",
+      "updated_at": "2026-11-02T08:00:00.000Z"
+    },
+    "baseline_id": "inv-0102f19238d37f514664e484766f1ab1675e6264",
+    "daily_id": "inv-995b8b9c167836ba1ab8a9eaef1a7184bd45392b",
+    "material_id": "inv-observation-source-material",
+    "material_digest": "180fcb0fee2b59d61226f02c88255bb9ada02f9747b712d40784e3a625ed12bd"
+  },
+  "artifact_proof": {
+    "source_revision": "acd346b9faa841890061558541b9f3712b74b5b2",
+    "contract_revision": "4f3b20aade53c784f9d876c3b992785573cd1c02",
+    "source_dirty": false,
+    "served_assets_verified": 17,
+    "assets": [
+      {
+        "file": "index.html",
+        "sha256": "fc60005a2569960da3d3e6b47c3308eef847f68d555b865a94099ce69071c3f4"
+      },
+      {
+        "file": "assets/ActionsPage-MyE3worW.js",
+        "sha256": "aa3281a741540dc3183b2fcdcc560cf6eeef51fe83cc22eab03634c1ca736e57"
+      },
+      {
+        "file": "assets/GoalsPage-B6LvyMoU.js",
+        "sha256": "66f15eedbb9e2896f57c687621ce9d588a8a3bc40c026bf1ebadeee6dadee713"
+      },
+      {
+        "file": "assets/InvestmentPage-Cv6ZvOFO.js",
+        "sha256": "c572daa536f912d5c6a53051384baa7b5f94ad4a74a2df94fd7dec5ab9347d3d"
+      },
+      {
+        "file": "assets/LearningPage-Dweqlc_H.js",
+        "sha256": "88cadfdd2e63963fcb8589c7d9f8dfdfb0f28436d4fe99a814375f20bab0bf80"
+      },
+      {
+        "file": "assets/PendingNotice-CJRNNy9L.js",
+        "sha256": "3667e6c47586c3c2a0bd8f2a006fb4eefee84c8aefa5d68fa4927cd4862eddba"
+      },
+      {
+        "file": "assets/PlanningPage-DEvUeTWA.js",
+        "sha256": "b3c72705a1e78c40fec6adf7ca2480f8c5a1ad8b3b1e4a7b858925596dd7561b"
+      },
+      {
+        "file": "assets/PlansPage-XLyBSqrk.js",
+        "sha256": "129ef84419cb5c7b4ef4b3396143b1dcf9fd19d6ee956012040c257d10672c5e"
+      },
+      {
+        "file": "assets/PracticePage-DNYk7pYm.js",
+        "sha256": "fcf87ac7ef5e7bd520ba083e814e1cbc76fb74c607b9638ce32f40454d751931"
+      },
+      {
+        "file": "assets/RecordsPage-B5NcOmGv.js",
+        "sha256": "ea42f9e71737eb1fef8169d3d56bd2c80e53e5b42fc3089515182bf78073fc2b"
+      },
+      {
+        "file": "assets/ReviewPage-deR0UAht.js",
+        "sha256": "e726819d16d77648cdf8015584035d4ed6c07609c40b99915355af7d3de80a26"
+      },
+      {
+        "file": "assets/SettingsPage-BOoYZDnC.js",
+        "sha256": "8db325a8aca2896aefc06cfd144dbbdd4e37a2bc5a75da8b0af0345c204ce821"
+      },
+      {
+        "file": "assets/TodayPage-CgOr0OLx.js",
+        "sha256": "be0b1d56ae0af19d0853cacb6e6c918bf764adfa6f1dd4bf698e3e9cf3fec18e"
+      },
+      {
+        "file": "assets/draft-storage-B3K4C8Nl.js",
+        "sha256": "52deaab569bef87c26c9fb1c247e718b07b41cc60f0c7278a2a09197cd4c23d0"
+      },
+      {
+        "file": "assets/index-Cr5e716E.css",
+        "sha256": "3e7c70f5e1812584410e1fe5100055b7dbea43779aee618d20deaa5eff981c95"
+      },
+      {
+        "file": "assets/index-smT_IJXu.js",
+        "sha256": "a012c947f61e7e3a2d1315a6ae463009afda5a485829e2a8504e031a0d5217e1"
+      },
+      {
+        "file": "assets/model-Cx6_vuN8.js",
+        "sha256": "696184d0e9fd629166ea5f196b36f67e0fcf8df5a9786856999128e5791b3264"
+      }
+    ],
+    "migration": {
+      "name": "101_lighttick_observations.sql",
+      "sha256": "84e3dc86910b334da5dccbfd38e96a7446896b1a45d546fbabdbb7c7955f61cb",
+      "database": "grow_web_u1_20261107c4",
+      "stored_matches_source": true
+    }
+  },
+  "restart": {
+    "synthetic": true,
+    "database": "grow_web_u1_20261107c4",
+    "sha256": "d0b3579eff8073dc158ea2a446b3ed55ef6c63e8d57453a4749ecc5699c63332",
+    "entries": 6,
+    "versions": 20,
+    "works": 4,
+    "receipts": 20,
+    "same_database_restart_preserved_all_observation_data": true
+  },
+  "preservation": {
+    "grow_staged_patch_unchanged": true,
+    "native_gitlinks_untouched": true,
+    "all_516_operations_still_unreviewed": true,
+    "grow_staged_patch_sha256": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f"
+  },
+  "boundaries": [
+    "Saved daily snapshots only; no legacy private HTTPS quotes, source credentials, cost-deviation metrics or whole-account briefing/filter parity.",
+    "Corporate action review is an explicit owner declaration, not independently verified; raw unadjusted returns otherwise remain unknown for correctness.",
+    "Manual/scheduled tasks share bounded UTC40/day, retained300 and active2 per owner; no unlimited monitoring guarantee.",
+    "Full behavior parity, all-domain synthetic migration, older-client/native/offline matrix and off/on other-App P95 gate remain pending.",
+    "Earlier hybrid fixture owner-lock root cause and pg@9 concurrent-query audit remain U0 concerns.",
+    "Real history, credentials, model/provider quality, device/accessibility, long observation, real migration and releases not executed."
+  ],
+  "contract_and_spec": {
+    "generate": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/contracts-final-generate.log",
+      "sha256": "fcf68d8bf455e2e4a0861563d641c0a22ba47b246d06f75746b3701b321661c4"
+    },
+    "check": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/contracts-check-accepted.log",
+      "sha256": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1"
+    },
+    "lint": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/contracts-lint-accepted.log",
+      "sha256": "6aa16b7b84d16fa2b5f7d7321800769eea948c2ad983fe5359cbdbadb8aa0041"
+    },
+    "openspec": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/openspec-accepted.log",
+      "sha256": "0b6a9dda3c9f573acf58f0deb93a8080945e951a29e2ff796a920ed37805efef"
+    },
+    "source_line_gate": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/lines-recovery.log",
+      "sha256": "45feefc0a4284ceef6ac079bd8d4cf1105104ab576c2c6991806233bbba74160"
+    },
+    "backend_types": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/types-recovery.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "grow_types": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/grow-types-read.log",
+      "sha256": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c"
+    },
+    "clean_build": {
+      "passed": true,
+      "log": ".artifacts/predictions-20261107/grow-build-final.log",
+      "sha256": "b53605b75fb246e5c645ae6b4aa9a25ba8e931a50008237e3639be7c6d8b54a0"
+    }
+  }
+}

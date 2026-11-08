@@ -1,0 +1,203 @@
+{
+  "date": "2026-11-06",
+  "status": "personal_model_settings_and_core_callers_verified_remaining_U5_gated",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "runtime_and_contract_revision": "05b9e5b4aaeb64e09fbb77bb098d673760f1448c",
+  "admin_accessibility_fix_revision": "e1232b86d58a3b3a51157b32944816b37177244e",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "d9fc29a5eefd6941aaeb13094f6248da01e2514a",
+    "contract_revision": "05b9e5b4aaeb64e09fbb77bb098d673760f1448c",
+    "source_dirty": false,
+    "files": {
+      "index.html": "7c11432dfd247bb356d92ffb8a192454361224be7953c2e57807f5440046af77",
+      "assets/ActionsPage-B1jCyY3D.js": "66add46e616333d736c6b16baffa8c9ee57f583bd72e69bcedd43d1eb08cfcfc",
+      "assets/GoalsPage-EXTX_cND.js": "d7ab12eb689ca2b5120df12c116146532c58d6842414faf8fc69c9be71091540",
+      "assets/InvestmentPage-khRFp-Dq.js": "e9b39fbe433ff552ccc1af8333316e80ed65355683a79a0b301d778c8e591666",
+      "assets/LearningPage-BsaUuaBd.js": "d6ed43b44fd259f4bb1f0e0e147afe7dd348dcdb7dddd8b29c597f2399a2cc43",
+      "assets/PendingNotice-WL3Y3vId.js": "45939299a311d18c1ce962de3ab5d47cbbcb019950ec0c236d132861a5bcb13f",
+      "assets/PlanningPage-BNW_A0jg.js": "7ca05f69c31ea5d3f39452f3502871899baa46115694d13bb23c7ea126a5093c",
+      "assets/PlansPage-Cbnc7pRq.js": "57f7f41aa1bfd27d44ea42ff11ddb1225d6f58049ec21a69c0d291bf09e37ae9",
+      "assets/PracticePage-rEG-rI1k.js": "365724662015c4ee146ced11ca24649afd35962dcd0003e9938048cfd2d7b6d8",
+      "assets/RecordsPage-BLD1nWAT.js": "ac81452fa791c0b208d56fefdb5df7250df9e3c98dd45a865f7a2d52a47f2ed5",
+      "assets/ReviewPage-DTu_-gxY.js": "2ee415e43c9b6bdd2aae5988df214404eb96be85b5501e912ff67469ae28b53f",
+      "assets/SettingsPage-BG7_1fUq.js": "f5262109fcf9153c40d70b61ffc40f03dc4ceed15f3ad304366b45c962c65f17",
+      "assets/TodayPage-DEZGa_IM.js": "d469b8792befb3e7343427f156b71b4ddf266538d488c6b710105b9eeee1ec12",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index--SzHdk-4.css": "1e117692eb02f7099b04f662b8078b0dd713b6a42e87fd24f34b12e531e8fb85",
+      "assets/index-CNuLn6jp.js": "bcfeb354fcec124f89d6a9f6264a3036d16c0cd64984a2e5c9dcf70b3702a58f",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "migration": {
+    "path": "src/infrastructure/database/postgres/migrations/096_lighttick_personal_model.sql",
+    "sha256": "fc9d6764a96aafda5af2c6d6154d30d6f6b896e75661876a291534bc91e84bee"
+  },
+  "checks": {
+    "backend": {
+      "passed": 2443,
+      "existing_skipped": 1,
+      "failed": 0
+    },
+    "personal_domain_and_routing": {
+      "domain_passed": 10,
+      "joint_course_planning_passed": 30
+    },
+    "postgres_redis_joint": {
+      "passed": 16,
+      "skipped": 0
+    },
+    "grow_unit": {
+      "passed": 24
+    },
+    "scoped_types_contracts_source_lines_and_admin_build": "passed",
+    "main_chrome": {
+      "passed": true,
+      "unsaved_test_no_activation": true,
+      "lost_test_and_save_response_recovered_by_receipt": true,
+      "exact_original_body_and_key_after_secret_reentry": true,
+      "wrong_reentered_secret_not_sent": true,
+      "no_plaintext_credentials_in_browser_storage_or_response": true,
+      "live_cancel_fenced": true,
+      "settings_CAS_preserves_input": true,
+      "actual_course_worker_selected_model": true,
+      "actual_planning_selected_model": true,
+      "truncated_response_rejected_no_fallback": true,
+      "explicit_clear_to_platform": true,
+      "widths_320_375_768_1024": true,
+      "page_errors": [],
+      "synthetic_account": "course2@example.com",
+      "course_work_id": "work-f83889851439500a330e8623c70742260e3d6512",
+      "planning_session_id": "planning_272f452a70d44849bcafbe7b3997e7fd"
+    },
+    "legacy_chrome_first_run": [
+      {
+        "story": "u2",
+        "exit": 0
+      },
+      {
+        "story": "learning",
+        "exit": 0
+      },
+      {
+        "story": "records",
+        "exit": 0
+      },
+      {
+        "story": "plans",
+        "exit": 0
+      },
+      {
+        "story": "actions",
+        "exit": 0
+      },
+      {
+        "story": "practice",
+        "exit": 0
+      },
+      {
+        "story": "review",
+        "exit": 0
+      },
+      {
+        "story": "course",
+        "exit": 0
+      },
+      {
+        "story": "investment_accounts",
+        "exit": 0
+      },
+      {
+        "story": "investment_ledger",
+        "exit": 0
+      },
+      {
+        "story": "market",
+        "exit": 0
+      },
+      {
+        "story": "market_admin",
+        "exit": 1
+      },
+      {
+        "story": "research",
+        "exit": 0
+      }
+    ],
+    "admin_original_driver_after_accessible_name_fix": [
+      {
+        "passed": true,
+        "sensitive_operation_UI": true,
+        "lost_response_exact_original_retry": true,
+        "revision_CAS_and_remove": true,
+        "no_secret_in_storage_or_response": true,
+        "page_errors": []
+      },
+      {
+        "passed": true,
+        "sensitive_operation_UI": true,
+        "lost_response_exact_original_retry": true,
+        "revision_CAS_and_remove": true,
+        "no_secret_in_storage_or_response": true,
+        "page_errors": []
+      }
+    ],
+    "restart": {
+      "passed": true,
+      "same_PG_encrypted_settings_revision": true,
+      "private_Redis_key_survives_Zook_restart": true,
+      "saved_model_test_without_reentering_API_key": true,
+      "no_real_credentials_used": true
+    }
+  },
+  "preserved_existing_grow_staged_patch_sha256": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f",
+  "artifact_root": ".artifacts/grow-personal-model-20261105",
+  "artifact_sha256": {
+    "backend-full-final.log": "7234d5853a308beaccedb18cecec45782d60c610a39964115fed173d11b2dfa3",
+    "domain-verified.log": "8bef09697c9ae665eef6ac71d916d90518f7881275995944dcbe7eca6989c985",
+    "routing-verified.log": "05ce00a201a796b1d91afa74d8256c03b57cf6b91e721fe3929b4c0aa42ad942",
+    "types-final-verified.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "contracts-check.log": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1",
+    "contracts-lint.log": "a1916dac2f344c9f038608d00a4fd38cf789526e61f06e436e201b434be5d10b",
+    "lines-final.log": "eff0f54dcca4443a8555c2e0c4205691ea988f5904347d35804b192e14889e63",
+    "pg-joint.log": "ccec9e22592b2c4f4ffe1128c3ebf26b079eb995053ee3efedd44fa86e7c9f2e",
+    "grow-unit-final.log": "013e5a29783a261b790d0855415470aca20378ad3ee2eb9f4158f749cd686a17",
+    "grow-clean-build.log": "fce3e7b472f5bf990e948f9d99efedb335b377ef246cf913e8ae443d5dd6face",
+    "browser-second/result.json": "68d20b7cb1cf3e07aeabfd3ccf91390a59d772ae6bddb4d1e1be5afb89118788",
+    "browser-second/settings-desktop.png": "bebd9063391d71aa28d9793b1f5c6511c6a2dc5471b124a6148af7902a41ddc4",
+    "browser-second/settings-320.png": "af35562b2b6e6b100a2e07eb8c05fbc6c571fb601eb12d800d572f2c3c7b1adc",
+    "regression/results.json": "c846d964dbff4990331ca0dcbb6de9a48f9b179c52c2d8c817efc18fb55f153b",
+    "admin-final-1/result.json": "0c5cd43587e1823627aac0f429b959b7934e9376a93e5df783e88eb47ed20865",
+    "admin-final-2/result.json": "0c5cd43587e1823627aac0f429b959b7934e9376a93e5df783e88eb47ed20865",
+    "admin-final-2/admin-market.png": "3dcba51db15ede4011541f760159101e4dbe6bd65e1418fbf3524b0adb763449",
+    "admin-types.log": "0eb3e90bb938c0f2d3f5da6fd83d2486f395d66d3a73f5b4cae1fb1cac632c04",
+    "admin-build.log": "c2bda510a2b66b38b016e77badaa9caf42bd0c184757c807cf95cc2f005ab8a7",
+    "restart-result.json": "37b949db7be4470cb527ed79ef22849f1de2e341038cebe1da095c15130e4bb1",
+    "grow-index-final.patch": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f"
+  },
+  "local_review": {
+    "url": "http://127.0.0.1:58631/grow/settings",
+    "synthetic_account": "course2@example.com",
+    "http_pid": 77465,
+    "postgres_port": 58630,
+    "redis_port": 58632,
+    "database": "grow_web_u1_20261105",
+    "models": "deterministic_synthetic_only"
+  },
+  "remaining": [
+    "research_AI_and_other_callers",
+    "GitHub_content_storage_settings",
+    "remaining_legacy_settings_and_behavior_parity",
+    "rules_screening_prediction_monitoring_complete_backtest",
+    "full_synthetic_migration_reconciliation_compensation",
+    "client_compatibility_and_other_app_mixed_P95",
+    "real_model_quality_devices_accessibility_long_observation_real_migration_release"
+  ],
+  "real_private_history_read": false,
+  "real_provider_called": false,
+  "dev_online_released": false
+}

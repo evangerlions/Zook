@@ -1,3 +1,4 @@
+import {selectionOption} from "../personal-model/personal-model.dispatcher.ts";
 import { LightTickPlanningAiRunner } from "../planning/planning-ai-runner.ts";
 import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -17,6 +18,7 @@ export class LightTickAiRunner {
     private readonly resolveScene = async (name: LightTickAiSceneName) => LIGHTTICK_AI_SCENES[name]) {}
 
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
+    if(sceneName==='learning_route'||sceneName==='learning_lesson')throw new ApplicationError(400,'VALIDATION_ERROR','Use durable learning work for course scenes.');
     let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
     if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene).execute(owner,runId);
@@ -40,7 +42,7 @@ export class LightTickAiRunner {
           `Return one compact JSON object that matches this schema exactly. Do not use Markdown fences or add prose.\n` +
           `INPUT_JSON=${JSON.stringify(context)}` },
       ], temperature: 0.2, maxTokens: scene.maxOutputTokens,
-        providerOptions: { response_format: { type: "json_object" }, enable_thinking: false },
+        providerOptions: { ...selectionOption(run.inputContext.model_selection), response_format: { type: "json_object" }, enable_thinking: false },
         usageOwner: { appId: owner.appId, userId: owner.userId } });
       const output = this.validate(sceneName, parseLightTickJson(result.text), context);
       const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai");
@@ -53,7 +55,7 @@ export class LightTickAiRunner {
       const completed = this.clock();
       let fallback: Record<string, unknown> | undefined;
       // Recovery must not bypass authorization or output constraints.
-      if (context) {
+      if (context && (run.inputContext.model_selection as any)?.mode !== "personal") {
         try {
           const candidate = this.fallback(scene.fallback, run.inputContext, context);
           if (candidate) fallback = this.validate(sceneName, candidate, context);

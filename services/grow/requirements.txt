@@ -1,2 +1,0 @@
-# Canonical production install; regenerate from requirements.in in a fresh environment.
--r requirements.lock

@@ -1,3 +1,4 @@
+import {tryHandleNativeLearningRoutes} from "./lighttick-native-learning-routes.ts";
 import {tryHandleRecordTransferRoutes} from './lighttick-record-transfer-routes.ts';
 import {tryHandleLightTickActionRoutes} from './lighttick-action-routes.ts';
 import { tryHandleYaoheziV1Routes, ownsYaoheziHealthTransaction } from "./yaohezi-v1-routes.ts";
@@ -340,6 +341,8 @@ export class BackendApplication extends BackendRouteContext {
 
     const recordTransferResponse=await tryHandleRecordTransferRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(recordTransferResponse)return recordTransferResponse;
+    const learningResponse=await tryHandleNativeLearningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if(learningResponse)return learningResponse;
     const actionResponse=await tryHandleLightTickActionRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
     if(actionResponse)return actionResponse;
     const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);

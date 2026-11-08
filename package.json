@@ -37,7 +37,10 @@
     "dev:yaohezi-local": "node --experimental-transform-types scripts/yaohezi-local-server.ts",
     "verify:yaohezi-local": "node scripts/yaohezi-local-verify.mjs",
     "test:postgres:yaohezi-local": "node --experimental-transform-types --test test/integration/yaohezi-local-postgres.test.ts",
-    "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json"
+    "typecheck:yaohezi-security": "tsc -p tsconfig.yaohezi-security.json",
+    "grow:import": "node --experimental-transform-types scripts/import-grow-artifact.ts",
+    "grow:export-contract": "node --experimental-transform-types scripts/export-grow-contract.ts",
+    "check:lighttick-portfolio-types": "node node_modules/typescript/bin/tsc --project tsconfig.lighttick-portfolio.json"
   },
   "devDependencies": {
     "@hpke/core": "1.9.0",
@@ -52,6 +55,7 @@
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "alipay-sdk": "4.14.0",
+    "decimal.js": "10.6.0",
     "nodemailer": "10.1.4",
     "pg": "^8.20.0",
     "redis": "^5.11.0"

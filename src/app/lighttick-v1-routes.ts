@@ -1,3 +1,8 @@
+import {handleAccountSettingsRequest} from "./lighttick-account-settings-routes.ts";import {captureModel} from "../modules/lighttick/personal-model/personal-model.service.ts";
+import {handleResearchRequest} from "./lighttick-research-routes.ts";
+import {handleMarketRequest} from "./lighttick-market-routes.ts";
+import {handleInvestmentRequest} from "./lighttick-investment-routes.ts";
+import {handleKnowledgeRequest} from "./lighttick-knowledge-routes.ts";
 import {handleManualRequest} from './lighttick-manual-routes.ts';
 import {profileData,goalData,variantData,variantsData,taskData,planData,reviewData,proposalData,runData} from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
@@ -14,10 +19,8 @@ import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttic
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickServerEvent } from "../modules/lighttick/lighttick-analytics.ts";
 import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
-
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
-
 function idempotencyKeyOf(request: HttpRequest): string {
   const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
   if (!key || key.length < 8 || key.length > 128)
@@ -96,7 +99,7 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
     await runtime.repository.lockPlanningOwner(owner);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
-      if (existing.payloadHash !== payloadHash || existing.action !== action)
+      if (existing.payloadHash !== payloadHash || existing.action !== action || existing.entityType !== entityType || existing.entityId !== entityId)
         throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key was reused with a different request.");
       return structuredClone(existing.resultPayload) as T;
     }
@@ -104,7 +107,8 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
     const saved = await runtime.repository.saveOperation({ ...owner, operationId: key, deviceId: "http",
       payloadHash, entityType, entityId, action, requestPayload: payload,
       resultPayload: structuredClone(result) as Json, status: "accepted", createdAt: now, updatedAt: now });
-    if (saved.payloadHash !== payloadHash) throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key collision.");
+    if (saved.payloadHash !== payloadHash || saved.action !== action || saved.entityType !== entityType || saved.entityId !== entityId)
+      throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key collision.");
     return structuredClone(saved.resultPayload) as T;
   });
 }
@@ -114,7 +118,7 @@ async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind:
   const now = new Date().toISOString(); const scene = LIGHTTICK_AI_SCENES[sceneName];
   return await runtime.repository.saveAiRun({ ...owner, id: randomId("lighttick_run"), kind, status: "queued",
     resourceId, sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
-    inputContext: input, usage: {}, createdAt: now, updatedAt: now });
+    inputContext: {...input,model_selection:await captureModel(runtime.repository,owner)}, usage: {}, createdAt: now, updatedAt: now });
 }
 
 export async function tryHandleLightTickV1Routes(context: BackendRouteContext, enabled: boolean,
@@ -165,6 +169,13 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };
+  const modelResult=await handleAccountSettingsRequest(runtime,owner,request,assertActive);if(modelResult!==undefined){const result=response(context,request,modelResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
+  const researchResult=await handleResearchRequest(runtime.repository,owner,request,assertActive);if(researchResult!==undefined){const result=response(context,request,researchResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
+  const marketResult=await handleMarketRequest(runtime,owner,request,assertActive);if(marketResult!==undefined){const result=response(context,request,marketResult);result.headers={...result.headers,"Cache-Control":"no-store"};return result;}
+  const investmentResult=await handleInvestmentRequest(runtime.repository,owner,request,assertActive,runtime.investmentLedger);
+  if(investmentResult!==undefined)return response(context,request,investmentResult);
+  const knowledgeResult=await handleKnowledgeRequest(runtime.repository,owner,request,assertActive);
+  if(knowledgeResult!==undefined)return response(context,request,knowledgeResult);
   const continuationResult=await handleContinuationRequest(runtime.repository,owner,request,assertActive);
   if(continuationResult!==undefined)return response(context,request,continuationResult);
   const manualResult=await handleManualRequest(runtime.repository,owner,request,assertActive);
@@ -221,7 +232,6 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     await context.authService.consumeReauthenticationProof(LIGHTTICK_APP_ID, auth.userId,
       stringOf(body.reauthentication_token, "reauthentication_token"));
     const result = await context.authService.deleteCurrentAppAccount({ appId: LIGHTTICK_APP_ID, userId: auth.userId, confirmation });
-    await runtime.repository.deleteOwnerData(owner);
     return context.ok({ app_id: LIGHTTICK_APP_ID, membership_status: "DELETED", sessions_revoked: true,
       product_data_deleted: result.deleted, platform_account_retained: true, other_memberships_retained: true },
       request.requestId as string, { "Set-Cookie": context.authService.buildClearRefreshCookie() });
@@ -388,7 +398,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}today` && request.method === "GET") {
     const today = await runtime.today.get(owner);
-    const renderTask = async (task: any) => taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+    const renderTask = (task: any) => taskData(task, today.taskSteps.filter(step => step.taskId === task.id));
     await recordFact(runtime, request, auth.userId, "lighttick_return_observed", `today:${today.businessDate}`, "today",
       { business_date: today.businessDate, result: "browsed" });
     return response(context, request, { business_date: today.businessDate,

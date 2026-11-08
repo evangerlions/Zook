@@ -1,0 +1,318 @@
+{
+  "date": "2026-11-07",
+  "status": "independent_material_slice_verified_not_full_U5",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "slice_subtasks": {
+    "complete": 4,
+    "total": 4,
+    "file": "docs/plans/grow-zook-native-web/material-subtasks.md"
+  },
+  "implementation": "95806a0ee05163145e59de97aeac7d67ff59a8d0",
+  "backend_scope_fix": "6524779eb1bd0a0d636a1b1496a6f1005389950d",
+  "verification_candidate": "a5f2a5d9165e12d88a48c7be4689d9de1bb228d4",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+    "contract_revision": "6524779eb1bd0a0d636a1b1496a6f1005389950d",
+    "source_dirty": false,
+    "files": {
+      "index.html": "a87d040529ea317ccf023c9887922b80d2fc940796d4ee186bf8fa11d6157e30",
+      "assets/ActionsPage-DkQIr7Uo.js": "e4b2193692bace344d6205d478a13793f230a7ea052df598cae66057103ff7f6",
+      "assets/GoalsPage-H9QeT7_0.js": "9336bc9c0c04ef100cf89db4feb9c861367eb3c51880cd62235bb4ad8243f8c5",
+      "assets/InvestmentPage-B0p9qa3U.js": "57cebd3fb6a74df2335da2721395630ed21d59bc16d4001fc24de028391661ec",
+      "assets/LearningPage-DI-jgoD0.js": "8d5ad823f306c9b67417992b9c3adeb3ba16d2a5496b1d30e37631ba59fd6cf0",
+      "assets/PendingNotice-DV2xWzqN.js": "d9b66aac2aa8853d656a218a188c845aa8ca4193cf0d6ae4ba69516271e22ca4",
+      "assets/PlanningPage-CllDGNrs.js": "f3b488aa82b86794deeb251aa41aedb13d38e4bc3039295c2dae4e775e0ecfe7",
+      "assets/PlansPage-D0-L_Q7x.js": "4bd45d13eedb95ee7b03b1e37142ec969ab5717b585e48976c53d2c879f6f355",
+      "assets/PracticePage-Dfr081t9.js": "f75ea0d3a588ab7fda6a5e20b70abf474faadac4db664dd00b772fe4d21cfb2b",
+      "assets/RecordsPage-D4wFTm1U.js": "b364361e5409bb1a2222a8d42c61e7bae97140412cc6667e87ad6d644befaff1",
+      "assets/ReviewPage-BAQQQ-af.js": "cc5c8b41295c3cd48e159c76f8c426519e9588a484df23585874481f3e6ca1f3",
+      "assets/SettingsPage-BIS7wdMe.js": "67c815ca350c92ad5c4b900c9cc8c084f2d5fc977eea17dfa6835f88e95db5a6",
+      "assets/TodayPage-BzCrXZqz.js": "29e3bba74821a19bb79740db07d0a8075325614b17cee304faef7131d76a440b",
+      "assets/draft-storage-B3K4C8Nl.js": "52deaab569bef87c26c9fb1c247e718b07b41cc60f0c7278a2a09197cd4c23d0",
+      "assets/index-Bo7CDYhL.js": "d877b3b17a960a497cc73936bf7e47f93252574e3f9b1cb6d223f8d791c9cd4c",
+      "assets/index-Ya5OMOg1.css": "37395de05f9baed6d2ebcb6612657c36a6bb38f7e55f05a5868616c797147880",
+      "assets/model-Cx6_vuN8.js": "696184d0e9fd629166ea5f196b36f67e0fcf8df5a9786856999128e5791b3264"
+    }
+  },
+  "migration": {
+    "path": "src/infrastructure/database/postgres/migrations/099_lighttick_investment_materials.sql",
+    "sha256": "b6ba5b2a164e40e577731287b48a8826653ae5dfad041115880b340f2df5cfb5"
+  },
+  "checks": {
+    "backend_full": {
+      "passed": 2465,
+      "failed": 0,
+      "existing_skipped": 1
+    },
+    "related_domain_HTTP_AI": {
+      "passed": 16
+    },
+    "risk_focused_unit": {
+      "passed": 113
+    },
+    "PG_Redis_joint": {
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0
+    },
+    "grow_unit": {
+      "passed": 31
+    },
+    "Chrome_materials": {
+      "passed": true,
+      "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+      "synthetic_account": "course11@example.com",
+      "material_id": "inv-61519dfc-b568-48a4-a17f-06b8e44d61e2",
+      "lost_response_exact_original_after_reload": true,
+      "baseline_local_cloud_CAS": true,
+      "cross_instrument_research_pins_different_versions": true,
+      "source_update_does_not_replace_research_refs": true,
+      "archive_rejects_new_refs_retains_old_client_and_history": true,
+      "restore_same_identity": true,
+      "optional_period_end_preserved": true,
+      "paginated_history_original_content": true,
+      "offline_reload_preserves_unsaved_draft": true,
+      "authorized_export_versions_receipts_and_relations": true,
+      "no_asset_account_required": true,
+      "cross_owner_denied": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "Chrome_scope_owner_recovery": {
+      "passed": true,
+      "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+      "optional_scope_and_period_end_roundtrip": true,
+      "account_and_instrument_mismatch_refused_without_fact": true,
+      "matching_scope_reference_accepted": true,
+      "switch_owner_retains_exact_original_without_replay": true,
+      "material_id": "inv-aca1adbf-76c9-4d31-ac4b-2009864fe0ad",
+      "synthetic_account": "course9@example.com",
+      "page_errors": []
+    },
+    "Chrome_research_AI": {
+      "passed": true,
+      "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+      "research_id": "inv-research-ai-c24723a525df",
+      "account": "course4@example.com",
+      "lost_response_exact_original_after_reload": true,
+      "analysis_guide_report_explicit_adoption": true,
+      "selected_personal_model_used": true,
+      "no_account_required": true,
+      "cancel_fences_late_results": true,
+      "provider_failure_no_fallback": true,
+      "source_change_refuses_result_and_adoption": true,
+      "model_change_refuses_result": true,
+      "original_facts_not_automatically_modified": true,
+      "export_no_secret": true,
+      "quota_refusal_keeps_draft_and_explicit_release": true,
+      "no_browser_secret": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": []
+    },
+    "material_AI_attached_worker": {
+      "passed": true,
+      "actual_attached_dispatcher_and_worker": true,
+      "frozen_exact_material_v1_after_v2_update": true,
+      "archived_material_refuses_adopt_and_new_work": true,
+      "adopted_old_material_version_export_retained": true,
+      "export_sha256_valid": true,
+      "material_id": "inv-runtime-material-2265a3caf8c94c778e3c0e4aa097c14d",
+      "work_id": "researchai-22473c0cddd8b0c905dbc618815e3117f4156710",
+      "account": "course10@example.com"
+    },
+    "restart": {
+      "passed": true,
+      "material_and_history_and_references_unchanged_after_restart": true,
+      "sha256": "ae78fc9dfce931d303fc26c9f2898cdf79bfd5e4fcea60b49d97b3d9a8a78489",
+      "material_id": "inv-18f220e0-6bd0-4e55-9d34-0f79eae9c739",
+      "versions": 6,
+      "current_references": 2
+    },
+    "legacy_final": [
+      {
+        "story": "u2",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/u2/result.json"
+      },
+      {
+        "story": "learning",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/learning/result.json"
+      },
+      {
+        "story": "records",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/records/result.json"
+      },
+      {
+        "story": "plans",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/plans/result.json"
+      },
+      {
+        "story": "actions",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/actions/result.json"
+      },
+      {
+        "story": "practice",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/practice/result.json"
+      },
+      {
+        "story": "review",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/review/result.json"
+      },
+      {
+        "story": "course",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/course/result.json"
+      },
+      {
+        "story": "investment_accounts",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/investment_accounts/result.json"
+      },
+      {
+        "story": "investment_ledger",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/investment_ledger/result.json"
+      },
+      {
+        "story": "market",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/market/result.json"
+      },
+      {
+        "story": "market_admin",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/market_admin/result.json"
+      },
+      {
+        "story": "research",
+        "passed": true,
+        "served_revision": "0fa0ac80d3446bb94e01318802352229a7d832bc",
+        "source": "regression-verified/research/result.json"
+      }
+    ]
+  },
+  "unresolved_observation": {
+    "scope": "synthetic_hybrid_HTTP_fixture_not_production_finding",
+    "observed": "file_ingest_owner_lock_wait_and_subsequent_login_wait",
+    "root_cause_proven": false,
+    "after_owned_process_termination": "same_durable_job_succeeded_attempt_2",
+    "job": {
+      "id": "work-7ee98f819b473d2ea8a16844424565e7c66aa3c3",
+      "owner": "user_course_3",
+      "status": "succeeded",
+      "kind": "file_ingest",
+      "attempt": "2",
+      "error": null
+    },
+    "subsequent_course_and_full_final_regression_passed": true,
+    "gate_retained": "U0_and_other_apps_off_on_mixed_P95"
+  },
+  "artifact_root": ".artifacts/materials-20261107",
+  "artifact_sha256": {
+    "full-unit-final.log": "4bb57f588319b2715fdf98f4d01d7614886680bf9310a0d61a485799b24ce58c",
+    "domain-metadata.log": "0dc11530e99f5d9ab878453998aedd9fb17e9b1faf0edee98e87bb64c4f9ddbb",
+    "risk-final.log": "854a9d7d9143b294eba8c41b3d98c674a688d727dc3ac9ab43f0654c826da5fb",
+    "pg-metadata-final.log": "e9344c9324dcd876d2cb541302c872fb1d7dfc95893f9fbec73aa336775cf7f0",
+    "types-final-metadata.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "types-ai.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "contracts-final.log": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1",
+    "contracts-lint-final.log": "089e4d159888b0c33a6b1cebef1eed012947956348301ec2535e50e66a24ad75",
+    "lines-final.log": "d1367ff08f5493dbbce27abdc5b9abcf3e6561b70dc488469d6a61551aff1907",
+    "grow-unit-recovery.log": "ded18e15068b6b0aa1e380374f07ab1816b41c277cd05149974d2053d8b98bfa",
+    "grow-types-recovery.log": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c",
+    "grow-build-recovery.log": "8076db26ce20e04e71f735388b9209c7d6af79f7b06cc8e06ae091e695b9059b",
+    "import-recovery.log": "f3718aaa9fbd7be90b0134a45f065c0be5348c4b5afc3a6a9bc03afe93f1ada7",
+    "contract-export-final.log": "ed672aaecd7e65a772d68d016783573cc13a50462558ace19021c302ec7b7380",
+    "materials-final/result.json": "f8a40e959164aadce637a8b2e6d181176afd0005b1e7aa2fb8824e79d0c0861d",
+    "materials-final/material-320.png": "51ab558c974050794f175c085962d7c581751d02080e06315c63583620139387",
+    "materials-final/material-desktop.png": "b61b13f99e28e08d3c6454b40b9d6594502b30a3b1b3dbb45675bde622302530",
+    "scope-final/result.json": "062171bf8f541169b0e6a889f0e1527caf0512117f092dd9786d07a9f45ebff8",
+    "scope-final/scope-and-owner-recovery.png": "f623cecc60d996e0b5695218b1c76fbde8faf8cfe40fb420bb0ac28a4f264bd6",
+    "ai-verified/result.json": "bce3f8dfcc66f02f310f8c6b5ceb1de2ca48a419d59366a6c30cfb8ccef9e4b3",
+    "runtime-proof-final.json": "3d3a58ab72d60f78ed683620c14492a3f5da8d2ecf4b1bb1ae806b2f4fae6f4e",
+    "restart-proof.json": "973dd49f5163fc2fc135bd43f84c81f9167bc5fce28153a7bc54fb167150326c",
+    "course-recheck/result.json": "ca3b48ad347f20d707a374b84e0b456f6545a69ac4e17af7aa3d8088147430eb",
+    "course-recovery-observation.json": "e592e614f57306704b731e33c258d63638ade2315d8cb564d6e7a43d9e3d20c0",
+    "regression-verified/results.json": "42a963671973eb8eb5246997b94a8a830383122b27fa492d44272d1de7a750d6",
+    "regression-final/course.log": "11cbf33d5c1ef4f8fc161352596156f107f1d21dbec2cf13e927a7d38da757a7",
+    "browser-final.log": "8cf9607cb0a441f4f1b911a330d447abd4fe8753a5802143ce2ffd611ffcf3db",
+    "browser-scope.log": "a3f27ca654fe0b6735760a375b98d8843accda98dc9338e1d3cd02596909d806",
+    "browser-ready-final.log": "d3e72e5f38988d76b5e4621fece69819da4ee0084ffe3ef00177f16a8c3f40c3",
+    "browser-recheck.log": "79baa0fa21a4b736216a2b02be8d74e553a559e5302dff9d4fbb0b9b098b8d65",
+    "scope-recheck.log": "3f2ceb2666662c3289116e85d1c7c140782b001763adcdf3444bd7924ed2ddac",
+    "full-unit.log": "b12a77698f08df635053939be51e2d4c0dd73a4373a6dcce722a81c59c6a2dad",
+    "http-domain.log": "ff9377f9e4a67ff7828a20f365381967f88e7dcd6e3f8ca2b8a738b1f4858ee1",
+    "http-fixed.log": "821d082f7f6ae449a24a332a78ae39a6e1ed3415b99c12e6f6172fe19d2eec46",
+    "domain-verified.log": "b1977532b22ee1a299cd940cbcf0f985d1c98dcb66a47a789e190916071a2763",
+    "regression-verified/u2/result.json": "81a9237e10858abb1e0a490e79f55dbfcfd22cc6786d6e4060739094fbcf57a1",
+    "regression-verified/learning/result.json": "ccfeffe661d8ce59bdeb0ef8ff5d66c0791339b9d3fe3beb22cb3f0c21143366",
+    "regression-verified/records/result.json": "98421b8f4acac7f0a398a4f840e551274293d24b62ab86e79437e303ccdcdd02",
+    "regression-verified/plans/result.json": "8e15de3650059b300c3b4735eb42075d67a1a311b8bf3fe391f884038981cd3a",
+    "regression-verified/actions/result.json": "2c4f831584eeededd8f6305582c26dbc4d3aadfc6cdc0968d6079d6a1bb7ec03",
+    "regression-verified/practice/result.json": "f08ba5677ca62dbf046693bef4ba0968cac82665384a567db3e429cc5e44bab0",
+    "regression-verified/review/result.json": "c7e78fa1f108bef7dbc70c6dee4bc48646a0be9a37d302eddfc0d5f7c104e043",
+    "regression-verified/course/result.json": "bd0cdf7c89501c8dc5d5a95bca6edb846bc9205e2e4f5093fba30010a9815282",
+    "regression-verified/investment_accounts/result.json": "d4c9058941429dc74ec28a948ee645819dcae9a574c2ce4e1b25e20438b44919",
+    "regression-verified/investment_ledger/result.json": "90b7657201f06d53fe818ac3456f5ed99cb389cf3a9530c2f72f96321720dbee",
+    "regression-verified/market/result.json": "0feb2ca42fbc3ab9fa65bebe75ab31a23006df7d4899e7b8faf7ea9c6738d589",
+    "regression-verified/market_admin/result.json": "0c5cd43587e1823627aac0f429b959b7934e9376a93e5df783e88eb47ed20865",
+    "regression-verified/research/result.json": "2e104e6a8133b3424a7732cec9a6505c8abde61040e17aaefdf76c94db423b4a",
+    "risk-check-closed.json": "e89705765cac8c219c157afc89a52b0ee6777b7e5500957c1566169870612475",
+    "grow-index-closed.patch": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f"
+  },
+  "local_runtime": {
+    "url": "http://127.0.0.1:58631/grow/investments",
+    "HTTP_pid": 1293,
+    "database": "grow_web_u1_20261107a1",
+    "isolated_PG_suite_database": "grow_web_u1_20261107a3",
+    "postgres_port": 58630,
+    "redis_port": 58632,
+    "synthetic_account": "course11@example.com",
+    "all_model_calls": "deterministic_fixture_only"
+  },
+  "real_history_read": false,
+  "real_provider_called": false,
+  "real_migration_executed": false,
+  "dev_online_released": false,
+  "remaining": [
+    "per_operation_legacy_parity",
+    "rules_screening_prediction_monitoring_backtests_and_ledger_compensation",
+    "remaining_settings_and_AI_callers",
+    "all_module_migration_compatibility_mixed_P95",
+    "real_model_devices_accessibility_observation_migration_release"
+  ],
+  "preserved_existing_grow_index_sha256": "9cdaaaa957f5fc98f1c00a878545714d080a080f4d012a6c2fe62eeaa824ea4f"
+}

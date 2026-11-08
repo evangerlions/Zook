@@ -1,3 +1,5 @@
+import {FilePurgeService} from "./infrastructure/files/file-purge.service.ts";
+import {PersistentFileStore} from "./infrastructure/files/persistent-file-store.ts";
 import { init } from "./infrastructure/runtime/init.ts";
 import { WorkerTickLogThrottle } from "./services/worker-tick-log-throttle.ts";
 import { resolveBuddyGrowthCapabilities } from "./modules/frogsleep/buddy-growth/buddy-growth-capabilities.ts";
@@ -10,6 +12,7 @@ const runtime = await init({
   serviceName: "worker",
   emitLogs: true,
 });
+const filePurge=new FilePurgeService(runtime.database,new PersistentFileStore());
 const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
 let tickRunning = false;
@@ -18,6 +21,7 @@ async function runTick(): Promise<void> {
   if (tickRunning) return;
   tickRunning = true;
   try {
+    const filePurges=await filePurge.runBatch();
     await runtime.services.contentSafetyService.cleanupExpiredRecords();
     await runtime.database.getBuddySupportRepository().cleanup("frogsleep", new Date().toISOString());
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
@@ -26,6 +30,7 @@ async function runTick(): Promise<void> {
     const llmCircuitConfirmation = await runtime.services.llmRouteCircuitRecoveryService.runPendingConfirmations();
     const llmCircuitRecovery = await runtime.services.llmRouteCircuitRecoveryService.runDueRecoveries();
     const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
+    const lighttickJobsRecovered=await runtime.services.lighttickRuntime.worker?.recover()??0;
     await runtime.queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
@@ -45,6 +50,8 @@ async function runTick(): Promise<void> {
     const bodyLogSettlement = await runtime.services.bodyLogWorkerService.processBatch();
 
     const context = {
+      ownerFilesRemoved:filePurges.removed,ownerFilesRetried:filePurges.retry,ownerFilesRetained:filePurges.retained,
+      lighttickJobsRecovered,
       jobName: "failed-events-replay",
       jobId: "scheduler",
       statusCode: 200,

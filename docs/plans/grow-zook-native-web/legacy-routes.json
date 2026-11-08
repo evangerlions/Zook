@@ -6524,5 +6524,7 @@
       "method": "GET",
       "relative_path": "/stats"
     }
-  ]
+  ],
+  "architecture_revision": "2026-11-02 corrected: Grow is LightTick Web; existing LightTick app membership and canonical API; shared authority with native iOS/Android; rejected Python deployment stays removed",
+  "requires_current_grow_revalidation": true
 }

@@ -1,0 +1,369 @@
+{
+  "bundle": {
+    "format_version": 1,
+    "module": "learning",
+    "mapping": {
+      "target_user_id": "risk-baseline-owner",
+      "source_account_id": "legacy-source-alice",
+      "source_instance": "synthetic-source",
+      "verified": true
+    },
+    "source": {
+      "instance": "synthetic-source",
+      "account_id": "legacy-source-alice",
+      "binding_id": "synthetic-binding",
+      "library_revision": 9,
+      "private_revision": 7,
+      "frozen": true,
+      "frozen_at": "2026-11-03T00:00:00.000Z"
+    },
+    "consent": {
+      "reading": true,
+      "private": true
+    },
+    "collections": [
+      {
+        "id": "plan-preserved-course",
+        "title": "Original course",
+        "archived": false
+      }
+    ],
+    "lessons": [
+      {
+        "id": "lesson-legacy-fixture",
+        "collection_id": "plan-preserved-course",
+        "number": 1,
+        "title": "Preserved lesson",
+        "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+        "learning_state": "unknown",
+        "publications": [
+          {
+            "content_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+            "content": "Original earlier lesson",
+            "references": "",
+            "source_url": ""
+          },
+          {
+            "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+            "content": "## 思考题\n- 如何应用？",
+            "references": "",
+            "source_url": ""
+          }
+        ]
+      }
+    ],
+    "private_states": [
+      {
+        "lesson_id": "lesson-legacy-fixture",
+        "content_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+        "draft_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+        "revision": 2,
+        "notes": "Older source note",
+        "answers": [],
+        "position": 35,
+        "completed": true,
+        "completed_at": null,
+        "updated_at": "2026-11-03T00:00:00.000Z"
+      },
+      {
+        "lesson_id": "lesson-legacy-fixture",
+        "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+        "draft_version": "fe14e5cfa1272e1923990b4d014b2c88c9a6fbef6db07b6732f9858c121f2ab5",
+        "revision": 4,
+        "notes": "Current source note",
+        "answers": [],
+        "position": 35,
+        "completed": false,
+        "completed_at": null,
+        "updated_at": "2026-11-03T00:00:00.000Z"
+      }
+    ],
+    "private_history": [
+      {
+        "lesson_id": "lesson-legacy-fixture",
+        "content_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+        "draft_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+        "revision": 1,
+        "notes": "Older source note",
+        "answers": [],
+        "position": 35,
+        "completed": true,
+        "completed_at": null,
+        "updated_at": "2026-11-03T00:00:00.000Z"
+      }
+    ],
+    "receipts": [
+      {
+        "id": "legacy-known-0001",
+        "lesson_id": "lesson-legacy-fixture",
+        "hash": "5aa396baea4875dd9b53148a026e8102da3771b980bb87f18fd687410adab1cb",
+        "status": "applied",
+        "error": "",
+        "created_at": null
+      },
+      {
+        "id": "legacy-pending-0001",
+        "lesson_id": "lesson-legacy-fixture",
+        "hash": "6faf4eeb5b015a141f9e7bd40b79361cccd949f723276e78dd9e84abeff021a7",
+        "status": "pending",
+        "error": "",
+        "body": {
+          "id": "legacy-pending-0001",
+          "lesson_id": "lesson-legacy-fixture",
+          "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+          "revision": 4,
+          "action": "save",
+          "notes": "Queued phone note",
+          "answers": [
+            {
+              "id": "old-question:1",
+              "prompt": "Old prompt",
+              "answer": "Retained answer"
+            }
+          ],
+          "position": 35
+        },
+        "created_at": null
+      },
+      {
+        "id": "legacy-pending-0002",
+        "lesson_id": "lesson-legacy-fixture",
+        "hash": "519543bceddf13a388618843a10d0f1347d32ca1484f02221d5eb63f0d99a944",
+        "status": "pending",
+        "error": "",
+        "body": {
+          "id": "legacy-pending-0002",
+          "lesson_id": "lesson-legacy-fixture",
+          "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+          "revision": 4,
+          "action": "complete",
+          "notes": "Queued phone note",
+          "answers": [
+            {
+              "id": "old-question:1",
+              "prompt": "Old prompt",
+              "answer": "Retained answer"
+            }
+          ],
+          "position": 35
+        },
+        "created_at": null
+      }
+    ],
+    "routes": [
+      {
+        "id": "plan-preserved-course",
+        "revision": 7,
+        "published_version": 2,
+        "status": "active",
+        "brief": {
+          "title": "Original course",
+          "goal": "Unpublished local source draft",
+          "level": "Beginner",
+          "minutes": 20,
+          "pacing": "self_paced",
+          "lesson_count": 2
+        },
+        "document": {
+          "prerequisites": "No prerequisites",
+          "stages": [
+            {
+              "title": "Foundation",
+              "goal": "Understand"
+            },
+            {
+              "title": "Practice",
+              "goal": "Transfer"
+            }
+          ],
+          "lessons": [
+            {
+              "number": 1,
+              "topic": "Preserved lesson",
+              "goal": "Explain",
+              "exercise": "Try",
+              "assessment": "Check",
+              "minutes": 15,
+              "stage": 1,
+              "kind": "lesson",
+              "requires": []
+            },
+            {
+              "number": 2,
+              "topic": "Review",
+              "goal": "Transfer",
+              "exercise": "Apply",
+              "assessment": "Review evidence",
+              "minutes": 20,
+              "stage": 2,
+              "kind": "review",
+              "requires": [
+                1
+              ]
+            }
+          ]
+        },
+        "versions": [
+          {
+            "version": 1,
+            "brief": {
+              "title": "Original course",
+              "goal": "Apply a concept",
+              "level": "Beginner",
+              "minutes": 20,
+              "pacing": "self_paced",
+              "lesson_count": 2
+            },
+            "document": {
+              "prerequisites": "No prerequisites",
+              "stages": [
+                {
+                  "title": "Foundation",
+                  "goal": "Understand"
+                },
+                {
+                  "title": "Practice",
+                  "goal": "Transfer"
+                }
+              ],
+              "lessons": [
+                {
+                  "number": 1,
+                  "topic": "Preserved lesson",
+                  "goal": "Explain",
+                  "exercise": "Try",
+                  "assessment": "Check",
+                  "minutes": 15,
+                  "stage": 1,
+                  "kind": "lesson",
+                  "requires": []
+                },
+                {
+                  "number": 2,
+                  "topic": "Review",
+                  "goal": "Transfer",
+                  "exercise": "Apply",
+                  "assessment": "Review evidence",
+                  "minutes": 20,
+                  "stage": 2,
+                  "kind": "review",
+                  "requires": [
+                    1
+                  ]
+                }
+              ]
+            },
+            "created_at": null
+          },
+          {
+            "version": 2,
+            "brief": {
+              "title": "Original course",
+              "goal": "Second formal goal",
+              "level": "Beginner",
+              "minutes": 20,
+              "pacing": "self_paced",
+              "lesson_count": 2
+            },
+            "document": {
+              "prerequisites": "No prerequisites",
+              "stages": [
+                {
+                  "title": "Foundation",
+                  "goal": "Understand"
+                },
+                {
+                  "title": "Practice",
+                  "goal": "Transfer"
+                }
+              ],
+              "lessons": [
+                {
+                  "number": 1,
+                  "topic": "Preserved lesson",
+                  "goal": "Explain",
+                  "exercise": "Try",
+                  "assessment": "Check",
+                  "minutes": 15,
+                  "stage": 1,
+                  "kind": "lesson",
+                  "requires": []
+                },
+                {
+                  "number": 2,
+                  "topic": "Review",
+                  "goal": "Transfer",
+                  "exercise": "Apply",
+                  "assessment": "Review evidence",
+                  "minutes": 20,
+                  "stage": 2,
+                  "kind": "review",
+                  "requires": [
+                    1
+                  ]
+                }
+              ]
+            },
+            "created_at": "2026-11-03T00:00:00.000Z"
+          }
+        ],
+        "lesson_links": [
+          {
+            "number": 1,
+            "lesson_id": "lesson-legacy-fixture",
+            "route_version": 1,
+            "first_content_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0"
+          }
+        ]
+      }
+    ]
+  },
+  "digest": "b7e2e9eac218cda45103993e2615fbf0a948cb039a30ade00e483f0364e99954",
+  "lesson": "lesson-legacy-fixture",
+  "current": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+  "old": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+  "draft": "fe14e5cfa1272e1923990b4d014b2c88c9a6fbef6db07b6732f9858c121f2ab5",
+  "applied": {
+    "id": "legacy-known-0001",
+    "lesson_id": "lesson-legacy-fixture",
+    "content_version": "fdcda592bc563828e1b51f72388886294ad8a451d0b55279f489ce128b02e9f0",
+    "revision": 1,
+    "action": "complete",
+    "notes": "",
+    "answers": [],
+    "position": 0
+  },
+  "pending": {
+    "id": "legacy-pending-0001",
+    "lesson_id": "lesson-legacy-fixture",
+    "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+    "revision": 4,
+    "action": "save",
+    "notes": "Queued phone note",
+    "answers": [
+      {
+        "id": "old-question:1",
+        "prompt": "Old prompt",
+        "answer": "Retained answer"
+      }
+    ],
+    "position": 35
+  },
+  "conflicted": {
+    "id": "legacy-pending-0002",
+    "lesson_id": "lesson-legacy-fixture",
+    "content_version": "d53280e19ec10ef51d2c91be9d45aea7ade411174efdfcdad4ce16c5b51960c7",
+    "revision": 4,
+    "action": "complete",
+    "notes": "Queued phone note",
+    "answers": [
+      {
+        "id": "old-question:1",
+        "prompt": "Old prompt",
+        "answer": "Retained answer"
+      }
+    ],
+    "position": 35
+  },
+  "id": "plan-preserved-course"
+}

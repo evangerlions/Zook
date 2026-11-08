@@ -16,8 +16,8 @@ docs={str(p.relative_to(r)):yaml.safe_load(p.read_text()) for p in (r/'openapi')
 json.dump({'docs':docs,'config':yaml.safe_load((r/'redocly.yaml').read_text()),
  'ignore':yaml.safe_load((r/'.redocly.lint-ignore.yaml').read_text()),
  'ledger':json.loads((r/'lint-exceptions.json').read_text())},sys.stdout)
-`, root], { encoding: "utf8" });
-assert.equal(parsed.status, 0, parsed.stderr);
+`, root], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
+assert.equal(parsed.status, 0, parsed.error?.message ?? parsed.stderr);
 const { docs, config, ignore, ledger } = JSON.parse(parsed.stdout);
 function pointer(doc: any, value: string) {
   return value.slice(2).split("/").map(x => x.replaceAll("~1", "/").replaceAll("~0", "~"))

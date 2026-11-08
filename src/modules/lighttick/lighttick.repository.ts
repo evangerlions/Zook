@@ -1,3 +1,5 @@
+import type { NativeLearningRepository } from "./learning/native-learning.types.ts";
+import type { LearningRouteRepository } from "./learning/learning-route.types.ts";
 import type { LocalAdoptionRepository } from './manual/local-adoption.types.ts';
 import type { RecordTransferRepository } from "./records/record-transfer.types.ts";
 import type { LightTickRecord, LightTickRecordRow, RecordQuery } from "./lighttick-record.service.ts";
@@ -19,11 +21,18 @@ export interface LightTickAtomicWrite {
 }
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
-export interface LightTickRepository extends ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+export interface LightTickRepository extends NativeLearningRepository, ActionRepository, RecordTransferRepository, LocalAdoptionRepository {
+  readonly researchAI: import("./investments/research-ai/research-ai.types.ts").ResearchAIRepository;
+  readonly github: import("./github/github.types.ts").GitHubRepository;
+  readonly personalModels: import("./personal-model/personal-model.types.ts").PersonalModelRepository;
+  readonly investments: import("./investments/investment.types.ts").InvestmentRepository;
+  readonly knowledge: import("./knowledge/knowledge.types.ts").KnowledgeRepository;
+  readonly learningRoutes: LearningRouteRepository;
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
   listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;
   recordVersions(owner: LightTickOwner, id: string): Promise<LightTickRecord[]>;
+  getRecordVersion(owner:LightTickOwner,id:string,version:number):Promise<LightTickRecord|undefined>;
   saveRecord(row: LightTickRecordRow, baseVersion: number): Promise<void>;
   lockPlanningOwner(owner: LightTickOwner): Promise<void>;
   getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined>;
@@ -45,7 +54,7 @@ export interface LightTickRepository extends ActionRepository, RecordTransferRep
   listTasks(owner: LightTickOwner, planId?: string): Promise<LightTickTaskRow[]>;
   getTask(owner: LightTickOwner, id: string): Promise<LightTickTaskRow | undefined>;
   saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickTaskRow>;
-  listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]>;
+  listTaskSteps(owner: LightTickOwner, taskId?: string): Promise<LightTickTaskStepRow[]>;
   getTaskStep(owner: LightTickOwner, taskId: string, id: string): Promise<LightTickTaskStepRow | undefined>;
   saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number): Promise<LightTickTaskStepRow>;
   listExecutionEvents(owner: LightTickOwner, from?: string, to?: string, goalId?: string): Promise<LightTickExecutionEventRow[]>;

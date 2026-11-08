@@ -1,0 +1,3096 @@
+openapi: 3.1.0
+info:
+  title: LightTick forecasts feedback and daily monitoring
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-observations
+  description: Frozen predictions, explicit feedback and opt-in daily monitoring
+paths:
+  /api/v1/lighttick/investments/observations/source-preview:
+    get:
+      operationId: readObservationSourcePreview
+      summary: readObservationSourcePreview
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - research
+          - material
+          - screen_rule
+          - screen_run
+      - name: id
+        in: query
+        required: true
+        schema: &id001
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: instrument_id
+        in: query
+        required: true
+        schema: *id001
+      - name: account_id
+        in: query
+        required: false
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationSourcePreviewEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/catalog:
+    get:
+      operationId: readObservationCatalog
+      summary: readObservationCatalog
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationCatalogEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/calibration:
+    get:
+      operationId: readForecastCalibration
+      summary: readForecastCalibration
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationCalibrationEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/work:
+    get:
+      operationId: listObservationWork
+      summary: listObservationWork
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: resource_id
+        in: query
+        required: false
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationWorkPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/work/{id}:
+    get:
+      operationId: readObservationWork
+      summary: readObservationWork
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/work/{id}/cancel:
+    post:
+      operationId: cancelObservationWork
+      summary: cancelObservationWork
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationCancel'
+  /api/v1/lighttick/investments/observations/predictions:
+    get:
+      operationId: listObservationPredictions
+      summary: listObservationPredictions
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: resource_id
+        in: query
+        required: false
+        schema: *id001
+      - name: include_archived
+        in: query
+        required: false
+        schema: &id002
+          type: boolean
+      - name: unread
+        in: query
+        required: false
+        schema: *id002
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/predictions/{id}:
+    get:
+      operationId: readObservationPredictions
+      summary: readObservationPredictions
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+    put:
+      operationId: saveObservationPredictions
+      summary: saveObservationPredictions
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationPredictionsWrite'
+  /api/v1/lighttick/investments/observations/predictions/{id}/history:
+    get:
+      operationId: readObservationPredictionsHistory
+      summary: readObservationPredictionsHistory
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/predictions/{id}/versions/{version}:
+    get:
+      operationId: readObservationPredictionsVersion
+      summary: readObservationPredictionsVersion
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/predictions/{id}/archive:
+    post:
+      operationId: archiveObservationPredictions
+      summary: archiveObservationPredictions
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/predictions/{id}/restore:
+    post:
+      operationId: restoreObservationPredictions
+      summary: restoreObservationPredictions
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/feedback:
+    get:
+      operationId: listObservationFeedback
+      summary: listObservationFeedback
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: resource_id
+        in: query
+        required: false
+        schema: *id001
+      - name: include_archived
+        in: query
+        required: false
+        schema: *id002
+      - name: unread
+        in: query
+        required: false
+        schema: *id002
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/feedback/{id}:
+    get:
+      operationId: readObservationFeedback
+      summary: readObservationFeedback
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+    put:
+      operationId: saveObservationFeedback
+      summary: saveObservationFeedback
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationFeedbackWrite'
+  /api/v1/lighttick/investments/observations/feedback/{id}/history:
+    get:
+      operationId: readObservationFeedbackHistory
+      summary: readObservationFeedbackHistory
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/feedback/{id}/versions/{version}:
+    get:
+      operationId: readObservationFeedbackVersion
+      summary: readObservationFeedbackVersion
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/feedback/{id}/archive:
+    post:
+      operationId: archiveObservationFeedback
+      summary: archiveObservationFeedback
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/feedback/{id}/restore:
+    post:
+      operationId: restoreObservationFeedback
+      summary: restoreObservationFeedback
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/monitors:
+    get:
+      operationId: listObservationMonitors
+      summary: listObservationMonitors
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: resource_id
+        in: query
+        required: false
+        schema: *id001
+      - name: include_archived
+        in: query
+        required: false
+        schema: *id002
+      - name: unread
+        in: query
+        required: false
+        schema: *id002
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/monitors/{id}:
+    get:
+      operationId: readObservationMonitors
+      summary: readObservationMonitors
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+    put:
+      operationId: saveObservationMonitors
+      summary: saveObservationMonitors
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationMonitorsWrite'
+  /api/v1/lighttick/investments/observations/monitors/{id}/history:
+    get:
+      operationId: readObservationMonitorsHistory
+      summary: readObservationMonitorsHistory
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/monitors/{id}/versions/{version}:
+    get:
+      operationId: readObservationMonitorsVersion
+      summary: readObservationMonitorsVersion
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/monitors/{id}/archive:
+    post:
+      operationId: archiveObservationMonitors
+      summary: archiveObservationMonitors
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/monitors/{id}/restore:
+    post:
+      operationId: restoreObservationMonitors
+      summary: restoreObservationMonitors
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/events:
+    get:
+      operationId: listObservationEvents
+      summary: listObservationEvents
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: resource_id
+        in: query
+        required: false
+        schema: *id001
+      - name: include_archived
+        in: query
+        required: false
+        schema: *id002
+      - name: unread
+        in: query
+        required: false
+        schema: *id002
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/events/{id}:
+    get:
+      operationId: readObservationEvents
+      summary: readObservationEvents
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/events/{id}/history:
+    get:
+      operationId: readObservationEventsHistory
+      summary: readObservationEventsHistory
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/events/{id}/versions/{version}:
+    get:
+      operationId: readObservationEventsVersion
+      summary: readObservationEventsVersion
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/observations/predictions/{id}/evaluate:
+    post:
+      operationId: evaluateObservationPrediction
+      summary: evaluateObservationPrediction
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationEvaluationRequest'
+  /api/v1/lighttick/investments/observations/monitors/{id}/check:
+    post:
+      operationId: checkObservationMonitor
+      summary: checkObservationMonitor
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationCheckRequest'
+  /api/v1/lighttick/investments/observations/monitors/{id}/stop:
+    post:
+      operationId: stopObservationMonitor
+      summary: stopObservationMonitor
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+  /api/v1/lighttick/investments/observations/events/{id}/read:
+    post:
+      operationId: readObservationEvent
+      summary: readObservationEvent
+      description: Owner-only immutable forecasts, explicit source/date/version selection,
+        durable evaluations and feedback, opt-in saved-daily monitoring on the existing
+        worker. CAS/original receipts, no asset account required. Missing/conflicting
+        prices, unreviewed corporate actions and future sessions are never resolved
+        as successes. Monitoring respects selected supplier, market calendar, cooldown,
+        deduplication and stop fence. No trading, arbitrary code, real-time HTTPS
+        quote adapter or legacy parity claim. No new entities in task-only sync. Read
+        response omits bulk bars; bounded owner export retains full frozen sources
+        and originals.
+      tags:
+      - lighttick-observations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentObservationEntryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentObservationRevision'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickInvestmentObservationSourceReference:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - version
+      - digest
+      properties:
+        kind:
+          type: string
+          enum:
+          - research
+          - material
+          - screen_rule
+          - screen_run
+        id: *id001
+        version:
+          type: integer
+          minimum: 1
+          maximum: 100
+        digest: &id003
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentObservationBaseline:
+      type: object
+      additionalProperties: false
+      required:
+      - snapshot_id
+      - input_digest
+      - date
+      properties:
+        snapshot_id: *id001
+        input_digest: *id003
+        date: &id010
+          type: string
+          format: date
+    LightTickInvestmentObservationPredictionFields:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - account_id
+      - direction
+      - probability
+      - reason
+      - counterevidence
+      - baseline
+      - references
+      properties:
+        instrument_id: *id001
+        account_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        direction:
+          type: string
+          enum:
+          - up
+          - down
+        probability:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 100
+          - type: 'null'
+        reason:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        counterevidence:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        baseline:
+          $ref: '#/components/schemas/LightTickInvestmentObservationBaseline'
+        references:
+          type: array
+          maxItems: 20
+          items: &id018
+            $ref: '#/components/schemas/LightTickInvestmentObservationSourceReference'
+    LightTickInvestmentObservationFeedbackFields:
+      type: object
+      additionalProperties: false
+      required:
+      - prediction_id
+      - evaluation_id
+      - horizon
+      - reflection
+      - learned
+      - next_step
+      properties:
+        prediction_id: *id001
+        evaluation_id: *id001
+        horizon:
+          type: integer
+          enum:
+          - 1
+          - 3
+          - 5
+          - 10
+        reflection:
+          type: string
+          maxLength: 4000
+          minLength: 1
+        learned:
+          type: string
+          maxLength: 4000
+        next_step:
+          type: string
+          maxLength: 2000
+    LightTickInvestmentObservationMonitorFields:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - account_id
+      - name
+      - field
+      - op
+      - threshold
+      - supplier
+      - enabled
+      - interval_seconds
+      - cooldown_seconds
+      properties:
+        instrument_id: *id001
+        account_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        field:
+          type: string
+          enum:
+          - close
+          - return_1d_pct
+          - volume_ratio_5
+          - price_above_ma20
+          - ma_bullish
+        op:
+          type: string
+          enum:
+          - gt
+          - gte
+          - lt
+          - lte
+        threshold:
+          type: string
+          maxLength: 100
+        supplier:
+          type: string
+          enum:
+          - csv
+          - tushare
+          - eastmoney
+          - tencent
+        enabled: *id002
+        interval_seconds:
+          type: integer
+          minimum: 300
+          maximum: 86400
+        cooldown_seconds:
+          type: integer
+          minimum: 60
+          maximum: 604800
+    LightTickInvestmentObservationEventFields:
+      type: object
+      additionalProperties: false
+      required:
+      - monitor_id
+      - monitor_version
+      - work_id
+      - observation
+      - deduplication_key
+      - read
+      properties:
+        monitor_id: *id001
+        monitor_version:
+          type: integer
+          minimum: 1
+          maximum: 100
+        work_id: *id001
+        observation: &id005
+          type: object
+        deduplication_key: *id003
+        read: *id002
+    LightTickInvestmentObservationMonitorRuntime:
+      type: object
+      additionalProperties: false
+      required:
+      - next_at
+      - last_source
+      - last_triggered_at
+      - last_work_id
+      properties:
+        next_at: &id004
+          type: string
+          format: date-time
+        last_source:
+          anyOf:
+          - *id003
+          - type: 'null'
+        last_triggered_at:
+          anyOf:
+          - *id004
+          - type: 'null'
+        last_work_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        last_error:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+    LightTickInvestmentObservationPredictionsEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - revision
+      - request_key
+      - digest
+      - archived
+      - created_at
+      - updated_at
+      - fields
+      properties:
+        kind:
+          type: string
+          enum:
+          - predictions
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key:
+          type: string
+          maxLength: 128
+        digest: *id003
+        archived: *id002
+        created_at: *id004
+        updated_at: *id004
+        fields: &id006
+          $ref: '#/components/schemas/LightTickInvestmentObservationPredictionFields'
+        frozen: *id005
+        runtime: &id007
+          $ref: '#/components/schemas/LightTickInvestmentObservationMonitorRuntime'
+    LightTickInvestmentObservationPredictionsWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - fields
+      - consent
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        fields: *id006
+        consent:
+          const: true
+          type: boolean
+    LightTickInvestmentObservationFeedbackEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - revision
+      - request_key
+      - digest
+      - archived
+      - created_at
+      - updated_at
+      - fields
+      properties:
+        kind:
+          type: string
+          enum:
+          - feedback
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key:
+          type: string
+          maxLength: 128
+        digest: *id003
+        archived: *id002
+        created_at: *id004
+        updated_at: *id004
+        fields: &id008
+          $ref: '#/components/schemas/LightTickInvestmentObservationFeedbackFields'
+        frozen: *id005
+        runtime: *id007
+    LightTickInvestmentObservationFeedbackWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - fields
+      - consent
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        fields: *id008
+        consent:
+          const: true
+          type: boolean
+    LightTickInvestmentObservationMonitorsEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - revision
+      - request_key
+      - digest
+      - archived
+      - created_at
+      - updated_at
+      - fields
+      properties:
+        kind:
+          type: string
+          enum:
+          - monitors
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key:
+          type: string
+          maxLength: 128
+        digest: *id003
+        archived: *id002
+        created_at: *id004
+        updated_at: *id004
+        fields: &id009
+          $ref: '#/components/schemas/LightTickInvestmentObservationMonitorFields'
+        frozen: *id005
+        runtime: *id007
+    LightTickInvestmentObservationMonitorsWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - fields
+      - consent
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        fields: *id009
+        consent:
+          const: true
+          type: boolean
+    LightTickInvestmentObservationEventsEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      - revision
+      - request_key
+      - digest
+      - archived
+      - created_at
+      - updated_at
+      - fields
+      properties:
+        kind:
+          type: string
+          enum:
+          - events
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key:
+          type: string
+          maxLength: 128
+        digest: *id003
+        archived: *id002
+        created_at: *id004
+        updated_at: *id004
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentObservationEventFields'
+        frozen: *id005
+        runtime: *id007
+    LightTickInvestmentObservationEntry:
+      anyOf:
+      - $ref: '#/components/schemas/LightTickInvestmentObservationPredictionsEntry'
+      - $ref: '#/components/schemas/LightTickInvestmentObservationFeedbackEntry'
+      - $ref: '#/components/schemas/LightTickInvestmentObservationMonitorsEntry'
+      - $ref: '#/components/schemas/LightTickInvestmentObservationEventsEntry'
+    LightTickInvestmentObservationPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items: &id017
+            $ref: '#/components/schemas/LightTickInvestmentObservationEntry'
+        revision:
+          anyOf:
+          - *id003
+          - type: integer
+            minimum: 1
+            maximum: 100
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentObservationRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 99
+    LightTickInvestmentObservationCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickInvestmentObservationCorporateActionReview:
+      type: object
+      additionalProperties: false
+      required:
+      - unchanged
+      - source_label
+      - available_at
+      properties:
+        unchanged: *id002
+        source_label:
+          type: string
+          maxLength: 500
+          minLength: 1
+        available_at: *id004
+    LightTickInvestmentObservationSnapshotSelection:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - input_digest
+      properties:
+        id: *id001
+        input_digest: *id003
+    LightTickInvestmentObservationEvaluationRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - as_of
+      - decision_at
+      - sources
+      - corporate_action_review
+      - consent
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        as_of: *id010
+        decision_at: *id004
+        sources:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentObservationSnapshotSelection'
+        corporate_action_review:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentObservationCorporateActionReview'
+          - type: 'null'
+        consent:
+          type: boolean
+          const: true
+    LightTickInvestmentObservationCheckRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - consent
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        snapshot_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        input_digest:
+          anyOf:
+          - *id003
+          - type: 'null'
+        consent:
+          type: boolean
+          const: true
+    LightTickInvestmentObservationOutcome:
+      type: object
+      additionalProperties: false
+      required:
+      - horizon
+      - state
+      - target_date
+      - price
+      - raw_return_pct
+      - correct
+      - reason
+      - source_ids
+      - dates
+      properties:
+        horizon:
+          type: integer
+          enum:
+          - 1
+          - 3
+          - 5
+          - 10
+        state:
+          type: string
+          enum:
+          - pending
+          - unknown
+          - resolved
+        target_date:
+          anyOf:
+          - *id010
+          - type: 'null'
+        price:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        raw_return_pct:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        correct:
+          anyOf:
+          - *id002
+          - type: 'null'
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+        source_ids:
+          type: array
+          maxItems: 21
+          items: *id001
+        dates:
+          type: array
+          maxItems: 80
+          items: *id010
+    LightTickInvestmentObservationEvaluationReport:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - outcomes
+      - input_digest
+      - output_digest
+      - limitations
+      properties:
+        kind:
+          type: string
+          enum:
+          - evaluation
+        outcomes:
+          type: array
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentObservationOutcome'
+        input_digest: *id003
+        output_digest: *id003
+        limitations:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 1000
+    LightTickInvestmentObservationCheckReport:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - state
+      - actual
+      - reason
+      - dates
+      - source_time
+      - input_digest
+      - output_digest
+      - limitations
+      - source
+      properties:
+        kind:
+          type: string
+          enum:
+          - check
+        state:
+          type: string
+          enum:
+          - triggered
+          - not_met
+          - unknown
+          - closed
+          - waiting_for_close
+        actual:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - *id002
+          - type: 'null'
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        dates:
+          type: array
+          maxItems: 80
+          items: *id010
+        source_time:
+          anyOf:
+          - *id010
+          - type: 'null'
+        input_digest: *id003
+        output_digest: *id003
+        limitations:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 1000
+        source: *id005
+    LightTickInvestmentObservationWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - sequence
+      - kind
+      - revision
+      - resource_id
+      - request_key
+      - input
+      - status
+      - attempt
+      - error_code
+      - output
+      - event_id
+      - event_disposition
+      - created_at
+      - updated_at
+      properties:
+        id: *id001
+        sequence: &id011
+          type: integer
+          minimum: 1
+          maximum: 300
+        kind: &id012
+          type: string
+          enum:
+          - evaluation
+          - check
+        revision: &id013
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        resource_id: *id001
+        request_key:
+          type: string
+          maxLength: 128
+        input: *id005
+        status: &id014
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt: &id015
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code: &id016
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        output:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentObservationEvaluationReport'
+          - $ref: '#/components/schemas/LightTickInvestmentObservationCheckReport'
+          - type: 'null'
+        event_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        event_disposition:
+          anyOf:
+          - type: string
+            enum:
+            - created
+            - duplicate
+            - cooldown
+            - not_triggered
+          - type: 'null'
+        created_at: *id004
+        updated_at: *id004
+    LightTickInvestmentObservationWorkSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - sequence
+      - kind
+      - revision
+      - resource_id
+      - status
+      - attempt
+      - error_code
+      - created_at
+      - updated_at
+      properties:
+        id: *id001
+        sequence: *id011
+        kind: *id012
+        revision: *id013
+        resource_id: *id001
+        status: *id014
+        attempt: *id015
+        error_code: *id016
+        created_at: *id004
+        updated_at: *id004
+    LightTickInvestmentObservationWorkPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentObservationWorkSummary'
+        revision: *id003
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentObservationCalibration:
+      type: object
+      additionalProperties: false
+      required:
+      - resolved
+      - unresolved
+      - correct
+      - accuracy
+      - probability_samples
+      - brier_score
+      - scope
+      - read_only
+      properties:
+        resolved:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        unresolved:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        correct:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        accuracy:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        probability_samples:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        brier_score:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        scope:
+          type: string
+          maxLength: 1000
+        read_only:
+          type: boolean
+          const: true
+    LightTickInvestmentObservationCatalog:
+      type: object
+      additionalProperties: false
+      required:
+      - algorithm_version
+      - horizons
+      - monitor_fields
+      - source_policy
+      - limits
+      properties:
+        algorithm_version:
+          type: string
+          enum:
+          - forecast-daily-rational-v1
+        horizons:
+          type: array
+          maxItems: 4
+          items:
+            type: integer
+            minimum: 1
+            maximum: 10
+        monitor_fields:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 100
+        source_policy:
+          type: string
+          maxLength: 2000
+        limits:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+            maximum: 10000000
+    LightTickInvestmentObservationEntryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data: *id017
+        requestId:
+          type: string
+    LightTickInvestmentObservationPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentObservationPage'
+        requestId:
+          type: string
+    LightTickInvestmentObservationWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentObservationWork'
+        requestId:
+          type: string
+    LightTickInvestmentObservationWorkPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentObservationWorkPage'
+        requestId:
+          type: string
+    LightTickInvestmentObservationCalibrationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentObservationCalibration'
+        requestId:
+          type: string
+    LightTickInvestmentObservationCatalogEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentObservationCatalog'
+        requestId:
+          type: string
+    LightTickInvestmentObservationSourcePreview:
+      type: object
+      additionalProperties: false
+      required:
+      - ref
+      - title
+      - excerpt
+      - truncated
+      properties:
+        ref: *id018
+        title:
+          type: string
+          maxLength: 200
+        excerpt:
+          type: string
+          maxLength: 4000
+        truncated: *id002
+    LightTickInvestmentObservationSourcePreviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentObservationSourcePreview'
+        requestId:
+          type: string

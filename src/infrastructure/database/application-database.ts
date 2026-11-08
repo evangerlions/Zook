@@ -1,3 +1,4 @@
+import type {FilePurgeTask} from "../files/file-purge.types.ts";
 import type { BuddySupportRepository } from "../../modules/frogsleep/buddy-support/buddy-support.types.ts";
 import { ApplicationBodyLogDatabase } from "./application-bodylog-database.ts";
 import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
@@ -158,6 +159,10 @@ export abstract class ApplicationDatabase extends ApplicationBodyLogDatabase {
   abstract insertAnalyticsEvents(records: AnalyticsEventRecord[]): MaybePromise<void>;
   abstract listAnalyticsEvents(appId: string): MaybePromise<AnalyticsEventRecord[]>;
 
+  async enqueueFilePurge(_appId:string,_userId:string,_storageKey:string):Promise<void>{}
+  async claimFilePurges(_limit:number,_now:Date):Promise<FilePurgeTask[]>{return [];}
+  async completeFilePurge(_task:FilePurgeTask):Promise<void>{}
+  async deferFilePurge(_task:FilePurgeTask,_now:Date):Promise<void>{}
   abstract insertFile(record: FileRecord): MaybePromise<void>;
   abstract findFileByOwnerAndStorageKey(
     appId: string,

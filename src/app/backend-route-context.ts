@@ -7,6 +7,7 @@ import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
 import { AuthGuard } from "../core/guards/auth.guard.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
+import {assertActiveProductOwner,requireAdminSession} from './backend-access-checks.ts';
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { AuditInterceptor } from "../core/interceptors/audit.interceptor.ts";
 import { parseClientAccountRegion } from "../modules/app-registry/account-region.ts";
@@ -152,6 +153,10 @@ export class BackendRouteContext {
     return this.publicApiMessageService.resolveLocale(request);
   }
 
+  public async assertActiveProductOwner(appId:string,userId:string):Promise<void> {
+    await assertActiveProductOwner(this.database,appId,userId);
+  }
+
   public authenticateAdmin(request: HttpRequest): string {
     if (request.adminSession) {
       return request.adminSession.username;
@@ -181,15 +186,7 @@ export class BackendRouteContext {
   }
 
   public requireAdminSession(request: HttpRequest): AdminSessionRecord {
-    if (!request.adminSession) {
-      throw new ApplicationError(
-        401,
-        "ADMIN_AUTH_REQUIRED",
-        "Admin session login is required.",
-      );
-    }
-
-    return request.adminSession;
+    return requireAdminSession(request);
   }
 
   public getFrogSleepAdminStore() { return this.database.getFrogSleepAdminStore(); }

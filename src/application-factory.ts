@@ -415,7 +415,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonEmailConfigService,
     registrationEmailSender,
   });
-  attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService });
+  attachApplicationLightTickWorkers({ appConfigService,kvManager,runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService, storageService, fileStore:persistentFileStore });
   const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService, bodyLogAdminService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(new Map(apps.filter((item) => item.apiDomain).map((item) => [item.apiDomain as string, item.id])));

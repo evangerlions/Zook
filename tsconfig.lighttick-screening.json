@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.lighttick-actions.json","include":["src/modules/lighttick/investments/screening/**/*.ts","src/app/lighttick-screening-routes.ts","src/infrastructure/database/postgres/postgres-screening-store.ts"]}

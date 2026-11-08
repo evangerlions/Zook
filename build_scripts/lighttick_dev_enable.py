@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import urlsplit,unquote,parse_qsl
 import argparse,json,os,re,subprocess,sys,tempfile,time
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from grow_plan import env_file
+from runtime_env import env_file
 from build_and_push_docker import deployment_lock,sanitize_image_name
 parser=argparse.ArgumentParser(description="Check isolated dev and optionally enable LightTick on its verified release.")
 parser.add_argument('--repo',type=Path,default=Path.cwd())
@@ -19,7 +19,7 @@ repo=args.repo.resolve();path=repo/'deploy_configs/dev.env';online=repo/'deploy_
 flags={'APP_ENV':'dev','DEPLOY_SLOT':'dev','LIGHTTICK_ENABLED':'1','LIGHTTICK_SEED_ENABLED':'0',
        'LIGHTTICK_ACTIONS_ENABLED':'1','LIGHTTICK_ACTIONS_V2_ENABLED':'1',
        'LIGHTTICK_MANUAL_PLANNING_ENABLED':'1','LIGHTTICK_NATIVE_CONTINUATION_ENABLED':'1',
-       'LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED':'0','GROW_DEPLOY_ENABLED':'0'}
+       'LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED':'0'}
 client_keys=('PATH','HOME','TMPDIR','SSH_AUTH_SOCK','DOCKER_CONFIG','DOCKER_HOST','DOCKER_CONTEXT',
              'DOCKER_TLS_VERIFY','DOCKER_CERT_PATH','HTTP_PROXY','HTTPS_PROXY','NO_PROXY')
 client_env={k:os.environ[k] for k in client_keys if k in os.environ}
@@ -43,8 +43,8 @@ with deployment_lock(repo/'.deploy/deploy.lock',0):
     dev_project=project(dev,'dev');online_project=project(prod,'online')
     if dev_project==online_project:raise SystemExit('STOP: dev/online Compose project collision.')
     active=json.loads((repo/'.deploy/dev/deploy_state.json').read_text())['active_release']
-    if active.get('commit')!=release or 'grow' in active.get('images',{}):
-        raise SystemExit('STOP: recorded dev release differs or already contains Grow.')
+    if active.get('commit')!=release or set(active.get('images',{})) - {'api','worker','admin-web'}:
+        raise SystemExit('STOP: recorded dev release differs or contains unsupported services.')
     api=docker('ps','-q','--filter','label=com.docker.compose.project='+dev_project,'--filter','label=com.docker.compose.service=api').splitlines()
     if len(api)!=1:raise SystemExit('STOP: expected one running dev API container.')
     actual=docker('inspect',api[0],'--format','{{.Image}}')
@@ -79,8 +79,6 @@ with deployment_lock(repo/'.deploy/deploy.lock',0):
         return (candidate if candidate.is_absolute() else repo/candidate).resolve()
     if data_path(dev.get('ZOOK_APP_RUN_DATA_HOST_PATH'))==data_path(prod.get('ZOOK_APP_RUN_DATA_HOST_PATH')):
         raise SystemExit('STOP: dev/online file storage isolation needs review. Nothing changed.')
-    if dev.get('GROW_DEPLOY_ENABLED','0') not in ('0',''):
-        raise SystemExit('STOP: Grow already enabled; review its actual deployment before changing config.')
     old=path.read_bytes();text=old.decode()
     lines=[line for line in text.splitlines() if not re.match(r'^\s*(?:export\s+)?(?:'+ '|'.join(flags)+r')\s*=',line)]
     lines=[line for line in lines if line!='# LightTick isolated dev runtime']
@@ -100,9 +98,8 @@ with deployment_lock(repo/'.deploy/deploy.lock',0):
         print('Runtime flags patched; private backup: '+str(file))
     else:print('Dry run: checks passed; no env change.' if not args.apply else 'Runtime flags already match; no rewrite.')
     if args.apply:path.chmod(0o600)
-    print('No DB/auth values printed or replaced; Grow remains disabled.')
+    print('No DB/auth values printed or replaced; only LightTick flags are updated.')
 # Deploy from a clean client environment; all runtime values come from dev.env.
-client_env['GROW_DEPLOY_ENABLED']='0'
 if args.rebuild:subprocess.run([sys.executable,'build_scripts/build_and_push_docker.py',
     '--branch','release-dev','--commit',release,'--slot','dev','--image-name',image_name,
     '--env-file','deploy_configs/dev.env','--app-env-file','deploy_configs/dev.env',
