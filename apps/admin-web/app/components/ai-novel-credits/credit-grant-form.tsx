@@ -6,6 +6,7 @@ import { CreditSelectedUser, CreditUserResults } from "./credit-user-results";
 import { CreditGrantPresets } from "./credit-grant-presets";
 import { CreditSearchInput } from "./credit-search-input";
 import { addSearchHistory, loadSearchHistory, saveSearchHistory, searchHistoryStorage } from "./credit-search-history";
+import { selectedUserForSearch } from "./credit-search-selection";
 
 type Grant = { uid: string; points: number; idempotencyKey: string };
 const pendingKey = "zook.admin.pending-credit-grant";
@@ -35,11 +36,11 @@ export function CreditGrantForm({ onGranted, adminUser }: { onGranted: () => voi
   const confirming = useRef(false);
   function reset() { generation.current++; setUsers([]); setSelected(undefined); setSearched(false); setSearching(false); setTooMany(false); setError(undefined); }
   async function search(value: string) {
-    const id = ++generation.current; setSearching(true); setSelected(undefined); setError(undefined); setSearched(false);
+    const id = ++generation.current; setSearching(true); setUsers([]); setSelected(undefined); setTooMany(false); setError(undefined); setSearched(false);
     try {
       const result = await searchCreditUsers(field, value);
       if (id !== generation.current) return;
-      setUsers(result.users); setTooMany(result.tooMany); setSearched(true);
+      setUsers(result.users); setSelected(selectedUserForSearch(result)); setTooMany(result.tooMany); setSearched(true);
       const next = addSearchHistory(history, field, value);
       setHistory(next); saveSearchHistory(searchHistoryStorage(), adminUser, next);
     } catch (e) { if (id === generation.current) setError(e instanceof Error ? e.message : "查询失败"); }
