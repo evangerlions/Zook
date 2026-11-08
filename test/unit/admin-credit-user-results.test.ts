@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 
 const adminRoot = new URL("../../apps/admin-web/", import.meta.url);
@@ -12,10 +12,10 @@ test("credit search results render directly with a bounded scroll area and selec
   const esbuild = require("esbuild") as typeof import("esbuild");
   const React = require("react") as typeof import("react");
   const { renderToStaticMarkup } = require("react-dom/server") as typeof import("react-dom/server");
-  const directory = await mkdtemp(join(new URL("node_modules/", adminRoot).pathname, ".credit-test-"));
+  const directory = await mkdtemp(join(fileURLToPath(new URL("node_modules/", adminRoot)), ".credit-test-"));
   try {
     const output = join(directory, "results.mjs");
-    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-user-results.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", loader: { ".css": "empty" }, logLevel: "silent" });
+    await esbuild.build({ entryPoints: [fileURLToPath(new URL("app/components/ai-novel-credits/credit-user-results.tsx", adminRoot))], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", loader: { ".css": "empty" }, logLevel: "silent" });
     const { CreditUserResults, CreditSelectedUser } = await import(pathToFileURL(output).href);
     const users = Array.from({ length: 9 }, (_, index) => ({ uid: `uid-${index}`, phone: `phone-${index}`, email: `email-${index}@example.invalid` }));
     const html = renderToStaticMarkup(React.createElement(CreditUserResults, { users, selected: "uid-1", disabled: false, onSelect: () => {} }));
@@ -48,10 +48,10 @@ test("credit presets fill the chosen amount and respect the disabled state", asy
   const esbuild = require("esbuild") as typeof import("esbuild");
   const React = require("react") as typeof import("react");
   const { renderToStaticMarkup } = require("react-dom/server") as typeof import("react-dom/server");
-  const directory = await mkdtemp(join(new URL("node_modules/", adminRoot).pathname, ".credit-test-"));
+  const directory = await mkdtemp(join(fileURLToPath(new URL("node_modules/", adminRoot)), ".credit-test-"));
   try {
     const output = join(directory, "presets.mjs");
-    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-grant-presets.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", logLevel: "silent" });
+    await esbuild.build({ entryPoints: [fileURLToPath(new URL("app/components/ai-novel-credits/credit-grant-presets.tsx", adminRoot))], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", logLevel: "silent" });
     const { CreditGrantPresets } = await import(pathToFileURL(output).href);
     let selected = 0;
     const props = { points: null, disabled: false, onSelect: (value: number) => { selected = value; } };
@@ -69,10 +69,10 @@ test("credit presets fill the chosen amount and respect the disabled state", asy
 test("grant recipient tooltip shows recorded contacts and identifies legacy data", async () => {
   const esbuild = require("esbuild") as typeof import("esbuild");
   const { renderToStaticMarkup } = require("react-dom/server") as typeof import("react-dom/server");
-  const directory = await mkdtemp(join(new URL("node_modules/", adminRoot).pathname, ".credit-test-"));
+  const directory = await mkdtemp(join(fileURLToPath(new URL("node_modules/", adminRoot)), ".credit-test-"));
   try {
     const output = join(directory, "recipient.mjs");
-    await esbuild.build({ entryPoints: [new URL("app/components/ai-novel-credits/credit-grant-recipient.tsx", adminRoot).pathname], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", loader: { ".css": "empty" }, logLevel: "silent" });
+    await esbuild.build({ entryPoints: [fileURLToPath(new URL("app/components/ai-novel-credits/credit-grant-recipient.tsx", adminRoot))], outfile: output, bundle: true, packages: "external", format: "esm", platform: "node", jsx: "automatic", loader: { ".css": "empty" }, logLevel: "silent" });
     const { CreditGrantRecipient } = await import(pathToFileURL(output).href);
     const record = { uid: "user-1", phone: "+12025550100", email: "person@example.invalid", contactSource: "snapshot" };
     const snapshot = CreditGrantRecipient({ record });
