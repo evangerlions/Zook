@@ -16,8 +16,9 @@ export async function handleFormRecordsRequest(
   if (r.path !== root && !r.path.startsWith(root + "/")) return;
   const service = new FormRecordsService(repo, authorize);
   if (r.method === "GET" && r.path === root) return service.read(owner);
-  const receipt = /^\/receipts\/([a-zA-Z0-9_-]{8,128})$/.exec(r.path.slice(root.length));
-  if (r.method === "GET" && receipt) return service.receipt(owner, receipt[1]);
+  const receiptRoot = root + "/receipts/";
+  if (r.method === "GET" && r.path.startsWith(receiptRoot))
+    return service.receipt(owner, r.path.slice(receiptRoot.length));
   if (r.method === "GET" && r.path === root + "/export")
     return {
       format_version: 1,

@@ -124,4 +124,5 @@ test("core form receipt lookup returns only the exact owner's historical result 
  assert.equal((await service.read(owner)).revision,2);assert.equal((await service.read(owner)).data.customRecords.length,0);
  const token=app.services.tokenService.issueAccessToken("user_bob","lighttick");assert.equal((await call("form-records/receipts/scope-form-receipt","GET",undefined,token)).statusCode,404);
  assert.equal((await call("form-records/receipts/unknown-original-key")).statusCode,404);
+ assert.equal((await call("form-records/receipts/short")).statusCode,422);
 });
