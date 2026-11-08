@@ -66093,7 +66093,7 @@ export const LightTickFormSnapshotSchema = {
     "revision": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 2147483646
+      "maximum": 2147483647
     },
     "data": {
       "type": "object",
@@ -66632,7 +66632,7 @@ export const LightTickFormExportSchema = {
         "revision": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 2147483646
+          "maximum": 2147483647
         },
         "data": {
           "type": "object",
@@ -66910,7 +66910,7 @@ export const LightTickFormEnvelopeSchema = {
         "revision": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 2147483646
+          "maximum": 2147483647
         },
         "data": {
           "type": "object",
@@ -67218,7 +67218,7 @@ export const LightTickFormExportEnvelopeSchema = {
             "revision": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 2147483646
+              "maximum": 2147483647
             },
             "data": {
               "type": "object",

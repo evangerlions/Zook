@@ -239,3 +239,49 @@ test("all seven old form golden values retain fields, zero, unknown probability 
   assert.equal((await repo.listTasks(o)).length, 0);
   assert.equal((await repo.listReflections(o)).length, 0);
 });
+
+test("the final INT32 form revision remains readable and contract-valid while further mutations are refused", async () => {
+  const { default: Ajv } = await import("ajv/dist/2020.js"),
+    { LightTickFormEnvelopeSchema } =
+      await import("../../src/generated/openapi/public-contracts.generated.ts");
+  const repo = new InMemoryLightTickRepository(),
+    s = new FormRecordsService(repo),
+    owner = { ...o, userId: "form-revision-limit" };
+  await repo.formRecords.save(
+    owner,
+    {
+      revision: 2147483646,
+      data: emptyFormRecords(),
+      updated_at: "2026-11-08T00:00:00Z",
+    },
+    0,
+  );
+  const body = { base_revision: 2147483646, value: [] };
+  const saved = await s.patch(owner, "insights", body, "section-last-revision");
+  assert.equal(saved.revision, 2147483647);
+  const valid = new Ajv({ strict: false }).compile(LightTickFormEnvelopeSchema);
+  assert.equal(
+    valid({
+      code: "OK",
+      message: "",
+      requestId: "revision-limit",
+      data: saved,
+    }),
+    true,
+    JSON.stringify(valid.errors),
+  );
+  assert.deepEqual(
+    await s.patch(owner, "insights", body, "section-last-revision"),
+    saved,
+  );
+  await assert.rejects(
+    s.patch(
+      owner,
+      "insights",
+      { base_revision: 2147483647, value: [] },
+      "section-overflow",
+    ),
+    { statusCode: 422 },
+  );
+  assert.equal((await s.read(owner)).revision, 2147483647);
+});

@@ -156,6 +156,12 @@
       "tests": [
         "test/unit/lighttick-form-sections.test.ts"
       ]
+    },
+    {
+      "id": "form_page_deep_link_static_allowlist",
+      "tests": [
+        "test/unit/admin-web.grow-static.test.ts"
+      ]
     }
   ],
   "postgres_tests": [

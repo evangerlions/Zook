@@ -197,3 +197,42 @@ test("PG owner-lock wait freezes original section body and stale late writes can
     await pool.end();
   }
 });
+
+test("PG final INT32 revision stores exactly, replays once and rejects overflow without erasing its data", async () => {
+  const pool = new Pool({ connectionString: dsn }),
+    repo = new PostgresLightTickRepository(pool),
+    s = new FormRecordsService(repo),
+    o = {
+      appId: "lighttick" as const,
+      userId: "sections-limit-" + process.pid,
+    };
+  try {
+    await repo.formRecords.save(
+      o,
+      {
+        revision: 2147483646,
+        data: emptyFormRecords(),
+        updated_at: "2026-11-08T00:00:00Z",
+      },
+      0,
+    );
+    const body = {
+        base_revision: 2147483646,
+        value: [{ date: "2026-11-08", insight: "Final revision" }],
+      },
+      saved = await s.patch(o, "insights", body, "sections-pg-last");
+    assert.equal(saved.revision, 2147483647);
+    assert.deepEqual(
+      await s.patch(o, "insights", body, "sections-pg-last"),
+      saved,
+    );
+    await assert.rejects(
+      s.clear(o, { base_revision: 2147483647 }, "sections-pg-overflow"),
+      { statusCode: 422 },
+    );
+    assert.equal((await s.read(o)).data.insights[0].insight, "Final revision");
+  } finally {
+    await repo.deleteOwnerData(o);
+    await pool.end();
+  }
+});

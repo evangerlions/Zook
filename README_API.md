@@ -1999,3 +1999,5 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 `PATCH /api/v1/lighttick/form-records/sections/{section}` 使用同一普通账号权限、`Idempotency-Key` 与整份局部表单修订。section 为 habits/custom/decisions/predictions/reviews/insights/todos；请求 `{ base_revision, value }`，响应仍为完整 `{ revision, data, updated_at }`。habits 的 value 为日期→手工分钟/备注；custom 同时包含 customFields 和 customRecords；其余为该栏记录数组。其他栏逐字保留；并发修改即使发生在另一栏也409，不自动按数组下标合并或重基。
 
 自定义字段删除必须同时核对并移除其关联单元格；保留不属于已删除字段的历史附加内容。日期和已填写数值按字段校验，空自报概率/数值不是0。范围/版本/原请求正文在等待owner锁前冻结；命令、写入和回执一起提交/回滚，回放重新鉴权。保存表单复盘、预测或勾选历史待办不会创建/完成原生任务、原生复盘或课程。历史表单待办与现有共享行动是不同身份，新行动继续使用原行动接口。无新增迁移，也不自动导入旧数据。
+
+局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。

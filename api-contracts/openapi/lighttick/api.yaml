@@ -6922,7 +6922,7 @@ components:
         revision:
           type: integer
           minimum: 0
-          maximum: 2147483646
+          maximum: 2147483647
         data:
           $ref: '#/components/schemas/LightTickFormData'
         updated_at:
