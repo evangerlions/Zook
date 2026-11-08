@@ -147,3 +147,8 @@ U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fix
 ### 2026-11-08 审查问题收敛
 
 六个审查修复子任务通过，见[子任务](review-remediation-subtasks.md)与[证据](../../verification/grow-react-u1-20261103/review-remediation.md)。Grow设置接已有canonical capabilities、真实开关/凭据状态、失败重试与切号保护；原草稿的Python服务/自动换源、100%完成、20%抽验、降低原生/性能门槛和删除式回退已纠正，相关草稿仍保留未提交。Grow干净8c81adc类型/构建/43测试、17服务资产校验、Zook合同/风险/行数及相关59测试、Chrome新专项和旧报告只读回看通过；同一合成库重启摘要不变。本轮没有新的生产API/迁移，也未重跑完整PG23/后端2525集合；不代签全U0/U5、个人数据源或真实迁移/发布，主任务仍21/27。下一项账本纠错/补偿及估值/绩效。
+
+
+### 2026-11-08 Grow Web源码迁入plan
+
+用户明确更新目录决策：Grow React唯一开发入口迁入plan/LightTick-Web，由plan Git管理；原grow保留历史及未提交旧功能，不维护React平行副本。目录迁移4/4验收见[plan记录](../../../../plan/docs/03-technical/grow-web-plan-migration-2026-11-08.md)：134文件转移、133原文件摘要不变，Web45测试/类型/构建、17运行资源相同及实际服务摘要、静态兼容4项、Chrome来源/旧报告与同库重启通过。固定plan206712ab，合同仍80b89823，无生产API/数据库改动。业务仍21/27，下一项账本纠错/补偿及估值/绩效；不以迁移目录代签其余门禁，未迁移真实数据或发布。

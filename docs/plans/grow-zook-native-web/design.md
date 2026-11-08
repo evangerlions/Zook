@@ -6,7 +6,7 @@
 
 ## Goals / Non-Goals
 
-目标：同产品同对象同规则；三端可写，由唯一服务端权威裁决；保留原生本机模式与无Web/AI基础闭环；React前端留原仓库；复用Zook既有服务；不丢原功能、版本和历史。
+目标：同产品同对象同规则；三端可写，由唯一服务端权威裁决；保留原生本机模式与无Web/AI基础闭环；React前端归plan/LightTick-Web并与原生协同规划；复用Zook既有服务；不丢原功能、版本和历史。
 
 非目标：新增grow appId/平行API、第二套主数据双写、恢复services/grow、重建原生客户端、引入微服务或通用插件框架。Web独有复杂工具不要求首批原生全量复制UI。
 
@@ -18,7 +18,7 @@
 
 后端新增/扩展落在 `src/modules/lighttick/{records,manual,actions,learning,reading,knowledge,cognition,investments,research}` 及既有基础设施。按实际领域复用，不强行把记录、共享行动、执行task、学习路线并表。纯算法确实复用时才提取中立服务。
 
-Grow前端推荐React+TypeScript+Vite，按feature组织；服务器数据、本地表单、URL状态分开，路由级懒加载。跨页服务器草稿有显式保存语义，本机草稿不默认上传。Zook不维护另一份前端源码。
+Grow前端位于plan/LightTick-Web，由plan仓库与原生协同管理，使用React+TypeScript+Vite，按feature组织；服务器数据、本地表单、URL状态分开，路由级懒加载。跨页服务器草稿有显式保存语义，本机草稿不默认上传。Zook不维护另一份前端源码。
 
 ### 2. 同步覆盖必须逐领域验证
 

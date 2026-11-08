@@ -1,3 +1,5 @@
+> 2026-11-08用户目录决策：React开发源已迁入plan/LightTick-Web，目录迁移4/4证据见[plan记录](../../../../plan/docs/03-technical/grow-web-plan-migration-2026-11-08.md)。旧源码清单与历史验收仍保留原路径/提交；新构建固定plan SHA。业务主任务21/27保持。
+
 > 2026-11-03 首批代码已实现并验证：React记录、手动基础计划/今日任务、固定静态挂载和task同步回执修复。见[报告](../../verification/grow-react-u1-20261103/README.md)。学习权威、全专题和发布仍未完成；下文架构边界继续适用。
 
 # Grow：LightTick Web 端重构与统一后端规划
@@ -6,7 +8,7 @@
 
 ## 已确定边界
 
-- Grow React/TypeScript/Vite 静态前端源码留在 `/Volumes/肖豪/project/grow`。
+- Grow React/TypeScript/Vite静态前端源码位于 `/Volumes/肖豪/project/plan/LightTick-Web`，由plan仓库与两端协同维护（2026-11-08用户更新目录决策）。
 - LightTick iOS/Android 客户端留在 `plan` 对应原生仓库，保留免登录本机模式和原生自足基础闭环。
 - 三端使用同一 Zook 身份、既有 LightTick app membership、`/api/v1/lighttick/...` 和同一业务对象；不建立两产品互相复制的同步系统。
 - 后端只在 Zook `src/modules/lighttick`、`src/app/lighttick*` 和现有 PostgreSQL基础设施实现；公共能力按既有多 App框架复用。
@@ -27,7 +29,7 @@ LightTick Android ───┘                   └─ 平台公共能力 + 既
 ## 阅读入口
 
 - [后端与同步设计](design.md)、[范围](proposal.md)、[实施任务](tasks.md)。
-- [当前源码摘要](current-grow-source-inventory.json)：283个业务/前端源码文件、431个AST路由声明；不等于注册HTTP操作数。
+- [2026-11-02旧源码基线摘要](current-grow-source-inventory.json)：283个业务/前端源码文件、431个AST路由声明；不等于注册HTTP操作数。
 - [历史API清单](legacy-routes.json)、[行为迁移账本](migration-ledger.json)：历史511个操作仍待与当前源码及行为逐项核对。
 - [Web规范](specs/grow-native-web/spec.md)、[平台接入规范](specs/grow-platform-services/spec.md)、[同步兼容规范](specs/grow-compatibility-gates/spec.md)。
 

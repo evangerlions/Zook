@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: React Web as a LightTick client
-Grow SHALL be a statically built React/TypeScript Web client in its original repository and use the existing LightTick product identity and membership. It MUST NOT create a separate Grow appId or duplicate product data/API solely for the Web surface.
+Grow SHALL be a statically built React/TypeScript Web client in plan/LightTick-Web, managed by the plan repository alongside native-client planning and use the existing LightTick product identity and membership. It MUST NOT create a separate Grow appId or duplicate product data/API solely for the Web surface.
 
 #### Scenario: Existing LightTick user opens Grow
 - **WHEN** a member signs into Grow

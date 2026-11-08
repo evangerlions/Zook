@@ -44,3 +44,8 @@ Zook运行代码 `689bea57d19f76f4f1110abb11124b23836756da`，合同/实现 `80b
 ## 2026-11-08 审查修复候选（仍HOLD）
 
 Grow干净产物 `8c81adc0635403a447fe9fa6de5dbac2ac9a3f26`，合同固定80b89823，17资产实际校验通过；Zook无生产逻辑或迁移变动，继续现有689bea57业务实现/最高迁移102。相关草稿不能用100%/设计完成、Chrome移动视口、绝对500ms、辅助抽验或删除式回退替代原门禁。见[本轮证据](../../verification/grow-react-u1-20261103/review-remediation.json)。未授权真实迁移/发布，无最终main放行SHA；主任务仍21/27。
+
+
+## 2026-11-08 plan/Web目录候选（仍HOLD）
+
+当前前端由plan/LightTick-Web构建，source_revision为plan `206712abe3493a38a70c3a6855659c760405f0d4`，合同仍80b89823；manifest带source_repository=plan/source_path=LightTick-Web。17运行资产与旧8c81adc相同，实际服务摘要及新浏览器证据见[plan迁移报告](../../../../plan/docs/03-technical/grow-web-plan-migration-2026-11-08.md)。Zook无生产逻辑/迁移变动，不改变原21/27或main放行SHA为空的状态。
