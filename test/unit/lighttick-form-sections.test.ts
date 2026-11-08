@@ -285,3 +285,15 @@ test("the final INT32 form revision remains readable and contract-valid while fu
   );
   assert.equal((await s.read(owner)).revision, 2147483647);
 });
+
+test("historical todo edits retain the legacy requirement for a date and nonempty title", async () => {
+  const s = new FormRecordsService(new InMemoryLightTickRepository());
+  for (const value of [
+    [{ date: "", title: "Keep", done: false }],
+    [{ date: "2026-11-08", title: "  ", done: false }],
+  ])
+    await assert.rejects(
+      s.patch(o, "todos", { base_revision: 0, value }, "todo-required"),
+      { statusCode: 422 },
+    );
+});

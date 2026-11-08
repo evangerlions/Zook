@@ -75,6 +75,10 @@ export function patchFormSection(
     }
   } else if (section !== "habits") {
     for (const row of next[section]) {
+      if (section === "todos") {
+        formDate(text(row.date, 10, true));
+        text(row.title, 100000, true);
+      }
       if (row.date !== undefined && row.date !== "") {
         if (typeof row.date !== "string") fail(422, "表单日期无效。");
         formDate(row.date);

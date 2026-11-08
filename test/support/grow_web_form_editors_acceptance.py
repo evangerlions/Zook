@@ -40,7 +40,7 @@ with sync_playwright() as pw:
   ws('决策').get_by_role('button',name='新增决策',exact=True).click();fill('决策','决策事项','Bob private draft only');page.get_by_role('button',name='退出登录',exact=True).click();signin('alice@example.com');page.reload();expect(ws('决策').get_by_role('button',name='重试原请求',exact=True)).to_be_visible()
   with page.expect_request(lambda r:r.method=='PATCH' and r.url.endswith('/sections/decisions')) as replay:ws('决策').get_by_role('button',name='重试原请求',exact=True).click()
   assert replay.value.post_data==lost[0]['body'] and replay.value.headers['idempotency-key']==lost[0]['key'];expect(ws('决策').get_by_text('云端已确认。',exact=True)).to_be_visible();assert request('form-records')['revision']==lost[0]['data']['revision'];assert request('form-records')['data']['decisions'][0]['legacy_origin']=='Retained'
-  ws('决策').get_by_role('button',name='编辑第 1 条',exact=True).click();fill('决策','背景与约束','Local conflict input');join('决策')
+  ws('决策').get_by_role('button',name='编辑第 1 条',exact=True).click();fill('决策','背景与约束','Local conflict input');expect(ws('决策').get_by_text('本机修改已保存，尚未提交云端。',exact=True)).to_be_visible();join('决策')
   def conflict(route):
    current=request('form-records');value={**current['data']['habits'],'2026-11-06':{'minutes':35,'note':'Other section update'}};request('form-records/sections/habits',{'base_revision':current['revision'],'value':value},'PATCH');route.continue_()
   page.route('**/form-records/sections/decisions',conflict);ws('决策').get_by_role('button',name='确认保存本栏到云端',exact=True).click();expect(ws('决策').get_by_text(re.compile('本次提交被拒绝'))).to_be_visible();page.unroute('**/form-records/sections/decisions',conflict)

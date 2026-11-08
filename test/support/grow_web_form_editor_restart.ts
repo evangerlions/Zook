@@ -15,7 +15,7 @@ if (
   !dsn ||
   new URL(dsn).hostname !== "127.0.0.1" ||
   new URL(dsn).port !== "58641" ||
-  new URL(dsn).pathname !== "/grow_web_u1_f09"
+  !/^\/grow_web_u1_f[0-9a-f]+$/.test(new URL(dsn).pathname)
 )
   throw Error("Explicit synthetic form-editor fixture required");
 const root = "http://127.0.0.1:58642";
@@ -79,6 +79,8 @@ try {
       )
     ).rows[0].count,
   );
+  const peerSnapshot =
+    (await repo.formRecords.get({ ...o, userId: "user_bob" })) ?? null;
   if (mode === "capture") {
     const row = (
       await pool.query(
@@ -94,6 +96,7 @@ try {
           scope: "synthetic_form_editor_restart",
           web_revision: expected,
           snapshot_sha256: digest(snapshot),
+          peer_snapshot_sha256: digest(peerSnapshot),
           snapshot_revision: snapshot.revision,
           operation_count: count,
           replay: {
@@ -112,6 +115,7 @@ try {
     if (
       before.web_revision !== expected ||
       before.snapshot_sha256 !== digest(snapshot) ||
+      before.peer_snapshot_sha256 !== digest(peerSnapshot) ||
       before.snapshot_revision !== snapshot.revision ||
       before.operation_count !== count
     )
@@ -139,6 +143,7 @@ try {
       web_revision: expected,
       snapshot_sha256: before.snapshot_sha256,
       snapshot_revision: snapshot.revision,
+      final_peer_revision: peerSnapshot?.revision ?? null,
       original_receipts: count,
       http_and_postgres_restart_preserve_snapshot: true,
       old_original_replay_returns_old_result_without_overwriting_newer_facts: true,
