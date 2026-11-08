@@ -223,7 +223,7 @@ paths:
           description: Retain input and original request; no silent fallback
         '503':
           $ref: ./api.yaml#/components/responses/LightTickError
-          description: Retain input and original request; no silent fallback
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -398,7 +398,7 @@ paths:
           description: Retain input and original request; no silent fallback
         '503':
           $ref: ./api.yaml#/components/responses/LightTickError
-          description: Retain input and original request; no silent fallback
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -459,7 +459,7 @@ paths:
           description: Retain input and original request; no silent fallback
         '503':
           $ref: ./api.yaml#/components/responses/LightTickError
-          description: Retain input and original request; no silent fallback
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -516,7 +516,7 @@ paths:
           description: Retain input and original request; no silent fallback
         '503':
           $ref: ./api.yaml#/components/responses/LightTickError
-          description: Retain input and original request; no silent fallback
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:

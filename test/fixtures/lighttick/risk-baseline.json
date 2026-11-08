@@ -162,6 +162,13 @@
       "tests": [
         "test/unit/admin-web.grow-static.test.ts"
       ]
+    },
+    {
+      "id": "runtime_scope_page_api_worker_defer_late_publish",
+      "tests": [
+        "test/unit/lighttick-runtime-scope.api.test.ts",
+        "test/unit/lighttick-runtime-scope-queue.test.ts"
+      ]
     }
   ],
   "postgres_tests": [

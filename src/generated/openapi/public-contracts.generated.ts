@@ -131740,6 +131740,14 @@ export const LightTickPublicConfigDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "runtime_scope": {
+      "type": "string",
+      "enum": [
+        "core",
+        "full"
+      ],
+      "description": "Version scope from versioned settings.runtimeScope; absent, invalid or unavailable configuration resolves to core. Older servers may omit this field and Web must fail closed. Core keeps authorized history, cancellation and receipt lookup, rejects optional new commands with 503 LIGHTTICK_CAPABILITY_UNAVAILABLE and durably defers background execution. Scope does not authorize identity or migration."
+    },
     "app_id": {
       "type": "string",
       "const": "lighttick"
@@ -131847,6 +131855,7 @@ export const LightTickPublicConfigDataSchema = {
 } as const;
 
 export type LightTickPublicConfigData = {
+  "runtime_scope"?: "core" | "full";
   "app_id": string;
   "enabled": boolean;
   "environment": "local" | "dev" | "online";
@@ -131904,6 +131913,14 @@ export const LightTickPublicConfigEnvelopeSchema = {
         "updated_at"
       ],
       "properties": {
+        "runtime_scope": {
+          "type": "string",
+          "enum": [
+            "core",
+            "full"
+          ],
+          "description": "Version scope from versioned settings.runtimeScope; absent, invalid or unavailable configuration resolves to core. Older servers may omit this field and Web must fail closed. Core keeps authorized history, cancellation and receipt lookup, rejects optional new commands with 503 LIGHTTICK_CAPABILITY_UNAVAILABLE and durably defers background execution. Scope does not authorize identity or migration."
+        },
         "app_id": {
           "type": "string",
           "const": "lighttick"
@@ -132019,6 +132036,7 @@ export type LightTickPublicConfigEnvelope = {
   "code": string;
   "message": string;
   "data": {
+  "runtime_scope"?: "core" | "full";
   "app_id": string;
   "enabled": boolean;
   "environment": "local" | "dev" | "online";

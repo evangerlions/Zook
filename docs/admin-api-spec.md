@@ -1,3 +1,5 @@
+> 2026-11-08 LightTick版本范围：既有项目配置GET/PUT与revisions/restore继续维护 `admin.delivery_config.settings.runtimeScope`，枚举 `core`／`full`，缺省core。写入和恢复拒绝未知值；这是有独立业务含义的版本开放范围，不新增env、凭据或第二份配置。full不代替原能力／权限，不授权真实迁移或发布。收紧后API新命令拒绝、尚未执行的任务延期、恢复／调度停止，迟到输出重新核验；历史读取、原请求回执、取消和停止监控继续有效。配置变更应记录说明，并核对现有未终态任务，不清队列、不覆盖已确认事实。
+
 # Admin API Spec
 
 LightTick 原生 Web 地址复用既有版本化 `admin.delivery_config.settings.growWebUrl`，通过原管理配置写入/历史/回滚路径维护，不新增 env 或密钥字段。值为现有 Zook Web 进程的 `/grow/` 绝对基础地址；online 只允许 HTTPS，local/dev 可使用 loopback HTTP，禁止账号密码、query、fragment 和其他挂载路径。未配置/非法或 App 关闭时公开配置省略可选字段 `grow_web_url`（客户端将缺失/null 视为不可用），原生权威不得从旧来源进度回退取得地址。设置前必须核对目标静态产物 SHA/digest、同源 API 会话和实际部署 namespace；本轮只在 localhost fixture 配置，未配置或发布真实地址。

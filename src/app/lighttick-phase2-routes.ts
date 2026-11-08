@@ -58,6 +58,7 @@ function runData(row: LightTickAiRunRow) { return { id: row.id, kind: row.kind, 
   created_at: row.createdAt, updated_at: row.updatedAt }; }
 async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind: string, sceneName: LightTickAiSceneName,
   resourceId: string | undefined, input: Json): Promise<LightTickAiRunRow> {
+  await runtime.scopePolicy.assertFull();
   const now = new Date().toISOString(); const scene = LIGHTTICK_AI_SCENES[sceneName];
   return await runtime.repository.saveAiRun({ ...owner, id: randomId("lighttick_run"), kind, status: "queued",
     resourceId, sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
@@ -69,6 +70,7 @@ export async function tryHandleLightTickPhase2Routes(context: BackendRouteContex
   if (!request.path.startsWith(PREFIX)) return undefined;
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
   const auth = await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
+  await runtime.scopePolicy.assertRequest(request);
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Guest sessions cannot access this LightTick capability.");

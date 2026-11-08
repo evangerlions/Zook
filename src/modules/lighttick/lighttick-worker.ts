@@ -1,3 +1,5 @@
+import { DeferJobError } from "../../infrastructure/queue/job-queue.ts";
+import { coreJob } from "./lighttick-runtime-scope.ts";
 import type {PortfolioRunner} from "./investments/portfolio/portfolio.runner.ts";
 import {PORTFOLIO_JOB} from "./investments/portfolio/portfolio.service.ts";
 import type {StrategyRunner} from "./investments/strategies/strategy.runner.ts";
@@ -65,11 +67,13 @@ export class LightTickJobService {
 export class LightTickWorker {
   constructor(private readonly aiRunner: LightTickAiRunner,
     private readonly recordTerminalFailure: (job: QueueJob, error: unknown) => Promise<void> = async () => undefined,
-    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner,readonly modelTests?:PersonalModelTestRunner,readonly githubTests?:GitHubTestRunner,readonly researchAI?:ResearchAIRunner,readonly screening?:ScreeningRunner,readonly observations?:ObservationRunner,readonly strategies?:StrategyRunner,readonly portfolio?:PortfolioRunner) {}
+    readonly learning?:LearningWorkRunner,readonly investments?:InvestmentLedgerRunner,readonly market?:MarketWorkRunner,readonly modelTests?:PersonalModelTestRunner,readonly githubTests?:GitHubTestRunner,readonly researchAI?:ResearchAIRunner,readonly screening?:ScreeningRunner,readonly observations?:ObservationRunner,readonly strategies?:StrategyRunner,readonly portfolio?:PortfolioRunner,
+    private readonly currentScope: () => Promise<"core" | "full"> = async () => "full") {}
 
-  async recover(){return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0)+(await this.modelTests?.recover()??0)+(await this.githubTests?.recover()??0)+(await this.researchAI?.recover()??0)+(await this.screening?.recover()??0)+(await this.observations?.recover()??0)+(await this.strategies?.recover()??0)+(await this.portfolio?.recover()??0);}
+  async recover(){if(await this.currentScope() !== "full") return 0; return (await this.learning?.recover()??0)+(await this.investments?.recover()??0)+(await this.market?.recover()??0)+(await this.modelTests?.recover()??0)+(await this.githubTests?.recover()??0)+(await this.researchAI?.recover()??0)+(await this.screening?.recover()??0)+(await this.observations?.recover()??0)+(await this.strategies?.recover()??0)+(await this.portfolio?.recover()??0);}
 
   async process(job: QueueJob): Promise<void> {
+    if (!coreJob(job.name) && await this.currentScope() !== "full") throw new DeferJobError();
     try {
       if(job.name===PORTFOLIO_JOB){if(!this.portfolio||job.payload.app_id!=="lighttick")throw Error("Portfolio worker unavailable");await this.portfolio.execute({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.work_id));return;}
       if(job.name===BACKTEST_JOB){if(!this.strategies||job.payload.app_id!=="lighttick")throw Error("Strategy worker unavailable");await this.strategies.execute({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.work_id));return;}

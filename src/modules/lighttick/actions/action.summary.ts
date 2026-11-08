@@ -15,8 +15,9 @@ export function prepareSummary(w:ActionWorkspace,b:Json,now:Date):{report:Json;c
 export const publicReport=({snapshot,worker,...report}:Json)=>report;
 export function recoverSummaries(w:ActionWorkspace,now:Date):boolean {let changed=false;for(const r of w.reports)if(r.state==='generating'&&now.getTime()-Date.parse(r.created_at)>120000){r.state='failed';r.error='上次生成已中断，请主动重新生成。';changed=true;}return changed;}
 export async function runSummary(service:ActionService,owner:LightTickOwner,report:Json,config:Json,generator:SummaryGenerator){
- let result='',error='';try{result=await generator(report.snapshot,config);if(!result.trim()||result.length>8000)throw Error();}catch{error='本次总结未完成，请检查 AI 设置后主动重试。计划和复盘已保留。';}
+ let result='',error='';try{await service.authorizeGeneration();result=await generator(report.snapshot,config);if(!result.trim()||result.length>8000)throw Error();}catch{error='本次总结未完成，请检查 AI 设置后主动重试。计划和复盘已保留。';}
  await service.repository.transaction(owner,async()=>{await service.repository.lockActionOwner(owner);const row=await service.readWorkspace(owner),current=row.data.reports.find(r=>r.id===report.id);if(current?.state!=='generating')return;
+ try{await service.authorizeGeneration();}catch{error='当前版本已暂停AI生成；原记录和复盘已保留。';result='';}
  Object.assign(current,{state:error?'failed':'ready',text:result,error,finished_at:service.clock().toISOString()});row.version++;await service.repository.saveActionWorkspace(row);});
 }
 export const generateSummary:SummaryGenerator=async(snapshot,config)=>{

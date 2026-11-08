@@ -1,3 +1,4 @@
+import { LightTickScopePolicy, scopeQueue } from "./modules/lighttick/lighttick-runtime-scope.ts";
 import {PortfolioService} from "./modules/lighttick/investments/portfolio/portfolio.service.ts";
 import {PortfolioRunner} from "./modules/lighttick/investments/portfolio/portfolio.runner.ts";
 import {StrategyService} from "./modules/lighttick/investments/strategies/strategy.service.ts";
@@ -62,7 +63,7 @@ export function resolveApplicationLightTickRepository(database: ApplicationDatab
 
 export function createApplicationLightTickRuntime(repository: LightTickRepository, queue: JobQueue) {
   const runtime = createLightTickRuntime(repository);
-  runtime.jobs = new LightTickJobService(queue, repository);
+  runtime.jobs = new LightTickJobService(scopeQueue(queue,()=>runtime.scopePolicy.assertFull()), repository);
   return runtime;
 }
 
@@ -81,28 +82,31 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   storageService: StorageService; fileStore: PersistentFileStore;
  appConfigService:VersionedAppConfigService;kvManager:KVManager;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
+  input.runtime.scopePolicy = new LightTickScopePolicy(() => input.appConfigService.getRecord("lighttick", "admin.delivery_config"));
+  const queue = scopeQueue(input.queue,()=>input.runtime.scopePolicy.assertFull());
   const authorizeOwner=async(owner:import("./modules/lighttick/lighttick.types.ts").LightTickOwner)=>{
     const member=await input.database.findAppUser(owner.appId,owner.userId),user=await input.database.findUserById(owner.userId);
     if(member?.status!=='ACTIVE'||user?.status!=='ACTIVE')throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
+    await input.runtime.scopePolicy.assertFull();
   };
   const githubKeys=new GitHubKeyResolver(input.kvManager);
-  const github=new GitHubService(input.repository,new AesGcmPayloadCryptoService(githubKeys),()=>githubKeys.ensure(),input.queue);
+  const github=new GitHubService(input.repository,new AesGcmPayloadCryptoService(githubKeys),()=>githubKeys.ensure(),queue);
   input.runtime.github=github;
   const personalKeys=new PersonalModelKeyResolver(input.kvManager);
-  const personal=new PersonalModelService(input.repository,new AesGcmPayloadCryptoService(personalKeys),()=>personalKeys.ensure(),input.queue);
+  const personal=new PersonalModelService(input.repository,new AesGcmPayloadCryptoService(personalKeys),()=>personalKeys.ensure(),queue);
   const personalLlm=new PersonalModelDispatcher(personal,input.llmManager);
   input.runtime.personalModel=personal;input.runtime.personalModelDispatcher=personalLlm;
-  const portfolio=new PortfolioService(input.repository,input.queue);input.runtime.portfolio=portfolio;
-  const strategies=new StrategyService(input.repository,input.queue);input.runtime.strategies=strategies;
-  const observations=new ObservationWorkService(input.repository,input.queue);input.runtime.observations=observations;
-  const screening=new ScreeningService(input.repository,input.queue);input.runtime.screening=screening;
-  const researchAI=new ResearchAIService(input.repository,input.queue);input.runtime.researchAI=researchAI;
-  const market=new MarketWorkService(input.repository,input.queue);
+  const portfolio=new PortfolioService(input.repository,queue);input.runtime.portfolio=portfolio;
+  const strategies=new StrategyService(input.repository,queue);input.runtime.strategies=strategies;
+  const observations=new ObservationWorkService(input.repository,queue);input.runtime.observations=observations;
+  const screening=new ScreeningService(input.repository,queue);input.runtime.screening=screening;
+  const researchAI=new ResearchAIService(input.repository,queue);input.runtime.researchAI=researchAI;
+  const market=new MarketWorkService(input.repository,queue);
   const policy=new MarketPolicyService(input.appConfigService,input.kvManager);
   input.runtime.marketWork=market;input.runtime.marketPolicy=policy;
-  const ledger=new InvestmentLedgerService(input.repository,input.queue);
+  const ledger=new InvestmentLedgerService(input.repository,queue);
   input.runtime.investmentLedger=ledger;
-  const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),input.queue);
+  const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue);
   input.runtime.learningWork=work;
   const learning=new LearningWorkRunner(work,personalLlm,{
     readFile:(o,key)=>input.storageService.readOwnerText(input.fileStore,o,key),
@@ -111,10 +115,11 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   },async owner=>{
     const member=await input.database.findAppUser(owner.appId,owner.userId),user=await input.database.findUserById(owner.userId);
     if(member?.status!=='ACTIVE'||user?.status!=='ACTIVE')throw new ApplicationError(403,'APP_SCOPE_FORBIDDEN','The LightTick account is no longer active.');
+    await input.runtime.scopePolicy.assertFull();
   },scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, personalLlm, undefined,
-    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene)),
-    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner),new ResearchAIRunner(researchAI,personalLlm,authorizeOwner),new ScreeningRunner(screening,authorizeOwner),new ObservationRunner(observations,authorizeOwner),new StrategyRunner(strategies,authorizeOwner),new PortfolioRunner(portfolio,authorizeOwner));
+    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene),authorizeOwner),
+    async job => {if(job.name===LIGHTTICK_JOB_NAMES.aiRun||job.name===LIGHTTICK_JOB_NAMES.retry)await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id));},learning,new InvestmentLedgerRunner(ledger,authorizeOwner),new MarketWorkRunner(market,new DailyMarketAdapter(s=>policy.policy(s)),authorizeOwner),new PersonalModelTestRunner(personal,personalLlm,authorizeOwner),new GitHubTestRunner(github,authorizeOwner),new ResearchAIRunner(researchAI,personalLlm,authorizeOwner),new ScreeningRunner(screening,authorizeOwner),new ObservationRunner(observations,authorizeOwner),new StrategyRunner(strategies,authorizeOwner),new PortfolioRunner(portfolio,authorizeOwner),()=>input.runtime.scopePolicy.current());
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",

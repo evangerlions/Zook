@@ -18,10 +18,12 @@ export const CLARIFY_SCHEMA = { type: "object", required: ["message", "fields"],
 } };
 export class LightTickPlanningAiRunner {
   constructor(private readonly repository: LightTickRepository, private readonly llm: Pick<LLMManager,"complete">, private readonly clock = () => new Date(),
-    private readonly resolveScene = async (name:LightTickAiSceneName) => LIGHTTICK_AI_SCENES[name]) {}
+    private readonly resolveScene = async (name:LightTickAiSceneName) => LIGHTTICK_AI_SCENES[name],
+    private readonly authorizeOwner: (owner: LightTickOwner) => Promise<void> = async () => {}) {}
   async execute(owner: LightTickOwner, runId: string): Promise<LightTickAiRunRow> {
     const service = new LightTickPlanningService(this.repository, this.clock);
     const claim = await this.repository.transaction(owner, async () => {
+      await this.authorizeOwner(owner);
       await this.repository.lockPlanningOwner(owner);
       const run = await this.repository.getAiRun(owner, runId);
       if (!run) planningError(404,"LIGHTTICK_RESOURCE_NOT_FOUND","Run was not found.");
@@ -55,6 +57,7 @@ export class LightTickPlanningAiRunner {
         planningError(422,"LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE","Shorten the context before retrying.");
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
+        await this.authorizeOwner(owner);
         result = await Promise.race([this.llm.complete({ modelKey:scene.modelAlias, messages:[{role:"system",content:LIGHTTICK_SYSTEM_PROMPT},{role:"user",content:prefix+JSON.stringify(input)}],
           maxTokens:scene.maxOutputTokens,temperature:0.2,providerOptions:{...selectionOption(run.inputContext.model_selection),response_format:{type:"json_object"},enable_thinking:false},usageOwner:owner }),
           new Promise((_,reject)=>{ timer=setTimeout(()=>reject(new Error("timeout")),scene.timeoutMs); })]);
@@ -74,6 +77,7 @@ export class LightTickPlanningAiRunner {
       const stale = !session || session.activeRunId !== runId || session.contextRevision !== run.inputContext.context_revision ||
         await service.snapshot(owner,session.goalId) !== run.inputContext.snapshot;
       if (stale) failure="LIGHTTICK_PLANNING_STALE";
+      try { await this.authorizeOwner(owner); } catch { failure="LIGHTTICK_CAPABILITY_UNAVAILABLE"; }
       let resourceId: string | undefined;
       if (session && !failure && output) {
         if (clarify) {

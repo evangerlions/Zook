@@ -11,9 +11,10 @@ import {publicLearningProgress} from './action-learning-progress.ts';
 import {createPractice,practiceSource} from './action.practice.ts';
 import {createFollowUp,followUpContext} from './action.followup.ts';
 export class ActionService {
- constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date(),readonly generator:SummaryGenerator=generateSummary,readonly p0WriteEnabled=false){}
+ constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date(),readonly generator:SummaryGenerator=generateSummary,readonly p0WriteEnabled=false,readonly authorizeGeneration:()=>Promise<void>=async()=>{}){}
  async readWorkspace(owner:LightTickOwner){return await this.repository.getActionWorkspace(owner)??{...owner,data:emptyWorkspace(),version:0};}
  async request(owner:LightTickOwner,method:string,path:string,body:unknown={},query:Json={},authorize?:()=>Promise<void>):Promise<Json|string>{
+  if(method==='POST'&&path==='/reviews/generate')await this.authorizeGeneration();
   let fresh:{report:Json;config:Json}|undefined;
   const value=await this.repository.transaction(owner,async()=>{
    const b=object(body);
@@ -46,7 +47,7 @@ export class ActionService {
    else if(/^\/practices\/action-[a-zA-Z0-9-]+\/follow-up$/.test(path))result=await createFollowUp(this.repository,owner,w,path.split('/')[2],b,now);
    else if(path==='/schedules')result=schedule(w,b,now);
    else if(/^\/action-[a-zA-Z0-9-]+\/operations$/.test(path))result=mutatePlan(w,path.split('/')[1],b,now,owner.userId);
-   else if(path==='/reviews/generate'){fresh=prepareSummary(w,b,now);result={report:publicReport(fresh.report)};}
+   else if(path==='/reviews/generate'){await this.authorizeGeneration();fresh=prepareSummary(w,b,now);result={report:publicReport(fresh.report)};}
    else if(path==='/reviews'){
     if(w.reviews.length>=2000)reject(422,'复盘数量已达首版容量上限。');
     const facts=reviewContext(w,b),review={...Object.fromEntries(['plan_id','start_date','end_date'].map(k=>[k,b[k]])),worked:text(b.worked??'',2000),obstacles:text(b.obstacles??'',2000),next_action:text(b.next_action??'',2000),id:'review-'+randomUUID().replaceAll('-',''),created_at:now.toISOString(),stats:facts.stats,plan_title:facts.plan.title};

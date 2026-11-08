@@ -1,9 +1,11 @@
+import { runtimeScope } from "./lighttick-runtime-scope.ts";
 import type { AppConfigRecord } from "../../shared/types.ts";
 
 export type LightTickRuntimeEnvironment = "local" | "dev" | "online";
 
 export interface LightTickPublicConfiguration {
   app_id: "lighttick";
+  runtime_scope: "core" | "full";
   enabled: boolean;
   environment: LightTickRuntimeEnvironment;
   configuration_version: string;
@@ -126,6 +128,7 @@ export function buildLightTickPublicConfiguration(
 
   return {
     app_id: "lighttick",
+    runtime_scope: runtimeScope(raw),
     enabled,
     environment,
     configuration_version: boundedString(
@@ -147,9 +150,9 @@ export function buildLightTickPublicConfiguration(
       account_upgrade: enabled && flags.accountUpgrade === true,
       sync: enabled && flags.offlineSync === true,
       notifications: enabled && flags.notifications === true,
-      ai_coach: enabled && flags.aiPlanning === true,
+      ai_coach: enabled && runtimeScope(raw) === "full" && flags.aiPlanning === true,
       conversational_planning:
-        enabled && planningEnabled && flags.conversationalPlanning === true,
+        enabled && runtimeScope(raw) === "full" && planningEnabled && flags.conversationalPlanning === true,
     },
     privacy_policy_url: httpsUrl(
       legal.privacyPolicyUrl,

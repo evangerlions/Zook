@@ -154,6 +154,9 @@ paths:
           $ref: ./api.yaml#/components/responses/LightTickError
         '422':
           $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -330,6 +333,9 @@ paths:
           $ref: ./api.yaml#/components/responses/LightTickError
         '422':
           $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -374,6 +380,9 @@ paths:
           $ref: ./api.yaml#/components/responses/LightTickError
         '422':
           $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:

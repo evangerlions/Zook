@@ -21,10 +21,11 @@ export class LightTickPlanningService {
     if (!session) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Planning session was not found.");
     return session!;
   }
-  async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input) {
+  async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input, authorize: () => Promise<void> = async () => {}) {
     text(operationId, 128); const hash = sha256(canonical({ action, id: id ?? null, input }));
     return await this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
+      await authorize();
       const key = `planning:${operationId}`;
       const existing = await this.repository.getOperation(owner, key);
       if (existing) {

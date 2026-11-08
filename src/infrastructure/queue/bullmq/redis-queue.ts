@@ -1,3 +1,4 @@
+import { DeferJobError } from "../job-queue.ts";
 import { createClient, type RedisClientType } from "redis";
 import type { QueueJob } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -73,6 +74,11 @@ export class RedisJobQueue implements JobQueue {
         await handler(job);
         await this.client.del(this.buildJobKey(job.id));
       } catch (error) {
+        if (error instanceof DeferJobError) {
+          job.availableAt = new Date(nowMs + error.delayMs).toISOString();
+          await this.storeJob(job);
+          continue;
+        }
         job.attemptsMade += 1;
         job.failedReason =
           error instanceof Error ? error.message : "Unknown queue error";

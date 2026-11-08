@@ -58,6 +58,7 @@ export async function tryHandleNativeLearningRoutes(
     );
   const assertActive = async () => {
     await context.authenticateProductRequest(r, "lighttick");
+    await runtime.scopePolicy.assertRequest(r);
   };
   await assertActive();
   const service = runtime.nativeLearning;

@@ -82,6 +82,7 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
     await runtime.repository.lockPlanningOwner(owner);
+    await runtime.scopePolicy.assertRequest(request);
     const existing = await runtime.repository.getOperation(owner, key);
     if (existing) {
       if (existing.payloadHash !== payloadHash || existing.action !== action || existing.entityType !== entityType || existing.entityId !== entityId)
@@ -100,6 +101,7 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
 
 async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind: string, sceneName: LightTickAiSceneName,
   resourceId: string | undefined, input: Json): Promise<LightTickAiRunRow> {
+  await runtime.scopePolicy.assertFull();
   const now = new Date().toISOString(); const scene = LIGHTTICK_AI_SCENES[sceneName];
   return await runtime.repository.saveAiRun({ ...owner, id: randomId("lighttick_run"), kind, status: "queued",
     resourceId, sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
@@ -121,8 +123,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${LIGHTTICK_APP_ID}.`);
     if (request.headers.authorization ?? request.headers.Authorization)
       await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
-    const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
-    return response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
+    const config = runtime ? await runtime.scopePolicy.record() : await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
+    const result = response(context, request, buildLightTickPublicConfiguration(enabled, config, undefined, runtime?.planningEnabled === true));
+    result.headers = { ...result.headers, "Cache-Control": "no-store" };
+    return result;
   }
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
   if (request.method === "POST" && request.path === `${PREFIX}account/guest-sessions`) {
@@ -150,7 +154,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
   const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
   if (guest) assertGuestRouteAllowed(request);
+  await runtime.scopePolicy.assertRequest(request);
   const assertActive=async()=>{
+    await runtime.scopePolicy.assertRequest(request);
     const membership=await context.database.findAppUser(owner.appId,owner.userId),user=await context.database.findUserById(owner.userId);
     if(membership?.status!=="ACTIVE"||user?.status!=="ACTIVE")throw new ApplicationError(403,"AUTH_ACCESS_DENIED","Account access is unavailable.");
   };

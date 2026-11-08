@@ -1,3 +1,4 @@
+import { LightTickScopePolicy } from "./lighttick-runtime-scope.ts";
 import {NativeLearningService} from "./learning/native-learning.service.ts";
 import type {LearningWorkService} from "./learning/learning-work.service.ts";
 import {RecordTransferService} from './records/record-transfer.service.ts';
@@ -24,6 +25,7 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  scopePolicy: LightTickScopePolicy;
  portfolio?:import("./investments/portfolio/portfolio.service.ts").PortfolioService;
  strategies?:import("./investments/strategies/strategy.service.ts").StrategyService;
  observations?:import("./investments/observations/observation.work-service.ts").ObservationWorkService;
@@ -66,9 +68,10 @@ export interface LightTickRuntime {
 }
 
 export function createLightTickRuntime(repository: LightTickRepository): LightTickRuntime {
-  const actions=new ActionService(repository,()=>new Date(),undefined,process.env.LIGHTTICK_ACTIONS_V2_ENABLED==='1');
+  const actions=new ActionService(repository,()=>new Date(),undefined,process.env.LIGHTTICK_ACTIONS_V2_ENABLED==='1',()=>runtime.scopePolicy.assertFull());
   const tasks = new LightTickTaskService(repository);
-  return {
+  const runtime: LightTickRuntime = {
+    scopePolicy: new LightTickScopePolicy(),
     nativeLearning:new NativeLearningService(repository,process.env.LIGHTTICK_NATIVE_LEARNING_ENABLED==='1'),
     recordHandoffEnabled:process.env.LIGHTTICK_RECORD_HANDOFF_ENABLED==='1',
     recordTransfers:new RecordTransferService(repository,{sourceInstance:process.env.GROW_RECORDS_SOURCE_ID??'',secret:process.env.GROW_RECORDS_BRIDGE_SECRET??''}),
@@ -91,4 +94,5 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     deepReview: new LightTickDeepReviewService(repository),
     rhythm: new LightTickRhythmSuggestionService(repository),
   };
+  return runtime;
 }
