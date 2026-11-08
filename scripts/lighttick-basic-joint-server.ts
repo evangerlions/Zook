@@ -1,15 +1,19 @@
 // Loopback-only synthetic native UI acceptance. Never imported by runtime entry points.
 import http from "node:http";
+import { createAdminServer } from "../apps/admin-web/server.ts";
+import { ManualPlanningService } from "../src/modules/lighttick/manual/manual-planning.service.ts";
 import { createApplication } from "../src/app.module.ts";
 import { PostgresDatabase } from "../src/infrastructure/database/postgres/postgres-database.ts";
 import { KVManager } from "../src/infrastructure/kv/kv-manager.ts";
 import { resolveBodyLogStores } from "../src/application-bodylog-stores.ts";
 import { writeFileSync } from "node:fs";
 import { buildDefaultSeed } from "../src/infrastructure/database/prisma/default-seed.ts";
+const withWeb = process.argv.includes("--with-web");
+const expectedDatabase = withWeb ? "/joint_three_surface_qa" : "/joint_acceptance_qa";
 const databaseUrl = process.env.LIGHTTICK_TEST_DATABASE_URL ?? "";
 const url = new URL(databaseUrl);
-if (url.hostname !== "127.0.0.1" || url.port !== "58671" || url.pathname !== "/joint_acceptance_qa")
-  throw Error("Requires disposable loopback joint_acceptance_qa on 58671.");
+if (url.hostname !== "127.0.0.1" || url.port !== "58671" || url.pathname !== expectedDatabase)
+  throw Error(`Requires disposable loopback ${expectedDatabase} on 58671.`);
 const enabled = process.argv.includes("--enabled");
 const seed = buildDefaultSeed(undefined, { includeLightTick: true, includeFrogSleep: true });
 const now = new Date().toISOString();
@@ -24,9 +28,10 @@ config.minimumClientVersions={ios:"0.1.0",android:"0.1.0"};
 config.featureFlags={guestSessions:true,accountUpgrade:true,offlineSync:true,notifications:false,aiPlanning:false};
 config.settings.runtimeScope="core";
 delivery.configValue=JSON.stringify(config);
-const kvManager=await KVManager.create({redisUrl:"redis://127.0.0.1:58672"});
+const redisUrl=withWeb?"redis://127.0.0.1:58674":"redis://127.0.0.1:58672";
+const kvManager=await KVManager.create({redisUrl});
 const app=await createApplication({seed,lighttickEnabled:enabled,lighttickSeedEnabled:true,frogsleepEnabled:true,
-  appEnvironment:"test",kvManager,queueBackend:"redis",queueRedisUrl:"redis://127.0.0.1:58672",
+  appEnvironment:"test",kvManager,queueBackend:"redis",queueRedisUrl:redisUrl,
   databaseFactory:seed=>PostgresDatabase.create(databaseUrl,seed),fileStorageRoot:process.env.JOINT_FILE_ROOT});
 await app.database.upsertAppConfig(delivery);
 const repository=app.services.lighttickRepository;
@@ -44,6 +49,23 @@ const owner = { appId: "lighttick" as const, userId: "user_alice" };
 let offline = false,
   dropNext = "",
   nativePhase = "";
+const manual = new ManualPlanningService(repository);
+let web: ReturnType<typeof http.createServer> | undefined;
+if (withWeb) {
+  const frontend = createAdminServer({proxyTarget:"http://127.0.0.1:3107",growEnabled:true,growRoot:"static/grow"});
+  web = http.createServer(async (request,response) => {
+    if (request.url === "/__native-web-manifest") {
+      try {
+        response.setHeader("Content-Type","application/json");
+        response.setHeader("Cache-Control","no-store");
+        response.end(JSON.stringify({account:"alice@example.com",plans:await manual.list(owner)}));
+      } catch {response.statusCode=500;response.end("{}");}
+      return;
+    }
+    frontend.emit("request",request,response);
+  });
+  await new Promise<void>(resolve=>web!.listen(3108,"127.0.0.1",resolve));
+}
 const requests: { method: string; path: string; status: number }[] = [];
 const workerStats={ticks:0,otherJobs:0,errors:0};
 let ticking=false;
@@ -170,4 +192,4 @@ server.listen(3107, "127.0.0.1", () =>
     "Basic joint acceptance: loopback 3107; complete PostgreSQL + Redis; core scope.\n",
   ),
 );
-for(const signal of ["SIGINT","SIGTERM"] as const)process.on(signal,()=>{clearInterval(workerTimer);server.close(async()=>{await app.close();await kvManager.disconnect();process.exit(0);});});
+for(const signal of ["SIGINT","SIGTERM"] as const)process.on(signal,()=>{clearInterval(workerTimer);web?.close();server.close(async()=>{await app.close();await kvManager.disconnect();process.exit(0);});});
