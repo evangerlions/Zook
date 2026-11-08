@@ -3011,7 +3011,44 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3047,7 +3084,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/valuations"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -3083,7 +3153,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/valuations/{valuationId}"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -5378,7 +5481,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -5413,7 +5549,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -5448,7 +5617,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}/history"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "GET",
@@ -12869,7 +13071,48 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}/adopt"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -12905,7 +13148,48 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}/adopt"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -12977,7 +13261,48 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}/adopt"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -13013,7 +13338,48 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work"
+          },
+          {
+            "method": "GET",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}"
+          },
+          {
+            "method": "POST",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}/adopt"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -13930,7 +14296,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -14241,7 +14640,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "POST",
@@ -19621,7 +20053,40 @@
         "owner/version/CAS/idempotent replay and revocation",
         "migration counts/digests/relationships and non-destructive recovery"
       ],
-      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence."
+      "migration_disposition": "Preserve owner/resource/version/original request identity; freeze, reconcile counts/digests/relationships and explicitly activate the migrated module. Existing test candidates are not per-operation parity evidence.",
+      "portfolio_slice": {
+        "status": "partial_implemented_not_legacy_parity",
+        "contracts": [
+          {
+            "method": "PUT",
+            "path": "/api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}"
+          }
+        ],
+        "page": "/grow/investments",
+        "web_source": "plan/LightTick-Web",
+        "backend_commit": "c21919601c352f31845b5a4840cac5e160b7500f",
+        "frontend_commit": "3b386d0774e9293f9480af49991352b329ca624f",
+        "evidence": "plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md",
+        "tests": [
+          "test/unit/lighttick-portfolio-engine.test.ts",
+          "test/unit/lighttick-portfolio-service.test.ts",
+          "test/unit/lighttick-portfolio.api.test.ts",
+          "test/integration/lighttick-portfolio-postgres.test.ts",
+          "test/support/grow_web_portfolio_acceptance.py",
+          "test/support/grow_web_portfolio_boundaries.py"
+        ],
+        "semantic_changes": [
+          "Per-owner/account commands bind original key/body and CAS; worker freezes actual reference calendars, algorithm, economic-date facts and source IDs/digests.",
+          "Baseline and valuation previews require separate explicit adoption; historical outputs immutable, current source/fact changes shown as stale. Performance is a durable asynchronous work report.",
+          "NAV is an immutable confirmed source; reconciliation notices preserve CAS history and explicit resolution without automatic trades. No missing price fallback.",
+          "Historical valuation uses current audited facts by economic date, not information available at the time. Profits subtract net external deposits; drawdown only on eligible complete sessions; TWR/XIRR unknown."
+        ],
+        "remaining": [
+          "Full original operation request/response and side-effect parity, including effective uncommitted legacy behavior, remains unaccepted.",
+          "Legacy identities, source versions, exact request keys/bodies, unresolved commands and receipts still require full-module synthetic migration and reconciliation.",
+          "All-market calendar maintenance, unresolved corporate actions, native/old-client matrix and other-app off/on mixed P95 gates are not closed."
+        ]
+      }
     },
     {
       "method": "PUT",

@@ -157,3 +157,8 @@ U1复用已验证的records/auth/manual领域切片先行，不将U0全专题fix
 ### 2026-11-08 追加式账本纠错与补偿
 
 本切片3/3验收通过，由plan统一任务协调，见[Plan子任务与后续依赖](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/tasks.md)及[验收证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/ledger-corrections-verification.md)。Zook868b1daf/合同215b42af、plan Web c7e71874；不可变原事实、精确替换/作废/补偿链、同日核算顺序、CAS/原请求、schema2协商、103幂等迁移和既有worker接线完成。后端2532通过/1既有跳过、PG/Redis联合25、风险181、Web48与最终Chrome通过；17实际资源摘要一致、同库重启原始事实/纠错/报告/回执不变。9条旧操作仅追加部分实现证据，全部516仍未签署等价；当前候选旧13组Chrome重新通过，原生/混合P95未新验收。下一项为估值/绩效及期初/公司行动/基金净值等依赖，完整G1–G6未代签，仍21/27。原未提交及暂存patch保留，未迁移真实数据或发布。
+
+
+## 2026-11-08：plan G2.2估值/绩效及依赖（4/4）
+
+本有界切片验收通过，见[Plan子任务](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/tasks.md)与[证据](../../../../plan/docs/04-planning/grow-lighttick-remaining-2026-11-08/portfolio-verification.md)。固定Zook/合同c2191960、Web3b386d0；104幂等迁移、不可变NAV/通知CAS历史、期初预览及明确采用、不可变估值/过期提示、扣净入金收益与有界回撤接既有worker和React。实际参考日历/算法/来源冻结，原请求/owner/fence/取消/恢复/分页/导出保留；未决通知对旧schema明确升级。后端2548通过/1既有跳过、真实PG/Redis26、风险197、Web51、Chrome两专项和旧13故事通过，17实际资源摘要及同库重启原事实/v1/v2报告/回执不变。扩展应用132条既有类型诊断无新增，专用领域/Web检查通过；课程预算隔离完整复跑，不调额度或清库。13条旧操作只增加部分映射，全部516仍待逐行为签署。主任务仍21/27，G1–G6/全域迁移/原生与其他App混合P95/真实专项/发布未代签；保留原未提交修改，不迁移真实数据、不发布。
