@@ -39,6 +39,16 @@ export class FormRecordsService {
       );
     });
   }
+  async receipt(o: LightTickOwner, key: string): Promise<FormSnapshot> {
+    if (!/^[a-zA-Z0-9_-]{8,128}$/.test(key)) fail(422, "请核对原请求编号。");
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const saved = await this.repo.getOperation(o, key);
+      if (!saved || saved.entityType !== "form_records" || saved.entityId !== "forms")
+        fail(404, "未找到当前账号的表单回执。");
+      return structuredClone(saved.resultPayload) as unknown as FormSnapshot;
+    });
+  }
   async save(o: LightTickOwner, b: Record<string, unknown>, key: string) {
     keys(b, ["base_revision", "data"]);
     return this.mutate(o, b, key, "save");

@@ -42,6 +42,36 @@ tags:
 - name: lighttick-config
   description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/form-records/receipts/{request_key}:
+    get:
+      operationId: getLightTickFormReceipt
+      summary: Read the original form command result without replaying a mutation
+      description: Owner-authorized historical form snapshot for an exact original request key. Available in core scope; does not rerun the command or restore an older snapshot over current data. Other owners and non-form command keys return 404. Account deletion removes these receipts with the domain data.
+      tags: [lighttick-records]
+      parameters:
+      - in: path
+        name: request_key
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-zA-Z0-9_-]{8,128}$'
+      responses:
+        '200':
+          description: Historical result of the original form command, not current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickFormEnvelope'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/form-records/sections/{section}:
     patch:
       operationId: patchFormRecordSection

@@ -55,6 +55,13 @@ test("PG scope isolation preserves late-write rollback, original inputs, cancell
   const running=runner.execute(owner,late.id);await began;await scope("core");done();await running;
   assert.equal((await repo.investments.ledger.get(owner,late.id))!.status,"failed");
   assert.equal((await repo.investments.ledger.events(owner,account)).length,0);
+  const {FormRecordsService,emptyFormRecords}=await import("../../src/modules/lighttick/form-records/form-records.service.ts");
+  const formsOwner={...owner,userId:"scope-receipt-pg-"+process.pid},forms=new FormRecordsService(repo);
+  await forms.save(formsOwner,{base_revision:0,data:{...emptyFormRecords(),customRecords:[{text:"Original receipt"}]}},"scope-pg-form-original");
+  await forms.clear(formsOwner,{base_revision:1},"scope-pg-form-clear");
+  assert.equal((await forms.receipt(formsOwner,"scope-pg-form-original")).revision,1);
+  assert.equal((await forms.read(formsOwner)).revision,2);
+  await assert.rejects(forms.receipt({...formsOwner,userId:"foreign"},"scope-pg-form-original"),{statusCode:404});
   const peerPool=new Pool({connectionString:dsn});try {
    const peer=new PostgresLightTickRepository(peerPool), restored=(await peer.investments.ledger.get(owner,work.id))!;
    assert.equal(restored.status,"cancelled");assert.deepEqual(restored.input,original.input);

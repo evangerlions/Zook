@@ -112,3 +112,16 @@ test("core scope keeps published learning, private notes and explicit completion
  assert.equal(((await call("learning-library/"+lesson.id+"/private")).body.data as any).state.completed,true);
  assert.equal((await call("learning/work","POST",{},undefined,"scope-no-generate")).body.code,"LIGHTTICK_CAPABILITY_UNAVAILABLE");
 });
+
+test("core form receipt lookup returns only the exact owner's historical result without restoring it", async () => {
+ const {runtime,call,setScope,app}=await fixture("full");
+ const {FormRecordsService,emptyFormRecords}=await import("../../src/modules/lighttick/form-records/form-records.service.ts");
+ const owner={appId:"lighttick" as const,userId:"user_alice"},service=new FormRecordsService(runtime.repository);
+ await service.save(owner,{base_revision:0,data:{...emptyFormRecords(),customRecords:[{text:"Historical scope receipt"}]}},"scope-form-receipt");
+ await service.clear(owner,{base_revision:1},"scope-form-clear");await setScope("core");
+ const result=await call("form-records/receipts/scope-form-receipt");assert.equal(result.statusCode,200,JSON.stringify(result.body));
+ assert.equal((result.body.data as any).revision,1);assert.equal((result.body.data as any).data.customRecords[0].text,"Historical scope receipt");
+ assert.equal((await service.read(owner)).revision,2);assert.equal((await service.read(owner)).data.customRecords.length,0);
+ const token=app.services.tokenService.issueAccessToken("user_bob","lighttick");assert.equal((await call("form-records/receipts/scope-form-receipt","GET",undefined,token)).statusCode,404);
+ assert.equal((await call("form-records/receipts/unknown-original-key")).statusCode,404);
+});
