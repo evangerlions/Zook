@@ -5,7 +5,7 @@ import {
   CREDIT_MICROS, LOCAL_CREDIT_QUOTAS,
   type AiNovelCreditsStore, type CreditsOutcome, type CreditsReceipt, type CreditsTier, type CreditsMembership,
 } from "./ai-novel-credits-model.ts";
-import { synchronizeReportedAccount, usageEvent } from "./credits-reporting.ts";
+import { prepareGrantAccount, synchronizeReportedAccount, usageEvent } from "./credits-reporting.ts";
 
 const JOB_LEASE_MS = 30 * 60_000;
 const MAX_RECEIPTS = 1024;
@@ -146,25 +146,24 @@ export class AiNovelCreditsService {
   }
 
   /** Internal/admin-only grant. Deterministic event ID provides retry safety. */
-  async grant(userId: string, eventId: string, points: number): Promise<void> {
+  async grant(userId: string, eventId: string, points: number, adminUser?: string, recipientContact?: { phone: string | null; email: string | null }): Promise<void> {
     requireId(eventId);
     if (!Number.isSafeInteger(points) || points <= 0) throw new ApplicationError(400, "AINOVEL_CREDITS_GRANT_INVALID", "Gift points must be a positive safe integer.");
-    const membership = await this.membership(userId);
     await this.store.transact(userId, `gift:${eventId}`, (state) => {
       const amount = String(BigInt(points) * CREDIT_MICROS);
       if (state.job) {
-        if (state.job.grantedMicros !== amount) throw conflict("Gift event ID was reused with a different amount.");
+        if (state.job.grantedMicros !== amount || state.job.grantedBy !== adminUser) throw conflict("Gift event ID was reused with different grant details.");
         return;
       }
-      const account = synchronizeReportedAccount(state, membership, this.now());
+      const account = prepareGrantAccount(state, this.now());
       const nextGift = BigInt(account.giftMicros) + BigInt(points) * CREDIT_MICROS;
       // Reserve room for the largest periodic allowance, including future upgrades.
       if (nextGift + BigInt(LOCAL_CREDIT_QUOTAS.pro) * CREDIT_MICROS > BigInt(Number.MAX_SAFE_INTEGER)) {
         throw new ApplicationError(400, "AINOVEL_CREDITS_GRANT_INVALID", "Gift would exceed the safe microcredit balance limit.");
       }
       account.giftMicros = String(nextGift);
-      state.job = { id: `gift:${eventId}`, status: "success", expiresAt: this.now().toISOString(), receipts: [], chargedMicros: "0", absorbedMicros: "0", grantedMicros: amount };
-      usageEvent(state, { id: `gift:${eventId}`, kind: "grant", periodicMicros: "0", giftMicros: amount, absorbedMicros: "0" });
+      state.job = { id: `gift:${eventId}`, status: "success", expiresAt: this.now().toISOString(), receipts: [], chargedMicros: "0", absorbedMicros: "0", grantedMicros: amount, ...(adminUser ? { grantedBy: adminUser } : {}) };
+      usageEvent(state, { id: `gift:${eventId}`, kind: "grant", periodicMicros: "0", giftMicros: amount, absorbedMicros: "0", ...(adminUser ? { adminUser } : {}), ...(recipientContact ? { recipientContact } : {}) });
       this.logger?.info("AINovel gift credits granted", { userId, eventId, points });
     });
   }

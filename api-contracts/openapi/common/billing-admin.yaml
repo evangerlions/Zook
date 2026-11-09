@@ -327,6 +327,7 @@ components:
                   planKey: { type: [string, "null"] }
                   expiresAt: { type: [string, "null"], format: date-time }
                   autoRenew: { type: [boolean, "null"] }
+                  revenueCatRenewalStatus: { type: [string, "null"], description: Original RevenueCat renewal status from the last synchronization. }
                   source: { type: [string, "null"] }
                   managementUrl: { type: [string, "null"] }
                   lastSyncedAt: { type: string, format: date-time }
@@ -512,6 +513,7 @@ components:
         planKey: { type: [string, "null"] }
         expiresAt: { type: [string, "null"], format: date-time }
         autoRenew: { type: [boolean, "null"] }
+        revenueCatRenewalStatus: { type: [string, "null"], description: Original RevenueCat renewal status from the last synchronization. }
         source: { type: [string, "null"], enum: [app_store, play_store, alipay, null] }
         lastSyncedAt: { type: [string, "null"], format: date-time }
         deletedAt: { type: [string, "null"], format: date-time }

@@ -1,0 +1,2035 @@
+openapi: 3.1.0
+info:
+  title: LightTick immutable strategy versions and controlled backtests
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-strategies
+  description: Controlled strategy research with frozen parameters and durable reports
+paths:
+  /api/v1/lighttick/investments/strategies/catalog:
+    get:
+      operationId: readStrategyCatalog
+      summary: readStrategyCatalog
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters: []
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyCatalogEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+  /api/v1/lighttick/investments/strategies:
+    get:
+      operationId: listInvestmentStrategies
+      summary: listInvestmentStrategies
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - &id003
+        name: cursor
+        in: query
+        required: false
+        schema: &id002
+          type: string
+      - &id004
+        name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: include_archived
+        in: query
+        required: false
+        schema: &id006
+          type: boolean
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+  /api/v1/lighttick/investments/strategies/{id}:
+    get:
+      operationId: readInvestmentStrategy
+      summary: readInvestmentStrategy
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: &id001
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+    put:
+      operationId: saveInvestmentStrategy
+      summary: saveInvestmentStrategy
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentStrategyWrite'
+  /api/v1/lighttick/investments/strategies/{id}/versions/{version}:
+    get:
+      operationId: readInvestmentStrategyVersion
+      summary: readInvestmentStrategyVersion
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+  /api/v1/lighttick/investments/strategies/{id}/history:
+    get:
+      operationId: readInvestmentStrategyHistory
+      summary: readInvestmentStrategyHistory
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: cursor
+        in: query
+        required: false
+        schema: *id002
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+  /api/v1/lighttick/investments/strategies/{id}/archive:
+    post:
+      operationId: archiveInvestmentStrategy
+      summary: archiveInvestmentStrategy
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentStrategyRevision'
+  /api/v1/lighttick/investments/strategies/{id}/restore:
+    post:
+      operationId: restoreInvestmentStrategy
+      summary: restoreInvestmentStrategy
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentStrategyRevision'
+  /api/v1/lighttick/investments/backtests:
+    post:
+      operationId: createInvestmentBacktest
+      summary: createInvestmentBacktest
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentStrategyRunRequest'
+    get:
+      operationId: listInvestmentBacktests
+      summary: listInvestmentBacktests
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - *id003
+      - *id004
+      - name: strategy_id
+        in: query
+        required: false
+        schema: *id001
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyRunPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+  /api/v1/lighttick/investments/backtests/{id}:
+    get:
+      operationId: readInvestmentBacktest
+      summary: readInvestmentBacktest
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+  /api/v1/lighttick/investments/backtests/{id}/cancel:
+    post:
+      operationId: cancelInvestmentBacktest
+      summary: cancelInvestmentBacktest
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentStrategyRevision'
+  /api/v1/lighttick/investments/backtests/{id}/cases/{index}:
+    get:
+      operationId: readInvestmentBacktestCase
+      summary: readInvestmentBacktestCase
+      description: Owner-only bounded daily long-only T+1 strategy research. Exact
+        immutable parameter versions and frozen same-source comparison/grid; no asset
+        account required. Missing execution/corporate-action facts produce incomplete
+        results, never implicit normal state. Existing worker with bounded CPU thread,
+        budget, cancel, leases/recovery and durable originals. No arbitrary user code,
+        trading, task push expansion, real migration or legacy parity claim.
+      tags:
+      - lighttick-strategies
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: index
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 15
+      - name: section
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - equity
+          - orders
+          - trades
+          - execution
+          - prices
+      - name: cursor
+        in: query
+        required: false
+        schema: *id002
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentStrategyCasePageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Retain input and original request; no silent fallback
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickInvestmentStrategyConfig:
+      type: object
+      additionalProperties: false
+      required:
+      - initial_cash
+      - quantity
+      - price_tick
+      - commission_rate
+      - minimum_commission
+      - sell_tax_rate
+      - slippage_bps
+      - max_participation
+      - annual_risk_free
+      - strategy
+      - entry_above
+      - exit_below
+      - fast_window
+      - slow_window
+      - lot_size
+      - annual_periods
+      properties:
+        initial_cash: &id005
+          type: string
+          pattern: ^-?[0-9]+(?:\.[0-9]+)?$
+        quantity: *id005
+        price_tick: *id005
+        commission_rate: *id005
+        minimum_commission: *id005
+        sell_tax_rate: *id005
+        slippage_bps: *id005
+        max_participation: *id005
+        annual_risk_free: *id005
+        strategy:
+          type: string
+          enum:
+          - threshold
+          - ma_cross
+        entry_above:
+          anyOf:
+          - *id005
+          - type: 'null'
+        exit_below:
+          anyOf:
+          - *id005
+          - type: 'null'
+        fast_window:
+          type: integer
+          minimum: 1
+          maximum: 120
+        slow_window:
+          type: integer
+          minimum: 2
+          maximum: 250
+        lot_size:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        annual_periods:
+          type: integer
+          minimum: 1
+          maximum: 100000
+    LightTickInvestmentStrategyFields:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - description
+      - config
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 8000
+        config:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyConfig'
+    LightTickInvestmentStrategyDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - archive_epoch
+      - fields
+      - definition_digest
+      - request_key
+      - archived
+      - created_at
+      - updated_at
+      properties:
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        archive_epoch:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyFields'
+        definition_digest: &id008
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        request_key: *id002
+        archived: *id006
+        created_at: &id007
+          type: string
+          format: date-time
+        updated_at: *id007
+    LightTickInvestmentStrategyWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - fields
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyFields'
+    LightTickInvestmentStrategyRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickInvestmentStrategyReference:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - definition_digest
+      properties:
+        id: *id001
+        version:
+          type: integer
+          minimum: 1
+          maximum: 100
+        definition_digest: *id008
+    LightTickInvestmentStrategyAxis:
+      type: object
+      additionalProperties: false
+      required:
+      - parameter
+      - values
+      properties:
+        parameter:
+          type: string
+          enum:
+          - entry_above
+          - exit_below
+          - fast_window
+          - slow_window
+        values:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items:
+            oneOf:
+            - *id005
+            - type: integer
+              minimum: 1
+              maximum: 250
+    LightTickInvestmentStrategyFact:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - available_at
+      - suspended
+      - limit_up
+      - limit_down
+      - adj_factor
+      - split_ratio
+      - cash_dividend
+      properties:
+        date: &id009
+          type: string
+          format: date
+        available_at: *id007
+        suspended: *id006
+        limit_up: *id005
+        limit_down: *id005
+        adj_factor: *id005
+        split_ratio: *id005
+        cash_dividend: *id005
+    LightTickInvestmentStrategyReview:
+      type: object
+      additionalProperties: false
+      required:
+      - source_note
+      - reviewed_at
+      - facts
+      properties:
+        source_note:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        reviewed_at: *id007
+        facts:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyFact'
+          maxItems: 500
+    LightTickInvestmentStrategyCase:
+      type: object
+      additionalProperties: false
+      required:
+      - index
+      - strategy
+      - config
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 15
+        strategy:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyReference'
+        config:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyConfig'
+    LightTickInvestmentStrategyRunRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      - strategies
+      - axes
+      - instrument_id
+      - account_id
+      - snapshot_id
+      - input_digest
+      - start_at
+      - end_at
+      - decision_at
+      - execution_review
+      - consent
+      properties:
+        mode:
+          type: string
+          enum:
+          - single
+          - compare
+          - grid
+        strategies:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyReference'
+        axes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyAxis'
+          maxItems: 2
+        instrument_id: *id001
+        account_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        snapshot_id: *id001
+        input_digest: *id008
+        start_at: *id009
+        end_at: *id009
+        decision_at: *id007
+        execution_review:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentStrategyReview'
+          - type: 'null'
+        consent:
+          const: true
+          type: boolean
+    LightTickInvestmentStrategyCalendar:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - market
+      - version
+      - start
+      - end
+      - reviewed_on
+      - review_until
+      - source_url
+      - sessions
+      - snapshot_hash
+      properties:
+        status:
+          type: string
+          enum:
+          - available
+          - coverage_unknown
+          - review_expired
+        market: *id002
+        version: *id002
+        start: *id009
+        end: *id009
+        reviewed_on: *id009
+        review_until: *id009
+        source_url:
+          anyOf:
+          - *id002
+          - type: 'null'
+        sessions:
+          type: object
+          additionalProperties: *id006
+        snapshot_hash: *id008
+    LightTickInvestmentStrategySource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - instrument_id
+      - instrument_revision
+      - work_id
+      - created_at
+      - dataset
+      - indicators
+      properties:
+        id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        revision:
+          type: integer
+          enum:
+          - 1
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        instrument_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        work_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        dataset:
+          type: object
+          additionalProperties: false
+          required:
+          - supplier
+          - adapter_version
+          - policy_revision
+          - instrument_id
+          - code
+          - market
+          - kind
+          - start
+          - end
+          - price_basis
+          - realtime
+          - retrieved_at
+          - available_at
+          - source_units
+          - calendar
+          - missing_sessions
+          - input_digest
+          - limitations
+          - bar_count
+          properties:
+            supplier:
+              type: string
+              enum:
+              - csv
+              - tushare
+              - eastmoney
+              - tencent
+            adapter_version:
+              type: string
+              maxLength: 240
+            policy_revision:
+              type: string
+              maxLength: 240
+            instrument_id:
+              type: string
+              pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+              maxLength: 100
+            code:
+              type: string
+              maxLength: 32
+            market:
+              type: string
+              enum:
+              - SSE
+              - SZSE
+            kind:
+              type: string
+              enum:
+              - stock
+              - etf
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+            price_basis:
+              type: string
+              enum:
+              - unadjusted
+            realtime:
+              type: boolean
+              enum:
+              - false
+            retrieved_at:
+              type: string
+              format: date-time
+            available_at:
+              type: string
+              format: date-time
+            source_units:
+              type: object
+              additionalProperties: false
+              required:
+              - volume
+              - amount
+              properties:
+                volume:
+                  type: string
+                  maxLength: 240
+                amount:
+                  type: string
+                  maxLength: 240
+            calendar:
+              type: object
+              maxProperties: 20
+              additionalProperties: true
+            missing_sessions:
+              anyOf:
+              - type: array
+                maxItems: 370
+                items:
+                  type: string
+                  format: date
+              - type: 'null'
+            input_digest:
+              type: string
+              pattern: ^[a-f0-9]{64}$
+            limitations:
+              type: array
+              maxItems: 10
+              items:
+                type: string
+                maxLength: 240
+            declared_source:
+              type: string
+              maxLength: 200
+            raw_input_digest:
+              type: string
+              pattern: ^[a-f0-9]{64}$
+            bar_count:
+              type: integer
+              minimum: 0
+              maximum: 500
+        indicators:
+          $ref: ./api.yaml#/components/schemas/LightTickInvestmentMarketIndicators
+    LightTickInvestmentStrategyPublicReview:
+      type: object
+      additionalProperties: false
+      required:
+      - source_note
+      - reviewed_at
+      - fact_count
+      properties:
+        source_note: *id002
+        reviewed_at: *id007
+        fact_count:
+          type: integer
+          minimum: 0
+          maximum: 500
+    LightTickInvestmentStrategyInput:
+      type: object
+      additionalProperties: false
+      required:
+      - strategy_heads
+      - mode
+      - strategies
+      - cases
+      - axes
+      - instrument
+      - account_id
+      - snapshot
+      - calendar
+      - start_at
+      - end_at
+      - decision_at
+      - execution_review
+      - algorithm_version
+      - digest
+      properties:
+        strategy_heads:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - archive_epoch
+            properties:
+              id: *id001
+              archive_epoch:
+                type: integer
+                minimum: 0
+                maximum: 2147483647
+          maxItems: 4
+        mode:
+          type: string
+          enum:
+          - single
+          - compare
+          - grid
+        strategies:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyDefinition'
+          maxItems: 4
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyCase'
+          maxItems: 16
+        axes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyAxis'
+          maxItems: 2
+        instrument:
+          $ref: ./api.yaml#/components/schemas/LightTickInvestmentInstrument
+        account_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        snapshot:
+          $ref: '#/components/schemas/LightTickInvestmentStrategySource'
+        calendar:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyCalendar'
+        start_at: *id009
+        end_at: *id009
+        decision_at: *id007
+        execution_review:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentStrategyPublicReview'
+          - type: 'null'
+        algorithm_version: *id002
+        digest: *id008
+    LightTickInvestmentStrategyMetrics:
+      type: object
+      additionalProperties: false
+      required:
+      - net_profit
+      - total_return_pct
+      - annualized_return_pct
+      - maximum_drawdown_pct
+      - volatility_pct
+      - sharpe
+      - sortino
+      - win_rate_pct
+      - average_win
+      - average_loss
+      - largest_win
+      - largest_loss
+      - average_holding_calendar_days
+      - total_fees_and_tax
+      - benchmark_return_pct
+      - annual_risk_free
+      - closed_round_trips
+      - risk_metric_samples
+      - annual_periods
+      properties:
+        net_profit:
+          anyOf:
+          - *id005
+          - type: 'null'
+        total_return_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+        annualized_return_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+        maximum_drawdown_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+        volatility_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+        sharpe:
+          anyOf:
+          - *id005
+          - type: 'null'
+        sortino:
+          anyOf:
+          - *id005
+          - type: 'null'
+        win_rate_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+        average_win:
+          anyOf:
+          - *id005
+          - type: 'null'
+        average_loss:
+          anyOf:
+          - *id005
+          - type: 'null'
+        largest_win:
+          anyOf:
+          - *id005
+          - type: 'null'
+        largest_loss:
+          anyOf:
+          - *id005
+          - type: 'null'
+        average_holding_calendar_days:
+          anyOf:
+          - *id005
+          - type: 'null'
+        total_fees_and_tax:
+          anyOf:
+          - *id005
+          - type: 'null'
+        benchmark_return_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+        annual_risk_free:
+          anyOf:
+          - *id005
+          - type: 'null'
+        closed_round_trips:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        risk_metric_samples:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        annual_periods:
+          type: integer
+          minimum: 1
+          maximum: 100000
+    LightTickInvestmentStrategyResult:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - missing
+      - metrics
+      - algorithm_version
+      - input_digest
+      - config
+      - trade_count
+      - order_count
+      - equity_count
+      properties:
+        status:
+          type: string
+          enum:
+          - complete
+          - incomplete
+        missing:
+          type: array
+          items: *id002
+          maxItems: 50
+        metrics:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentStrategyMetrics'
+          - type: 'null'
+        algorithm_version: *id002
+        input_digest: *id008
+        config:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyConfig'
+        trade_count:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        order_count:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        equity_count:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        algorithm: *id002
+        execution_assumptions: *id002
+        final_cash: *id005
+        open_quantity: *id005
+        open_cost_basis: *id005
+        limitations:
+          type: array
+          items: *id002
+          maxItems: 20
+    LightTickInvestmentStrategyResultCase:
+      type: object
+      additionalProperties: false
+      required:
+      - index
+      - strategy
+      - config
+      - result
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 15
+        strategy:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyReference'
+        config:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyConfig'
+        result:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyResult'
+    LightTickInvestmentStrategyReport:
+      type: object
+      additionalProperties: false
+      required:
+      - algorithm_version
+      - input_digest
+      - output_digest
+      - context_digest
+      - status
+      - limitations
+      - cases
+      properties:
+        algorithm_version: *id002
+        input_digest: *id008
+        output_digest: *id008
+        context_digest: *id008
+        status:
+          type: string
+          enum:
+          - complete
+          - incomplete
+        limitations:
+          type: array
+          items: *id002
+          maxItems: 20
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyResultCase'
+          maxItems: 16
+    LightTickInvestmentStrategyWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - sequence
+      - revision
+      - request_key
+      - input
+      - status
+      - attempt
+      - error_code
+      - output
+      - created_at
+      - updated_at
+      properties:
+        id: *id001
+        sequence:
+          type: integer
+          minimum: 1
+          maximum: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        request_key: *id002
+        input:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyInput'
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - *id002
+          - type: 'null'
+        output:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentStrategyReport'
+          - type: 'null'
+        created_at: *id007
+        updated_at: *id007
+    LightTickInvestmentStrategySummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - sequence
+      - revision
+      - status
+      - attempt
+      - error_code
+      - created_at
+      - updated_at
+      - mode
+      - strategy_ids
+      properties:
+        id: *id001
+        sequence:
+          type: integer
+          minimum: 1
+          maximum: 100
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - *id002
+          - type: 'null'
+        created_at: *id007
+        updated_at: *id007
+        mode:
+          type: string
+          enum:
+          - single
+          - compare
+          - grid
+        strategy_ids:
+          type: array
+          items: *id001
+          maxItems: 4
+    LightTickInvestmentStrategyEquity:
+      type: object
+      additionalProperties: false
+      required:
+      - equity
+      - cash
+      - quantity
+      - close
+      - time
+      - drawdown_pct
+      properties:
+        equity: *id005
+        cash: *id005
+        quantity: *id005
+        close: *id005
+        time: *id007
+        drawdown_pct:
+          anyOf:
+          - *id005
+          - type: 'null'
+    LightTickInvestmentStrategyTrade:
+      type: object
+      additionalProperties: false
+      required:
+      - side
+      - time
+      - signal_at
+      - price
+      - quantity
+      - fee
+      - tax
+      - cash_after
+      - position_after
+      properties:
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+        time: *id007
+        signal_at: *id007
+        price: *id005
+        quantity: *id005
+        fee: *id005
+        tax: *id005
+        cash_after: *id005
+        position_after: *id005
+    LightTickInvestmentStrategyOrder:
+      type: object
+      additionalProperties: false
+      required:
+      - side
+      - signal_at
+      - signal_bar
+      - status
+      - reason
+      - filled_quantity
+      properties:
+        side:
+          type: string
+          enum:
+          - buy
+          - sell
+        signal_at: *id007
+        signal_bar: *id007
+        execution_at: *id007
+        status:
+          type: string
+          enum:
+          - filled
+          - rejected
+          - unexecuted
+        reason: *id002
+        filled_quantity: *id005
+    LightTickInvestmentStrategyPrice:
+      type: object
+      additionalProperties: false
+      required:
+      - date
+      - open
+      - high
+      - low
+      - close
+      - volume_shares
+      - amount_cny
+      - turnover_rate_pct
+      properties:
+        date:
+          type: string
+          format: date
+        open:
+          type: string
+          maxLength: 120
+        high:
+          type: string
+          maxLength: 120
+        low:
+          type: string
+          maxLength: 120
+        close:
+          type: string
+          maxLength: 120
+        volume_shares:
+          type: string
+          maxLength: 120
+        amount_cny:
+          type: string
+          maxLength: 120
+        turnover_rate_pct:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+    LightTickInvestmentStrategyCasePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - case_index
+      - section
+      - total
+      - output_digest
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            oneOf:
+            - $ref: '#/components/schemas/LightTickInvestmentStrategyEquity'
+            - $ref: '#/components/schemas/LightTickInvestmentStrategyTrade'
+            - $ref: '#/components/schemas/LightTickInvestmentStrategyOrder'
+            - $ref: '#/components/schemas/LightTickInvestmentStrategyFact'
+            - $ref: '#/components/schemas/LightTickInvestmentStrategyPrice'
+          maxItems: 100
+        case_index:
+          type: integer
+          minimum: 0
+          maximum: 15
+        section:
+          type: string
+          enum:
+          - equity
+          - orders
+          - trades
+          - execution
+          - prices
+        total:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        output_digest: *id008
+        next_cursor:
+          anyOf:
+          - *id002
+          - type: 'null'
+    LightTickInvestmentStrategyDefinitionPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyDefinition'
+          maxItems: 50
+        revision: *id008
+        next_cursor:
+          anyOf:
+          - *id002
+          - type: 'null'
+    LightTickInvestmentStrategyRunPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategySummary'
+          maxItems: 50
+        revision: *id008
+        next_cursor:
+          anyOf:
+          - *id002
+          - type: 'null'
+    LightTickInvestmentStrategyHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentStrategyDefinition'
+          maxItems: 20
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        next_cursor:
+          anyOf:
+          - *id002
+          - type: 'null'
+    LightTickInvestmentStrategyCatalog:
+      type: object
+      additionalProperties: false
+      required:
+      - algorithm_version
+      - strategies
+      - grid_parameters
+      - limits
+      - scope
+      properties:
+        algorithm_version: *id002
+        strategies:
+          type: array
+          items:
+            type: string
+            enum:
+            - threshold
+            - ma_cross
+          maxItems: 2
+        grid_parameters:
+          type: array
+          items: *id002
+          maxItems: 4
+        limits:
+          type: object
+          additionalProperties: false
+          required:
+          - retained
+          - daily
+          - active
+          - input_bytes
+          - bars
+          - cases
+          - timeout_ms
+          - lease_ms
+          - attempts
+          properties:
+            retained:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            daily:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            active:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            input_bytes:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            bars:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            cases:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            timeout_ms:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            lease_ms:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+            attempts:
+              type: integer
+              minimum: 0
+              maximum: 2147483647
+        scope: *id002
+    LightTickInvestmentStrategyDefinitionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyDefinition'
+        requestId: *id002
+    LightTickInvestmentStrategyDefinitionPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyDefinitionPage'
+        requestId: *id002
+    LightTickInvestmentStrategyHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyHistory'
+        requestId: *id002
+    LightTickInvestmentStrategyWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyWork'
+        requestId: *id002
+    LightTickInvestmentStrategyRunPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyRunPage'
+        requestId: *id002
+    LightTickInvestmentStrategyCasePageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyCasePage'
+        requestId: *id002
+    LightTickInvestmentStrategyCatalogEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentStrategyCatalog'
+        requestId: *id002

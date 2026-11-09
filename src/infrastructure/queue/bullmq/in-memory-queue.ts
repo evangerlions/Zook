@@ -1,3 +1,4 @@
+import { DeferJobError } from "../job-queue.ts";
 import { randomId } from "../../../shared/utils.ts";
 import type { QueueJob } from "../../../shared/types.ts";
 import type { JobQueue } from "../job-queue.ts";
@@ -56,6 +57,10 @@ export class InMemoryJobQueue implements JobQueue {
         await handler(job);
         this.remove(job.id);
       } catch (error) {
+        if (error instanceof DeferJobError) {
+          job.availableAt = new Date(now.getTime() + error.delayMs).toISOString();
+          continue;
+        }
         job.attemptsMade += 1;
         job.failedReason = error instanceof Error ? error.message : "Unknown queue error";
 

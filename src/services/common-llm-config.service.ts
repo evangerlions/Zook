@@ -1,8 +1,9 @@
 import { normalizeLlmModelRoutes } from "./llm-model-route-config.ts";
+import { resolveLlmProviderType } from "../shared/llm-provider-type.ts";
 import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { maskSensitiveString } from "../shared/utils.ts";
-import { SecretReferenceResolver, isSecretReference } from "./secret-reference-resolver.ts";
+import { MissingPasswordReferenceError, SecretReferenceResolver, isSecretReference } from "./secret-reference-resolver.ts";
 import type {
   AdminAppSummary,
   AdminLlmServiceDocument,
@@ -106,9 +107,19 @@ export class CommonLlmConfigService {
     };
   }
 
-  async updateConfig(input: unknown, desc?: string): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
+  async updateConfig(input: unknown, desc?: string, options?: { requireTypeForNewProviders?: boolean }): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
     const existingConfig = await this.getCurrentConfig();
     const normalized = this.validateInput(input, existingConfig);
+    if (options?.requireTypeForNewProviders && input && typeof input === "object" && !Array.isArray(input)) {
+      const existingKeys = new Set(existingConfig.providers.map((provider) => provider.key));
+      const providers = (input as Record<string, unknown>).providers;
+      if (Array.isArray(providers)) for (const item of providers) {
+        const provider = item as Record<string, unknown>;
+        if (!existingKeys.has(String(provider.key)) && provider.type === undefined) {
+          badRequest("ADMIN_LLM_SERVICE_INVALID", `New provider ${String(provider.key)} must specify type.`);
+        }
+      }
+    }
     await this.appConfigService.setValue(
       COMMON_APP_ID,
       LLM_SERVICE_CONFIG_KEY,
@@ -159,9 +170,23 @@ export class CommonLlmConfigService {
     }
 
     try {
-      const resolvedConfig = await this.secretReferenceResolver.resolveValue(config);
+      const { providers, ...sharedConfig } = config;
+      const shared = await this.secretReferenceResolver.resolveValue(sharedConfig);
+      const resolvedProviders = await Promise.all(providers.map(async (provider) => {
+        try {
+          return await this.secretReferenceResolver!.resolveValue(provider);
+        } catch (error) {
+          if (!(error instanceof MissingPasswordReferenceError)) throw error;
+          return { ...provider, enabled: false, apiKey: "", credentialMissing: true };
+        }
+      }));
+      const resolvedConfig = { ...shared, providers: resolvedProviders };
+      const validated = this.validateInput(resolvedConfig, config);
+      validated.providers = validated.providers.map((provider, i) =>
+        resolvedProviders[i].credentialMissing ? { ...provider, credentialMissing: true } : provider,
+      );
       return {
-        config: this.validateInput(resolvedConfig, config),
+        config: validated,
         revision: record.revision,
         updatedAt: record.createdAt,
       };
@@ -306,6 +331,9 @@ export class CommonLlmConfigService {
 
       const source = item as Record<string, unknown>;
       const key = this.normalizeProviderKey(source.key);
+      let type;
+      try { type = resolveLlmProviderType(key, source.type); }
+      catch (error) { badRequest("ADMIN_LLM_SERVICE_INVALID", (error as Error).message); }
       const label = this.requireTrimmedString(source.label, `Provider #${index + 1} label is required.`);
       const enabled = Boolean(source.enabled);
       const baseUrl = this.normalizeBaseUrl(source.baseUrl);
@@ -323,6 +351,7 @@ export class CommonLlmConfigService {
 
       return {
         key,
+        ...(type ? { type } : {}),
         label,
         enabled,
         baseUrl,
@@ -341,6 +370,7 @@ export class CommonLlmConfigService {
     }
 
     const providerKeys = new Set(providers.map((item) => item.key));
+    const providerTypes = new Map(providers.map((item) => [item.key, item.type ?? item.key]));
     const models = value.map((item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) {
         badRequest("ADMIN_LLM_SERVICE_INVALID", `Model #${index + 1} must be a JSON object.`);
@@ -351,7 +381,7 @@ export class CommonLlmConfigService {
       const label = this.requireTrimmedString(source.label, `Model ${key || `#${index + 1}`} label is required.`);
       const kind = this.normalizeKind(source.kind);
       const strategy = this.normalizeStrategy(source.strategy);
-      const routes = normalizeLlmModelRoutes(source.routes, key, providerKeys);
+      const routes = normalizeLlmModelRoutes(source.routes, key, providerKeys, providerTypes);
 
       return {
         key,

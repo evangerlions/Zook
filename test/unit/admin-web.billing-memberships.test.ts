@@ -30,6 +30,8 @@ async function harness(environment = "PRODUCTION", onOpenPayments?: (member: any
   }
   const status = await load("billing-membership-status");
   modules["./billing-membership-status"] = status;
+  const renewal = await load("billing-renewal-status");
+  modules["./billing-renewal-status"] = renewal;
   const section = await load("billing-memberships-section");
   const render = () => { index = 0; return section.BillingMembershipsSection({ appId: "ai_novel", environment, onOpenPayments }); };
   function find(node: any, type: string, predicate = (_: any) => true): any {
@@ -37,8 +39,23 @@ async function harness(environment = "PRODUCTION", onOpenPayments?: (member: any
     if (!node || typeof node !== "object") return;
     return node.type === type && predicate(node.props) ? node : find(node.props.children, type, predicate);
   }
-  return { render, find, status, query: () => query };
+  return { render, find, status, renewal, query: () => query };
 }
+
+test("renewal status displays the original value and accessible explanation", async () => {
+  const view = await harness();
+  const column = view.find(view.render(), "Table").props.columns.find((item: any) => item.title === "续订状态");
+  const cell = column.render(null, { revenueCatRenewalStatus: "will_not_renew", autoRenew: false });
+  assert.equal(cell.props.value, "will_not_renew");
+  const tooltip = view.renewal.BillingRenewalStatus(cell.props);
+  assert.match(tooltip.props.title, /已关闭续订/);
+  assert.equal(tooltip.props.children.props.children, "will_not_renew");
+  assert.equal(tooltip.props.children.props.tabIndex, 0);
+  const unknown = view.renewal.BillingRenewalStatus({ value: "future_status" });
+  assert.equal(unknown.props.children.props.children, "future_status");
+  assert.match(unknown.props.title, /未识别/);
+  assert.equal(view.renewal.BillingRenewalStatus({ value: null }).props.children, "—");
+});
 
 test("membership icons have distinct states and accessible Chinese explanations", async () => {
   const { status } = await harness();

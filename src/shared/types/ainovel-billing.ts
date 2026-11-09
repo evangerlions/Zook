@@ -4,6 +4,8 @@ export type AiNovelBillingTier = "plus" | "pro";
 export type AiNovelBillingPlatform = "ios" | "android" | "macos" | "web" | "windows";
 
 export interface AiNovelBillingMembershipInfo {
+  /** Original RevenueCat renewal state, retained separately from the public flag. */
+  revenueCatRenewalStatus?: string | null;
   active: boolean;
   state: AiNovelBillingState;
   tier: AiNovelBillingTier | null;

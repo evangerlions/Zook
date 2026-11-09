@@ -1,9 +1,12 @@
+import { ApplicationError } from "../shared/errors.ts";
+import type { CreditUserCandidate, CreditUserSearchField } from "../modules/ai-novel/credits/admin-credit-search.ts";
 import { billingEnvironment } from "../modules/billing/billing-environment.ts";
 import type { AiNovelCreditsStore, CreditsAccount, CreditsJob, CreditsTransaction } from "../modules/ai-novel/credits/ai-novel-credits-model.ts";
 import { reportedWindow, invalidatedPreviousWindow, type CreditUsageEvent, type CreditWindowSnapshot } from "../modules/ai-novel/credits/credits-reporting.ts";
 import type { UsageSource, UsagePayment } from "../shared/types/ai-novel-usage-admin.ts";
 
 export class InMemoryAiNovelCreditsStore implements AiNovelCreditsStore {
+  constructor(private readonly users: () => CreditUserCandidate[] = () => []) {}
   private readonly accounts = new Map<string, CreditsAccount>();
   private readonly jobs = new Map<string, CreditsJob>();
   private readonly locks = new Map<string, Promise<unknown>>();
@@ -25,6 +28,10 @@ export class InMemoryAiNovelCreditsStore implements AiNovelCreditsStore {
       const event = state.reporting?.event;
       const eventKey = event ? JSON.stringify([userId, environment, event.id]) : "";
       if (event?.kind === "debit" && this.events.has(eventKey)) throw Error("Duplicate credit debit event");
+      if (event?.kind === "grant" && event.adminUser && [...this.events.entries()].some(([key, old]) => {
+        const [, env, eventId] = JSON.parse(key);
+        return env === environment && eventId === event.id && old.adminUser;
+      })) throw new ApplicationError(409, "AINOVEL_CREDITS_JOB_CONFLICT", "Grant key was already used for another user.");
       const invalidated = invalidatedPreviousWindow(state);
       const oldWindow = invalidated ? this.windows.get(JSON.stringify([userId, environment, invalidated])) : undefined;
       if (oldWindow) oldWindow.stable = false;
@@ -46,6 +53,25 @@ export class InMemoryAiNovelCreditsStore implements AiNovelCreditsStore {
     });
     this.locks.set(accountKey, current);
     try { return await current; } finally { if (this.locks.get(accountKey) === current) this.locks.delete(accountKey); }
+  }
+
+  async searchUsers(field: CreditUserSearchField, term: string) {
+    const needle = term.toLowerCase();
+    return this.users().filter(user => (user[field] ?? "").toLowerCase().includes(needle))
+      .sort((a, b) => a.uid.localeCompare(b.uid)).slice(0, 11);
+  }
+
+  async listAdminGrants(offset: number, limit: number) {
+    return [...this.events.entries()]
+      .filter(([key, event]) => JSON.parse(key)[1] === billingEnvironment() && event.kind === "grant" && event.adminUser)
+      .map(([, event]) => {
+        const user = this.users().find(candidate => candidate.uid === event.userId);
+        const contact = event.recipientContact ?? user;
+        return { id: event.id, uid: event.userId!, points: Number(BigInt(event.giftMicros) / 1000000n), adminUser: event.adminUser!, at: event.at,
+          phone: contact?.phone ?? null, email: contact?.email ?? null, contactSource: event.recipientContact ? "snapshot" as const : user ? "current" as const : "unavailable" as const };
+      })
+      .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id))
+      .slice(offset, offset + limit);
   }
 
   async readUsageReport(filter: { from: string; to: string; userId?: string }): Promise<UsageSource> {

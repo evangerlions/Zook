@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-05",
+  "status": "daily_market_vertical_slice_verified_not_complete_U5",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "runtime_zook_revision": "e889c8e6aa15b7801b9341ba8b489c7bda1883c6",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "7c478dc1d31467c6da7a24a4cf5bed4c6a49eb54",
+    "contract_revision": "27361fd584ee5a88d3d15d13155b5e20cba6bebf",
+    "source_dirty": false,
+    "files": {
+      "index.html": "c167472c6fb4266a75088f8200404aad08307e8706785d25ae26f68ec35ae4cc",
+      "assets/ActionsPage-v2IRzYSN.js": "95f2e86a6256ad5e90807ee07909d840dafa443be17219d9170d50f5f447dfb7",
+      "assets/GoalsPage-B5EYfvzs.js": "4d158ef6c95b957daff6e2e4374cf1526861a7a6763c60af8b65c149fd20fb9c",
+      "assets/InvestmentPage-jNv0EmdH.js": "a0dbe052a0de8797e5f59a16ea24af2f8ab9e483381669b0029d62b16dcd4af5",
+      "assets/LearningPage-VtfGf7lq.js": "02f11f8d301bcb3ed896806fcb508cf7998bde964578aaa075f3f15ef13e23e0",
+      "assets/PendingNotice-yIuyPNqY.js": "0f81bb67d4dcf6a679cedcf41dcb7bd9b72616ed0a4bc5cf03b219cc177208f0",
+      "assets/PlanningPage-COMLTDES.js": "324fcf0f226ff3fac6dcba343d136446df6fa8b795deb5c3db2ecdb1190f9225",
+      "assets/PlansPage-ByBA1B1o.js": "d604d6c8c32fa613e0985aabbfcc9628e422a3bc6a32aeeb3d52a42405adf555",
+      "assets/PracticePage-BRfnWYom.js": "d1669775db76e9dc1f25ce81199fb2f5eca7efa542d11f38728783a67e120c75",
+      "assets/RecordsPage-Bx9n-cdL.js": "b5f2e4271b1988baaa2d3003530143be56c15f60739161525ddd72852e308563",
+      "assets/ReviewPage-DS7Jwsc1.js": "ee36e6901a69260a4d5e48c1135d90e0a5b0d7332c6872b05668cb57672bf844",
+      "assets/TodayPage-C5fvkfzx.js": "eaa833f4079961788fe301f2c7331ae58b57b188b8aa147d4d7545152ecb83b8",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index-Bp4Uf9od.css": "b7a0849e69b1bc14fe2960ff2df79b4d7833da9d9fa47255aa832f580d23422a",
+      "assets/index-naPID_64.js": "55e6484a656e87853425088b6cfb573e160de04e3c20ea12fbc5d3d325557eb8",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "migration": {
+    "path": "src/infrastructure/database/postgres/migrations/094_lighttick_market_work.sql",
+    "sha256": "454d1d5518cc1b1c5f5c2c6c7638bc3962f3ce5a4465470f90948d91e4a783e7"
+  },
+  "checks": {
+    "backend": {
+      "pass": 2429,
+      "skip": 1,
+      "fail": 0
+    },
+    "postgres": {
+      "pass": 13,
+      "skip": 0,
+      "fail": 0
+    },
+    "grow": {
+      "pass": 21,
+      "fail": 0
+    },
+    "old_chrome_story_groups": 10,
+    "market_chrome": {
+      "passed": true,
+      "instrument_id": "inv-9c58c2ad23c2bfe0b435670e68d778ed69cf5763",
+      "snapshots": 23,
+      "no_asset_account_required": true,
+      "exact_CSV_bytes_and_original_request_replay": true,
+      "decimal_precision": true,
+      "work_reference_recovers_on_reload": true,
+      "explicit_instrument_CAS_rebase": true,
+      "selected_supplier_failure_no_fallback": true,
+      "live_cancel_no_late_snapshot": true,
+      "offline_and_expired_cursor_keep_drafts": true,
+      "authorized_export_original_receipts": true,
+      "cross_owner_denied": true,
+      "keyboard_and_320_375_768_1024_widths": true,
+      "console_errors": []
+    },
+    "admin_chrome": {
+      "passed": true,
+      "sensitive_operation_UI": true,
+      "lost_response_exact_original_retry": true,
+      "revision_CAS_and_remove": true,
+      "no_secret_in_storage_or_response": true,
+      "page_errors": []
+    },
+    "preexisting_grow_index_unchanged": true
+  },
+  "evidence": {
+    ".artifacts/grow-u5-market-20261105/backend-full-final.log": "cceb48b617885e49c29633d6771ef5af0b13ca1f105d4492a9f70f985a01ec35",
+    ".artifacts/grow-u5-market-20261105/domain-final.log": "f7022aa8568ee29736c2b1a36e19a43e2d0b0a5050d423e54845e059f7072896",
+    ".artifacts/grow-u5-market-20261105/pg-joint.log": "cff4fd1b907c97e16c6495068efbd16f813509b60a38451d84b9d38aba357446",
+    ".artifacts/grow-u5-market-20261105/grow-unit-last.log": "08d4cd934435b19e5831fdccfd3a74d9ed9bc03397e6753ef2fce07dfab72809",
+    ".artifacts/grow-u5-market-20261105/grow-clean-build.log": "b6efc1f5e0f1b69b1da31ba908e0734f148ed563a8c5b13943fb0683da0281cc",
+    ".artifacts/grow-u5-market-20261105/admin-types-final.log": "0eb3e90bb938c0f2d3f5da6fd83d2486f395d66d3a73f5b4cae1fb1cac632c04",
+    ".artifacts/grow-u5-market-20261105/admin-build-final.log": "bffbf9b0c6440e5dacbd2a20d8ce2702d4aa7a6bb14c27709eb34bfcd8b052aa",
+    ".artifacts/grow-u5-market-20261105/contracts-check-last.log": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1",
+    ".artifacts/grow-u5-market-20261105/contracts-lint.log": "950c8a71aba88062a73e7d2c27f0e7cdb4e5dbe88af1f361419d6b1f8db92c0c",
+    ".artifacts/grow-u5-market-20261105/lines-last.log": "5c483d3f277364ccc5d6ff1ab522121227fa6a0699214bdf81ad7061e82ef25a",
+    ".artifacts/grow-u5-market-20261105/types-last.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".artifacts/grow-u5-market-20261105/browser-final/result.json": "4f6b75a3c1864bb4b3d566b6e7b9d96d7aa0a9cf28450c931b41834ff9f6eb6c",
+    ".artifacts/grow-u5-market-20261105/browser-final/market-320-viewport.png": "d94637bb2b3cc410e8917f753e44f8088616ecce4080a57b180bf973f284e3d9",
+    ".artifacts/grow-u5-market-20261105/admin-browser-recheck/result.json": "0c5cd43587e1823627aac0f429b959b7934e9376a93e5df783e88eb47ed20865",
+    ".artifacts/grow-u5-market-20261105/regression/results.json": "56304641fe064f9c022f4f9f387f1fe4fe11fe1bd44a0e458bc1c20a6ab09183"
+  },
+  "boundaries": [
+    "Only synthetic localhost data and provider failures; no real secrets or supplier requests.",
+    "No real historical migration, dev/online release or push.",
+    "No complete U0/U5 parity, research/backtest UI, corporate actions/adjustments, whole module migration rehearsal or mixed-load performance claim."
+  ]
+}

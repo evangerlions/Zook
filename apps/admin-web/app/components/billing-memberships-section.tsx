@@ -6,6 +6,7 @@ import { billingAdminApi, type BillingMember } from "../lib/billing-admin-api";
 import { formatTimestamp } from "../lib/format";
 import { useBillingQuery } from "../lib/use-billing-query";
 import { BillingMembershipStatus } from "./billing-membership-status";
+import { BillingRenewalStatus } from "./billing-renewal-status";
 
 export function BillingMembershipsSection({ appId, environment, onOpenPayments }: {
   appId: string;
@@ -31,7 +32,7 @@ export function BillingMembershipsSection({ appId, environment, onOpenPayments }
       { title: "会员状态", render: (_, row) => <BillingMembershipStatus member={row} /> },
       { title: BILLING_TERMS.tier.label, dataIndex: "tier", render: (value) => billingTermValue("tier", value) }, { title: "商品代号", dataIndex: "planKey" }, { title: BILLING_TERMS.source.label, dataIndex: "source", render: (value) => billingTermValue("source", value) },
       { title: "到期时间", dataIndex: "expiresAt", render: formatTimestamp },
-      { title: "自动续订", render: (_, row) => row.autoRenew === null ? "未知" : row.autoRenew ? "是" : "否" },
+      { title: "续订状态", render: (_, row) => <BillingRenewalStatus value={row.revenueCatRenewalStatus} /> },
       { title: "最后同步", dataIndex: "lastSyncedAt", render: formatTimestamp },
     ]} />
     <Space>{cursor ? <Button onClick={() => setCursor(undefined)}>回到首页</Button> : null}{result.data?.nextCursor ? <Button onClick={() => setCursor(result.data!.nextCursor!)}>下一页</Button> : null}</Space>

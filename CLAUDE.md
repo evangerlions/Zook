@@ -42,3 +42,4 @@ Available skills:
 - `/learn`
 
 If gstack skills aren't working, run `cd .claude/skills/gstack && ./setup` to build the binary and register skills.
+Grow React前端开发入口已迁入../plan/LightTick-Web，由plan仓库与原生协同规划；Zook只接收其固定静态产物，不维护第二份前端源码。

@@ -23,6 +23,9 @@ export class PostgresRecordStore {
  async recordVersions(owner:LightTickOwner,id:string):Promise<LightTickRecord[]> {
   return (await this.query('SELECT payload FROM zook_lighttick_record_versions WHERE app_id=$1 AND user_id=$2 AND record_id=$3 ORDER BY version DESC',[owner.appId,owner.userId,id])).rows.map(r=>r.payload as LightTickRecord);
  }
+ async getRecordVersion(owner:LightTickOwner,id:string,version:number):Promise<LightTickRecord|undefined>{
+  const row=(await this.query('SELECT payload FROM zook_lighttick_record_versions WHERE app_id=$1 AND user_id=$2 AND record_id=$3 AND version=$4',[owner.appId,owner.userId,id,version])).rows[0];return row?.payload as LightTickRecord|undefined;
+ }
  async saveRecord(row:LightTickRecordRow,baseVersion:number) {
   const args=[row.appId,row.userId,row.id,JSON.stringify(row.payload),row.payload.record_date,row.payload.updated_at];
   const result=baseVersion===0?await this.query(`INSERT INTO zook_lighttick_records(app_id,user_id,id,payload,record_date,updated_at,version)

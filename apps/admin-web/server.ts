@@ -3,11 +3,10 @@ import { stat } from "node:fs/promises";
 import { createReadStream, readFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createGrowStaticHandler, type GrowStaticOptions } from "./grow-static.ts";
 import { localLoginDefaults } from "./local-login-defaults.ts";
-import { proxyGrow } from "./grow-proxy.ts";
 
-interface AdminServerOptions {
-  growProxyTarget?: string;
+interface AdminServerOptions extends GrowStaticOptions {
   proxyTarget?: string;
   brandName?: string;
   defaultAppId?: string;
@@ -147,7 +146,8 @@ async function proxyApiRequest(
   };
 
   if (body !== undefined) {
-    init.body = body;
+    // A replayable Blob preserves binary bytes when Fetch handles an auth challenge.
+    init.body = new Blob([Uint8Array.from(body)]);
     init.headers.set("content-length", String(body.byteLength));
   }
 
@@ -369,11 +369,6 @@ async function handleRequest(
   const url = new URL(request.url ?? "/", "http://admin.local");
   const pathname = url.pathname;
 
-  if (pathname === "/grow" || pathname.startsWith("/grow/")) {
-    proxyGrow(request, response, options.growProxyTarget ?? process.env.ADMIN_GROW_PROXY_TARGET);
-    return;
-  }
-
   if (pathname === INTERNAL_HEALTH_PATH) {
     serveInternalHealth(response);
     return;
@@ -404,7 +399,9 @@ async function handleRequest(
 }
 
 export function createAdminServer(options: AdminServerOptions = {}): Server {
+  const serveGrow = createGrowStaticHandler(options);
   return createServer((request, response) => {
+    if (serveGrow(request, response)) return;
     handleRequest(request, response, options).catch((error) => {
       response.statusCode = 500;
       response.setHeader("Content-Type", "text/plain; charset=utf-8");

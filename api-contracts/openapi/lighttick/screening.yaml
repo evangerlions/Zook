@@ -1,0 +1,1994 @@
+openapi: 3.1.0
+info:
+  title: LightTick versioned screening
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-screening
+  description: Finite user rules, templates and explainable frozen execution
+paths:
+  /api/v1/lighttick/investments/screening/catalog:
+    get:
+      operationId: readScreenCatalog
+      summary: readScreenCatalog
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters: []
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenCatalogEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/runs:
+    get:
+      operationId: listScreenRuns
+      summary: listScreenRuns
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - &id004
+        name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+          minLength: 0
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: template_id
+        in: query
+        schema: &id001
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenRunPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+    post:
+      operationId: createScreenRun
+      summary: createScreenRun
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - &id003
+        name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenRunRequest'
+  /api/v1/lighttick/investments/screening/runs/{id}:
+    get:
+      operationId: readScreenRun
+      summary: readScreenRun
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - &id002
+        name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/runs/{id}/cancel:
+    post:
+      operationId: cancelScreenRun
+      summary: cancelScreenRun
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenCancel'
+  /api/v1/lighttick/investments/screening/rules:
+    get:
+      operationId: listScreenRule
+      summary: listScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id004
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: include_archived
+        in: query
+        schema: &id005
+          type: boolean
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/rules/{id}:
+    get:
+      operationId: readScreenRule
+      summary: readScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+    put:
+      operationId: saveScreenRule
+      summary: saveScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenRuleWrite'
+  /api/v1/lighttick/investments/screening/rules/{id}/history:
+    get:
+      operationId: historyScreenRule
+      summary: historyScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id004
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/rules/{id}/versions/{version}:
+    get:
+      operationId: versionScreenRule
+      summary: versionScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/rules/{id}/archive:
+    post:
+      operationId: archiveScreenRule
+      summary: archiveScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenRevision'
+  /api/v1/lighttick/investments/screening/rules/{id}/restore:
+    post:
+      operationId: restoreScreenRule
+      summary: restoreScreenRule
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenRevision'
+  /api/v1/lighttick/investments/screening/templates:
+    get:
+      operationId: listScreenTemplate
+      summary: listScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id004
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      - name: include_archived
+        in: query
+        schema: *id005
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/templates/{id}:
+    get:
+      operationId: readScreenTemplate
+      summary: readScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+    put:
+      operationId: saveScreenTemplate
+      summary: saveScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenTemplateWrite'
+  /api/v1/lighttick/investments/screening/templates/{id}/history:
+    get:
+      operationId: historyScreenTemplate
+      summary: historyScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id004
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/templates/{id}/versions/{version}:
+    get:
+      operationId: versionScreenTemplate
+      summary: versionScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+  /api/v1/lighttick/investments/screening/templates/{id}/archive:
+    post:
+      operationId: archiveScreenTemplate
+      summary: archiveScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenRevision'
+  /api/v1/lighttick/investments/screening/templates/{id}/restore:
+    post:
+      operationId: restoreScreenTemplate
+      summary: restoreScreenTemplate
+      description: Owner-only versioned finite screening rules/templates and durable
+        worker execution. Exact rational comparisons, explicit trading-session windows,
+        selected pool of at most 20 instruments, exact snapshot/digest or explicit
+        missing source. No asset account required. Conditions/recipes and source mappings
+        are reviewed by the user; no arbitrary code, automatic model parsing, trading
+        or task creation. Current rule/template archive or disable blocks admission
+        and publication; ordinary edits retain frozen execution versions. Persistent
+        original CAS commands, 100 versions/definition, 200 definitions/kind, 100
+        runs retained, 20/day, one active/owner, 2 MiB input, 30s compute, 60s lease,
+        3 total attempts. Read payload omits bulk bars; full immutable input is included
+        in bounded owner export. Unavailable fields remain unknown; result/source/algorithm/digests
+        retained. Catalog/history invalidation must retain local drafts and pending
+        originals. Task-only sync unchanged.
+      tags:
+      - lighttick-screening
+      parameters:
+      - *id002
+      - *id003
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Rejected request; retain input and original request identity
+        '503':
+          $ref: './api.yaml#/components/responses/LightTickError'
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentScreenRevision'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LightTickInvestmentScreenMapping:
+      type: object
+      additionalProperties: false
+      required:
+      - source
+      - quote
+      - reason
+      properties:
+        source:
+          type: string
+          enum:
+          - manual
+          - explicit
+          - default
+          - suggested
+        quote:
+          type: string
+          maxLength: 500
+          minLength: 0
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 0
+    LightTickInvestmentScreenCondition:
+      type: object
+      additionalProperties: false
+      required:
+      - field
+      - op
+      - value
+      - upper_value
+      - mapping
+      properties:
+        field:
+          type: string
+          enum: &id006
+          - close
+          - turnover_cny
+          - turnover_rate_pct
+          - volume_ratio_5
+          - price_above_ma20
+          - return_1d_pct
+          - return_3d_pct
+          - return_5d_pct
+          - return_10d_pct
+          - return_20d_pct
+          - avg_turnover_3d_pct
+          - avg_turnover_5d_pct
+          - avg_turnover_10d_pct
+          - avg_turnover_20d_pct
+          - avg_amount_5d
+          - avg_amount_10d
+          - avg_amount_20d
+        op:
+          type: string
+          enum:
+          - eq
+          - ne
+          - gt
+          - gte
+          - lt
+          - lte
+          - between
+        value:
+          type: string
+          maxLength: 100
+          minLength: 1
+        upper_value:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+        mapping:
+          $ref: '#/components/schemas/LightTickInvestmentScreenMapping'
+    LightTickInvestmentScreenRecipe:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - window
+      - minimum_gain
+      - volume_ratio
+      - shrink_ratio
+      - pullback_min
+      - pullback_max
+      - near_high_ratio
+      - exclude_st
+      - exclude_suspended
+      properties:
+        kind:
+          type: string
+          enum: &id013
+          - ma_bullish
+          - pullback
+          - volume_breakout
+          - return_window
+        window:
+          type: integer
+          minimum: 5
+          maximum: 120
+        minimum_gain:
+          type: string
+          maxLength: 100
+          minLength: 1
+        volume_ratio:
+          type: string
+          maxLength: 100
+          minLength: 1
+        shrink_ratio:
+          type: string
+          maxLength: 100
+          minLength: 1
+        pullback_min:
+          type: string
+          maxLength: 100
+          minLength: 1
+        pullback_max:
+          type: string
+          maxLength: 100
+          minLength: 1
+        near_high_ratio:
+          type: string
+          maxLength: 100
+          minLength: 1
+        exclude_st: *id005
+        exclude_suspended: *id005
+    LightTickInvestmentScreenRuleFields:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - description
+      - source_text
+      - conditions
+      - combine
+      - sort_by
+      - descending
+      - secondary_sort_by
+      - secondary_descending
+      - limit
+      - recipe
+      - sort_mapping
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+          minLength: 0
+        source_text:
+          type: string
+          maxLength: 2000
+          minLength: 0
+        conditions:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenCondition'
+        combine:
+          type: string
+          enum:
+          - all
+          - any
+        sort_by:
+          type: string
+          enum: *id006
+        descending: *id005
+        secondary_sort_by:
+          anyOf:
+          - type: string
+            enum: *id006
+          - type: 'null'
+        secondary_descending: *id005
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 20
+        recipe:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentScreenRecipe'
+          - type: 'null'
+        sort_mapping:
+          $ref: '#/components/schemas/LightTickInvestmentScreenMapping'
+    LightTickInvestmentScreenRuleReference:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - version
+      - definition_digest
+      properties:
+        id: *id001
+        version:
+          type: integer
+          minimum: 1
+          maximum: 100
+        definition_digest: &id007
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickInvestmentScreenTemplateFields:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - description
+      - rule
+      - instrument_ids
+      - account_id
+      - enabled
+      - tags
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+          minLength: 0
+        rule:
+          $ref: '#/components/schemas/LightTickInvestmentScreenRuleReference'
+        instrument_ids:
+          type: array
+          maxItems: 20
+          items: *id001
+          minItems: 1
+          uniqueItems: true
+        account_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        enabled: *id005
+        tags:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 50
+            minLength: 1
+    LightTickInvestmentScreenRuleDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - request_key
+      - definition_digest
+      - archived
+      - created_at
+      - updated_at
+      - kind
+      - fields
+      properties:
+        id: *id001
+        revision: &id009
+          type: integer
+          minimum: 1
+          maximum: 100
+        request_key: &id010
+          type: string
+          maxLength: 128
+          minLength: 8
+        definition_digest: *id007
+        archived: *id005
+        created_at: &id008
+          type: string
+          format: date-time
+        updated_at: *id008
+        kind:
+          const: rules
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentScreenRuleFields'
+    LightTickInvestmentScreenRuleWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - fields
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentScreenRuleFields'
+    LightTickInvestmentScreenTemplateDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - request_key
+      - definition_digest
+      - archived
+      - created_at
+      - updated_at
+      - kind
+      - fields
+      properties:
+        id: *id001
+        revision: *id009
+        request_key: *id010
+        definition_digest: *id007
+        archived: *id005
+        created_at: *id008
+        updated_at: *id008
+        kind:
+          const: templates
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentScreenTemplateFields'
+    LightTickInvestmentScreenTemplateWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - fields
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 99
+        fields:
+          $ref: '#/components/schemas/LightTickInvestmentScreenTemplateFields'
+    LightTickInvestmentScreenDefinition:
+      anyOf:
+      - $ref: '#/components/schemas/LightTickInvestmentScreenRuleDefinition'
+      - $ref: '#/components/schemas/LightTickInvestmentScreenTemplateDefinition'
+    LightTickInvestmentScreenRevision:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 99
+    LightTickInvestmentScreenCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickInvestmentScreenDefinitionPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenDefinition'
+        revision: &id011
+          type: string
+        next_cursor:
+          anyOf:
+          - *id011
+          - type: 'null'
+    LightTickInvestmentScreenHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenDefinition'
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        next_cursor:
+          anyOf:
+          - *id011
+          - type: 'null'
+    LightTickInvestmentScreenSecurityStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - as_of
+      - is_st
+      - suspended
+      - source_label
+      - available_at
+      properties:
+        as_of: &id012
+          type: string
+          format: date
+        is_st:
+          anyOf:
+          - *id005
+          - type: 'null'
+        suspended:
+          anyOf:
+          - *id005
+          - type: 'null'
+        source_label:
+          type: string
+          maxLength: 300
+          minLength: 1
+        available_at: *id008
+    LightTickInvestmentScreenSourceSelection:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - snapshot_id
+      - input_digest
+      - security_status
+      properties:
+        instrument_id: *id001
+        snapshot_id:
+          anyOf:
+          - *id001
+          - type: 'null'
+        input_digest:
+          anyOf:
+          - *id007
+          - type: 'null'
+        security_status:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentScreenSecurityStatus'
+          - type: 'null'
+    LightTickInvestmentScreenRunRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - template_id
+      - base_revision
+      - as_of
+      - decision_at
+      - sources
+      - consent
+      properties:
+        template_id: *id001
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 100
+        as_of: *id012
+        decision_at: *id008
+        sources:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenSourceSelection'
+          minItems: 1
+        consent:
+          const: true
+    LightTickInvestmentScreenDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - field
+      - label
+      - unit
+      - actual
+      - result
+      - reason
+      - dates
+      - condition
+      properties:
+        field: *id011
+        label: *id011
+        unit: *id011
+        actual:
+          type:
+          - string
+          - boolean
+          - 'null'
+        result:
+          anyOf:
+          - *id005
+          - type: 'null'
+        reason:
+          anyOf:
+          - *id011
+          - type: 'null'
+        dates:
+          type: array
+          maxItems: 121
+          items: *id012
+        condition:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentScreenCondition'
+          - type: 'null'
+    LightTickInvestmentScreenEvaluation:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - code
+      - market
+      - name
+      - status
+      - values
+      - details
+      - source
+      - limitations
+      - sorting
+      properties:
+        instrument_id: *id001
+        code: *id011
+        market: *id011
+        name: *id011
+        status:
+          type: string
+          enum:
+          - matched
+          - excluded
+          - unknown
+        values:
+          type: object
+          additionalProperties:
+            type:
+            - string
+            - boolean
+            - 'null'
+        details:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenDetail'
+        source:
+          type: object
+        limitations:
+          type: array
+          maxItems: 50
+          items: *id011
+        sorting:
+          type: array
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenDetail'
+    LightTickInvestmentScreenReport:
+      type: object
+      additionalProperties: false
+      required:
+      - algorithm_version
+      - input_digest
+      - as_of
+      - decision_at
+      - items
+      - evaluations
+      - total
+      - unresolved
+      - incomplete
+      - limitations
+      - output_digest
+      properties:
+        algorithm_version:
+          const: screen-rational-session-v1
+        input_digest: *id007
+        as_of: *id012
+        decision_at: *id008
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenEvaluation'
+        evaluations:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenEvaluation'
+        total:
+          type: integer
+          minimum: 0
+          maximum: 20
+        unresolved:
+          type: integer
+          minimum: 0
+          maximum: 20
+        incomplete: *id005
+        limitations:
+          type: array
+          maxItems: 50
+          items: *id011
+        output_digest: *id007
+    LightTickInvestmentScreenInput:
+      type: object
+      additionalProperties: false
+      required:
+      - rule
+      - template
+      - as_of
+      - decision_at
+      - sources
+      - algorithm_version
+      - digest
+      properties:
+        rule:
+          $ref: '#/components/schemas/LightTickInvestmentScreenRuleDefinition'
+        template:
+          $ref: '#/components/schemas/LightTickInvestmentScreenTemplateDefinition'
+        as_of: *id012
+        decision_at: *id008
+        sources:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - instrument
+            - snapshot
+            - security_status
+            properties:
+              instrument:
+                type: object
+              snapshot:
+                anyOf:
+                - type: object
+                - type: 'null'
+              security_status:
+                anyOf:
+                - $ref: '#/components/schemas/LightTickInvestmentScreenSecurityStatus'
+                - type: 'null'
+        algorithm_version:
+          const: screen-rational-session-v1
+        digest: *id007
+    LightTickInvestmentScreenWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - request_key
+      - input
+      - status
+      - attempt
+      - error_code
+      - output
+      - created_at
+      - updated_at
+      properties:
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        request_key:
+          type: string
+          maxLength: 128
+          minLength: 8
+        input:
+          $ref: '#/components/schemas/LightTickInvestmentScreenInput'
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - *id011
+          - type: 'null'
+        output:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentScreenReport'
+          - type: 'null'
+        created_at: *id008
+        updated_at: *id008
+    LightTickInvestmentScreenWorkSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - status
+      - attempt
+      - error_code
+      - created_at
+      - updated_at
+      - template_id
+      - template_version
+      properties:
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          anyOf:
+          - *id011
+          - type: 'null'
+        created_at: *id008
+        updated_at: *id008
+        template_id: *id001
+        template_version:
+          type: integer
+          minimum: 1
+          maximum: 100
+    LightTickInvestmentScreenRunPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentScreenWorkSummary'
+        revision: *id011
+        next_cursor:
+          anyOf:
+          - *id011
+          - type: 'null'
+    LightTickInvestmentScreenCatalog:
+      type: object
+      additionalProperties: false
+      required:
+      - algorithm_version
+      - fields
+      - recipes
+      - limits
+      properties:
+        algorithm_version:
+          const: screen-rational-session-v1
+        fields:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: false
+            required:
+            - label
+            - unit
+            - window
+            properties:
+              label: *id011
+              unit: *id011
+              window:
+                type: integer
+                minimum: 1
+                maximum: 121
+        recipes:
+          type: array
+          maxItems: 4
+          items:
+            type: string
+            enum: *id013
+        limits:
+          type: object
+    LightTickInvestmentScreenDefinitionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentScreenDefinition'
+        requestId:
+          type: string
+    LightTickInvestmentScreenDefinitionPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentScreenDefinitionPage'
+        requestId:
+          type: string
+    LightTickInvestmentScreenHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentScreenHistory'
+        requestId:
+          type: string
+    LightTickInvestmentScreenWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentScreenWork'
+        requestId:
+          type: string
+    LightTickInvestmentScreenRunPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentScreenRunPage'
+        requestId:
+          type: string
+    LightTickInvestmentScreenCatalogEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentScreenCatalog'
+        requestId:
+          type: string

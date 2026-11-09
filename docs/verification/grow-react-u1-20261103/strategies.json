@@ -1,0 +1,601 @@
+{
+  "date": "2026-11-07",
+  "status": "bounded_strategy_comparison_grid_backtest_slice_verified_not_full_U5",
+  "overall_tasks": {
+    "complete": 21,
+    "total": 27
+  },
+  "slice_subtasks": {
+    "complete": 4,
+    "total": 4,
+    "file": "docs/plans/grow-zook-native-web/strategy-subtasks.md"
+  },
+  "implementation_and_contract": "80b89823c4f157a2c772dc5c2a0d377316531322",
+  "backend_runtime": "689bea57d19f76f4f1110abb11124b23836756da",
+  "verification_candidate": "40984c0aade209e497f9753b7f7b0058bbf3459a",
+  "frontend": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+  "counts": {
+    "backend": {
+      "passed": 2525,
+      "failed": 0,
+      "skipped": 1,
+      "log": ".artifacts/strategies-20261107/full-unit-final.log",
+      "sha256": "3f75f2c42141e26ebdc851c780c6f7362187b72f3ebc8dddba6be36ca7fc0dc6"
+    },
+    "strategies": {
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/strategies-20261107/algorithm-green.log",
+      "sha256": "510141d7ec45eefb3a3f3d2ef6f599d181fc56c219ce4bf5be8d4a8c18e5e560"
+    },
+    "postgres": {
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/strategies-20261107/pg-joint-final.log",
+      "sha256": "8db8e38040cde1b91a7c06b54e7bd6b134b3669d545add341d1737867ea9026f"
+    },
+    "risk": {
+      "passed": 173,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/strategies-20261107/risk-unit-final.log",
+      "sha256": "ab74f45546d1b9bd0d49eef2a4ec4d1d817be9bce983e9dbb3a173fae23c5d2f"
+    },
+    "grow": {
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".artifacts/strategies-20261107/grow-unit-pinned.log",
+      "sha256": "fbd57b5edcbb4c1695ddd1c0103b88cf445ee8d5535ef57751a508d9f1474473"
+    }
+  },
+  "browser": {
+    "main": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "strategy_id": "inv-96d3f7e7-90db-47b6-89f3-9f6ec4f57a68",
+      "strategy_label": "Synthetic strategy 44dc2b",
+      "single_id": "inv-backtest-a4cd293ed9e65ce35935bc46a115a33f504a4092",
+      "compare_id": "inv-backtest-e4717b7d9a390ec51c04b782343cc7dbd9ad94f2",
+      "grid_id": "inv-backtest-5b7e2e6778a7ebf72b558f6c337bc67362862cb1",
+      "cancel_id": "inv-backtest-e9f340a0c2097421b32bc855bfdf9c6fd538557e",
+      "source_version_and_original_request_after_reload": true,
+      "three_way_CAS_original_text_and_historical_params": true,
+      "actual_worker_thread_single_compare_grid_complete": true,
+      "known_net_profits": [
+        "200",
+        "0"
+      ],
+      "grid_net_profits": [
+        "200",
+        "200",
+        "0",
+        "0"
+      ],
+      "frozen_execution_fact_pagination": true,
+      "running_cancel_no_late_report": true,
+      "archive_restore_preserves_old_reports": true,
+      "offline_and_owner_switch_exact_pending_recovery": true,
+      "export_full_inputs_reports_originals_without_secrets": true,
+      "no_asset_account": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "boundaries": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "strategy_id": "inv-96d3f7e7-90db-47b6-89f3-9f6ec4f57a68",
+      "incomplete_id": "inv-backtest-47c1551f436cd3364cd7fcee20c42234039fd182",
+      "cancelled_id": "inv-backtest-91d70d973e39d03f8e2f14466cea4dc144ef7f23",
+      "expired_history_rebuild_retains_local_input": true,
+      "missing_facts_explicit_incomplete_not_zero_performance": true,
+      "excess_grid_values_retained_and_submission_blocked_not_truncated": true,
+      "cancel_loss_reload_same_original_and_no_late_output": true,
+      "unsaved_input_not_exported_original_commands_retained": true,
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "readonly": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "chrome_version": "157.0.8103.38",
+      "readonly_existing_grid_report": true,
+      "mobile_table_scroll_is_local_and_data_remains_accessible": true,
+      "bootstrap_before_login": {
+        "console": [
+          {
+            "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+            "url": "http://127.0.0.1:58631/api/v1/auth/refresh"
+          }
+        ],
+        "responses": [
+          {
+            "url": "http://127.0.0.1:58631/api/v1/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "authenticated_console_errors": [],
+      "authenticated_http_errors": [],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "research_ai": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "research_id": "inv-research-ai-0d08185fc696",
+      "account": "course2@example.com",
+      "lost_response_exact_original_after_reload": true,
+      "analysis_guide_report_explicit_adoption": true,
+      "selected_personal_model_used": true,
+      "no_account_required": true,
+      "cancel_fences_late_results": true,
+      "provider_failure_no_fallback": true,
+      "source_change_refuses_result_and_adoption": true,
+      "model_change_refuses_result": true,
+      "original_facts_not_automatically_modified": true,
+      "export_no_secret": true,
+      "quota_refusal_keeps_draft_and_explicit_release": true,
+      "no_browser_secret": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "materials": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "synthetic_account": "course2@example.com",
+      "material_id": "inv-df11d712-c0c0-4f94-9012-28cfae6a3523",
+      "lost_response_exact_original_after_reload": true,
+      "baseline_local_cloud_CAS": true,
+      "cross_instrument_research_pins_different_versions": true,
+      "source_update_does_not_replace_research_refs": true,
+      "archive_rejects_new_refs_retains_old_client_and_history": true,
+      "restore_same_identity": true,
+      "optional_period_end_preserved": true,
+      "paginated_history_original_content": true,
+      "offline_reload_preserves_unsaved_draft": true,
+      "authorized_export_versions_receipts_and_relations": true,
+      "no_asset_account_required": true,
+      "cross_owner_denied": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "screening": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "rule_id": "inv-83c495aa-16e3-445e-9e4a-0ddac97f056f",
+      "template_id": "inv-0debd9dd-1b60-4da8-9073-1b86837a1d20",
+      "run_id": "inv-screen-797653c784016e50cecec18f70ae756c0125b709",
+      "cancelled_id": "inv-screen-1f021104d1a5d2de57e85f75ef31bcfe6d0e82c1",
+      "output_digest": "037d40d4c38199c90d648d9c80844669a5e0e68f374f64450edb88e288806495",
+      "lost_definition_and_run_response_exact_original_after_reload": true,
+      "baseline_local_cloud_CAS": true,
+      "template_pins_historical_rule": true,
+      "actual_existing_worker_CSV_source": true,
+      "matched_and_unknown_explained": true,
+      "running_cancel_no_late_result": true,
+      "disable_archive_restore_retains_report": true,
+      "offline_reload_preserves_draft": true,
+      "paginated_history_expired_cursor_rebuild_retains_local": true,
+      "one_template_editor_after_each_save": true,
+      "export_full_frozen_input_and_original_commands": true,
+      "no_asset_account": true,
+      "cross_owner_denied": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    },
+    "observations": {
+      "passed": true,
+      "served_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+      "synthetic_history_clock_declared": true,
+      "prediction_id": "inv-4a7354af-1739-4cd0-91a4-60e6b9563d65",
+      "historical_prediction_id": "inv-observe-prediction",
+      "evaluation_id": "inv-observe-369301102b7c6084b5efceea86dfbcadc67b045f",
+      "feedback_id": "inv-014ed1d4-d2b1-4e56-952f-26bf76af72e6",
+      "stopped_work_id": "inv-observe-2f789296f92241788c07ad1d10aea83c665aad3a",
+      "prediction_loss_exact_original_and_immutable": true,
+      "rapid_mode_switch_drops_stale_read_and_loads_new_scope": true,
+      "server_versioned_reference_adoption": true,
+      "evaluation_loss_original_after_reload": true,
+      "resolved_and_pending_correct_calibration": true,
+      "feedback_versions_and_three_way_CAS": true,
+      "event_read_and_unread_filter": true,
+      "monitor_stop_fences_late_result_and_restore_retains_disabled": true,
+      "offline_and_owner_switch_exact_pending_recovery": true,
+      "authorized_export_original_sources_versions_receipts": true,
+      "widths": [
+        320,
+        375,
+        768,
+        1024
+      ],
+      "page_errors": [],
+      "browser_cleanup_completed": true
+    }
+  },
+  "old_13_stories": [
+    {
+      "story": "u2",
+      "exit": 0
+    },
+    {
+      "story": "learning",
+      "exit": 0
+    },
+    {
+      "story": "records",
+      "exit": 0
+    },
+    {
+      "story": "plans",
+      "exit": 0
+    },
+    {
+      "story": "actions",
+      "exit": 0
+    },
+    {
+      "story": "practice",
+      "exit": 0
+    },
+    {
+      "story": "review",
+      "exit": 0
+    },
+    {
+      "story": "course",
+      "first_exit": 1,
+      "verified_exit": 0,
+      "retry_account": "course5@example.com",
+      "reason": "Repeated synthetic course6 already reserved 1950000 of 2000000 daily micros; another lesson requires450000. No budget or data reset; full story repeated on permitted course5.",
+      "retry": {
+        "passed": true,
+        "manual_route": "plan-24c5885b-b702-4e95-92c8-34fafad9dd13",
+        "ai_route": "plan-07af4094-2e4d-4787-84ef-80919805766c",
+        "lost_response_exact_replay": true,
+        "route_cas_preserves_local": true,
+        "per_content_completion": true,
+        "file_source_worker_review": true,
+        "explicit_ai_adoption": true,
+        "cancel_no_publication": true,
+        "legacy_progress": true,
+        "console_errors": []
+      }
+    },
+    {
+      "story": "investment_accounts",
+      "exit": 0
+    },
+    {
+      "story": "investment_ledger",
+      "exit": 0
+    },
+    {
+      "story": "market",
+      "exit": 0
+    },
+    {
+      "story": "market_admin",
+      "exit": 0
+    },
+    {
+      "story": "research",
+      "exit": 0
+    }
+  ],
+  "fixture": {
+    "synthetic": true,
+    "owner": "user_course_9",
+    "controlled_source_clock": "2026-11-06T08:00:00Z",
+    "instrument": {
+      "code": "600000",
+      "market": "SSE",
+      "kind": "stock",
+      "name": "Synthetic observation",
+      "id": "inv-ef559602e75d9246c729158442b498d92a1d5a31",
+      "revision": 1,
+      "archived": false,
+      "created_at": "2026-11-02T08:00:00.000Z",
+      "updated_at": "2026-11-02T08:00:00.000Z"
+    },
+    "source_id": "inv-995b8b9c167836ba1ab8a9eaef1a7184bd45392b",
+    "source_digest": "d86a6a43b54ebbeca44705cb0a649b99bb9e83f6280b874c5e6c9dfdc35a1839",
+    "strategy_id": "inv-strategy-threshold",
+    "body": {
+      "mode": "single",
+      "strategies": [
+        {
+          "id": "inv-strategy-threshold",
+          "version": 1,
+          "definition_digest": "d6b86ce64bfce85e98518ebcd68a187bcd5a3d4ae30296ad6139dd3ac91a9c7b"
+        }
+      ],
+      "axes": [],
+      "instrument_id": "inv-ef559602e75d9246c729158442b498d92a1d5a31",
+      "account_id": null,
+      "snapshot_id": "inv-995b8b9c167836ba1ab8a9eaef1a7184bd45392b",
+      "input_digest": "d86a6a43b54ebbeca44705cb0a649b99bb9e83f6280b874c5e6c9dfdc35a1839",
+      "start_at": "2026-11-03",
+      "end_at": "2026-11-06",
+      "decision_at": "2026-11-06T08:00:00.000Z",
+      "execution_review": {
+        "source_note": "Synthetic declared facts only",
+        "reviewed_at": "2026-11-06T08:00:00.000Z",
+        "facts": [
+          {
+            "date": "2026-11-03",
+            "available_at": "2026-11-03T07:05:00Z",
+            "suspended": false,
+            "limit_up": "20",
+            "limit_down": "5",
+            "adj_factor": "1",
+            "split_ratio": "1",
+            "cash_dividend": "0"
+          },
+          {
+            "date": "2026-11-04",
+            "available_at": "2026-11-04T07:05:00Z",
+            "suspended": false,
+            "limit_up": "20",
+            "limit_down": "5",
+            "adj_factor": "1",
+            "split_ratio": "1",
+            "cash_dividend": "0"
+          },
+          {
+            "date": "2026-11-05",
+            "available_at": "2026-11-05T07:05:00Z",
+            "suspended": false,
+            "limit_up": "20",
+            "limit_down": "5",
+            "adj_factor": "1",
+            "split_ratio": "1",
+            "cash_dividend": "0"
+          },
+          {
+            "date": "2026-11-06",
+            "available_at": "2026-11-06T07:05:00Z",
+            "suspended": false,
+            "limit_up": "20",
+            "limit_down": "5",
+            "adj_factor": "1",
+            "split_ratio": "1",
+            "cash_dividend": "0"
+          }
+        ]
+      },
+      "consent": true
+    }
+  },
+  "artifact_proof": {
+    "source_revision": "7ea12afd97bbaa51ce18ba3740f1f5aeafd9542e",
+    "contract_revision": "80b89823c4f157a2c772dc5c2a0d377316531322",
+    "source_dirty": false,
+    "served_assets_verified": 17,
+    "assets": [
+      {
+        "file": "index.html",
+        "sha256": "6dcb18341ee89e19c0c10e0f933062ce09508e7231565b7045f7f47b36ebc5c0"
+      },
+      {
+        "file": "assets/ActionsPage-_MIitJOB.js",
+        "sha256": "af93c8f988fae002d7d4d2a293aab51acd23d1e2de9126b3189d7aaf5ab1f1b2"
+      },
+      {
+        "file": "assets/GoalsPage-BoqQs4cB.js",
+        "sha256": "fde205c80eba052c53fefc8e266d3f7ccb442b5ed1d84751149d04334da401d1"
+      },
+      {
+        "file": "assets/InvestmentPage--WesIeK7.js",
+        "sha256": "83fd48606a141120c5978a8053132618928f7a972d704869dadac748bbf2f48a"
+      },
+      {
+        "file": "assets/LearningPage-BE4LxDPg.js",
+        "sha256": "f488200e2516d6d13995cde026c86594ba1b25c27393c2c2fe3dfffe2a103f85"
+      },
+      {
+        "file": "assets/PendingNotice-I_XuLDpe.js",
+        "sha256": "3c8355d8c20dd2031f1698548d5fa42c024f7be13e302b4241ab91e9e019bd31"
+      },
+      {
+        "file": "assets/PlanningPage-CNx5LoEF.js",
+        "sha256": "6fd6fb9ff534f83f37dd1cb05b4f819c40a1970bf14f88a0c4c3d868a6fa8f07"
+      },
+      {
+        "file": "assets/PlansPage-Bo4nWn2j.js",
+        "sha256": "5e3d7a78e016f0f214dda86d5d4c031806f6cd2cb61f62bcf440ec1c0a1cf51d"
+      },
+      {
+        "file": "assets/PracticePage-C11Cguf-.js",
+        "sha256": "7b8874c5b2480384ae8940e81ca69f56549ebaeb04c98ed88173673ffaf72ad0"
+      },
+      {
+        "file": "assets/RecordsPage-9W_eJvWf.js",
+        "sha256": "0c1857fb77b04915a5e7b3a672585a1fee481d25ec69308bf2aed1291ba7c6af"
+      },
+      {
+        "file": "assets/ReviewPage-5QSVi9Z8.js",
+        "sha256": "9a9303d75aab5db34a649fd107ee23c3f8017a722117fbd0edaaf85185cd661b"
+      },
+      {
+        "file": "assets/SettingsPage-CIc8PwkJ.js",
+        "sha256": "fd5feafca55a513b9f1dd45f5a217f67c0a7c184b502e5c17f2aa2d9ccc26709"
+      },
+      {
+        "file": "assets/TodayPage-7pyjKUs8.js",
+        "sha256": "4ac78e28b0cffc001c83b7abc40465c60ea695293602f2ef0ec2d4ebc843a499"
+      },
+      {
+        "file": "assets/draft-storage-B3K4C8Nl.js",
+        "sha256": "52deaab569bef87c26c9fb1c247e718b07b41cc60f0c7278a2a09197cd4c23d0"
+      },
+      {
+        "file": "assets/index-BxzB3PQX.css",
+        "sha256": "270aea39aeb7ab60713904b0f3cdb06d845cfd9c16ad73e9bc40ccfdbe2ace0a"
+      },
+      {
+        "file": "assets/index-COEJYIAw.js",
+        "sha256": "211a7e04c459f9754263e8c006688dfd6bf38153a7ce8f207bfe0c82b8082107"
+      },
+      {
+        "file": "assets/model-Cx6_vuN8.js",
+        "sha256": "696184d0e9fd629166ea5f196b36f67e0fcf8df5a9786856999128e5791b3264"
+      }
+    ],
+    "migration": {
+      "name": "102_lighttick_strategies.sql",
+      "sha256": "88d03287623da87c631356b6061febed7cd24aba7a6504125d038c87e37bdc05",
+      "stored_matches_source": true
+    }
+  },
+  "same_database_restart": {
+    "synthetic": true,
+    "database": "grow_web_u1_20261107d1",
+    "sha256": "7d90be1292befa0134d7d1667daba3d0e40435b90c70308eb9ef0c6a9c051aa4",
+    "strategies": 6,
+    "versions": 31,
+    "runs": 16,
+    "definition_receipts": 31,
+    "run_statuses": {
+      "cancelled": 5,
+      "succeeded": 11
+    },
+    "observations": 5,
+    "same_database_restart_preserved_versions_reports_sources_receipts": true
+  },
+  "preservation": {
+    "grow_staged_patch_identical": true,
+    "grow_unstaged_patch_changed_during_work": [
+      "知行成长/server/investments/api.py",
+      "知行成长/server/investments/schema.py",
+      "知行成长/server/investments/store.py",
+      "src/features/investments/InvestmentPage.tsx",
+      "src/features/investments/market/model.ts"
+    ],
+    "legacy_paths_not_written_or_committed_by_this_slice": true,
+    "note": "Original staged patch is identical. Other working-tree changes continued during this task; they were retained. Accepted static artifact is the isolated clean7ea12af, and subsequent working-tree edits were not folded into acceptance."
+  },
+  "tooling": {
+    "gstack_version": "1.97.0.0",
+    "gstack_main": "297f50c7e1d46aab1404f5f2e8a9584af76ad6b2",
+    "auto_upgrade_configured": true,
+    "claude_install": "unchanged registered version; main patches installed",
+    "independent_codex_install": "0.11.18.2 skipped by updater, owned by another checkout",
+    "optional_codex_refresh": "cd /Users/hao/.codex/skills/gstack && ./setup --host codex",
+    "asides_available": false,
+    "drivers": "gstack headless; isolated installed Chrome157 via Playwright1.58"
+  },
+  "unclosed": [
+    "Only threshold/ma_cross, SSE/SZSE saved-daily stock T+1 model. Other legacy templates, minute/multi-instrument/benchmark and arbitrary-code IDE are not parity-certified; no user code executed.",
+    "Execution status, limits, corporate actions and historical availability are explicit owner statements, not independently verified. Missing conditions retain incomplete reports.",
+    "Valuation/performance, ledger correction/compensation, remaining settings/GitHub/AI/source behavior remain pending.",
+    "All516 legacy operations still unreviewed; all-domain synthetic migration, compatibility and other-App off/on mixed P95<=10% remain pending.",
+    "Earlier hybrid-fixture lock root cause and pg@9 audit stay open; no such lock observed in this final run.",
+    "Real private history, credentials, provider/model quality, devices/accessibility, long observation, actual migration and releases were not executed."
+  ],
+  "checks": {
+    "contract_generate": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/contracts-source-pages.log",
+      "sha256": "fcf68d8bf455e2e4a0861563d641c0a22ba47b246d06f75746b3701b321661c4"
+    },
+    "contract_check": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/contracts-check-final.log",
+      "sha256": "1007f003e96ebf017ed2c072c78c3c5b655afb556e9c5be462a481bc28956ca1"
+    },
+    "contract_lint": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/contracts-lint-final.log",
+      "sha256": "1f326edbfcc8404f0e9be677f327d24f28b03f6c6b68bc910ba7983586b36d00"
+    },
+    "backend_types": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/types-algorithm.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "grow_types": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/grow-types-pinned.log",
+      "sha256": "bfe1182e9f70eacf58b300da79a445912661850a3fe8371bc149a92286f6212c"
+    },
+    "clean_build": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/grow-build.log",
+      "sha256": "b3436cdfffce084e6cf37611a7c049b4fc1cef4b4836e29dc87c0ef40ff251b1"
+    },
+    "source_lines": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/lines-final.log",
+      "sha256": "68ebe3b0d210e8b26306e79e6da0e8d16b50d8c0d3e5785c5ad1d84f5fc2a2bb"
+    },
+    "openspec": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/openspec-final.log",
+      "sha256": "0b6a9dda3c9f573acf58f0deb93a8080945e951a29e2ff796a920ed37805efef"
+    },
+    "risk_after_ledger": {
+      "passed": true,
+      "log": ".artifacts/strategies-20261107/risk-check-docs.log",
+      "sha256": "402ab08bff9ae2decae6258ad05e58242bafd4892d53ce8cb16de91866b8884a"
+    }
+  },
+  "screenshots": [
+    {
+      "path": "strategies/grid.png",
+      "sha256": "a21e4bb1a753b2c94d04f73b128a2016c2393738d9d20fdc0e735c9a9f3d26fa",
+      "visually_reviewed": true
+    },
+    {
+      "path": "strategies/history.png",
+      "sha256": "51f179981988361cd696a07f4feca0e0939ad330b4f5e2ecda7478900473975e",
+      "visually_reviewed": true
+    },
+    {
+      "path": "strategies/incomplete.png",
+      "sha256": "42d8a038fce224256fb5b65c516291ed8d74d1713a1d05920ccd365e5f525dc4",
+      "visually_reviewed": true
+    },
+    {
+      "path": "strategies/report-375.png",
+      "sha256": "3637b11a2f2cd69a956fffbf4fe9794335366166d8b71b65cd6a1b4351c0af52",
+      "visually_reviewed": true
+    },
+    {
+      "path": "strategies/single.png",
+      "sha256": "ca55e3354b0219ed8980ae4f7eef13219f035d01bc46db75ab064769868233c7",
+      "visually_reviewed": true
+    },
+    {
+      "path": "strategies/strategy-320.png",
+      "sha256": "7c1b1a6eb906b4930788b8d43937a768673d713588319aca3121cbc6d6cf4203",
+      "visually_reviewed": true
+    }
+  ]
+}

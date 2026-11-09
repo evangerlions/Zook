@@ -1,0 +1,2040 @@
+{
+  "dataset_version": "synthetic-market-indicators-v1",
+  "sources": [
+    {
+      "file": "/Volumes/肖豪/project/grow/知行成长/server/investments/providers.py",
+      "sha256": "82d999ae8b85567d463c6d51947bae2d6486513f16ec3009c07c7b4c63320a1e"
+    },
+    {
+      "file": "/Volumes/肖豪/project/grow/知行成长/server/investments/accounting.py",
+      "sha256": "3c1f929dbee5d4feb77992a56665b149b7a4fb29386963e94a0b45276120b313"
+    }
+  ],
+  "precision": 60,
+  "rounding": "ROUND_HALF_EVEN",
+  "cases": [
+    {
+      "name": "records-0",
+      "bars": [],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": null,
+        "ma20": null,
+        "volume_ratio_5": null,
+        "atr14": null,
+        "record_return_std20": null,
+        "return_sample_count": 0,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-1",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": null,
+        "ma20": null,
+        "volume_ratio_5": null,
+        "atr14": null,
+        "record_return_std20": null,
+        "return_sample_count": 0,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-4",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": null,
+        "ma20": null,
+        "volume_ratio_5": null,
+        "atr14": null,
+        "record_return_std20": null,
+        "return_sample_count": 3,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-5",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.32",
+        "ma20": null,
+        "volume_ratio_5": null,
+        "atr14": null,
+        "record_return_std20": null,
+        "return_sample_count": 4,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-6",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.43",
+        "ma20": null,
+        "volume_ratio_5": "1.0239999999999808000000000153599999999877120000000098304",
+        "atr14": null,
+        "record_return_std20": null,
+        "return_sample_count": 5,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-14",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.41",
+        "ma20": null,
+        "volume_ratio_5": "1.02255639097742664933009216041403752469141801689872825713015",
+        "atr14": null,
+        "record_return_std20": null,
+        "return_sample_count": 13,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-15",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10.64",
+          "high": "11.04",
+          "low": "10.34",
+          "close": "10.74",
+          "volume_shares": "137.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.52",
+        "ma20": null,
+        "volume_ratio_5": "1.02238805970147582980619292848521925900859311995596373647764",
+        "atr14": "0.735",
+        "record_return_std20": null,
+        "return_sample_count": 14,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-20",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10.64",
+          "high": "11.04",
+          "low": "10.34",
+          "close": "10.74",
+          "volume_shares": "137.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-16",
+          "open": "10.75",
+          "high": "11.15",
+          "low": "10.45",
+          "close": "10.85",
+          "volume_shares": "138.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-17",
+          "open": "10.86",
+          "high": "11.26",
+          "low": "10.56",
+          "close": "10.96",
+          "volume_shares": "139.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-18",
+          "open": "10.97",
+          "high": "11.37",
+          "low": "10.67",
+          "close": "11.07",
+          "volume_shares": "140.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-19",
+          "open": "10.18",
+          "high": "10.58",
+          "low": "9.88",
+          "close": "10.28",
+          "volume_shares": "141.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-20",
+          "open": "10.29",
+          "high": "10.69",
+          "low": "9.99",
+          "close": "10.39",
+          "volume_shares": "142.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.71",
+        "ma20": "10.56",
+        "volume_ratio_5": "1.0215827338129341131411417740193229195870364583312323478717",
+        "atr14": "0.77",
+        "record_return_std20": null,
+        "return_sample_count": 19,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-21",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10.64",
+          "high": "11.04",
+          "low": "10.34",
+          "close": "10.74",
+          "volume_shares": "137.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-16",
+          "open": "10.75",
+          "high": "11.15",
+          "low": "10.45",
+          "close": "10.85",
+          "volume_shares": "138.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-17",
+          "open": "10.86",
+          "high": "11.26",
+          "low": "10.56",
+          "close": "10.96",
+          "volume_shares": "139.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-18",
+          "open": "10.97",
+          "high": "11.37",
+          "low": "10.67",
+          "close": "11.07",
+          "volume_shares": "140.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-19",
+          "open": "10.18",
+          "high": "10.58",
+          "low": "9.88",
+          "close": "10.28",
+          "volume_shares": "141.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-20",
+          "open": "10.29",
+          "high": "10.69",
+          "low": "9.99",
+          "close": "10.39",
+          "volume_shares": "142.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-21",
+          "open": "10.4",
+          "high": "10.8",
+          "low": "10.1",
+          "close": "10.5",
+          "volume_shares": "143.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.64",
+        "ma20": "10.58",
+        "volume_ratio_5": "1.02142857142855612244897960276967930028373594335694018861189",
+        "atr14": "0.77",
+        "record_return_std20": "0.0252805013333809660735304373649326207547568056972277843434861",
+        "return_sample_count": 20,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "records-30",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10.64",
+          "high": "11.04",
+          "low": "10.34",
+          "close": "10.74",
+          "volume_shares": "137.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-16",
+          "open": "10.75",
+          "high": "11.15",
+          "low": "10.45",
+          "close": "10.85",
+          "volume_shares": "138.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-17",
+          "open": "10.86",
+          "high": "11.26",
+          "low": "10.56",
+          "close": "10.96",
+          "volume_shares": "139.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-18",
+          "open": "10.97",
+          "high": "11.37",
+          "low": "10.67",
+          "close": "11.07",
+          "volume_shares": "140.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-19",
+          "open": "10.18",
+          "high": "10.58",
+          "low": "9.88",
+          "close": "10.28",
+          "volume_shares": "141.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-20",
+          "open": "10.29",
+          "high": "10.69",
+          "low": "9.99",
+          "close": "10.39",
+          "volume_shares": "142.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-21",
+          "open": "10.4",
+          "high": "10.8",
+          "low": "10.1",
+          "close": "10.5",
+          "volume_shares": "143.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-22",
+          "open": "10.51",
+          "high": "10.91",
+          "low": "10.21",
+          "close": "10.61",
+          "volume_shares": "144.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-23",
+          "open": "10.62",
+          "high": "11.02",
+          "low": "10.32",
+          "close": "10.72",
+          "volume_shares": "145.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-24",
+          "open": "10.73",
+          "high": "11.13",
+          "low": "10.43",
+          "close": "10.83",
+          "volume_shares": "146.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-25",
+          "open": "10.84",
+          "high": "11.24",
+          "low": "10.54",
+          "close": "10.94",
+          "volume_shares": "147.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-26",
+          "open": "10.95",
+          "high": "11.35",
+          "low": "10.65",
+          "close": "11.05",
+          "volume_shares": "148.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-27",
+          "open": "11.06",
+          "high": "11.46",
+          "low": "10.76",
+          "close": "11.16",
+          "volume_shares": "149.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-28",
+          "open": "10.27",
+          "high": "10.67",
+          "low": "9.97",
+          "close": "10.37",
+          "volume_shares": "150.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-29",
+          "open": "10.38",
+          "high": "10.78",
+          "low": "10.08",
+          "close": "10.48",
+          "volume_shares": "151.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-30",
+          "open": "10.49",
+          "high": "10.89",
+          "low": "10.19",
+          "close": "10.59",
+          "volume_shares": "152.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.73",
+        "ma20": "10.67",
+        "volume_ratio_5": "1.020134228187905950182424224194508440117990262791867120629",
+        "atr14": "0.77",
+        "record_return_std20": "0.0250744691917555735808151337248795788303684127089353139851617",
+        "return_sample_count": 20,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "zero-volume",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10.64",
+          "high": "11.04",
+          "low": "10.34",
+          "close": "10.74",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-16",
+          "open": "10.75",
+          "high": "11.15",
+          "low": "10.45",
+          "close": "10.85",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-17",
+          "open": "10.86",
+          "high": "11.26",
+          "low": "10.56",
+          "close": "10.96",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-18",
+          "open": "10.97",
+          "high": "11.37",
+          "low": "10.67",
+          "close": "11.07",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-19",
+          "open": "10.18",
+          "high": "10.58",
+          "low": "9.88",
+          "close": "10.28",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-20",
+          "open": "10.29",
+          "high": "10.69",
+          "low": "9.99",
+          "close": "10.39",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-21",
+          "open": "10.4",
+          "high": "10.8",
+          "low": "10.1",
+          "close": "10.5",
+          "volume_shares": "0",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.64",
+        "ma20": "10.58",
+        "volume_ratio_5": null,
+        "atr14": "0.77",
+        "record_return_std20": "0.0252805013333809660735304373649326207547568056972277843434861",
+        "return_sample_count": 20,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "unsorted",
+      "bars": [
+        {
+          "date": "2026-09-21",
+          "open": "10.4",
+          "high": "10.8",
+          "low": "10.1",
+          "close": "10.5",
+          "volume_shares": "143.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-20",
+          "open": "10.29",
+          "high": "10.69",
+          "low": "9.99",
+          "close": "10.39",
+          "volume_shares": "142.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-19",
+          "open": "10.18",
+          "high": "10.58",
+          "low": "9.88",
+          "close": "10.28",
+          "volume_shares": "141.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-18",
+          "open": "10.97",
+          "high": "11.37",
+          "low": "10.67",
+          "close": "11.07",
+          "volume_shares": "140.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-17",
+          "open": "10.86",
+          "high": "11.26",
+          "low": "10.56",
+          "close": "10.96",
+          "volume_shares": "139.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-16",
+          "open": "10.75",
+          "high": "11.15",
+          "low": "10.45",
+          "close": "10.85",
+          "volume_shares": "138.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10.64",
+          "high": "11.04",
+          "low": "10.34",
+          "close": "10.74",
+          "volume_shares": "137.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10.53",
+          "high": "10.93",
+          "low": "10.23",
+          "close": "10.63",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10.42",
+          "high": "10.82",
+          "low": "10.12",
+          "close": "10.52",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10.31",
+          "high": "10.71",
+          "low": "10.01",
+          "close": "10.41",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10.2",
+          "high": "10.6",
+          "low": "9.9",
+          "close": "10.3",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10.09",
+          "high": "10.49",
+          "low": "9.79",
+          "close": "10.19",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10.88",
+          "high": "11.28",
+          "low": "10.58",
+          "close": "10.98",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10.77",
+          "high": "11.17",
+          "low": "10.47",
+          "close": "10.87",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10.66",
+          "high": "11.06",
+          "low": "10.36",
+          "close": "10.76",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10.55",
+          "high": "10.95",
+          "low": "10.25",
+          "close": "10.65",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10.44",
+          "high": "10.84",
+          "low": "10.14",
+          "close": "10.54",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10.33",
+          "high": "10.73",
+          "low": "10.03",
+          "close": "10.43",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10.22",
+          "high": "10.62",
+          "low": "9.92",
+          "close": "10.32",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10.11",
+          "high": "10.51",
+          "low": "9.81",
+          "close": "10.21",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10.4",
+          "low": "9.7",
+          "close": "10.1",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10.64",
+        "ma20": "10.58",
+        "volume_ratio_5": "1.02142857142855612244897960276967930028373594335694018861189",
+        "atr14": "0.77",
+        "record_return_std20": "0.0252805013333809660735304373649326207547568056972277843434861",
+        "return_sample_count": 20,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    },
+    {
+      "name": "constant-price",
+      "bars": [
+        {
+          "date": "2026-09-01",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "123.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-02",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "124.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-03",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "125.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-04",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "126.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-05",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "127.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-06",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "128.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-07",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "129.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-08",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "130.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-09",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "131.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-10",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "132.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-11",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "133.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-12",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "134.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-13",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "135.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-14",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "136.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-15",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "137.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-16",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "138.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-17",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "139.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-18",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "140.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-19",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "141.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-20",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "142.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        },
+        {
+          "date": "2026-09-21",
+          "open": "10",
+          "high": "10",
+          "low": "10",
+          "close": "10",
+          "volume_shares": "143.0000000001",
+          "amount_cny": "1234567.0000000001",
+          "turnover_rate_pct": null
+        }
+      ],
+      "expected": {
+        "price_basis": "unadjusted",
+        "ma5": "10",
+        "ma20": "10",
+        "volume_ratio_5": "1.02142857142855612244897960276967930028373594335694018861189",
+        "atr14": "0",
+        "record_return_std20": "0",
+        "return_sample_count": 20,
+        "limitations": [
+          "未复权；除权与公司行动可能影响指标，不能据此推定可执行交易。",
+          "ATR为最近14条真实区间的简单均值；波动为20次相邻有效记录收益样本标准差，不年化，不保证相邻自然日开市。"
+        ]
+      }
+    }
+  ]
+}

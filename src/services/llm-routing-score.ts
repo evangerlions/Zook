@@ -14,6 +14,7 @@ export type LlmRouteSelectionReason =
 export interface LlmRouteScoreInput {
   route: LlmModelRouteConfig;
   providerEnabled: boolean;
+  credentialMissing?: boolean;
   runtimeAvailable: boolean;
   healthScore: number;
   circuitOpen?: boolean;
@@ -23,7 +24,7 @@ export interface LlmRouteScoreEvaluation {
   route: LlmModelRouteConfig;
   selectionEligible: boolean;
   runtimeAvailable: boolean;
-  ineligibleReason?: "route_disabled" | "provider_disabled" | "runtime_unavailable" | "circuit_open";
+  ineligibleReason?: "route_disabled" | "provider_disabled" | "credential_missing" | "runtime_unavailable" | "circuit_open";
   configuredWeight: number;
   healthScore: number;
   dynamicScore: number;
@@ -105,7 +106,7 @@ function evaluateFixedRoutes(inputs: LlmRouteScoreInput[]): LlmRoutingEvaluation
   const eligible = base.filter((item) => item.selectionEligible && item.runtimeAvailable);
   const selected = eligible.length
     ? eligible.reduce((best, item) => item.configuredWeight > best.configuredWeight ? item : best)
-    : base.find((item) => item.runtimeAvailable && item.ineligibleReason !== "circuit_open");
+    : base.find((item, index) => item.runtimeAvailable && item.ineligibleReason !== "circuit_open" && !inputs[index].credentialMissing);
   const compatibilityFallback = eligible.length === 0 && Boolean(selected);
 
   return {
@@ -130,6 +131,8 @@ function buildBaseEvaluation(input: LlmRouteScoreInput): LlmRouteScoreEvaluation
     runtimeAvailable: input.runtimeAvailable,
     ineligibleReason: !input.route.enabled
       ? "route_disabled"
+      : input.credentialMissing
+        ? "credential_missing"
       : !input.providerEnabled
         ? "provider_disabled"
         : !input.runtimeAvailable

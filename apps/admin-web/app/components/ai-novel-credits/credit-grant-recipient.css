@@ -1,0 +1,11 @@
+.credit-grant-contact-row {
+  display: grid;
+  grid-template-columns: 1em minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 6px;
+}
+
+.credit-grant-contact-value {
+  min-width: 0;
+  white-space: nowrap;
+}

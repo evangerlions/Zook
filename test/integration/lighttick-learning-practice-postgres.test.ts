@@ -29,7 +29,10 @@ test('practice receipts survive reconnect; record locks serialize source archive
   let release!:()=>void,locked!:()=>void,attempted!:()=>void;
   const gate=new Promise<void>(r=>release=r),ready=new Promise<void>(r=>locked=r),trying=new Promise<void>(r=>attempted=r);
   const holding=repo.transaction(owner,async()=>{await repo.lockRecordOwner(owner);locked();await gate;await records.mutate(owner,r.id,'archive',{base_version:r.version},'practice-pg-archive');});
-  await ready;const lock=otherRepo.lockRecordOwner.bind(otherRepo);otherRepo.lockRecordOwner=async o=>{attempted();await lock(o)};
+  await ready;const transaction=otherRepo.transaction.bind(otherRepo);
+  // The owner write gate now precedes every domain lock. Observe transaction entry,
+  // otherwise waiting for the later record-lock hook would deadlock this test itself.
+  otherRepo.transaction=async(o,operation)=>{attempted();return transaction(o,operation);};
   const blocked=assert.rejects(fresh.request(owner,'POST','/practices',{...body,key:'practice-pg-new-after-archive'}));await trying;release();await holding;await blocked;
   assert.deepEqual(await fresh.request(owner,'POST','/practices',body),results[0]);
   assert.equal((await fresh.request(owner,'GET','/records') as any).total,0);

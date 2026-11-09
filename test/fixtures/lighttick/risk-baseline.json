@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "scope": "synthetic_local_risk_baseline_not_full_parity_or_release_acceptance",
+  "fixtures": [
+    {
+      "path": "test/fixtures/lighttick/learning-authority-golden.json",
+      "sha256": "b4d3f962763e917677145b7be293ce501806cc3d8dccc263984dd22139544d37"
+    },
+    {
+      "path": "test/fixtures/lighttick/course-authority-golden.json",
+      "sha256": "69086925f4ed5f288131d977f6cbac53013f04c19ce918b54f75e7bf21da4595"
+    },
+    {
+      "path": "test/fixtures/lighttick/investment-accounting-golden.json",
+      "sha256": "00ed9df7e6c8f06024690faca4e5ff81bb0149202a7d46c2a324f721401427ff"
+    },
+    {
+      "path": "test/fixtures/lighttick/market-indicators-golden.json",
+      "sha256": "5aa336b678a5ba9658efab7bcee75bad454a0bd4f091a9859d3a006e9b7038a5"
+    },
+    {
+      "path": "test/fixtures/lighttick/market-backtest-golden.json",
+      "sha256": "3b2a7010e05d9deb8853bce428470f7db80851e9109faa80a76762c436ed97b2"
+    },
+    {
+      "path": "test/fixtures/lighttick/native-question-keys.json",
+      "sha256": "23f3a4a95c00296b8c28724b3c1f7daa7932f284cc797049896134d2669e4a07"
+    },
+    {
+      "path": "test/fixtures/lighttick/other-app-contract-baseline.json",
+      "sha256": "1ace84cd6456a73a0d476b46ad2a229ed5854871e0ee785514814702aa65d08e"
+    },
+    {
+      "path": "test/fixtures/lighttick/screening-golden.json",
+      "sha256": "f83cbd71a5b54739d0b74142762459e7002c7a444189bc7d24ea43958d4c1d4e"
+    },
+    {
+      "path": "test/fixtures/lighttick/prediction-monitor-golden.json",
+      "sha256": "912e8d751e211379e767135f3e7d36522975170cdaa49b310a0886d807dc2b2c"
+    },
+    {
+      "path": "test/fixtures/lighttick/portfolio-golden.json",
+      "sha256": "f41cd6f4e1df8d686e2dc08d3e9e5331f2028e248bfab1404d592ed3c8b6502a"
+    },
+    {
+      "path": "test/fixtures/lighttick/form-editors-golden.json",
+      "sha256": "5600b2c604682ae550675222a82d4d8548cf8bb347285fdae9c87f27ad2f5c91"
+    }
+  ],
+  "unit_groups": [
+    {
+      "id": "frozen_learning_course_inputs",
+      "tests": [
+        "test/unit/grow-risk-baseline.test.ts"
+      ]
+    },
+    {
+      "id": "learning_version_pending_receipts",
+      "tests": [
+        "test/unit/lighttick-learning-migration.test.ts",
+        "test/unit/lighttick-learning-route-migration.test.ts",
+        "test/unit/lighttick-learning-private.test.ts"
+      ]
+    },
+    {
+      "id": "money_precision",
+      "tests": [
+        "test/unit/lighttick-investment-accounting.test.ts"
+      ]
+    },
+    {
+      "id": "market_calendar_indicators_backtests",
+      "tests": [
+        "test/unit/lighttick-market-adapters.test.ts",
+        "test/unit/lighttick-market-indicators.test.ts",
+        "test/unit/lighttick-market-backtest.test.ts"
+      ]
+    },
+    {
+      "id": "sync_identity_receipts_replay",
+      "tests": [
+        "test/unit/lighttick-sync.test.ts",
+        "test/unit/grow-web-u2-boundaries.test.ts"
+      ]
+    },
+    {
+      "id": "owner_secrets_cancel_recovery",
+      "tests": [
+        "test/unit/lighttick-personal-model.test.ts",
+        "test/unit/lighttick-github.test.ts"
+      ]
+    },
+    {
+      "id": "research_AI_frozen_model_and_review",
+      "tests": [
+        "test/unit/lighttick-research-ai.test.ts",
+        "test/unit/lighttick-research-ai.api.test.ts",
+        "test/unit/lighttick-research.test.ts"
+      ]
+    },
+    {
+      "id": "independent_material_versions_and_references",
+      "tests": [
+        "test/unit/lighttick-materials.test.ts",
+        "test/unit/lighttick-materials-ai.test.ts",
+        "test/unit/lighttick-materials.api.test.ts"
+      ]
+    },
+    {
+      "id": "screening_versioned_exact_explainable_execution",
+      "tests": [
+        "test/unit/lighttick-screening-engine.test.ts",
+        "test/unit/lighttick-screening.test.ts",
+        "test/unit/lighttick-screening.api.test.ts"
+      ]
+    },
+    {
+      "id": "immutable_predictions_feedback_daily_monitors",
+      "tests": [
+        "test/unit/lighttick-observations.test.ts",
+        "test/unit/lighttick-observations.api.test.ts"
+      ]
+    },
+    {
+      "id": "strategy_versions_comparison_grid_durable_backtest",
+      "tests": [
+        "test/unit/lighttick-strategy-grid.test.ts",
+        "test/unit/lighttick-strategies.test.ts",
+        "test/unit/lighttick-strategies.api.test.ts"
+      ]
+    },
+    {
+      "id": "immutable_ledger_corrections_compensation_and_old_schema",
+      "tests": [
+        "test/unit/lighttick-ledger-corrections.test.ts",
+        "test/unit/lighttick-investment-ledger.api.test.ts"
+      ]
+    },
+    {
+      "id": "audited_portfolio_baseline_nav_valuation_performance",
+      "tests": [
+        "test/unit/lighttick-portfolio-engine.test.ts",
+        "test/unit/lighttick-portfolio-service.test.ts",
+        "test/unit/lighttick-portfolio.api.test.ts"
+      ]
+    },
+    {
+      "id": "form_scope_cas_receipt_clear_rollback",
+      "tests": [
+        "test/unit/lighttick-form-records.test.ts",
+        "test/unit/lighttick-form-records.api.test.ts"
+      ]
+    },
+    {
+      "id": "form_section_cas_frozen_original_scope_and_validation",
+      "tests": [
+        "test/unit/lighttick-form-sections.test.ts"
+      ]
+    },
+    {
+      "id": "form_page_deep_link_static_allowlist",
+      "tests": [
+        "test/unit/admin-web.grow-static.test.ts"
+      ]
+    },
+    {
+      "id": "runtime_scope_page_api_worker_defer_late_publish",
+      "tests": [
+        "test/unit/lighttick-runtime-scope.api.test.ts",
+        "test/unit/lighttick-runtime-scope-queue.test.ts"
+      ]
+    }
+  ],
+  "postgres_tests": [
+    "test/integration/lighttick-commit-order-postgres.test.ts",
+    "test/integration/lighttick-sync-receipts-postgres.test.ts",
+    "test/integration/lighttick-today-snapshot-postgres.test.ts",
+    "test/integration/lighttick-native-learning-postgres.test.ts",
+    "test/integration/lighttick-learning-routes-postgres.test.ts",
+    "test/integration/lighttick-learning-work-postgres.test.ts",
+    "test/integration/lighttick-learning-practice-postgres.test.ts",
+    "test/integration/lighttick-knowledge-postgres.test.ts",
+    "test/integration/lighttick-investment-accounts-postgres.test.ts",
+    "test/integration/lighttick-investment-ledger-postgres.test.ts",
+    "test/integration/lighttick-market-work-postgres.test.ts",
+    "test/integration/lighttick-research-postgres.test.ts",
+    "test/integration/lighttick-personal-model-postgres.test.ts",
+    "test/integration/lighttick-github-postgres.test.ts",
+    "test/integration/lighttick-account-deletion-postgres.test.ts",
+    "test/integration/lighttick-research-ai-postgres.test.ts",
+    "test/integration/lighttick-materials-postgres.test.ts",
+    "test/integration/lighttick-screening-postgres.test.ts",
+    "test/integration/lighttick-observations-postgres.test.ts",
+    "test/integration/lighttick-strategies-postgres.test.ts",
+    "test/integration/lighttick-ledger-corrections-postgres.test.ts",
+    "test/integration/lighttick-portfolio-postgres.test.ts",
+    "test/integration/lighttick-form-sections-postgres.test.ts"
+  ],
+  "unclosed_gates": [
+    "per_operation_legacy_parity",
+    "all_module_migration_and_compensation",
+    "old_client_compatibility",
+    "other_apps_off_on_mixed_P95",
+    "real_model_devices_accessibility_observation",
+    "real_migration_and_release"
+  ]
+}

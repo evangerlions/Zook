@@ -14,6 +14,8 @@ const CREDIT_WEEK_MS = 7 * 86400_000;
 
 export interface CreditsAccount {
   tier: CreditsTier;
+  /** Gift-only account; the weekly window starts on first actual use. */
+  deferredStart?: true;
   periodKey: string;
   refreshAt: string;
   periodicMicros: string;
@@ -49,6 +51,7 @@ export interface CreditsJob {
   chargedMicros?: string;
   absorbedMicros?: string;
   grantedMicros?: string;
+  grantedBy?: string;
 }
 
 export interface CreditsTransaction {
@@ -60,6 +63,8 @@ export interface CreditsTransaction {
 export interface AiNovelCreditsStore {
   /** Serializes this user's balance/job changes, commits both or neither. */
   transact<T>(userId: string, jobId: string, work: (state: CreditsTransaction) => T): Promise<T>;
+  searchUsers?(field: import("./admin-credit-search.ts").CreditUserSearchField, term: string): Promise<import("./admin-credit-search.ts").CreditUserCandidate[]>;
+  listAdminGrants?(offset: number, limit: number): Promise<import("./admin-credit-search.ts").CreditGrantRecord[]>;
   readUsageReport?(filter: { from: string; to: string; userId?: string }): Promise<import("../../../shared/types/ai-novel-usage-admin.ts").UsageSource>;
 }
 
@@ -73,6 +78,10 @@ export function creditsPeriod(anchorAt: string, now: Date) {
 }
 
 export function refreshCreditsAccount(account: CreditsAccount | undefined, value: CreditsTier | CreditsMembership, now: Date): CreditsAccount {
+  if (account?.deferredStart) {
+    const initialized = refreshCreditsAccount(undefined, value, now);
+    return { ...initialized, giftMicros: account.giftMicros };
+  }
   const rawMembership = typeof value === "string" ? { tier: value } : value;
   // Re-evaluate within the account transaction, not only before acquiring its lock.
   const membership = rawMembership.expiresAt && Date.parse(rawMembership.expiresAt) <= now.getTime()

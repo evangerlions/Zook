@@ -7,6 +7,9 @@ export interface CreditUsageEvent {
   kind: "debit" | "denied" | "grant";
   tier: CreditsTier;
   periodKey: string;
+  adminUser?: string;
+  recipientContact?: { phone: string | null; email: string | null };
+  windowPending?: true;
   modelKey?: string;
   callId?: string;
   requestId?: string;
@@ -27,6 +30,7 @@ export interface CreditWindowSnapshot {
   entitlementExpiresAt?: string;
 }
 interface AccountSnapshot {
+  deferredStart?: true;
   tier: CreditsTier;
   periodicMicros: string;
   giftMicros: string;

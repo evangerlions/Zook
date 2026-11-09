@@ -3414,6 +3414,7 @@ test("admin email service test-send API returns masked provider debug details on
 
 test("admin llm service API stores versioned common config and exposes metrics", async () => {
   const runtime = await createApplication({
+    llmProviders: { bailian: { async complete() { throw new Error("not used"); }, async *stream() { yield { type: "done" as const }; } } },
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -3449,6 +3450,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
         },
         {
           key: "unavailable-fixture",
+          type: "volcengine",
           label: "火山引擎",
           enabled: true,
           baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -3790,6 +3792,7 @@ test("admin llm smoke test API defaults an omitted body to the full matrix", asy
       providers: [
         {
           key: "volcengine",
+          type: "volcengine",
           label: "火山引擎",
           enabled: true,
           baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -3828,6 +3831,7 @@ test("admin llm smoke test API defaults an omitted body to the full matrix", asy
 
 test("admin llm smoke test API runs a selected route and enforces its cooldown", async () => {
   const runtime = await createApplication({
+    llmProviders: {},
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -3847,6 +3851,7 @@ test("admin llm smoke test API runs a selected route and enforces its cooldown",
       providers: [
         {
           key: "unavailable-fixture",
+          type: "volcengine",
           label: "火山引擎",
           enabled: true,
           baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -3855,6 +3860,7 @@ test("admin llm smoke test API runs a selected route and enforces its cooldown",
         },
         {
           key: "unconfigured",
+          type: "bai",
           label: "未配置路由供应商",
           enabled: true,
           baseUrl: "https://example.com/v1",

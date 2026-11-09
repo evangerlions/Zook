@@ -5,6 +5,7 @@ import { isObject, type RevenueCatSnapshot, type RevenueCatSubscriptionEvidence 
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
 import { billingProductKey } from "./ainovel-store-products.ts";
 import { PRODUCTS, parseDate, nullableString, safeManagementUrl, sourceFromStore, platformFromStore, validCurrency, toMinorUnits } from "./ainovel-billing-values.ts";
+import { revenueCatAutoRenew, revenueCatIsCancelled } from "./revenuecat-renewal-status.ts";
 
 export interface NormalizedRevenueCatSnapshot {
   activeMemberships?: AiNovelBillingMembershipInfo[];
@@ -17,11 +18,6 @@ export interface NormalizedRevenueCatSnapshot {
   hasActiveUnverifiedEnvironmentEntitlement: boolean;
 }
 const STATUSES = new Set(["trialing", "active", "expired", "in_grace_period", "in_billing_retry", "paused", "unknown", "incomplete"]);
-function autoRenew(value: unknown): boolean | null {
-  if (value === "will_renew") return true;
-  if (value === "will_not_renew") return false;
-  return null;
-}
 
 export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId: string,
   now = new Date(), options: { allowSandbox?: boolean } = {}): NormalizedRevenueCatSnapshot {
@@ -62,14 +58,15 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
     const expiresAt = hasActive && typeof entitlementEnd === "string" && typeof scopedEnd === "string"
       ? new Date(Math.min(Date.parse(entitlementEnd), Date.parse(scopedEnd))).toISOString() : scopedEnd;
     if (hasActive && typeof expiresAt !== "string") throw new Error("RevenueCat subscription expiry is invalid.");
-    const renewable = autoRenew(sub.auto_renewal_status);
+    const renewable = revenueCatAutoRenew(sub);
     const info: AiNovelBillingMembershipInfo = {
+      revenueCatRenewalStatus: typeof sub.auto_renewal_status === "string" ? sub.auto_renewal_status : null,
       active: hasActive && (expiresAt === null || (typeof expiresAt === "string" && Date.parse(expiresAt) > now.getTime())),
       state: "expired", tier: null, planKey: null, expiresAt: expiresAt ?? null,
       autoRenew: renewable, source, managementUrl: safeManagementUrl(sub.management_url),
     };
     if (info.active) {
-      info.state = sub.status === "in_grace_period" ? "grace_period" : renewable === false ? "cancelled" : "active";
+      info.state = sub.status === "in_grace_period" ? "grace_period" : revenueCatIsCancelled(sub) ? "cancelled" : "active";
       info.tier = definition.tier;
       info.planKey = productKey!;
       candidates.push({ rank: definition.rank, info });
@@ -90,6 +87,7 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
     observedMemberships: summaries,
     membership: { appId: "ai_novel", userId, environment: billingEnvironment(), active: current?.active ?? false,
       state: current?.state ?? "free", tier: current?.tier ?? null, planKey: current?.planKey ?? null,
+      revenueCatRenewalStatus: current?.revenueCatRenewalStatus ?? null,
       expiresAt: current?.expiresAt ?? null, autoRenew: current?.autoRenew ?? null,
       source: current?.source ?? null, managementUrl: current?.managementUrl ?? null,
       lastSyncedAt: payload.observedAt, accountDeletedAt: null },
@@ -119,7 +117,7 @@ function normalizeTransactions(evidence: RevenueCatSubscriptionEvidence,
         : sub.gives_access === true ? "entitlement_active" : "unknown",
       purchasedAt: parseDate(tx.purchased_at) ?? null, originalPurchaseDate: parseDate(sub.starts_at) ?? null,
       expiresAt: parseDate(tx.effective_expiration_date) ?? parseDate(tx.expiration_date) ?? null,
-      refundedAt: null, autoRenew: autoRenew(sub.auto_renewal_status), isSandbox: sub.environment === "sandbox",
+      refundedAt: null, autoRenew: revenueCatAutoRenew(sub), isSandbox: sub.environment === "sandbox",
       // V2 transaction revenue has no refund-event time or reversal marker.
       // Only explicit authenticated webhook events classify refunds/reversals.
       amountMinor: amount, refundAmountMinor: null,

@@ -1,0 +1,101 @@
+{
+  "status": "partial-U5-engineering-slice-not-release-ready",
+  "completed_tasks": "21/27",
+  "zook_runtime_sha": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "20e6cb1472b6e7a6a8a249fcff0155a22ceed88f",
+    "contract_revision": "4ffa54e3d2b7dbc19a9cf85de7b4300130c9cc03",
+    "source_dirty": false,
+    "files": {
+      "index.html": "2267a1277e30ccd66a4a2c3e89051cf5a812abfe463b1948771d2d7b6c72aec7",
+      "assets/ActionsPage-Dg6_5rVg.js": "5c3c57291c7c22bcbff70f5854048ab2b092b7e55a951601cac9451aa2e642c0",
+      "assets/GoalsPage-BF9rBEzy.js": "734db840c1a2aae870db0c750a5e86ec3c4816c1ebbc9da04c89a283c2bbf910",
+      "assets/InvestmentPage-CyFU8jdA.js": "7b3269a7ffffbf881e0de9cabc9e6ede918bdd3510f2771c043395a104d483ac",
+      "assets/LearningPage-BhXEuanw.js": "9aa3b52bc00eb155137a2841c8074aec3e7f8ce75e7ee766f89fb796c2d5a4c1",
+      "assets/PendingNotice-DQWgGiVN.js": "35b6bd4b68f4cef5e8265eb5bed0e70306a2a3d834a598654221260787655bbf",
+      "assets/PlanningPage-BWlhP5sD.js": "cd9db8c4c563e97e5231346ee1d39b2ad465e01357089737d91c6301649a3713",
+      "assets/PlansPage-BnMydBuH.js": "1807ef7fc3085b3ac446388c7c2a01f7aec3517aedca1405d4709eae4fa7c037",
+      "assets/PracticePage-DW_zha2U.js": "4e004942d3d7acc18b7cc3ad13f19d22314d9b93ac1bfa4014985f808b1f3257",
+      "assets/RecordsPage-DKf4ecxt.js": "b53108884278eed27ef1bec7cfacfdfc0e042e98ac5ae8ba26d51da1a42c44e2",
+      "assets/ReviewPage-DcklHiLm.js": "3c243679c9d44b47fc0805431ccf0ae7d1651a9928ebc3f9c2c45fa167a1ce75",
+      "assets/TodayPage-CX97lQZy.js": "e369af279bba4177691dd4856d2fc53836b91159bcac2e746569889cbc41122b",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index-8E6wtDY_.js": "a80a14c91693623087ae2048e52ac4bdf079875acb2fbb6ed86d93de981cc0c9",
+      "assets/index-D1dEbR2i.css": "a9cffca76c81bd37d69f4e1da7b25110bd6e62287ab27348090a5e062cf52660",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "ios_compatibility_anchor": "d158764d16a7c4fb751440a97e7655e6b7db3e98",
+  "android_compatibility_anchor": "0332c725461f5b7576e3381d881b7cf5ff332b25",
+  "native_finance_UI": "not-added; existing task/learning/action contracts and task-only sync stay compatible",
+  "database_migrations": [
+    {
+      "file": "src/infrastructure/database/postgres/migrations/085_lighttick_native_learning.sql",
+      "sha256": "b1941730578fcfc9e353a93dde15716c17132f01c28421d6769d057ea63594a2"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/086_lighttick_learning_consent_and_draft_anchor.sql",
+      "sha256": "f55a89fafdfc6fdcc63fffe38fa29d2890c2d26a1fef2d8b6b131bd2dcbb939c"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/087_lighttick_source_completion_version.sql",
+      "sha256": "a00826caff8e28e04917061e66fdbe91a17d01364ca39e588827ebd46acac5f7"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/088_lighttick_learning_routes.sql",
+      "sha256": "4976aeb991aacee8590eadd65a5ed204c8f109cfac65284dbe9c597fb88800c7"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/089_lighttick_learning_work.sql",
+      "sha256": "556960f9168f12325f7fbc05c732293d71c2879bee532c33b2b44effb7629382"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/090_lighttick_knowledge.sql",
+      "sha256": "a709245f3136e7148f0b8f7a423059b0ba60059cd80d9c7be9bc3cd9c39bffcd"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/091_owner_file_purge.sql",
+      "sha256": "8a2b0f427848166df3178d0a03455e70a4a0fcbcc65da67bea5a0fb1abd5497d"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/092_lighttick_investment_accounts.sql",
+      "sha256": "ead34f110186d2172d7b3fee4c0927f717da703a66a3ca445621ce8be455f562"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/093_lighttick_investment_ledger.sql",
+      "sha256": "0dd88e149ca446ee72e9b586a2d5c118dcb0b66cf45003e6ff638c1bac5a339f"
+    }
+  ],
+  "verification": {
+    "backend_unit_passed": 2373,
+    "backend_unit_skipped": 1,
+    "postgres_passed": 12,
+    "frontend_unit_passed": 18,
+    "chrome_groups_passed": 10,
+    "contract_lint_preexisting_warnings": 6
+  },
+  "remaining_gates": [
+    "U0: per-operation parity, calendar/market/backtest fixtures, other-app baseline and DDL/business-write startup coordination",
+    "U5: baseline corrections/compensation, rules/screening/independent research/materials/prediction/monitoring/archive/backtests",
+    "U5: Node CSV/Tushare/Eastmoney/Tencent providers with explicit failure and no automatic source substitution",
+    "U5: complete synthetic multi-module freeze/import/increment/reconcile/activate/compensating rollback and chunked exports",
+    "U5: native simulator/full compatibility and mixed app enable/disable P95 <=10%",
+    "real model quality, real device/accessibility, long observation, real historical migration and dev/online/production release not executed"
+  ],
+  "test_harness_sources": [
+    {
+      "file": "test/integration/lighttick-learning-practice-postgres.test.ts",
+      "sha256": "1c9891d9b29af12068d4eca47bc96db270729f289e0d542a3cf188ecdcab3c19"
+    },
+    {
+      "file": "test/support/grow_web_investment_accounts_acceptance.py",
+      "sha256": "8eb67b394798385145a641415aa24abb76a5e08906c9dcd6b6b9f6372f998066"
+    },
+    {
+      "file": "test/support/grow_web_investment_ledger_acceptance.py",
+      "sha256": "e7f6b2730a1de05bab3939a994d2038798d802bf407bd67e2d6407be156f79dc"
+    }
+  ]
+}

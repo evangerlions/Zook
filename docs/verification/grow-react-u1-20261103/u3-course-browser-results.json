@@ -1,0 +1,121 @@
+{
+  "course": {
+    "passed": true,
+    "manual_route": "plan-98727411-60e2-4045-b704-b7ece0f739bd",
+    "ai_route": "plan-c9514f51-bd39-4c28-bcc4-11bb034e4ee5",
+    "lost_response_exact_replay": true,
+    "route_cas_preserves_local": true,
+    "per_content_completion": true,
+    "file_source_worker_review": true,
+    "explicit_ai_adoption": true,
+    "cancel_no_publication": true,
+    "legacy_progress": true,
+    "console_errors": []
+  },
+  "learning": {
+    "passed": true,
+    "lesson_id": "lesson-d6679b85-3915-4130-bc8c-b482aa8495c7",
+    "old_version": "1487d86e6779c37a7f777afe8692d8abe4da37407aed2083d01cc5a434b641a5",
+    "new_version": "ff892f3c2f58bf6079426dba56a0301abb63d52d303546d436b7578a84e7b85a",
+    "lost_response_replay": true,
+    "component_cas": true,
+    "old_answers_preserved": true,
+    "console_errors": []
+  },
+  "u1": {
+    "passed": true,
+    "record_id": "7c8f034b-58be-4f01-8d0a-58b51e0f0e6d",
+    "versions_before_archive": 4,
+    "final_version": 6,
+    "browser_errors": [],
+    "checks": [
+      "real_web_login",
+      "same_native_contract_object",
+      "CAS_conflict_preserves_both_inputs",
+      "HttpOnly_refresh",
+      "multi_tab_session_rotation",
+      "sequential_tag_input",
+      "offline_original_key_recovery",
+      "history",
+      "archive_restore_versions",
+      "browser_account_switch",
+      "mobile_no_overflow",
+      "cross_owner_denied",
+      "no_tokens_in_storage"
+    ],
+    "native_scope": "existing native HTTP contract exercised; not native device UI"
+  },
+  "u2": {
+    "passed": true,
+    "goal_id": "lighttick_goal_c625c8e342d047a58996ef9fc9b64276",
+    "session_id": "planning_8b1a785df9424941b6580283f9e519e4",
+    "plan_id": "lighttick_plan_3231ac1eaf0649f6a374bf2d40f5989f",
+    "action_id": "action-33e68da574124886ab8c153d66e40930",
+    "checks": [
+      "AI_actual_queue_runner_synthetic_provider",
+      "clarification_history",
+      "delivery_disabled_history_readable",
+      "draft_no_tasks",
+      "draft_edit",
+      "planning_context_CAS_retains_local",
+      "draft_CAS_explicit_rebase",
+      "accepted_context_response_lost_exact_retry",
+      "explicit_confirm_same_task",
+      "pause",
+      "confirmed_capacity",
+      "reflection_source_revision",
+      "reviewed_replacement_resumes_goal",
+      "original_task_cancelled",
+      "full_period_edit",
+      "explicit_child_identity",
+      "manual_action_review",
+      "mobile_no_overflow"
+    ],
+    "limits": "Synthetic model output, native canonical HTTP, no physical devices or live model quality claim"
+  },
+  "practice": {
+    "passed": true,
+    "practice_id": "action-228f7692090e4b4aacd6769be55dd3e8",
+    "follow_up_id": "action-45e42c99480f424e80427e4323ffa143",
+    "lost_response_exact_replay": true,
+    "feedback_does_not_schedule": true,
+    "course_completion_independent": true,
+    "immutable_source_and_withdrawal": true,
+    "console_errors": []
+  },
+  "plans": {
+    "passed": true,
+    "plan_id": "lighttick_plan_b9317b7d84934992b59fa4499ff9742b",
+    "task_id": "lighttick_task_3b5aa0bdd20e432e9feb66a472ce665e",
+    "plan_version": 4,
+    "checks": [
+      "draft_creates_no_tasks",
+      "native_same_plan",
+      "cross_client_CAS",
+      "explicit_confirmation",
+      "single_canonical_task",
+      "web_completion_visible_to_native",
+      "mobile_no_overflow"
+    ],
+    "native_scope": "native canonical HTTP, not device UI"
+  },
+  "actions": {
+    "passed": true,
+    "check_id": "action-f26b0960d3fb4efabf682072a340776e",
+    "time_id": "action-6db59f0adc9240ddab863e21195aa49f",
+    "checks": [
+      "native_same_identity",
+      "unsubmitted_form_reload",
+      "other_owner_isolated",
+      "stale_revision_preserved",
+      "pause_resume",
+      "check_complete_reopen_retains_facts",
+      "lost_accepted_response_exact_replay_after_reload",
+      "no_duplicate_create",
+      "explicit_actual_minutes",
+      "native_reads_same_execution",
+      "mobile_no_overflow"
+    ],
+    "native_scope": "canonical HTTP, not native device UI"
+  }
+}

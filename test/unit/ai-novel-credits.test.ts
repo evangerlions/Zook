@@ -192,3 +192,29 @@ test("paid downgrade is capped and same-week upgrade only adds allowance differe
   account.tier = "pro";
   assert.equal(refreshCreditsAccount(account, "plus", now).periodicMicros, "100000000");
 });
+
+test("grant leaves the stored subscription allowance and window unchanged across an expired week", async () => {
+  const f = fixture();
+  await f.service.balance("u");
+  await consume(f, "spent-before-grant", 25);
+  const before = await f.store.transact("u", "", (state) => structuredClone(state.account!));
+  f.time("2026-10-20T12:00:00Z");
+  f.tier("plus");
+  await f.service.grant("u", "manual-grant", 10);
+  const after = await f.store.transact("u", "", (state) => structuredClone(state.account!));
+  assert.deepEqual({ ...after, giftMicros: before.giftMicros }, before);
+  assert.equal(after.giftMicros, "10000000");
+});
+
+test("grant to a new account does not start the weekly window before first use", async () => {
+  const f = fixture();
+  await f.service.grant("new", "admin-first", 5);
+  const afterGrant = await f.store.transact("new", "", state => structuredClone(state.account!));
+  assert.equal(afterGrant.deferredStart, true);
+  assert.equal(afterGrant.periodicMicros, "0");
+  f.time("2026-10-20T12:00:00Z");
+  const balance = await f.service.balanceMicros("new");
+  assert.equal(balance.giftMicros, "5000000");
+  assert.equal(balance.periodicMicros, "200000000");
+  assert.equal(balance.refreshAt, "2026-10-27T12:00:00.000Z");
+});

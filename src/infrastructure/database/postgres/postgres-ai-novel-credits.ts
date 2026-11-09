@@ -1,3 +1,5 @@
+import { ApplicationError } from "../../../shared/errors.ts";
+import { searchCreditUsers, listCreditGrants } from "./postgres-ai-novel-credit-admin.ts";
 import { billingEnvironment } from "../../../modules/billing/billing-environment.ts";
 import type { PoolClient } from "pg";
 import type { AiNovelCreditsStore, CreditsTransaction } from "../../../modules/ai-novel/credits/ai-novel-credits-model.ts";
@@ -25,8 +27,21 @@ export class PostgresAiNovelCreditsStore implements AiNovelCreditsStore {
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
+      if (error && typeof error === "object" && "constraint" in error && error.constraint === "zook_ai_novel_admin_credit_grant_key") {
+        throw new ApplicationError(409, "AINOVEL_CREDITS_JOB_CONFLICT", "Grant key was already used for another user.");
+      }
       throw error;
     } finally { client.release(); }
+  }
+
+  async searchUsers(field: import("../../../modules/ai-novel/credits/admin-credit-search.ts").CreditUserSearchField, term: string) {
+    const client = await this.connect();
+    try { return await searchCreditUsers(client, field, term); } finally { client.release(); }
+  }
+
+  async listAdminGrants(offset: number, limit: number) {
+    const client = await this.connect();
+    try { return await listCreditGrants(client, offset, limit); } finally { client.release(); }
   }
 
   async readUsageReport(filter: { from: string; to: string; userId?: string }) {

@@ -30,7 +30,7 @@ export function buildUsageReport(
 ): UsageReport {
   const matches = (tier: CreditsTier) =>
     filter.tier === "all" || tier === filter.tier;
-  const events = source.events.filter((e) => matches(e.tier));
+  const events = source.events.filter((e) => !e.windowPending && matches(e.tier));
   const payments = source.payments.filter(
     (p) => matches(p.tier) && p.sandbox === filter.sandbox,
   );
@@ -89,7 +89,8 @@ function usageUserResolver(
 ) {
   return (userId: string): UsageUser => {
     if (users.has(userId)) return users.get(userId)!;
-    const stored = accounts.get(userId);
+    const candidate = accounts.get(userId);
+    const stored = candidate?.account.deferredStart ? undefined : candidate;
     const value: UsageUser = {
       userId,
       tier: stored?.account.tier ?? null,

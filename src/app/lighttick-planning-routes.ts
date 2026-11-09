@@ -12,6 +12,7 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   if (!enabled || !runtime) planningError(503,"LIGHTTICK_APP_DISABLED","Conversational planning is not enabled.");
   const auth = await context.authenticateProductRequest(request,"lighttick");
   if (runtime!.guestIdentity && await runtime!.guestIdentity.getActive(auth.userId)) planningError(403,"APP_SCOPE_FORBIDDEN","Registered LightTick membership is required.");
+  await runtime!.scopePolicy.assertRequest(request);
   const owner = {appId:"lighttick" as const,userId:auth.userId};
   const service = new LightTickPlanningService(runtime!.repository);
   if (request.method === "GET" && match[1] && !match[2]) return context.ok(sessionData(await service.get(owner,match[1])),request.requestId!);
@@ -32,7 +33,7 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   const accepted = await runtime!.repository.getOperation(owner, "planning:"+getHeader(request.headers,"idempotency-key"));
   if (!runtime!.planningEnabled && !accepted) planningError(503,"LIGHTTICK_APP_DISABLED","New planning writes are disabled; history remains readable.");
   if (["messages","drafts"].includes(action!) && !runtime!.jobs && !accepted) planningError(503,"LIGHTTICK_AI_UNAVAILABLE","Planning worker is not available.");
-  const result = await service.command(owner,text(getHeader(request.headers,"idempotency-key"),128),action!,match[1],body);
+  const result = await service.command(owner,text(getHeader(request.headers,"idempotency-key"),128),action!,match[1],body,async()=>{await context.authenticateProductRequest(request,"lighttick");await runtime!.scopePolicy.assertRequest(request);});
   if (result.run && runtime!.planningEnabled && runtime!.jobs) await runtime!.jobs.enqueueAiRun(owner,result.run.id,result.run.inputContext.planning_action === "messages" ? "planning_clarify":"week_plan");
   const response = context.ok({session:sessionData(result.session),run:result.run ? {id:result.run.id,status:result.run.status,scene:result.run.sceneKey,prompt_version:result.run.promptVersion}:null},request.requestId!);
   response.statusCode=result.run?202:action==="create"?201:200;

@@ -12,3 +12,7 @@ export interface JobQueue {
   ): Promise<void>;
   close?(): Promise<void>;
 }
+
+export class DeferJobError extends Error {
+  constructor(readonly delayMs = 60_000) { super("Job execution is temporarily suspended by product scope."); }
+}

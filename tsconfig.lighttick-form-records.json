@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.lighttick-actions.json",
+  "include": [
+    "src/modules/lighttick/form-records/**/*.ts",
+    "src/infrastructure/database/postgres/postgres-form-records-store.ts",
+    "src/testing/in-memory-form-records-store.ts",
+    "src/app/lighttick-form-records-routes.ts"
+  ]
+}

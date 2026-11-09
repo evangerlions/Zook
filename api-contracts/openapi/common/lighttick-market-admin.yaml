@@ -1,0 +1,99 @@
+openapi: 3.1.1
+info:
+  title: LightTick Market Provider Admin
+  version: 0.1.0
+  description: Server-only provider credential management. Separate from public client APIs; existing admin sessions and sensitive authorization apply.
+  license: {name: Proprietary, url: https://docs.zook.dev/legal/api-license}
+servers:
+- url: https://api.zook.dev
+security:
+- adminSession: []
+tags:
+- name: admin-lighttick-market
+  description: LightTick server credential metadata and rotation.
+paths:
+  /api/v1/admin/apps/lighttick/market-providers/tushare-credential:
+    get:
+      operationId: getLightTickMarketCredentialMetadata
+      summary: Read credential metadata without returning secret values
+      tags: [admin-lighttick-market]
+      responses:
+        '200':
+          description: No-store metadata only.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LightTickMarketCredentialEnvelope'}
+        '401': {$ref: '#/components/responses/Error'}
+        '503': {$ref: '#/components/responses/Error'}
+    put:
+      operationId: rotateLightTickMarketCredential
+      summary: Rotate or remove credential under an original request identity
+      description: Requires the existing lighttick.market.credentials.write sensitive grant. Single-value KV secret; never enters config history or audit payload. Last 32 original receipts retained; older requests still fail CAS instead of repeating a rotation.
+      tags: [admin-lighttick-market]
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema: {type: string, minLength: 8, maxLength: 128}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LightTickMarketCredentialWrite'}
+      responses:
+        '200':
+          description: No-store metadata, never a token value.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LightTickMarketCredentialEnvelope'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+        '503': {$ref: '#/components/responses/Error'}
+components:
+  securitySchemes:
+    adminSession: {type: apiKey, in: cookie, name: adminSession}
+  responses:
+    Error:
+      description: Existing administrator authentication, sensitive grant, CAS or validation error.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [code, message, requestId]
+            properties:
+              code: {type: string}
+              message: {type: string}
+              requestId: {type: string}
+  schemas:
+    LightTickMarketCredentialWrite:
+      type: object
+      additionalProperties: false
+      required: [base_revision, token]
+      properties:
+        base_revision: {type: integer, minimum: 0, maximum: 2147483646}
+        token:
+          anyOf:
+          - {type: string, minLength: 8, maxLength: 4096, writeOnly: true}
+          - {type: 'null'}
+    LightTickMarketCredentialSummary:
+      type: object
+      additionalProperties: false
+      required: [revision, configured, updated_at]
+      properties:
+        revision: {type: integer, minimum: 0}
+        configured: {type: boolean}
+        updated_at:
+          anyOf:
+          - {type: string, format: date-time}
+          - {type: 'null'}
+    LightTickMarketCredentialEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        data: {$ref: '#/components/schemas/LightTickMarketCredentialSummary'}
+        requestId: {type: string}

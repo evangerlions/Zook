@@ -160,15 +160,18 @@ export class AdminConsoleCommonConfig {
 
   async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {
     const document = await this.commonLlmConfigService.getDocument(revision);
+    const effectiveConfig = document.isLatest
+      ? await this.commonLlmConfigService.getRuntimeConfig() ?? document.config
+      : document.config;
     const runtime = {
       generatedAt: new Date().toISOString(),
       models: await Promise.all(
-        document.config.models.map((model) =>
+        effectiveConfig.models.map((model) =>
           this.llmHealthService.buildModelRuntimeStatus(
             model,
-            document.config.providers,
+            effectiveConfig.providers,
             undefined,
-            Boolean(document.config.routeCircuitBreaker?.enabled),
+            Boolean(effectiveConfig.routeCircuitBreaker?.enabled),
           ),
         ),
       ),
@@ -181,7 +184,7 @@ export class AdminConsoleCommonConfig {
   }
 
   async updateLlmServiceConfig(input: unknown, desc?: string): Promise<AdminLlmServiceDocument> {
-    const document = await this.commonLlmConfigService.updateConfig(input, desc);
+    const document = await this.commonLlmConfigService.updateConfig(input, desc, { requireTypeForNewProviders: true });
     if (!document.config.routeCircuitBreaker?.enabled) {
       await this.llmRouteCircuitBreaker?.resetAll();
     }
@@ -226,7 +229,7 @@ export class AdminConsoleCommonConfig {
     provider?: string,
   ): Promise<AdminLlmModelMetricsDocument> {
     return this.llmMetricsService.getModelDetail(
-      await this.commonLlmConfigService.getCurrentConfig(),
+      await this.commonLlmConfigService.getRuntimeConfig() ?? await this.commonLlmConfigService.getCurrentConfig(),
       modelKey,
       range,
       new Date(),

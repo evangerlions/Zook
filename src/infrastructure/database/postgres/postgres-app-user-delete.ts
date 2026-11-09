@@ -1,3 +1,4 @@
+import {LIGHTTICK_OWNED_TABLES} from "./postgres-lighttick-owned-tables.ts";
 import { deletePostgresFrogSleepBuddyUserData } from "./postgres-frogsleep-user-delete.ts";
 
 type QueryFn = (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
@@ -28,30 +29,6 @@ const FROGSLEEP_USER_RUNTIME_TABLES = [
   "zook_frogsleep_sleep_report_snapshots",
   "zook_frogsleep_progress_snapshots",
   "zook_frogsleep_entitlement_records",
-] as const;
-
-const LIGHTTICK_USER_RUNTIME_TABLES = [
-  "zook_lighttick_goal_contexts",
-  "zook_lighttick_milestones",
-  "zook_lighttick_outcome_evidence",
-  "zook_lighttick_task_families",
-  "zook_lighttick_task_steps",
-  "zook_lighttick_tasks",
-  "zook_lighttick_change_proposals",
-  "zook_lighttick_reviews",
-  "zook_lighttick_plan_cycles",
-  "zook_lighttick_goals",
-  "zook_lighttick_execution_events",
-  "zook_lighttick_ai_runs",
-  "zook_lighttick_change_log",
-  "zook_lighttick_operations",
-  "zook_lighttick_sync_cursors",
-  "zook_lighttick_devices",
-  "zook_lighttick_profiles",
-  "zook_lighttick_guest_identities",
-  "zook_lighttick_insight_audits",
-  "zook_lighttick_chat_messages",
-  "zook_lighttick_dna_insights",
 ] as const;
 
 export async function deletePostgresAppUserRuntimeData(
@@ -100,6 +77,7 @@ export async function deletePostgresAppUserRuntimeData(
   await query("DELETE FROM zook_ai_novel_conversation_records WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_ai_novel_daily_statistics WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_ai_novel_statistics_snapshots WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("INSERT INTO zook_owner_file_purges(id,app_id,user_id,storage_key) SELECT gen_random_uuid()::text,app_id,owner_user_id,storage_key FROM zook_files WHERE app_id=$1 AND owner_user_id=$2 ON CONFLICT(app_id,user_id,storage_key) DO UPDATE SET next_attempt_at=NOW()",[appId,userId]);
   await query("DELETE FROM zook_files WHERE app_id = $1 AND owner_user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_feedback_attachments WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_feedback WHERE app_id = $1 AND user_id = $2", [appId, userId]);
@@ -109,8 +87,9 @@ export async function deletePostgresAppUserRuntimeData(
   await query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   if (appId === "lighttick") {
+    await query("UPDATE zook_lighttick_local_claims SET user_id=NULL,cloud_id=NULL,payload_hash=NULL,source_payload='{}'::jsonb,deleted=TRUE WHERE app_id=$1 AND user_id=$2",[appId,userId]);
     await query("DELETE FROM zook_lighttick_account_upgrades WHERE app_id = $1 AND (guest_user_id = $2 OR target_user_id = $2)", [appId, userId]);
-    for (const tableName of LIGHTTICK_USER_RUNTIME_TABLES) {
+    for (const tableName of LIGHTTICK_OWNED_TABLES.map(t=>"zook_lighttick_"+t)) {
       await query(`DELETE FROM ${tableName} WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
     }
   }

@@ -34,7 +34,7 @@ export async function persistCreditReporting(
   // Duplicate debits must fail the whole transaction, not silently hide a debit.
   await client.query(
     `INSERT INTO zook_ai_novel_credit_events(user_id,event_id,occurred_at,payload,environment)
-    VALUES($1,$2,$3,$4::jsonb,$5) ${event.kind === "debit" ? "" : "ON CONFLICT DO NOTHING"}`,
+    VALUES($1,$2,$3,$4::jsonb,$5) ${event.kind === "debit" || event.adminUser ? "" : "ON CONFLICT DO NOTHING"}`,
     [userId, event.id, event.at, JSON.stringify(event), billingEnvironment()],
   );
 }
