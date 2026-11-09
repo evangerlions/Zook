@@ -9,6 +9,7 @@ import {
 
 interface LlmUpstreamRequestDiagnosticsOptions {
   provider: string;
+  adapterType?: string;
   modelKey: string;
   providerModel: string;
   requestUrl: string;
@@ -63,6 +64,7 @@ export function createLlmUpstreamRequestDiagnostics(
       const diagnostic: LlmUpstreamFailureDiagnostic = {
         diagnosticId,
         provider: options.provider,
+        ...(options.adapterType ? { adapterType: options.adapterType } : {}),
         modelKey: options.modelKey,
         providerModel: options.providerModel,
         requestedHost: new URL(options.requestUrl).hostname,

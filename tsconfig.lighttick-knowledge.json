@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.lighttick-actions.json","include":["src/modules/lighttick/knowledge/**/*.ts","src/infrastructure/database/postgres/postgres-knowledge-store.ts","src/testing/in-memory-knowledge-store.ts","src/app/lighttick-knowledge-routes.ts"]}

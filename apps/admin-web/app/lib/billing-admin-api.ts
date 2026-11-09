@@ -4,7 +4,7 @@ export interface BillingApp { appId: string; appName: string; integrated: boolea
 export type BillingRevenueDimension = "appId" | "productKey" | "source" | "market";
 export interface BillingRevenue { date: string; appId: string | null; productKey: string | null; market: string | null; source: string | null; currency: string; purchaseCount: number; grossMinor: number; refundMinor: number }
 export interface BillingOverview { from: string; to: string; environment: string; groupBy: BillingRevenueDimension[]; rows: BillingRevenue[]; integratedApps: string[] }
-export interface BillingMember { environment: "production" | "sandbox"; appId: string; userId: string; active: boolean; state: string; tier: string | null; planKey: string | null; expiresAt: string | null; autoRenew: boolean | null; source: string | null; lastSyncedAt: string; accountDeletedAt: string | null }
+export interface BillingMember { environment: "production" | "sandbox"; appId: string; userId: string; active: boolean; state: string; tier: string | null; planKey: string | null; expiresAt: string | null; autoRenew: boolean | null; revenueCatRenewalStatus?: string | null; source: string | null; lastSyncedAt: string; accountDeletedAt: string | null }
 export interface BillingMemberPage { items: BillingMember[]; nextCursor: string | null }
 
 function path(resource: string, query: Record<string, string | undefined>) {

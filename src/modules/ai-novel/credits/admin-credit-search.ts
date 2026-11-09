@@ -2,7 +2,7 @@ import { ApplicationError } from "../../../shared/errors.ts";
 
 export type CreditUserSearchField = "uid" | "phone" | "email";
 export interface CreditUserCandidate { uid: string; phone: string | null; email: string | null }
-export interface CreditGrantRecord { id: string; uid: string; points: number; adminUser: string; at: string }
+export interface CreditGrantRecord { id: string; uid: string; points: number; adminUser: string; at: string; phone: string | null; email: string | null; contactSource: "snapshot" | "current" | "unavailable" }
 export interface CreditUserSearchStore {
   searchUsers(field: CreditUserSearchField, term: string): Promise<CreditUserCandidate[]>;
 }

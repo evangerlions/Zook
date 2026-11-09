@@ -24,6 +24,7 @@ test("LightTick public config remains available while product capabilities are d
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.body.data, {
     app_id: "lighttick",
+    runtime_scope: "core",
     enabled: false,
     environment: "local",
     configuration_version: "builtin-1",
@@ -81,6 +82,7 @@ test("LightTick public config exposes only the allowlisted non-secret contract",
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.body.data, {
     app_id: "lighttick",
+    runtime_scope: "full",
     enabled: true,
     environment: "local",
     configuration_version: "dev-42",

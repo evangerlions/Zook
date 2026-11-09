@@ -2,6 +2,12 @@ import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
 export { LIGHTTICK_SYSTEM_PROMPT, LIGHTTICK_SCENE_PROMPTS } from "./lighttick-ai-prompts.ts";
 
 export const LIGHTTICK_AI_SCENES = {
+  learning_route: { key: "lighttick.learning_route.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 24_000,
+    maxOutputTokens: 8_000, maxEstimatedCostUsd: 0.25, fallback: "none" },
+  learning_lesson: { key: "lighttick.learning_lesson.v1", kind: "course", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 30_000, maxContextTokens: 20_000,
+    maxOutputTokens: 4_000, maxEstimatedCostUsd: 0.15, fallback: "none" },
   onboarding_plan: { key: "lighttick.onboarding_plan.v1", kind: "onboarding_plan", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 25_000, maxContextTokens: 8_000,
     maxOutputTokens: 3_000, maxEstimatedCostUsd: 0.08, fallback: "template" },
@@ -14,9 +20,6 @@ export const LIGHTTICK_AI_SCENES = {
   day_plan: { key: "lighttick.day_plan.v1", kind: "plan", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 6_000,
     maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "template" },
-  daily_review: { key: "lighttick.daily_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
-    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
-    maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "facts_only" },
   weekly_review: { key: "lighttick.weekly_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
     maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "facts_only" },

@@ -2,6 +2,8 @@ import { CommonPasswordConfigService } from "./common-password-config.service.ts
 
 const SECRET_REFERENCE_PATTERN = /^\{\{\s*zook\.ps\.([A-Za-z0-9._:-]+)\s*\}\}$/;
 
+export class MissingPasswordReferenceError extends Error {}
+
 export function isSecretReference(value: string): boolean {
   return SECRET_REFERENCE_PATTERN.test(value.trim());
 }
@@ -22,7 +24,7 @@ export class SecretReferenceResolver {
 
     const resolvedValue = await this.commonPasswordConfigService.getValue(key);
     if (!resolvedValue) {
-      throw new Error(`Password key is not configured: ${key}`);
+      throw new MissingPasswordReferenceError(`Password key is not configured: ${key}`);
     }
 
     return resolvedValue;

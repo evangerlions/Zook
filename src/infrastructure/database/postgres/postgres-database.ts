@@ -1,3 +1,5 @@
+import {PostgresFilePurgeStore} from "./postgres-file-purge-store.ts";
+import type {FilePurgeTask} from "../../files/file-purge.types.ts";
 import {PostgresUserStore} from "./postgres-users.ts";
 import { PostgresBuddySupportRepository } from "./postgres-buddy-support-repository.ts";
 import { PostgresYaoheziHealthStore } from "./postgres-yaohezi-health-store.ts";
@@ -193,6 +195,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T> {
     return await this.withExclusiveSession(async () => {
+      if(appId==="lighttick")await this.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[`lighttick-owner:${appId}:${userId}`]);
       await this.query("SELECT id FROM zook_app_users WHERE app_id = $1 AND user_id = $2 FOR UPDATE", [appId, userId]);
       return await fn();
     });
@@ -368,6 +371,11 @@ export class PostgresDatabase extends ApplicationDatabase {
     return await this.operationalRecords.listAnalyticsEvents(appId);
   }
 
+  private readonly filePurges=new PostgresFilePurgeStore((sql,args)=>this.query(sql,args));
+  override enqueueFilePurge=(appId:string,userId:string,key:string)=>this.filePurges.enqueue(appId,userId,key);
+  override claimFilePurges=(limit:number,now:Date)=>this.filePurges.claim(limit,now);
+  override completeFilePurge=(task:FilePurgeTask)=>this.filePurges.complete(task);
+  override deferFilePurge=(task:FilePurgeTask,now:Date)=>this.filePurges.defer(task,now);
   override async insertFile(record: FileRecord): Promise<void> {
     await this.operationalRecords.insertFile(record);
   }

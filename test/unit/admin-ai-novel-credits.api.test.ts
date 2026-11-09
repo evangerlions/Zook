@@ -27,6 +27,12 @@ test("admin credit grants search, grant, retry, records and environment isolatio
   response = await call("GET", root, headers);
   assert.equal(response.statusCode, 200); assert.equal(response.body.data.items.length, 1);
   assert.equal(response.body.data.items[0].uid, "user_1"); assert.equal(response.body.data.items[0].points, 12); assert.equal(response.body.data.items[0].adminUser, "admin");
+  assert.equal(response.body.data.items[0].phone, "5550001"); assert.equal(response.body.data.items[0].email, "person1@example.com"); assert.equal(response.body.data.items[0].contactSource, "snapshot");
+  const changedUser = runtime.database.users.find(user => user.id === "user_1")!;
+  changedUser.phone = "changed-phone"; changedUser.email = "changed@example.com";
+  assert.equal((await call("POST", root, headers, command)).statusCode, 200);
+  response = await call("GET", root, headers);
+  assert.equal(response.body.data.items[0].phone, "5550001"); assert.equal(response.body.data.items[0].email, "person1@example.com");
   const account = await runtime.database.aiNovelCreditsStore.transact("user_1", "", state => structuredClone(state.account));
   assert.equal(account?.giftMicros, "12000000"); assert.equal(account?.deferredStart, true);
   const sandboxHeaders = { ...headers, "x-billing-environment": "sandbox" };

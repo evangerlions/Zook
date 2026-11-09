@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.lighttick-actions.json","include":["src/modules/lighttick/investments/observations/**/*.ts","src/app/lighttick-observation-routes.ts","src/infrastructure/database/postgres/postgres-observation-store.ts"]}

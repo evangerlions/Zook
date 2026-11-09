@@ -1,3 +1,12 @@
+import { InMemoryFormRecordsStore } from "./in-memory-form-records-store.ts";
+import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
+import { InMemoryGitHubStore } from "./in-memory-github-store.ts";
+import {InMemoryPersonalModelStore} from "./in-memory-personal-model-store.ts";
+import {InMemoryInvestmentStore} from "./in-memory-investment-store.ts";
+import {sourceAvailable} from "../modules/lighttick/knowledge/knowledge.service.ts";
+import {InMemoryKnowledgeStore} from "./in-memory-knowledge-store.ts";
+import {InMemoryNativeLearningStore} from "./in-memory-native-learning-store.ts";
+import {InMemoryLearningRouteStore} from "./in-memory-learning-route-store.ts";
 import type {LocalClaim} from '../modules/lighttick/manual/local-adoption.types.ts';
 import type { RecordTransferRow, RecordTransferTicket } from "../modules/lighttick/records/record-transfer.types.ts";
 import { selectRecordRows } from "../modules/lighttick/lighttick-record.service.ts";
@@ -21,6 +30,45 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly researchAI=new InMemoryResearchAIStore();
+  readonly formRecords=new InMemoryFormRecordsStore();
+  readonly github=new InMemoryGitHubStore();
+  readonly personalModels=new InMemoryPersonalModelStore();
+  readonly investments=new InMemoryInvestmentStore();
+  readonly knowledge=new InMemoryKnowledgeStore(async o=>{
+    const facts=[];for(const lesson of await this.listNativeLessons(o,'',5001)){
+      if(lesson.archived||!lesson.publishedVersion||(await this.getLearningCollection(o,lesson.collectionId))?.archived)continue;
+      const publication=await this.getLessonPublication(o,lesson.id,lesson.publishedVersion);if(publication){const state=await this.getNativePrivateState(o,lesson.id,lesson.publishedVersion)??null;const h=(await this.listLearningHistory(o,lesson.id,lesson.publishedVersion,'',1000)).find(h=>['initial','notes','import'].includes(h.component)&&h.state.notesRevision===state?.notesRevision);facts.push({lesson,publication,state,notesUpdatedAt:h?.createdAt??null});}
+    }return facts;
+  },(o,s)=>sourceAvailable(this,o,s));
+  readonly learningRoutes=new InMemoryLearningRouteStore(async(o,id)=>{
+    const result=[];
+    for(const link of await this.learningRoutes.listRouteLessonLinks(o,id)){
+      const lesson=await this.getNativeLesson(o,link.lessonId);if(!lesson?.publishedVersion)continue;
+      const state=await this.getNativePrivateState(o,lesson.id,lesson.publishedVersion);
+      result.push({number:link.number,lessonId:lesson.id,contentVersion:lesson.publishedVersion,completed:state?.completed===true,sourceCompleted:lesson.sourceCompleted===true&&lesson.sourceCompletedVersion===lesson.publishedVersion});
+    }
+    return result;
+  });
+  private nativeLearning=new InMemoryNativeLearningStore();
+  private setupKnowledgeExport=(()=>{this.knowledge.learningExport=(o,includePrivate)=>this.nativeLearning.exportAuthorized(o,includePrivate);return true;})();
+  getNativeLearningCounts=async(o:LightTickOwner)=>({...await this.nativeLearning.getNativeLearningCounts(o),...await this.learningRoutes.counts(o)});
+  async clearNativeLearningStaging(o:LightTickOwner){await this.learningRoutes.clearStaging(o);await this.nativeLearning.clearNativeLearningStaging(o);for(const [id,r] of this.operations)if(r.appId===o.appId&&r.userId===o.userId&&r.deviceId==='learning-migration')this.operations.delete(id);}
+  async listLearningReceipts(o:LightTickOwner,id:string){return clone([...this.operations.values()].filter(r=>r.appId===o.appId&&r.userId===o.userId&&r.entityType==='learning_private'&&r.entityId===id&&r.operationId.startsWith('learning-compat:')).slice(0,1000));}
+  getLearningAuthority=this.nativeLearning.getLearningAuthority.bind(this.nativeLearning);
+  saveLearningAuthority=this.nativeLearning.saveLearningAuthority.bind(this.nativeLearning);
+  listLearningCollections=this.nativeLearning.listLearningCollections.bind(this.nativeLearning);
+  getLearningCollection=this.nativeLearning.getLearningCollection.bind(this.nativeLearning);
+  saveLearningCollection=this.nativeLearning.saveLearningCollection.bind(this.nativeLearning);
+  listNativeLessons=this.nativeLearning.listNativeLessons.bind(this.nativeLearning);
+  getNativeLesson=this.nativeLearning.getNativeLesson.bind(this.nativeLearning);
+  saveNativeLesson=this.nativeLearning.saveNativeLesson.bind(this.nativeLearning);
+  getLessonPublication=this.nativeLearning.getLessonPublication.bind(this.nativeLearning);
+  insertLessonPublication=this.nativeLearning.insertLessonPublication.bind(this.nativeLearning);
+  getNativePrivateState=this.nativeLearning.getNativePrivateState.bind(this.nativeLearning);
+  saveNativePrivateState=this.nativeLearning.saveNativePrivateState.bind(this.nativeLearning);
+  appendLearningHistory=this.nativeLearning.appendLearningHistory.bind(this.nativeLearning);
+  listLearningHistory=this.nativeLearning.listLearningHistory.bind(this.nativeLearning);
   private localClaims=new Map<string,LocalClaim>();
   async lockLocalSource(hash:string){}
   async getLocalClaim(hash:string){return clone(this.localClaims.get(hash));}
@@ -71,7 +119,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ formRecords:this.formRecords.snapshot(), researchAI:this.researchAI.snapshot(), github:this.github.snapshot(), personalModels:this.personalModels.snapshot(), investments:this.investments.snapshot(), knowledge:this.knowledge.snapshot(), learningRoutes:this.learningRoutes.snapshot(), nativeLearning:this.nativeLearning.snapshot(), localClaims:[...this.localClaims], learningPrivate:[...this.learningPrivate], learningLibraries:[...this.learningLibraries], recordTransfers:[...this.recordTransfers],recordTickets:[...this.recordTickets],sourceHistories:[...this.sourceHistories], records:[...this.records],recordHistory:[...this.recordHistory], actionWorkspaces:[...this.actionWorkspaces],actionTickets:[...this.actionTickets],actionLinks:[...this.actionLinks],planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -79,6 +127,12 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.formRecords.restore(snapshot.formRecords);
+      this.researchAI.restore(snapshot.researchAI);
+      this.github.restore(snapshot.github);
+      this.personalModels.restore(snapshot.personalModels);
+      this.nativeLearning.restore(snapshot.nativeLearning);
+      this.investments.restore(snapshot.investments); this.knowledge.restore(snapshot.knowledge); this.learningRoutes.restore(snapshot.learningRoutes);
       this.localClaims=new Map(snapshot.localClaims);
       this.recordTransfers=new Map(snapshot.recordTransfers);this.recordTickets=new Map(snapshot.recordTickets);this.sourceHistories=new Map(snapshot.sourceHistories);
       this.records=new Map(snapshot.records);this.recordHistory=new Map(snapshot.recordHistory);
@@ -151,6 +205,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async getRecord(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.records.get(rowKey({...owner,id}))); }
   async listRecords(owner: LightTickOwner, query?: RecordQuery) { this.assertOwner(owner); const rows=[...this.records.values()].filter(r => ownerKey(r) === ownerKey(owner)); return clone(query?selectRecordRows(rows,query):rows); }
   async recordVersions(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.recordHistory.get(rowKey({...owner,id})) ?? []).reverse(); }
+  async getRecordVersion(owner:LightTickOwner,id:string,version:number){this.assertOwner(owner);return clone(this.recordHistory.get(rowKey({...owner,id}))?.find(record=>record.version===version));}
   async saveRecord(row: LightTickRecordRow, baseVersion: number) {
     const key=rowKey(row),current=this.records.get(key);
     if ((current?.version ?? 0) !== baseVersion) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Record version changed.");
@@ -317,8 +372,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number) {
     return await this.saveAggregate(this.tasks, row, write, expectedVersion);
   }
-  async listTaskSteps(owner: LightTickOwner, taskId: string) {
-    return clone([...this.taskSteps.values()].filter(row => ownerKey(row) === ownerKey(owner) && row.taskId === taskId)
+  async listTaskSteps(owner: LightTickOwner, taskId?: string) {
+    return clone([...this.taskSteps.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!taskId || row.taskId === taskId))
       .sort((left, right) => left.position - right.position));
   }
   async getTaskStep(owner: LightTickOwner, taskId: string, id: string) {
@@ -381,6 +436,12 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.devices.set(key, { ...row, active: false, deletedAt, updatedAt: deletedAt }); return true;
   }
   async deleteOwnerData(owner: LightTickOwner) {
+    this.nativeLearning.deleteOwner(owner);
+    this.researchAI.deleteOwner(owner);
+    this.formRecords.deleteOwner(owner);
+    this.github.deleteOwner(owner);
+    this.personalModels.deleteOwner(owner);
+    this.investments.deleteOwner(owner); this.knowledge.deleteOwner(owner); this.learningRoutes.deleteOwner(owner);
     for(const [key,r] of this.localClaims)if(r.userId===owner.userId)this.localClaims.set(key,{...r,userId:null,cloudId:null,payloadHash:null,sourcePayload:{},deleted:true});
     for(const [key,row] of this.recordTransfers)if(ownerKey(row)===ownerKey(owner))this.recordTransfers.delete(key);
     for(const [key,row] of this.recordTickets)if(ownerKey(row)===ownerKey(owner))this.recordTickets.delete(key);

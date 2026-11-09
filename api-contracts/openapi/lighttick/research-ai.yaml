@@ -1,0 +1,498 @@
+openapi: 3.1.0
+info:
+  title: LightTick research AI
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-research-ai
+  description: Reviewed research drafts
+paths:
+  /api/v1/lighttick/investments/research-ai:
+    post:
+      operationId: createResearchAI
+      summary: createResearchAI
+      description: Owner-only bounded research AI. Explicit consent freezes research/market/model
+        versions. Existing worker, no automatic publication or trading. Adopt confirms
+        a separate analysis artifact; does not modify original facts. CAS/idempotent
+        originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
+        30s runtime, 3 total execution attempts including recovery, no fallback.
+      tags:
+      - lighttick-research-ai
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchAIWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentResearchAIRequest'
+    get:
+      operationId: listResearchAI
+      summary: listResearchAI
+      description: Owner-only bounded research AI. Explicit consent freezes research/market/model
+        versions. Existing worker, no automatic publication or trading. Adopt confirms
+        a separate analysis artifact; does not modify original facts. CAS/idempotent
+        originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
+        30s runtime, 3 total execution attempts including recovery, no fallback.
+      tags:
+      - lighttick-research-ai
+      parameters:
+      - name: research_id
+        in: query
+        required: true
+        schema: &id002
+          type: string
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 2048
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchAIPageEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/research-ai/{id}:
+    get:
+      operationId: readResearchAI
+      summary: readResearchAI
+      description: Owner-only bounded research AI. Explicit consent freezes research/market/model
+        versions. Existing worker, no automatic publication or trading. Adopt confirms
+        a separate analysis artifact; does not modify original facts. CAS/idempotent
+        originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
+        30s runtime, 3 total execution attempts including recovery, no fallback.
+      tags:
+      - lighttick-research-ai
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: &id001
+          type: string
+          pattern: ^researchai-[a-f0-9]{40}$
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchAIWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/research-ai/{id}/cancel:
+    post:
+      operationId: cancelResearchAI
+      summary: cancelResearchAI
+      description: Owner-only bounded research AI. Explicit consent freezes research/market/model
+        versions. Existing worker, no automatic publication or trading. Adopt confirms
+        a separate analysis artifact; does not modify original facts. CAS/idempotent
+        originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
+        30s runtime, 3 total execution attempts including recovery, no fallback.
+      tags:
+      - lighttick-research-ai
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchAIWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentResearchAICommand'
+  /api/v1/lighttick/investments/research-ai/{id}/adopt:
+    post:
+      operationId: adoptResearchAI
+      summary: adoptResearchAI
+      description: Owner-only bounded research AI. Explicit consent freezes research/market/model
+        versions. Existing worker, no automatic publication or trading. Adopt confirms
+        a separate analysis artifact; does not modify original facts. CAS/idempotent
+        originals, stale inputs reject adoption. 8/day, 200 retained tasks, one active/owner;
+        30s runtime, 3 total execution attempts including recovery, no fallback.
+      tags:
+      - lighttick-research-ai
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentResearchAIWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentResearchAICommand'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickInvestmentResearchAIRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - research_id
+      - base_revision
+      - kind
+      - consent
+      - model_mode
+      - model_revision
+      properties:
+        research_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 99
+        kind:
+          type: string
+          enum:
+          - analysis
+          - guide
+          - report
+        consent:
+          const: true
+        model_mode:
+          type: string
+          enum:
+          - platform
+          - personal
+        model_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+    LightTickInvestmentResearchAICommand:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickInvestmentResearchAIWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - request_key
+      - kind
+      - input
+      - status
+      - attempt
+      - error_code
+      - output
+      - adopted_at
+      - created_at
+      - updated_at
+      properties:
+        id: *id001
+        revision:
+          type: integer
+          minimum: 1
+        request_key: *id002
+        kind:
+          type: string
+          enum:
+          - analysis
+          - guide
+          - report
+        input:
+          type: object
+          required:
+          - research
+          - markets
+          - model
+          - digest
+          - scene
+          - instrument
+          properties:
+            research:
+              type: object
+            materials:
+              type: array
+              maxItems: 30
+              items:
+                $ref: ./materials.yaml#/components/schemas/LightTickInvestmentMaterialEntry
+            markets:
+              type: array
+              maxItems: 30
+              items:
+                type: object
+            model:
+              type: object
+              required:
+              - mode
+              - revision
+              properties:
+                mode:
+                  enum:
+                  - platform
+                  - personal
+                revision:
+                  type: integer
+                  minimum: 0
+            digest: *id002
+            scene:
+              type: object
+              required:
+              - key
+              - prompt_version
+              - model_alias
+              - max_output_tokens
+              - max_input_bytes
+              - timeout_ms
+              properties:
+                key:
+                  const: lighttick.research.v1
+                prompt_version:
+                  const: research-ai-v1
+                model_alias:
+                  const: novel-structured
+                max_output_tokens:
+                  const: 2500
+                max_input_bytes:
+                  const: 18000
+                timeout_ms:
+                  const: 30000
+            instrument:
+              type: object
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt:
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code:
+          type:
+          - string
+          - 'null'
+        output:
+          type:
+          - object
+          - 'null'
+          additionalProperties: false
+          required:
+          - text
+          - citations
+          - limitations
+          - provider
+          - model
+          - prompt_version
+          properties:
+            text:
+              type: string
+              maxLength: 12000
+            citations:
+              type: array
+              minItems: 1
+              maxItems: 40
+              items: *id002
+            limitations:
+              type: string
+              maxLength: 2000
+            provider: *id002
+            model: *id002
+            prompt_version: *id002
+        adopted_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickInvestmentResearchAIPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentResearchAIWork'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+    LightTickInvestmentResearchAIWorkEnvelope:
+      type: object
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          const: OK
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchAIWork'
+    LightTickInvestmentResearchAIPageEnvelope:
+      type: object
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          const: OK
+        message: *id002
+        requestId: *id002
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentResearchAIPage'

@@ -181,6 +181,7 @@ test("AINovel billing admin detail returns provider evidence and event timeline"
     planKey: "plus_monthly",
     expiresAt: "2020-01-01T00:00:00.000Z",
     autoRenew: false,
+    revenueCatRenewalStatus: "will_not_renew",
     source: "app_store",
     managementUrl: null,
     lastSyncedAt: "2020-01-01T00:00:00.000Z",
@@ -206,6 +207,7 @@ test("AINovel billing admin detail returns provider evidence and event timeline"
   assert.equal(response.body.data.transactions[0].providerTransactionId, "tx_001");
   assert.equal(response.body.data.currentMembership.active, false);
   assert.equal(response.body.data.currentMembership.state, "expired");
+  assert.equal(response.body.data.currentMembership.revenueCatRenewalStatus, "will_not_renew");
   assert.equal(response.body.data.events[0].providerEventId, "evt_001");
   assert.equal(response.body.data.events[0].occurredAt, null);
   assert.equal(response.body.data.events[0].accountDeletedAt, "2026-09-24T00:00:00.000Z");

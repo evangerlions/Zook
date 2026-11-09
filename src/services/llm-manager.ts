@@ -72,7 +72,7 @@ export class LLMManager {
 
     try {
       const result = await this.providers[
-        resolution.request.model.provider
+        resolution.request.model.adapterType ?? resolution.request.model.provider
       ].complete(resolution.request);
       const usage = withContextUsage(
         normalizeLlmUsage(result.usage) ?? estimateCompletionUsage(result, resolution.request),
@@ -118,7 +118,7 @@ export class LLMManager {
     let sawEffectiveChunk = false;
     const toolCalls: LLMToolCall[] = [];
     const usageEstimate = createUsageEstimateAccumulator(resolution.request);
-    const iterator = this.providers[resolution.request.model.provider]
+    const iterator = this.providers[resolution.request.model.adapterType ?? resolution.request.model.provider]
       .stream(resolution.request)
       [Symbol.asyncIterator]();
 
@@ -246,7 +246,7 @@ export class LLMManager {
 
     try {
       for await (const event of this.providers[
-        resolution.request.model.provider
+        resolution.request.model.adapterType ?? resolution.request.model.provider
       ].stream(resolution.request)) {
         if (resolution.request.signal?.aborted) return;
         if (!sawEffectiveChunk && isEffectiveStreamEvent(event)) {
@@ -481,7 +481,7 @@ export class LLMManager {
         resolution.request.usageOwner?.userId,
         resolution.circuitBreakerEnabled,
         llmErrorDiagnosticCode(error),
-        isLlmBalanceFailure(resolution.routeRef.provider, error),
+        isLlmBalanceFailure(resolution.routeRef.provider, error, resolution.request.model.adapterType),
       );
       if (confirmation) {
         void Promise.resolve(

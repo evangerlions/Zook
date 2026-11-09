@@ -123,7 +123,7 @@ export class LlmSmokeTestService {
 
     try {
       if (item.model.kind === "embedding") {
-        const provider = this.embeddingProviders[item.provider.key];
+        const provider = this.embeddingProviders[item.provider.type ?? item.provider.key];
         if (!provider) {
           return {
             ...base,
@@ -166,7 +166,7 @@ export class LlmSmokeTestService {
         };
       }
 
-      const provider = this.chatProviders[item.provider.key];
+      const provider = this.chatProviders[item.provider.type ?? item.provider.key];
       if (!provider) {
         return {
           ...base,
@@ -229,6 +229,7 @@ export class LlmSmokeTestService {
       providerOptions: {},
       model: {
         provider: item.provider.key,
+        adapterType: item.provider.type,
         modelKey: item.model.key,
         resolvedModelKey: item.model.key,
         providerModel: item.route.providerModel,
@@ -385,6 +386,7 @@ export function buildLlmSmokeChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMC
     providerOptions: {},
     model: {
       provider: item.provider.key,
+      adapterType: item.provider.type,
       modelKey: item.model.key,
       resolvedModelKey: item.model.key,
       providerModel: item.route.providerModel,

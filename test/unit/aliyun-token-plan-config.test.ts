@@ -41,6 +41,7 @@ test("factory imports Aliyun Token Plan from PASSWORDS and resolves it at runtim
 
     assert.deepEqual(provider, {
       key: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
+      type: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
       label: "Aliyun Bailian Token Plan",
       enabled: true,
       baseUrl: DEFAULT_ALIYUN_TOKEN_PLAN_BASE_URL,

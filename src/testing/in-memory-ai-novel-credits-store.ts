@@ -64,7 +64,12 @@ export class InMemoryAiNovelCreditsStore implements AiNovelCreditsStore {
   async listAdminGrants(offset: number, limit: number) {
     return [...this.events.entries()]
       .filter(([key, event]) => JSON.parse(key)[1] === billingEnvironment() && event.kind === "grant" && event.adminUser)
-      .map(([, event]) => ({ id: event.id, uid: event.userId!, points: Number(BigInt(event.giftMicros) / 1000000n), adminUser: event.adminUser!, at: event.at }))
+      .map(([, event]) => {
+        const user = this.users().find(candidate => candidate.uid === event.userId);
+        const contact = event.recipientContact ?? user;
+        return { id: event.id, uid: event.userId!, points: Number(BigInt(event.giftMicros) / 1000000n), adminUser: event.adminUser!, at: event.at,
+          phone: contact?.phone ?? null, email: contact?.email ?? null, contactSource: event.recipientContact ? "snapshot" as const : user ? "current" as const : "unavailable" as const };
+      })
       .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id))
       .slice(offset, offset + limit);
   }

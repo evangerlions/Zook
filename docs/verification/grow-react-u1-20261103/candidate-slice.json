@@ -1,0 +1,103 @@
+{
+  "status": "engineering-slice-only-not-release-ready",
+  "completed_tasks": "21/27",
+  "zook_candidate_sha": "a9723bdd8db70d40c16bfd545dd278ddabf27064",
+  "grow_manifest": {
+    "schema_version": 1,
+    "product": "lighttick",
+    "source_revision": "6fc85c65aeef77ff99f8d7e3016e19c3e42d309d",
+    "contract_revision": "a9723bdd8db70d40c16bfd545dd278ddabf27064",
+    "source_dirty": false,
+    "files": {
+      "index.html": "2aae3c5a683ecc85a1e3be2dfa95b188c33f3f241a8117d7b8d6ba7e48b109cf",
+      "assets/ActionsPage-_cv0kmFO.js": "c5db89d0dcd71ff059bbff12f896ac4b53ca2717dcfedf46de708e0b2e58a077",
+      "assets/GoalsPage-Z9cuisRq.js": "b2935a300bede1be0d1d55cd6fd1b19d5e8d7d4740d12cb21354773bf517e9dd",
+      "assets/LearningPage-DgnfTeTu.js": "243235a46f227ae0b247d5c8ae50b28de069333f44f9318c9b457e94ac89506c",
+      "assets/PendingNotice-C7lZd-Mf.js": "c4c5a40674a2aaeaace93a27457e59a578d9185a3738a032bde705a3698250fc",
+      "assets/PlanningPage-C87X1V7A.js": "9209f394a3b3abcf671f12fd710812d4453fda8ba834dcb78c757bbebf003a1b",
+      "assets/PlansPage-D03SfIHK.js": "000798b6f2bc677c08f05334e86e60dd39c988d369748e311819e7a10e95e308",
+      "assets/PracticePage-nUbaaBeg.js": "b1be97459d29da2bc82cb8cab2e41e69eb3ab6818118428065244bdb6b0e502e",
+      "assets/RecordsPage-ByS3xV6s.js": "a84fbb525f6c7c25778a4400d253ed202da84885fb699ba1fbd1c36afc11a35d",
+      "assets/ReviewPage-DWPtXAcr.js": "eb1ead555d26d93850088f4ecdda12c02c88f93f05dedbd7e2c0f0a092475c51",
+      "assets/TodayPage-B3QQcM5_.js": "81bd4695094e18cc933200e5b7b8731567e2d198f1bfe91b9ea44bb6306380e0",
+      "assets/draft-storage-CnfvdNP5.js": "fa5f7ded84ac1cae8588b41e7739291750f5ec914a2873c395fc3a2a96ebe7f4",
+      "assets/index--08vjXGf.css": "229933c47f88d2d9c163f03333ecdb15a19d5254b7f9da6962d571e2951fbe60",
+      "assets/index-C_kXSIjh.js": "97a9a0b30c226b05864c0afff8e8d74d6c54a42b2044c87af43802fa45af845a",
+      "assets/model-BkvdWyL7.js": "cba92bb2b9fbe39efe5a507493c80d687f9eeebaf80e71236f2b37620854bf17"
+    }
+  },
+  "ios_candidate_sha": "d158764d16a7c4fb751440a97e7655e6b7db3e98",
+  "android_candidate_sha": "0332c725461f5b7576e3381d881b7cf5ff332b25",
+  "database_migrations": [
+    {
+      "file": "src/infrastructure/database/postgres/migrations/085_lighttick_native_learning.sql",
+      "sha256": "b1941730578fcfc9e353a93dde15716c17132f01c28421d6769d057ea63594a2"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/086_lighttick_learning_consent_and_draft_anchor.sql",
+      "sha256": "f55a89fafdfc6fdcc63fffe38fa29d2890c2d26a1fef2d8b6b131bd2dcbb939c"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/087_lighttick_source_completion_version.sql",
+      "sha256": "a00826caff8e28e04917061e66fdbe91a17d01364ca39e588827ebd46acac5f7"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/088_lighttick_learning_routes.sql",
+      "sha256": "4976aeb991aacee8590eadd65a5ed204c8f109cfac65284dbe9c597fb88800c7"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/089_lighttick_learning_work.sql",
+      "sha256": "556960f9168f12325f7fbc05c732293d71c2879bee532c33b2b44effb7629382"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/090_lighttick_knowledge.sql",
+      "sha256": "a709245f3136e7148f0b8f7a423059b0ba60059cd80d9c7be9bc3cd9c39bffcd"
+    },
+    {
+      "file": "src/infrastructure/database/postgres/migrations/091_owner_file_purge.sql",
+      "sha256": "8a2b0f427848166df3178d0a03455e70a4a0fcbcc65da67bea5a0fb1abd5497d"
+    }
+  ],
+  "enabled_only_in_synthetic_fixture": [
+    "LIGHTTICK_NATIVE_LEARNING_ENABLED",
+    "LIGHTTICK_ACTIONS_ENABLED",
+    "LIGHTTICK_ACTIONS_V2_ENABLED"
+  ],
+  "release_gates": {
+    "legacy_operation_parity": "blocked:516 operations need reviewed parity evidence",
+    "formal_course_routes_stages_progress": "local-engineering-verified; native editing via trusted Grow Web entry",
+    "learning_worker_budget_cancel_lease_restart_publish": "synthetic-provider-and-PostgreSQL-verified; real-model-quality-separate",
+    "knowledge_growth_export_cleanup": "local-engineering-verified; bounded authorized export; eventual durable file purge; backups/physical devices separate",
+    "investment_research_node_adapters_decimal_calendar_backtests": "pending",
+    "all_module_incremental_migration_compensation": "pending",
+    "other_apps_toggle_mixed_load_p95_increase_max_10_percent": "pending",
+    "real_model_quality": "independent-not-executed",
+    "physical_devices_accessibility": "independent-not-executed",
+    "long_observation": "independent-not-executed",
+    "real_private_migration": "independent-not-authorized-this-round",
+    "dev_online_release": "not-authorized-this-round"
+  },
+  "native_worktree_scope": "Selected learning tests run with preserved pre-existing UI modifications; commits contain only current course files. Not clean native release binaries.",
+  "verification": {
+    "backend_full_unit": {
+      "pass": 2346,
+      "skip": 1,
+      "fail": 0
+    },
+    "postgres_joint": {
+      "pass": 9,
+      "skip": 0
+    },
+    "grow_unit": {
+      "pass": 15
+    },
+    "ios_selected_simulator": {
+      "pass": 6
+    },
+    "android_selected_jvm": {
+      "pass": 8
+    },
+    "chrome_results": "u4-review-browser-results.json",
+    "logs_directory": ".artifacts/grow-u4-20261104"
+  }
+}

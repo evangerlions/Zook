@@ -1,0 +1,1700 @@
+openapi: 3.1.0
+info:
+  title: LightTick audited portfolio valuation and performance
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+- url: https://api.zook.dev
+security:
+- bearerAuth: []
+tags:
+- name: lighttick-portfolio
+  description: Audited baseline, valuation, NAV, reconciliation and period performance
+paths:
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts:
+    get:
+      operationId: listPortfolioFacts
+      summary: listPortfolioFacts
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - &id001
+        name: accountId
+        in: path
+        required: true
+        schema: &id002
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - &id005
+        name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 2048
+      - &id006
+        name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioFactsEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}:
+    put:
+      operationId: writePortfolioFact
+      summary: writePortfolioFact
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - &id004
+        name: factId
+        in: path
+        required: true
+        schema: *id002
+      - &id007
+        name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioFactEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentPortfolioFactWrite'
+    get:
+      operationId: readPortfolioFact
+      summary: readPortfolioFact
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema: &id003
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+      - name: factId
+        in: path
+        required: true
+        schema: *id003
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioFactEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/facts/{factId}/history:
+    get:
+      operationId: readPortfolioFactHistory
+      summary: readPortfolioFactHistory
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id004
+      - *id005
+      - *id006
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioHistoryEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/work:
+    post:
+      operationId: createPortfolioWork
+      summary: createPortfolioWork
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id007
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentPortfolioInput'
+    get:
+      operationId: listPortfolioWork
+      summary: listPortfolioWork
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id005
+      - *id006
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioWorksEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}:
+    get:
+      operationId: readPortfolioWork
+      summary: readPortfolioWork
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - &id008
+        name: workId
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}/cancel:
+    post:
+      operationId: cancelPortfolioWork
+      summary: cancelPortfolioWork
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id008
+      - *id007
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioWorkEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentPortfolioCancel'
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/work/{workId}/adopt:
+    post:
+      operationId: adoptPortfolioPreview
+      summary: adoptPortfolioPreview
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id008
+      - *id007
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioSavedEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickInvestmentPortfolioAdopt'
+  /api/v1/lighttick/investments/accounts/{accountId}/portfolio/baselines:
+    get:
+      operationId: readPortfolioBaselines
+      summary: readPortfolioBaselines
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id005
+      - *id006
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselinesEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/valuations:
+    get:
+      operationId: listSavedPortfolioValuations
+      summary: listSavedPortfolioValuations
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - *id005
+      - *id006
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioValuationsEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+  /api/v1/lighttick/investments/accounts/{accountId}/valuations/{valuationId}:
+    get:
+      operationId: readSavedPortfolioValuation
+      summary: readSavedPortfolioValuation
+      description: Owner/account-scoped portfolio operations. Existing worker freezes
+        exact original requests, facts, source IDs/digests, reference calendar and
+        algorithm. Current audited facts by economic date, not historical knowability.
+        Completed Shanghai dates only; missing/conflict/stale data remains unknown,
+        no fallback or trading. Preview alone is not adoption. Preserve drafts and
+        original keys after conflicts or cursor rebuild. New domains do not enter
+        task-only sync/push or old pull.
+      tags:
+      - lighttick-portfolio
+      parameters:
+      - *id001
+      - name: valuationId
+        in: path
+        required: true
+        schema: *id002
+      responses:
+        '200':
+          description: Authorized owner result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickInvestmentPortfolioSavedValuationEnvelope'
+        '401':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '403':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '404':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '409':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '413':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '422':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '429':
+          $ref: ./api.yaml#/components/responses/LightTickError
+        '503':
+          $ref: ./api.yaml#/components/responses/LightTickError
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LightTickInvestmentPortfolioBaselineFields:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - currency
+      - baseline_date
+      - opening_cash
+      - opening_positions
+      properties:
+        name: &id009
+          type: string
+          maxLength: 100
+        currency: &id010
+          type: string
+          enum:
+          - CNY
+        baseline_date: &id011
+          type: string
+          format: date
+        opening_cash: &id012
+          type: string
+          maxLength: 120
+          description: Exact nonnegative decimal string, at most 18 integer and 10
+            fractional places; numeric JSON and nonfinite values are rejected. Scientific
+            notation is normalized, not rounded.
+        opening_positions: &id013
+          type: array
+          maxItems: 100
+          items:
+            $ref: ./api.yaml#/components/schemas/LightTickInvestmentOpening
+    LightTickInvestmentPortfolioBaseline:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - currency
+      - baseline_date
+      - opening_cash
+      - opening_positions
+      - baseline_version
+      properties:
+        name: *id009
+        currency: *id010
+        baseline_date: *id011
+        opening_cash: *id012
+        opening_positions: *id013
+        baseline_version: &id014
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+    LightTickInvestmentPortfolioFact:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - id
+        - account_id
+        - revision
+        - instrument_id
+        - request_key
+        - created_at
+        - updated_at
+        - kind
+        - date
+        - nav
+        - source_label
+        properties:
+          id: *id002
+          account_id: *id002
+          revision: *id014
+          instrument_id: *id002
+          request_key: &id016
+            type: string
+            minLength: 8
+            maxLength: 128
+          created_at: &id015
+            type: string
+            format: date-time
+          updated_at: *id015
+          kind: &id018
+            type: string
+            enum:
+            - fund_nav
+          date: &id017
+            type: string
+            format: date
+          nav: &id019
+            type: string
+            maxLength: 120
+          source_label: &id020
+            type: string
+            minLength: 1
+            maxLength: 200
+      - type: object
+        additionalProperties: false
+        required:
+        - id
+        - account_id
+        - revision
+        - instrument_id
+        - request_key
+        - created_at
+        - updated_at
+        - kind
+        - date
+        - notice_kind
+        - reason
+        - status
+        - resolution
+        - source_url
+        properties:
+          id: *id002
+          account_id: *id002
+          revision: *id014
+          instrument_id: *id002
+          request_key: *id016
+          created_at: *id015
+          updated_at: *id015
+          kind: &id022
+            type: string
+            enum:
+            - notice
+          date: *id017
+          notice_kind: &id023
+            type: string
+            enum:
+            - corporate_action
+            - missing_fact
+            - cost_or_fee
+            - other
+          reason: &id024
+            type: string
+            minLength: 1
+            maxLength: 2000
+          status: &id025
+            type: string
+            enum:
+            - open
+            - resolved
+          resolution: &id026
+            type: string
+            maxLength: 4000
+          source_url: &id027
+            anyOf:
+            - type: string
+              format: uri
+              maxLength: 2048
+            - type: 'null'
+    LightTickInvestmentPortfolioFactWrite:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - base_revision
+        - base_account_revision
+        - instrument_id
+        - kind
+        - date
+        - nav
+        - source_label
+        properties:
+          base_revision: &id021
+            type: integer
+            minimum: 0
+            maximum: 2147483646
+          base_account_revision: *id014
+          instrument_id: *id002
+          kind: *id018
+          date: *id017
+          nav: *id019
+          source_label: *id020
+      - type: object
+        additionalProperties: false
+        required:
+        - base_revision
+        - base_account_revision
+        - instrument_id
+        - kind
+        - date
+        - notice_kind
+        - reason
+        - status
+        - resolution
+        - source_url
+        properties:
+          base_revision: *id021
+          base_account_revision: *id014
+          instrument_id: *id002
+          kind: *id022
+          date: *id017
+          notice_kind: *id023
+          reason: *id024
+          status: *id025
+          resolution: *id026
+          source_url: *id027
+    LightTickInvestmentPortfolioFactHistory:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - id
+        - account_id
+        - revision
+        - instrument_id
+        - request_key
+        - created_at
+        - updated_at
+        - kind
+        - date
+        - nav
+        - source_label
+        - fact_id
+        properties:
+          id:
+            type: string
+            pattern: ^\d{10}$
+          account_id: *id002
+          revision: *id014
+          instrument_id: *id002
+          request_key: *id016
+          created_at: *id015
+          updated_at: *id015
+          kind: *id018
+          date: *id017
+          nav: *id019
+          source_label: *id020
+          fact_id: *id002
+      - type: object
+        additionalProperties: false
+        required:
+        - id
+        - account_id
+        - revision
+        - instrument_id
+        - request_key
+        - created_at
+        - updated_at
+        - kind
+        - date
+        - notice_kind
+        - reason
+        - status
+        - resolution
+        - source_url
+        - fact_id
+        properties:
+          id:
+            type: string
+            pattern: ^\d{10}$
+          account_id: *id002
+          revision: *id014
+          instrument_id: *id002
+          request_key: *id016
+          created_at: *id015
+          updated_at: *id015
+          kind: *id022
+          date: *id017
+          notice_kind: *id023
+          reason: *id024
+          status: *id025
+          resolution: *id026
+          source_url: *id027
+          fact_id: *id002
+    LightTickInvestmentPortfolioInput:
+      oneOf:
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - base_revision
+        - date
+        - sources
+        properties:
+          kind:
+            type: string
+            enum:
+            - valuation
+          base_revision: *id014
+          date: *id017
+          sources:
+            type: object
+            maxProperties: 100
+            propertyNames: *id002
+            additionalProperties: *id002
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - base_revision
+        - reason
+        - baseline
+        properties:
+          kind:
+            type: string
+            enum:
+            - baseline
+          base_revision: *id014
+          reason:
+            type: string
+            minLength: 1
+            maxLength: 2000
+          baseline:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselineFields'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - base_revision
+        - start
+        - end
+        properties:
+          kind:
+            type: string
+            enum:
+            - performance
+          base_revision: *id014
+          start: *id017
+          end: *id017
+    LightTickInvestmentPortfolioCandidate:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - digest
+      - kind
+      - price
+      - date
+      - source
+      - price_basis
+      properties:
+        id: *id002
+        revision: *id014
+        digest: &id029
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        kind:
+          type: string
+          enum:
+          - market
+          - fund_nav
+        price: &id030
+          type: string
+          maxLength: 240
+        date: *id017
+        source: &id028
+          type: string
+        price_basis:
+          type: string
+          enum:
+          - unadjusted
+          - confirmed_nav
+    LightTickInvestmentPortfolioQuote:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - expected_session
+      - status
+      - selected
+      - candidates
+      properties:
+        instrument_id: *id002
+        expected_session:
+          anyOf:
+          - *id017
+          - type: 'null'
+        status:
+          type: string
+          enum:
+          - available
+          - missing
+          - conflict
+          - stale
+          - calendar_unknown
+        selected:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentPortfolioCandidate'
+          - type: 'null'
+        candidates:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioCandidate'
+    LightTickInvestmentPortfolioPosition:
+      type: object
+      additionalProperties: false
+      required:
+      - instrument_id
+      - quantity
+      - cost
+      - realized
+      - fees_complete
+      - settlements_complete
+      - market_value
+      - unrealized
+      - mark
+      - quantity_verified
+      properties:
+        instrument_id:
+          type: string
+          pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
+          maxLength: 100
+        quantity:
+          type: string
+          maxLength: 240
+        cost:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        realized:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        fees_complete:
+          type: boolean
+        settlements_complete:
+          type: boolean
+        market_value:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        unrealized:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        mark:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        quantity_verified: &id031
+          type: boolean
+    LightTickInvestmentPortfolioBalance:
+      type: object
+      additionalProperties: false
+      required:
+      - cash
+      - cash_verified
+      - receivables
+      - positions
+      - realized
+      - fees_complete
+      - net_realized
+      - equity
+      - settlements_complete
+      - warnings
+      properties:
+        cash:
+          type: string
+          maxLength: 240
+        cash_verified:
+          type: boolean
+        receivables:
+          type: string
+          maxLength: 240
+        positions:
+          type: array
+          maxItems: 10100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioPosition'
+        realized:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        fees_complete:
+          type: boolean
+        net_realized:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        equity:
+          anyOf:
+          - type: string
+            maxLength: 240
+          - type: 'null'
+        settlements_complete:
+          type: boolean
+        warnings:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 1000
+    LightTickInvestmentPortfolioValuation:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - date
+      - account_id
+      - account_revision
+      - baseline_version
+      - algorithm_version
+      - method
+      - ledger_digest
+      - input_digest
+      - quotes
+      - coverage
+      - holdings_value
+      - balance
+      - notices
+      - calendar_version
+      - preview_digest
+      properties:
+        kind:
+          type: string
+          enum:
+          - valuation
+        date: *id017
+        account_id: *id002
+        account_revision: *id014
+        baseline_version: *id014
+        algorithm_version: *id028
+        method:
+          type: string
+          enum:
+          - current_audited_facts_by_economic_date
+        ledger_digest: *id029
+        input_digest: *id029
+        quotes:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioQuote'
+        coverage:
+          type: object
+          additionalProperties: false
+          required:
+          - required
+          - available
+          - missing
+          properties:
+            required:
+              type: integer
+              minimum: 0
+              maximum: 100
+            available:
+              type: integer
+              minimum: 0
+              maximum: 100
+            missing:
+              type: integer
+              minimum: 0
+              maximum: 100
+        holdings_value:
+          anyOf:
+          - *id030
+          - type: 'null'
+        balance:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioBalance'
+        notices:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioFact'
+        calendar_version: *id028
+        preview_digest: *id029
+        calendars:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioCalendar'
+    LightTickInvestmentPortfolioBaselineResult:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - reason
+      - before
+      - after
+      - ledger_report
+      - input_digest
+      - preview_digest
+      properties:
+        kind:
+          type: string
+          enum:
+          - baseline
+        reason: *id028
+        before:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioBaseline'
+        after:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioBaseline'
+        ledger_report:
+          $ref: ./api.yaml#/components/schemas/LightTickInvestmentLedgerReport
+        input_digest: *id029
+        preview_digest: *id029
+    LightTickInvestmentPortfolioPerformance:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - start
+      - end
+      - algorithm_version
+      - input_digest
+      - net_profit
+      - net_deposit
+      - cash_components
+      - maximum_drawdown_pct
+      - twr
+      - xirr
+      - series
+      - limitations
+      properties:
+        kind:
+          type: string
+          enum:
+          - performance
+        start: *id017
+        end: *id017
+        algorithm_version: *id028
+        input_digest: *id029
+        net_profit:
+          anyOf:
+          - *id030
+          - type: 'null'
+        net_deposit: *id030
+        cash_components:
+          type: object
+          additionalProperties: false
+          required:
+          - deposit
+          - withdrawal
+          - dividend
+          - interest
+          - fee
+          properties:
+            deposit: *id030
+            withdrawal: *id030
+            dividend: *id030
+            interest: *id030
+            fee: *id030
+        maximum_drawdown_pct:
+          anyOf:
+          - *id030
+          - type: 'null'
+        twr:
+          type: 'null'
+        xirr:
+          type: 'null'
+        series:
+          type: array
+          maxItems: 367
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - date
+            - stale
+            - equity
+            - ledger_digest
+            properties:
+              id: *id002
+              date: *id017
+              stale: *id031
+              equity:
+                anyOf:
+                - *id030
+                - type: 'null'
+              ledger_digest: *id029
+        limitations:
+          type: array
+          maxItems: 10
+          items: *id028
+        calendar:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioCalendar'
+    LightTickInvestmentPortfolioResult:
+      oneOf:
+      - $ref: '#/components/schemas/LightTickInvestmentPortfolioValuation'
+      - $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselineResult'
+      - $ref: '#/components/schemas/LightTickInvestmentPortfolioPerformance'
+    LightTickInvestmentPortfolioWorkSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - account_id
+      - revision
+      - input
+      - status
+      - attempt
+      - error_code
+      - created_at
+      - updated_at
+      - has_output
+      properties:
+        id: *id002
+        account_id: *id002
+        revision: *id014
+        input: &id032
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioInput'
+        status: &id033
+          type: string
+          enum:
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+        attempt: &id034
+          type: integer
+          minimum: 0
+          maximum: 3
+        error_code: &id035
+          anyOf:
+          - *id028
+          - type: 'null'
+        created_at: *id015
+        updated_at: *id015
+        has_output: *id031
+    LightTickInvestmentPortfolioWork:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - account_id
+      - revision
+      - input
+      - status
+      - attempt
+      - error_code
+      - created_at
+      - updated_at
+      - has_output
+      - output
+      properties:
+        id: *id002
+        account_id: *id002
+        revision: *id014
+        input: *id032
+        status: *id033
+        attempt: *id034
+        error_code: *id035
+        created_at: *id015
+        updated_at: *id015
+        has_output: *id031
+        output:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickInvestmentPortfolioResult'
+          - type: 'null'
+    LightTickInvestmentPortfolioSaved:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - account_id
+      - work_id
+      - request_key
+      - kind
+      - created_at
+      - output
+      properties:
+        id: *id002
+        account_id: *id002
+        work_id: *id002
+        request_key: &id036
+          type: string
+          minLength: 8
+          maxLength: 128
+        kind:
+          type: string
+          enum:
+          - valuation
+          - baseline
+        created_at: *id015
+        output:
+          oneOf:
+          - $ref: '#/components/schemas/LightTickInvestmentPortfolioValuation'
+          - $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselineResult'
+    LightTickInvestmentPortfolioSavedValuation:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - account_id
+      - work_id
+      - request_key
+      - kind
+      - created_at
+      - output
+      - stale
+      properties:
+        id: *id002
+        account_id: *id002
+        work_id: *id002
+        request_key: *id036
+        kind:
+          type: string
+          enum:
+          - valuation
+        created_at: *id015
+        output:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioValuation'
+        stale: *id031
+    LightTickInvestmentPortfolioAdopt:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - preview_digest
+      properties:
+        base_revision: *id014
+        preview_digest: *id029
+    LightTickInvestmentPortfolioCancel:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision: *id014
+    LightTickInvestmentPortfolioBaselineHistoryItem:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - currency
+      - baseline_date
+      - opening_cash
+      - opening_positions
+      - baseline_version
+      - id
+      properties:
+        name: *id009
+        currency: *id010
+        baseline_date: *id011
+        opening_cash: *id012
+        opening_positions: *id013
+        baseline_version: *id014
+        id:
+          type: string
+          pattern: ^\d{10}$
+    LightTickInvestmentPortfolioFacts:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioFact'
+        revision: *id029
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentPortfolioHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioFactHistory'
+        revision: *id029
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentPortfolioWorks:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioWorkSummary'
+        revision: *id029
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentPortfolioValuations:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioSavedValuation'
+        revision: *id029
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentPortfolioBaselines:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - revision
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselineHistoryItem'
+        revision: *id029
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+    LightTickInvestmentPortfolioFactEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioFact'
+        requestId: *id028
+    LightTickInvestmentPortfolioHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioHistory'
+        requestId: *id028
+    LightTickInvestmentPortfolioFactsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioFacts'
+        requestId: *id028
+    LightTickInvestmentPortfolioWorksEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioWorks'
+        requestId: *id028
+    LightTickInvestmentPortfolioWorkEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioWork'
+        requestId: *id028
+    LightTickInvestmentPortfolioSavedEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioSaved'
+        requestId: *id028
+    LightTickInvestmentPortfolioSavedValuationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioSavedValuation'
+        requestId: *id028
+    LightTickInvestmentPortfolioValuationsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioValuations'
+        requestId: *id028
+    LightTickInvestmentPortfolioBaselinesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message: *id028
+        data:
+          $ref: '#/components/schemas/LightTickInvestmentPortfolioBaselines'
+        requestId: *id028
+    LightTickInvestmentPortfolioCalendar:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - market
+      - version
+      - start
+      - end
+      - reviewed_on
+      - review_until
+      - source_url
+      - sessions
+      - snapshot_hash
+      properties:
+        status:
+          type: string
+          enum:
+          - available
+          - coverage_unknown
+          - review_expired
+        market: &id037
+          type: string
+        version: *id037
+        start: &id038
+          type: string
+          format: date
+        end: *id038
+        reviewed_on: *id038
+        review_until: *id038
+        source_url:
+          anyOf:
+          - *id037
+          - type: 'null'
+        sessions:
+          type: object
+          additionalProperties:
+            type: boolean
+        snapshot_hash:
+          type: string
+          pattern: ^[a-f0-9]{64}$

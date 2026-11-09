@@ -54,7 +54,6 @@ export class BailianOpenAICompatibleProvider
   private readonly apiKey: string;
   private readonly providerName: string;
   private readonly fetchImplementation: typeof fetch;
-  private readonly localLogger: BailianOpenAICompatibleLocalLogger;
   private readonly diagnostics?: BailianOpenAICompatibleProviderOptions["diagnostics"];
   private readonly usageLogger: BailianOpenAICompatibleProviderOptions["logger"];
 
@@ -70,10 +69,6 @@ export class BailianOpenAICompatibleProvider
       options.apiKey ?? process.env.BAILIAN_API_KEY ?? DEFAULT_BAILIAN_API_KEY;
     this.fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
     this.diagnostics = options.diagnostics;
-    this.localLogger = new BailianOpenAICompatibleLocalLogger(
-      options.logger,
-      this.providerName,
-    );
 
     if (!this.fetchImplementation) {
       throw new Error("fetch is not available in the current runtime.");
@@ -83,9 +78,10 @@ export class BailianOpenAICompatibleProvider
   async complete(
     request: ResolvedLLMCompletionRequest,
   ): Promise<LLMCompletionResult> {
+    const localLogger = new BailianOpenAICompatibleLocalLogger(this.usageLogger, request.model.provider);
     const requestBody = this.buildChatRequestBody(request);
     const localLogModel = this.getLocalLogModel(request);
-    this.localLogger.chatRequest({
+    localLogger.chatRequest({
       mode: "complete",
       url: this.buildChatUrl(
         request.model.providerConfig?.baseUrl ?? this.baseUrl,
@@ -106,7 +102,7 @@ export class BailianOpenAICompatibleProvider
     const payload = await this.readJsonPayload(response, !response.ok);
 
     if (!response.ok || payload.error) {
-      this.localLogger.chatErrorResponse({
+      localLogger.chatErrorResponse({
         mode: "complete",
         ...localLogModel,
         providerModel: request.model.providerModel,
@@ -115,7 +111,7 @@ export class BailianOpenAICompatibleProvider
       });
       throwProviderRequestFailed(response.status, payload, this.providerName);
     }
-    this.localLogger.chatResponse({
+    localLogger.chatResponse({
       mode: "complete",
       ...localLogModel,
       providerModel: request.model.providerModel,
@@ -234,6 +230,7 @@ export class BailianOpenAICompatibleProvider
   async *stream(
     request: ResolvedLLMCompletionRequest,
   ): AsyncIterable<LLMStreamEvent> {
+    const localLogger = new BailianOpenAICompatibleLocalLogger(this.usageLogger, request.model.provider);
     const requestBody = {
       ...this.buildChatRequestBody(request),
       stream: true,
@@ -244,7 +241,7 @@ export class BailianOpenAICompatibleProvider
     };
     const localLogModel = this.getLocalLogModel(request);
     const requestUrl = this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl);
-    this.localLogger.chatRequest({
+    localLogger.chatRequest({
       mode: "stream",
       url: requestUrl,
       ...localLogModel,
@@ -258,7 +255,7 @@ export class BailianOpenAICompatibleProvider
     const streamTimeouts = resolveStreamTimeouts(streamOptions);
     const cancellation = new LlmCallerCancellationScope(request.signal);
     const requestDiagnostics = createLlmUpstreamRequestDiagnostics({
-      provider: this.providerName, modelKey: localLogModel.modelKey, providerModel: request.model.providerModel,
+      provider: request.model.provider, adapterType: this.providerName, modelKey: localLogModel.modelKey, providerModel: request.model.providerModel,
       requestUrl, diagnostics: this.diagnostics});
     const firstEventTimeout = setTimeout(() => {
       cancellation.abort(
@@ -298,7 +295,7 @@ export class BailianOpenAICompatibleProvider
         );
       }
 
-      const streamLog = this.localLogger.beginStream({
+      const streamLog = localLogger.beginStream({
         ...localLogModel,
         providerModel: request.model.providerModel,
       });

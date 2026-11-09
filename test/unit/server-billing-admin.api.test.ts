@@ -118,9 +118,10 @@ test("membership browsing includes members without orders, applies expiry/deleti
     ["member_d", null, null],
   ] as const) await runtime.database.upsertAiNovelBillingMembership({ appId: "ai_novel", userId,
     active: true, state: "active", tier: "plus", planKey: "plus_monthly", expiresAt,
-    autoRenew: true, source: "app_store", managementUrl: null, lastSyncedAt: "2026-09-01T00:00:00Z", accountDeletedAt });
+    autoRenew: true, revenueCatRenewalStatus: "has_already_renewed", source: "app_store", managementUrl: null, lastSyncedAt: "2026-09-01T00:00:00Z", accountDeletedAt });
   const first = await runtime.get("memberships", { limit: "1" });
   assert.equal(first.body.data.items[0].userId, "member_a"); assert.equal(first.body.data.items[0].active, true);
+  assert.equal(first.body.data.items[0].revenueCatRenewalStatus, "has_already_renewed");
   const next = await runtime.get("memberships", { limit: "1", cursor: first.body.data.nextCursor });
   assert.equal(next.body.data.items[0].userId, "member_b"); assert.equal(next.body.data.items[0].state, "expired");
   const deleted = await runtime.get("memberships", { userId: "member_c" });

@@ -101,7 +101,7 @@ export class LlmUpstreamDiagnosticsService {
   private async resolveConnectivityTarget(
     input: LlmUpstreamFailureDiagnostic,
   ): Promise<ConnectivityTarget> {
-    const provider = input.provider.toLowerCase();
+    const provider = (input.adapterType ?? input.provider).toLowerCase();
     if (provider !== "bai" && provider !== "openrouter") {
       return { transport: "direct", host: input.requestedHost };
     }

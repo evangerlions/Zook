@@ -1,3 +1,4 @@
+import {LIGHTTICK_OWNED_TABLES} from "./postgres-lighttick-owned-tables.ts";
 type QueryFn = (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
 
 export async function deletePostgresApp(query: QueryFn, appId: string): Promise<void> {
@@ -23,29 +24,10 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
   await query("DELETE FROM zook_bodylog_group_activities WHERE group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1)", [appId]);
   await query("DELETE FROM zook_bodylog_groups WHERE app_id = $1", [appId]);
 
+  await query("INSERT INTO zook_owner_file_purges(id,app_id,user_id,storage_key) SELECT gen_random_uuid()::text,app_id,owner_user_id,storage_key FROM zook_files WHERE app_id=$1 ON CONFLICT(app_id,user_id,storage_key) DO UPDATE SET next_attempt_at=NOW()",[appId]);
   const tables = [
-    "zook_lighttick_account_upgrades",
-    "zook_lighttick_goal_contexts",
-    "zook_lighttick_milestones",
-    "zook_lighttick_outcome_evidence",
-    "zook_lighttick_task_families",
-    "zook_lighttick_task_steps",
-    "zook_lighttick_tasks",
-    "zook_lighttick_change_proposals",
-    "zook_lighttick_reviews",
-    "zook_lighttick_plan_cycles",
-    "zook_lighttick_goals",
-    "zook_lighttick_execution_events",
-    "zook_lighttick_ai_runs",
-    "zook_lighttick_change_log",
-    "zook_lighttick_operations",
-    "zook_lighttick_sync_cursors",
-    "zook_lighttick_devices",
-    "zook_lighttick_profiles",
-    "zook_lighttick_guest_identities",
-    "zook_lighttick_insight_audits",
-    "zook_lighttick_chat_messages",
-    "zook_lighttick_dna_insights",
+    "zook_lighttick_account_upgrades", "zook_lighttick_local_claims",
+    ...LIGHTTICK_OWNED_TABLES.map(t=>"zook_lighttick_"+t),
     "zook_bodylog_challenge_members",
     "zook_bodylog_challenges",
     "zook_bodylog_invitation_attributions",

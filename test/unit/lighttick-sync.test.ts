@@ -65,3 +65,29 @@ test("sync pull cursor is owner-bound, paginated, and tamper evident", async () 
   await assert.rejects(() => sync.pull(owner, `${first.next_cursor}x`, 10), (error: any) => error.code === "LIGHTTICK_SYNC_CURSOR_INVALID");
   void task;
 });
+
+test('receipt persistence failure rolls back task mutation, event and pull change', async () => {
+  const { repository, sync, task } = await setup();
+  const before = await sync.pull(owner, undefined, 200);
+  const save = repository.saveOperation.bind(repository);
+  repository.saveOperation = async () => { throw new Error('injected receipt failure'); };
+  await assert.rejects(sync.push(owner, [operation(task)]), /receipt failure/);
+  assert.equal((await repository.getTask(owner, task.id))?.version, task.version);
+  assert.deepEqual((await sync.pull(owner, undefined, 200)).changes, before.changes);
+  repository.saveOperation = save;
+  assert.equal((await sync.push(owner, [operation(task)])).results[0].status, 'accepted');
+});
+
+test('simultaneous original sync requests are accepted once and return a durable duplicate', async () => {
+  const { sync, task } = await setup();
+  const values = await Promise.all([sync.push(owner, [operation(task)]), sync.push(owner, [operation(task)])]);
+  assert.deepEqual(values.map(v => v.results[0].status).sort(), ['accepted', 'duplicate']);
+});
+
+test('replaying a conflict or rejection never converts it into successful duplicate', async () => {
+  const { sync, task } = await setup();
+  for (const [input, status] of [[operation(task, { operation_id: 'still-conflicted-001', base_version: 99 }), 'conflict'], [operation(task, { operation_id: 'still-rejected-001', entity_type: 'record' }), 'rejected']] as const) {
+    assert.equal((await sync.push(owner, [input])).results[0].status, status);
+    assert.equal((await sync.push(owner, [input])).results[0].status, status);
+  }
+});

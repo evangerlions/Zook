@@ -1,29 +1,36 @@
 ## ADDED Requirements
 
-### Requirement: Existing observable behavior remains compatible
-Existing Web routes, API status/envelopes, permissions, guest access, pagination, streaming, client-version rules, product flags and default model choices MUST remain compatible. New business requirements SHALL use additive contracts and migrations.
+### Requirement: Same-object continuity and native independence
+The three clients SHALL preserve canonical object identity, versions, history and product semantics. Native basic planning, execution and reflection MUST remain usable without Grow Web or AI.
 
-#### Scenario: Existing client exercises its contract
-- **WHEN** existing Admin, FrogSleep, LightTick, BodyLog or AINovel clients call their established flows with Grow disabled and enabled
-- **THEN** contract fixtures and authorization expectations pass in both modes with no newly required Grow credentials or payload fields
+#### Scenario: Web is disabled
+- **WHEN** Grow Web and optional AI enhancement are unavailable
+- **THEN** native local/basic cloud workflows remain usable under their existing service and identity requirements
 
-### Requirement: Disabled Grow has no new background side effects
-Dedicated Grow functionality SHALL be gated independently of existing product master switches. Disabled Grow MUST NOT start Grow-specific jobs, require Grow secrets, contact external content providers or reserve extra database capacity.
+### Requirement: Durable synchronization and visible conflicts
+Confirmed mutations, receipts and change logs SHALL have a verified consistency boundary. Clients MUST apply durable projections before advancing owner-scoped cursors, preserve unresolved input, handle expired cursors and reject unauthorized stale writes. Old clients MUST receive compatible entities or negotiated coverage.
 
-#### Scenario: Existing deployment starts without Grow configuration
-- **WHEN** the original three-service deployment starts with no new Grow-specific settings
-- **THEN** its existing health and business checks pass and no Grow task is scheduled
+#### Scenario: Process dies after receiving a page
+- **WHEN** a client dies while applying changes or before persisting its next cursor
+- **THEN** replay neither duplicates accepted effects nor permanently loses changes and local drafts remain recoverable
 
-### Requirement: Mixed-load acceptance
-Grow SHALL have dedicated request/job/AI capacity limits. Releases MUST compare fixed-load baselines of existing products with Grow off/on, and reject new5xx or P95 degradation beyond the threshold fixed in the baseline stage, initially10%.
+### Requirement: Explicit completion and immutable publication
+Reading position, notes, answers, explicit lesson completion, action completion and practice outcomes SHALL remain distinct. A content update MUST NOT overwrite old-version private answers or silently mark a practice complete.
 
-#### Scenario: Research task consumes its budget
-- **WHEN** Grow import/research jobs reach their configured concurrency or CPU limit while existing APIs receive baseline traffic
-- **THEN** Grow work is queued or rejected within its budget and the existing-product acceptance threshold still passes
+#### Scenario: Published content changes during an offline edit
+- **WHEN** a mobile client has an old-version note and Web publishes a new lesson version
+- **THEN** both content/version references remain available within authorization and the user can resolve private edits without silent replacement
 
-### Requirement: Controlled release and non-destructive rollback
-Code SHALL ship through main and the existing release scripts. Production promotion requires the same main SHA verified in dev. Rollback SHALL preserve database/file writes and MUST NOT restore a database snapshot or route new-user writes into the historical service.
+### Requirement: Preserved legacy scope and historical data
+Historical import SHALL verify identity, permissions, mappings and receipts without username-based account merging or dual writers. Authority changes MUST reject late old-source writes and preserve unknown timestamps as unknown. Removed Grow deployment code MUST NOT be restored as a new-client runtime dependency.
 
-#### Scenario: Failure after new data is saved
-- **WHEN** Grow writes data and the new frontend is subsequently disabled or application code is rolled back
-- **THEN** the saved data remains intact, existing APIs remain operational, and no destructive schema rollback or old-service write fallback occurs
+#### Scenario: Late source event arrives
+- **WHEN** an old bridge sends a write after its module authority was switched
+- **THEN** the server rejects or reconciles it under the recorded authority boundary without overwriting canonical data
+
+### Requirement: Functional and release evidence
+Every inventoried capability MUST have implementation or an explicit accepted disposition with behavioral evidence. Existing Apps SHALL pass off/on regression and agreed mixed-load gates. Release SHALL follow main/dev/same-SHA online with a fixed compatible frontend artifact; native binary compatibility MUST be recorded separately.
+
+#### Scenario: New server version is promoted
+- **WHEN** a verified candidate is promoted
+- **THEN** its existing mobile contracts remain supported and neither historical database writes nor local-only data are replaced by a rollback snapshot

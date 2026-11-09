@@ -1,3 +1,7 @@
+import {handleMarketAdmin} from "./lighttick-market-admin-routes.ts";
+import {LearningMigrationService,type LearningMigrationAction} from "../modules/lighttick/learning/learning-migration.service.ts";
+import {object,keys,text,integer,identity} from "../modules/lighttick/learning/native-learning.validation.ts";
+import {ApplicationError} from "../shared/errors.ts";
 import { LIGHTTICK_AI_SCENES } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -5,6 +9,18 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 
 export async function tryHandleLightTickAdminRoutes(context: BackendRouteContext, enabled: boolean,
   runtime: LightTickRuntime | undefined, request: HttpRequest): Promise<HttpResponse<unknown> | undefined> {
+  const market=await handleMarketAdmin(context,runtime,enabled,request);if(market)return market;
+  const migration=/^\/api\/v1\/admin\/apps\/lighttick\/learning-migrations\/([a-zA-Z0-9_-]+)\/(preflight|freeze|import|verify|activate|abort)$/.exec(request.path);
+  if(migration&&request.method==='POST'){
+    const session=context.requireAdminSession(request);if(!enabled||!runtime)throw new ApplicationError(503,'LIGHTTICK_APP_DISABLED','LightTick is not enabled.');
+    const owner={appId:'lighttick' as const,userId:identity(migration[1])},body=object(request.body);keys(body,['bundle','expected_digest','base_revision']);const digest=text(body.expected_digest,64,true),action=migration[2];
+    await context.assertActiveProductOwner(owner.appId,owner.userId);const service=new LearningMigrationService(runtime.nativeLearning);
+    if(action==='preflight'){const result=await service.preflight(owner,body.bundle,digest);await context.recordAdminReadAudit(session.adminUser,'lighttick.learning.migration.preflight','learning_authority',owner.userId,request.requestId,'metadata_only');return context.ok(result,request.requestId??'',{'Cache-Control':'no-store'});}
+    await context.assertAdminSensitiveOperation(session,'lighttick.learning.migrate');
+    const result=await service.command(owner,action as LearningMigrationAction,body.bundle,digest,integer(body.base_revision,0,2147483646),request.headers['idempotency-key']??'',async()=>{await context.assertActiveProductOwner(owner.appId,owner.userId);await context.assertAdminSensitiveOperation(session,'lighttick.learning.migrate');});
+    await context.recordAdminMutationAudit({appId:'lighttick',actorUserId:session.adminUser,action:'lighttick.learning.migration.'+action,resourceType:'learning_authority',resourceId:owner.userId,payload:{manifest_hash:digest,result,requestId:request.requestId}});
+    return context.ok(result,request.requestId??'',{'Cache-Control':'no-store'});
+  }
   if (request.method !== "GET" || request.path !== "/api/v1/admin/apps/lighttick/operations") return undefined;
   const session = context.requireAdminSession(request);
   await context.recordAdminReadAudit(session.adminUser, "lighttick.operations.read", "app_operations", "lighttick", request.requestId);

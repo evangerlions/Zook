@@ -8,6 +8,7 @@ export interface CreditUsageEvent {
   tier: CreditsTier;
   periodKey: string;
   adminUser?: string;
+  recipientContact?: { phone: string | null; email: string | null };
   windowPending?: true;
   modelKey?: string;
   callId?: string;

@@ -1,3 +1,4 @@
+import {captureModel} from "../personal-model/personal-model.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
@@ -20,10 +21,11 @@ export class LightTickPlanningService {
     if (!session) planningError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Planning session was not found.");
     return session!;
   }
-  async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input) {
+  async command(owner: LightTickOwner, operationId: string, action: string, id: string | undefined, input: Input, authorize: () => Promise<void> = async () => {}) {
     text(operationId, 128); const hash = sha256(canonical({ action, id: id ?? null, input }));
     return await this.repository.transaction(owner, async () => {
       await this.repository.lockPlanningOwner(owner);
+      await authorize();
       const key = `planning:${operationId}`;
       const existing = await this.repository.getOperation(owner, key);
       if (existing) {
@@ -104,7 +106,7 @@ export class LightTickPlanningService {
     const prior = session.draftPlanId ? await this.repository.getPlan(session, session.draftPlanId) : undefined;
     const run = await this.repository.saveAiRun({ appId: session.appId, userId: session.userId, id: randomId("lighttick_run"), kind: action === "messages" ? "coach_reply" : "plan",
       status: "queued", sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
-      inputContext: { planning_session_id: session.id, context_revision: session.contextRevision, goal_id: session.goalId,
+      inputContext: { model_selection:await captureModel(this.repository,session), planning_session_id: session.id, context_revision: session.contextRevision, goal_id: session.goalId,
         confirmed_daily_limits: await this.dailyLimits(session), planning_action: action, context: structuredClone(session.context), conversation: history, message, source_message_id: messageId,
         previous_draft: prior ? prior.proposal.tasks : undefined, snapshot: await this.snapshot(session, session.goalId) },
       usage: {}, createdAt: now, updatedAt: now });

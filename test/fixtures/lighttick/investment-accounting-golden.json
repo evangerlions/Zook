@@ -1,0 +1,461 @@
+{
+  "dataset_version": "synthetic-ledger-v1",
+  "reference_source": "grow/知行成长/server/investments/accounting.py",
+  "reference_sha256": "3c1f929dbee5d4feb77992a56665b149b7a4fb29386963e94a0b45276120b313",
+  "precision": 60,
+  "rounding": "ROUND_HALF_EVEN",
+  "cases": [
+    {
+      "name": "decimal-addition",
+      "opening_cash": "0.1",
+      "cash_events": [
+        {
+          "kind": "deposit",
+          "amount": "0.2"
+        }
+      ],
+      "fills": [],
+      "expected": {
+        "cash": "0.3",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [],
+        "realized": "0",
+        "fees_complete": true,
+        "net_realized": "0",
+        "equity": "0.3",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "partial-moving-average",
+      "opening_cash": "10000",
+      "cash_events": [],
+      "fills": [
+        {
+          "instrument_id": "stock-fixture",
+          "side": "buy",
+          "price": "10",
+          "quantity": "100",
+          "fee": "1",
+          "tax": "0"
+        },
+        {
+          "instrument_id": "stock-fixture",
+          "side": "sell",
+          "price": "12",
+          "quantity": "40",
+          "fee": "1",
+          "tax": "0"
+        }
+      ],
+      "marks": {
+        "stock-fixture": "11"
+      },
+      "expected": {
+        "cash": "9478",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "stock-fixture",
+            "quantity": "60",
+            "cost": "600.6",
+            "realized": "78.6",
+            "fees_complete": true,
+            "market_value": "660",
+            "settlements_complete": true,
+            "unrealized": "59.4",
+            "mark": "11"
+          }
+        ],
+        "realized": "78.6",
+        "fees_complete": true,
+        "net_realized": "78.6",
+        "equity": "10138",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "unknown-fees",
+      "opening_cash": "10000",
+      "cash_events": [],
+      "fills": [
+        {
+          "instrument_id": "stock-fixture",
+          "side": "buy",
+          "price": "10",
+          "quantity": "100",
+          "fee": null,
+          "tax": "0"
+        }
+      ],
+      "marks": {
+        "stock-fixture": "11"
+      },
+      "expected": {
+        "cash": "9000",
+        "cash_verified": false,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "stock-fixture",
+            "quantity": "100",
+            "cost": "1000",
+            "realized": "0",
+            "fees_complete": false,
+            "market_value": "1100",
+            "settlements_complete": true,
+            "unrealized": null,
+            "mark": "11"
+          }
+        ],
+        "realized": "0",
+        "fees_complete": false,
+        "net_realized": null,
+        "equity": null,
+        "settlements_complete": true,
+        "warnings": [
+          "费用未齐，现金和成本为暂估，不能作为精确净收益。"
+        ]
+      }
+    },
+    {
+      "name": "missing-market-price",
+      "opening_cash": "10000",
+      "cash_events": [],
+      "fills": [
+        {
+          "instrument_id": "stock-fixture",
+          "side": "buy",
+          "price": "10",
+          "quantity": "100",
+          "fee": "0",
+          "tax": "0"
+        }
+      ],
+      "expected": {
+        "cash": "9000",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "stock-fixture",
+            "quantity": "100",
+            "cost": "1000",
+            "realized": "0",
+            "fees_complete": true,
+            "market_value": null,
+            "settlements_complete": true,
+            "unrealized": null,
+            "mark": null
+          }
+        ],
+        "realized": "0",
+        "fees_complete": true,
+        "net_realized": "0",
+        "equity": null,
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "unknown-opening-cost",
+      "opening_cash": "0",
+      "cash_events": [],
+      "opening_positions": [
+        {
+          "instrument_id": "stock-fixture",
+          "quantity": "100",
+          "cost": null
+        }
+      ],
+      "fills": [
+        {
+          "instrument_id": "stock-fixture",
+          "side": "sell",
+          "price": "10",
+          "quantity": "50",
+          "fee": "0",
+          "tax": "0"
+        }
+      ],
+      "marks": {
+        "stock-fixture": "11"
+      },
+      "expected": {
+        "cash": "500",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "stock-fixture",
+            "quantity": "50",
+            "cost": null,
+            "realized": null,
+            "fees_complete": true,
+            "market_value": "550",
+            "settlements_complete": true,
+            "unrealized": null,
+            "mark": "11"
+          }
+        ],
+        "realized": null,
+        "fees_complete": true,
+        "net_realized": null,
+        "equity": "1050",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "new-cycle-after-unknown-cost-close",
+      "opening_cash": "0",
+      "cash_events": [],
+      "opening_positions": [
+        {
+          "instrument_id": "stock-fixture",
+          "quantity": "10",
+          "cost": null
+        }
+      ],
+      "fills": [
+        {
+          "instrument_id": "stock-fixture",
+          "side": "sell",
+          "price": "10",
+          "quantity": "10",
+          "fee": "0",
+          "tax": "0"
+        },
+        {
+          "instrument_id": "stock-fixture",
+          "side": "buy",
+          "price": "20",
+          "quantity": "5",
+          "fee": "0",
+          "tax": "0"
+        }
+      ],
+      "marks": {
+        "stock-fixture": "20"
+      },
+      "expected": {
+        "cash": "0",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "stock-fixture",
+            "quantity": "5",
+            "cost": "100",
+            "realized": null,
+            "fees_complete": true,
+            "market_value": "100",
+            "settlements_complete": true,
+            "unrealized": "0",
+            "mark": "20"
+          }
+        ],
+        "realized": null,
+        "fees_complete": true,
+        "net_realized": null,
+        "equity": "100",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "unsettled-fund",
+      "opening_cash": "100",
+      "cash_events": [],
+      "fills": [
+        {
+          "instrument_id": "fund-fixture",
+          "side": "buy",
+          "price": "5",
+          "quantity": "2",
+          "fee": "1",
+          "tax": "0",
+          "source": "fund_confirmation",
+          "settlement_amount": null
+        }
+      ],
+      "marks": {
+        "fund-fixture": "5"
+      },
+      "expected": {
+        "cash": "89",
+        "cash_verified": false,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "fund-fixture",
+            "quantity": "2",
+            "cost": "11",
+            "realized": "0",
+            "fees_complete": true,
+            "market_value": "10",
+            "settlements_complete": false,
+            "unrealized": null,
+            "mark": "5"
+          }
+        ],
+        "realized": "0",
+        "fees_complete": true,
+        "net_realized": null,
+        "equity": null,
+        "settlements_complete": false,
+        "warnings": [
+          "基金确认未填实际收支净额，现金按净值乘份额暂估；不能当作已核验净结果。"
+        ]
+      }
+    },
+    {
+      "name": "actual-fund-settlement",
+      "opening_cash": "100",
+      "cash_events": [],
+      "fills": [
+        {
+          "instrument_id": "fund-fixture",
+          "side": "buy",
+          "price": "5",
+          "quantity": "2",
+          "fee": "0.01",
+          "tax": "0",
+          "source": "fund_confirmation",
+          "settlement_amount": "9.99"
+        }
+      ],
+      "marks": {
+        "fund-fixture": "5"
+      },
+      "expected": {
+        "cash": "90.01",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "fund-fixture",
+            "quantity": "2",
+            "cost": "9.99",
+            "realized": "0",
+            "fees_complete": true,
+            "market_value": "10",
+            "settlements_complete": true,
+            "unrealized": "0.01",
+            "mark": "5"
+          }
+        ],
+        "realized": "0",
+        "fees_complete": true,
+        "net_realized": "0",
+        "equity": "100.01",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "receivable-hold",
+      "opening_cash": "100",
+      "cash_events": [
+        {
+          "kind": "fund_receivable_hold",
+          "amount": "20"
+        }
+      ],
+      "fills": [],
+      "expected": {
+        "cash": "80",
+        "cash_verified": true,
+        "receivables": "20",
+        "positions": [],
+        "realized": "0",
+        "fees_complete": true,
+        "net_realized": "0",
+        "equity": "100",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "receivable-release",
+      "opening_cash": "100",
+      "cash_events": [
+        {
+          "kind": "fund_receivable_hold",
+          "amount": "20"
+        },
+        {
+          "kind": "fund_receivable_release",
+          "amount": "20"
+        }
+      ],
+      "fills": [],
+      "expected": {
+        "cash": "100",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [],
+        "realized": "0",
+        "fees_complete": true,
+        "net_realized": "0",
+        "equity": "100",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    },
+    {
+      "name": "recurring-average-cost",
+      "opening_cash": "100",
+      "cash_events": [],
+      "fills": [
+        {
+          "instrument_id": "fractional-fixture",
+          "side": "buy",
+          "price": "0.3333333333",
+          "quantity": "3",
+          "fee": "0.0000000001",
+          "tax": "0"
+        },
+        {
+          "instrument_id": "fractional-fixture",
+          "side": "sell",
+          "price": "1.0000000001",
+          "quantity": "1",
+          "fee": "0",
+          "tax": "0"
+        }
+      ],
+      "marks": {
+        "fractional-fixture": "0.5"
+      },
+      "expected": {
+        "cash": "100.0000000001",
+        "cash_verified": true,
+        "receivables": "0",
+        "positions": [
+          {
+            "instrument_id": "fractional-fixture",
+            "quantity": "2",
+            "cost": "0.666666666666666666666666666666666666666666666666666666666667",
+            "realized": "0.666666666766666666666666666666666666666666666666666666666667",
+            "fees_complete": true,
+            "market_value": "1",
+            "settlements_complete": true,
+            "unrealized": "0.333333333333333333333333333333333333333333333333333333333333",
+            "mark": "0.5"
+          }
+        ],
+        "realized": "0.666666666766666666666666666666666666666666666666666666666667",
+        "fees_complete": true,
+        "net_realized": "0.666666666766666666666666666666666666666666666666666666666667",
+        "equity": "101.0000000001",
+        "settlements_complete": true,
+        "warnings": []
+      }
+    }
+  ]
+}

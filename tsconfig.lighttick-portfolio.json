@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.lighttick-actions.json",
+  "include": [
+    "src/modules/lighttick/investments/portfolio/**/*.ts",
+    "src/infrastructure/database/postgres/postgres-investment-store.ts",
+    "src/infrastructure/database/postgres/postgres-portfolio-store.ts",
+    "src/testing/in-memory-investment-store.ts",
+    "src/testing/in-memory-portfolio-store.ts",
+    "src/app/lighttick-portfolio-routes.ts"
+  ]
+}

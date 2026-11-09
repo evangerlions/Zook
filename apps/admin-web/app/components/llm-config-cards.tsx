@@ -1,5 +1,6 @@
 import { DatabaseOutlined, DeleteOutlined, DownOutlined, RightOutlined, RobotOutlined } from "@ant-design/icons";
 import { Button, Input, Select, Tag } from "antd";
+import { LLM_PROVIDER_TYPES } from "../../../../src/shared/llm-provider-type.ts";
 
 import { Field } from "./field";
 import { LlmRouteCard } from "./llm-route-card";
@@ -43,6 +44,13 @@ export function LlmProviderCard({
       </div>
 
       <div className="config-form-grid">
+        <Field label="类型">
+          <Select
+            onChange={(value) => onChange("type", value)}
+            options={LLM_PROVIDER_TYPES.map((value) => ({ label: value, value }))}
+            value={provider.type || undefined}
+          />
+        </Field>
         <Field hint="唯一标识" label="Key">
           <Input
             onChange={(event) => onChange("key", event.target.value)}

@@ -39,7 +39,10 @@ test("Postgres grant ledger is atomic, globally idempotent, environment isolated
     assert.equal((await searchCreditUsers(store, "email", "email1@")).users[0]?.uid, "user_1");
     assert.equal((await searchCreditUsers(store, "phone", "5551")).users.length, 1);
     assert.equal((await searchCreditUsers(store, "uid", "%")).users.length, 0);
-    await Promise.all([service.grant("user_1", "once", 12, "admin"), service.grant("user_1", "once", 12, "admin")]);
+    await Promise.all([service.grant("user_1", "once", 12, "admin", {phone: "5551", email: "email1@example.com"}), service.grant("user_1", "once", 12, "admin", {phone: "5551", email: "email1@example.com"})]);
+    const changedContact = await connect();
+    try { await changedContact.query("UPDATE zook_users SET phone='changed', email='changed@example.com' WHERE id='user_1'"); } finally { changedContact.release(); }
+    await service.grant("user_1", "once", 12, "admin", { phone: "changed", email: "changed@example.com" });
     await assert.rejects(service.grant("user_2", "once", 12, "admin"), (error: unknown) => {
       assert.equal((error as { statusCode: number }).statusCode, 409);
       assert.equal((error as { code: string }).code, "AINOVEL_CREDITS_JOB_CONFLICT");
@@ -47,6 +50,7 @@ test("Postgres grant ledger is atomic, globally idempotent, environment isolated
     });
     const initialRecords = await store.listAdminGrants(0, 50);
     assert.equal(initialRecords.length, 1); assert.equal(initialRecords[0]?.uid, "user_1");
+    assert.equal(initialRecords[0]?.phone, "5551"); assert.equal(initialRecords[0]?.email, "email1@example.com"); assert.equal(initialRecords[0]?.contactSource, "snapshot");
     const account = await store.transact("user_1", "", state => structuredClone(state.account!));
     assert.equal(account.giftMicros, "12000000"); assert.equal(account.deferredStart, true);
     const absent = await store.transact("user_2", "", state => state.account);
@@ -69,5 +73,18 @@ test("Postgres grant ledger is atomic, globally idempotent, environment isolated
     for (let i = 0; i < 49; i++) await service.grant("user_1", `page-${i}`, 1, "admin");
     assert.equal((await store.listAdminGrants(0, 50)).length, 50);
     assert.equal((await store.listAdminGrants(50, 50)).length, 1);
+    await service.grant("user_1", "legacy", 1, "admin");
+    const legacy = (await store.listAdminGrants(0, 100)).find(record => record.id === "gift:legacy");
+    assert.equal(legacy?.contactSource, "current"); assert.equal(legacy?.phone, "changed"); assert.equal(legacy?.email, "changed@example.com");
+    await service.grant("user_1", "empty-contact", 1, "admin", { phone: null, email: null });
+    const empty = (await store.listAdminGrants(0, 100)).find(record => record.id === "gift:empty-contact");
+    assert.equal(empty?.contactSource, "snapshot"); assert.equal(empty?.phone, null); assert.equal(empty?.email, null);
+    const removed = await connect();
+    try { await removed.query("DELETE FROM zook_users WHERE id='user_1'"); } finally { removed.release(); }
+    const afterRemoval = await store.listAdminGrants(0, 100);
+    const snapshot = afterRemoval.find(record => record.id === "gift:once");
+    assert.equal(snapshot?.contactSource, "snapshot"); assert.equal(snapshot?.phone, "5551"); assert.equal(snapshot?.email, "email1@example.com");
+    const unavailable = afterRemoval.find(record => record.id === "gift:legacy");
+    assert.equal(unavailable?.contactSource, "unavailable"); assert.equal(unavailable?.phone, null); assert.equal(unavailable?.email, null);
   } finally { await pool.query(`DROP SCHEMA "${schema}" CASCADE`); await pool.end(); }
 });
