@@ -7,6 +7,7 @@ export function normalizeLlmModelRoutes(
   value: unknown,
   modelKey: string,
   providerKeys: Set<string>,
+  providerTypes?: Map<string, string>,
 ): LlmModelRouteConfig[] {
   if (!Array.isArray(value)) {
     badRequest("ADMIN_LLM_SERVICE_INVALID", `Model ${modelKey} routes must be an array.`);
@@ -42,7 +43,7 @@ export function normalizeLlmModelRoutes(
       providerModel,
       enabled,
       weight,
-      ...(normalizeRoutePolicy(source.openRouter, provider)),
+      ...(normalizeRoutePolicy(source.openRouter, providerTypes?.get(provider) ?? provider)),
     } satisfies LlmModelRouteConfig;
   });
 

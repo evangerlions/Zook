@@ -299,7 +299,9 @@ function routeStatusLabel(row: RoutingRow): string {
   if (row.circuit?.state === "open") return "熔断中";
   if (row.circuit?.state === "confirming") return "确认中";
   if (row.selectionEligible) return row.runtimeAvailable ? "可选择" : "Adapter 不可用";
-  return row.ineligibleReason === "provider_disabled"
+  return row.ineligibleReason === "credential_missing"
+    ? "凭据缺失"
+    : row.ineligibleReason === "provider_disabled"
     ? "Provider 禁用"
     : row.ineligibleReason === "runtime_unavailable"
       ? "Adapter 不可用"

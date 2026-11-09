@@ -91,7 +91,7 @@ export class LlmRouteCircuitRecoveryService {
       this.logProbeFailure(ref, "provider_disabled_or_not_found");
       return "failure";
     }
-    const adapter = this.chatProviders[ref.provider];
+    const adapter = this.chatProviders[provider.type ?? ref.provider];
     if (!adapter) {
       this.logProbeFailure(ref, "provider_adapter_not_registered");
       return "failure";
@@ -102,7 +102,7 @@ export class LlmRouteCircuitRecoveryService {
       if (!succeeded) this.logProbeFailure(ref, "probe_returned_empty_response");
       return succeeded ? "success" : "failure";
     } catch (error) {
-      const balanceFailure = isLlmBalanceFailure(ref.provider, error);
+      const balanceFailure = isLlmBalanceFailure(ref.provider, error, provider.type);
       this.logProbeFailure(ref, balanceFailure ? "probe_insufficient_balance" : "probe_request_failed", llmErrorDiagnosticCode(error));
       return balanceFailure ? "insufficient_balance" : "failure";
     }

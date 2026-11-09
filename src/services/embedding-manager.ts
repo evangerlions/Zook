@@ -90,7 +90,7 @@ export class EmbeddingManager {
     const observation = this.startObservation(resolution, startedAt);
 
     try {
-      const result = await this.providers[resolution.request.model.provider].embed(resolution.request);
+      const result = await this.providers[resolution.request.model.adapterType ?? resolution.request.model.provider].embed(resolution.request);
       const usage = normalizeLlmUsage(result.usage) ?? estimateEmbeddingUsage(resolution.request.input);
       const completedAt = this.getNow();
       await observation?.finalize({ usage, completedAt });
@@ -162,6 +162,7 @@ export class EmbeddingManager {
           input,
           model: {
             provider: selection.provider.key,
+            adapterType: selection.provider.type ?? selection.provider.key,
             modelKey,
             resolvedModelKey: selection.routeModelKey,
             providerModel: selection.route.providerModel,
@@ -252,7 +253,8 @@ export class EmbeddingManager {
       model.routes.map((route, index) => ({
         route,
         providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
-        runtimeAvailable: Boolean(this.providers[route.provider]),
+        credentialMissing: providerMap.get(route.provider)?.credentialMissing,
+        runtimeAvailable: Boolean(this.providers[providerMap.get(route.provider)?.type ?? route.provider]),
         healthScore: stableIdentity
           ? 100
           : healthSnapshots[index]?.healthScore ?? 100,
@@ -272,7 +274,7 @@ export class EmbeddingManager {
     }
 
     const provider = providerMap.get(chosenRoute.provider);
-    if (!provider || !this.providers[provider.key]) {
+    if (!provider || !this.providers[provider.type ?? provider.key]) {
       throw new ApplicationError(
         503,
         "LLM_ROUTE_NOT_AVAILABLE",
