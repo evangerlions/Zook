@@ -24,10 +24,14 @@ export function coreUIControls(app:Runtime,owner:{appId:'lighttick';userId:strin
    }
    if(url.pathname==='/__core_learning_seed'||url.pathname==='/__practice_seed'){
     offline=false;await repo.deleteOwnerData(owner);lessonId=url.pathname==='/__practice_seed'?'lesson-practice-ui':'lesson-core-shared';
+    const authority=await learning.authority(owner);
+    if(authority&&!(authority.readingEnabled&&authority.privateEnabled))await learning.consent(owner,{base_revision:authority.revision,reading_enabled:true,private_enabled:true},'core-consent-'+Date.now());
     await learning.saveCollection(owner,'core-shared',{base_revision:0,title:'Core published learning',archived:false},'core-collection');
     const publication=await learning.publish(owner,lessonId,{base_revision:0,collection_id:'core-shared',number:1,title:'Core published lesson',content:'# Core lesson\n\nA published source.\n\n## 思考题\n- What evidence supports this?',references:'',source_url:''},'core-publication');
     oldVersion=publication.content_version;
-    if(url.pathname==='/__practice_seed')await learning.privateCommand(owner,lessonId,{action:'complete',content_version:oldVersion,base_revision:0},'core-practice-completed');
+    await learning.privateCommand(owner,lessonId,{action:'save',content_version:oldVersion,base_revision:0,notes:'Core v1 note',answers:[{id:'q1',prompt:'What evidence supports this?',answer:'Core v1 answer'}],draft_version:oldVersion},'core-note');
+    await learning.privateCommand(owner,lessonId,{action:'position',content_version:oldVersion,base_revision:0,position:3},'core-position');
+    await learning.privateCommand(owner,lessonId,{action:'complete',content_version:oldVersion,base_revision:0},'core-completed');
     return {id:lessonId,title:'Core published lesson',content_version:oldVersion};
    }
    if(url.pathname==='/__core_learning_state'){
