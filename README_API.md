@@ -2011,3 +2011,18 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 局部表单snapshot修订可读至PostgreSQL INT32上限2147483647；写入base_revision最高2147483646。最后一版仍可读取、导出和按原key/body重放；不回绕、不重置修订，不接受继续保存或清空。Web在达到上限时保留可读副本和下载入口。
 
 历史表单待办的按栏编辑必须保留有效日期和非空内容；本入口不创建原生任务或第二种新待办来源。日期/字段数值校验失败保留本机输入，不将无效数值转为0。
+
+### LightTick 独立阅读：粘贴文章与私人状态
+
+Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bearer认证及本人资源权限；游客不可用。`runtimeScope=core`可读历史/导出/回执，新的阅读写入返回503 `LIGHTTICK_CAPABILITY_UNAVAILABLE`。不自动采集、调用模型或导入历史。
+
+- `GET /library?search=&filter=all|bookmark|later|read|feedback|archived&limit=20&cursor=`：按文章ID分页，最多50篇；`all`不含归档。切换筛选须清除游标。
+- `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题200字符、正文100000字符，原空白保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
+- `GET /articles/{articleId}`、`GET /articles/{articleId}/history?cursor=`：当前文章及每次确认变更的历史，原文`content_version`为SHA256。历史倒序30条，游标为排他的修订上界。
+- `POST /articles/{articleId}/personal`：`{base_revision,content_version,personal:{notes,feedback,bookmark,later,read}}`，笔记60000字符、反馈10000字符。明确read独立于位置/笔记/行动；撤销read保留原版本历史。
+- `POST /articles/{articleId}/position`：`{base_revision,content_version,device_id,position}`，每设备位置独立且可回退；最多100设备，字符位置不得超过当前正文长度。
+- `POST /articles/{articleId}/archive|restore`：`{base_revision}`，归档保留原文、私人事实、历史及回执，归档时拒绝新的私人写入。
+- `GET /receipts/{operationId}`：核对原请求当时结果，不代表当前状态。原key/body重复返回相同结果，不同意图复用key为409；所有回执重检权限。
+- `GET /export`：独立阅读本人JSON副本（含归档及历史）、版本1和摘要；1000篇/1000历史/8MiB上限，超限413，不返回截断副本。本人综合导出也包含此领域，账号删除同时清除阅读表及回执。
+
+修订为整篇文章CAS：不同设备位置或笔记同时修改仍需处理409，禁止自动将冲突请求变成新key。此切片未提供URL采集、来源管理、AI或生词复习接口，不代表完整旧阅读已迁移。

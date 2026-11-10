@@ -1,3 +1,4 @@
+import { ReadingService } from "../reading/reading.service.ts";
 import {exportInvestments} from "../investments/ledger.export.ts";
 import {digest} from "../learning/native-learning.validation.ts";
 import { createHash } from "node:crypto";
@@ -50,13 +51,15 @@ export async function exportReview(
         }),
       );
     const investments=await exportInvestments(repo,o);
+    const reading = await new ReadingService(repo,authorize,clock).export(o);
     const form_records=await repo.formRecords.get(o) ?? null;
     const data = {
       format_version: 1,
       owner_id: o.userId,
       exported_at: clock().toISOString(),
-      revision: digest({review:view.revision,investments,form_records}),
+      revision: digest({review:view.revision,investments,form_records,reading:reading.sha256}),
       form_records,
+      reading,
       investments,
       metrics_version: "confirmed-facts-v1",
       facts: view.facts,

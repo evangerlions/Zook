@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.lighttick-actions.json",
+  "include": [
+    "src/modules/lighttick/reading/**/*.ts",
+    "src/infrastructure/database/postgres/postgres-reading-store.ts",
+    "src/testing/in-memory-reading-store.ts",
+    "src/app/lighttick-reading-routes.ts"
+  ]
+}
