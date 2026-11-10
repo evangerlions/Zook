@@ -92,6 +92,7 @@ const workerTimer=setInterval(async()=>{
 const server = http.createServer(async (req, res) => {
   try {
     const target = new URL(req.url ?? "/", `http://127.0.0.1:${ports.api}`);
+    if(core && (target.pathname==="/__online" || target.pathname==="/__offline" && target.searchParams.get("value")==="0"))offline=false;
     const controlled = await core?.handle(target);
     if(controlled!==undefined){res.setHeader("Content-Type","application/json");res.end(JSON.stringify(controlled));return;}
     if(target.pathname==="/__worker") {res.end(JSON.stringify(workerStats));return;}

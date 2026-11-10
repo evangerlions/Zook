@@ -12,7 +12,7 @@ export function coreUIControls(app:Runtime,owner:{appId:'lighttick';userId:strin
   takePracticeDrop(){const value=dropPractice;dropPractice=false;return value;},
   async handle(url:URL):Promise<unknown|undefined>{
    if(url.pathname==='/__reset'){offline=false;await repo.deleteOwnerData(owner);return {};}
-   if(url.pathname==='/__offline'){offline=true;return {};}
+   if(url.pathname==='/__offline'){offline=url.searchParams.get('value')!=='0';return {};}
    if(url.pathname==='/__online'){offline=false;return {};}
    if(url.pathname==='/__health')return {ok:true,offline};
    if(url.pathname==='/__core-records')return records.list(owner,{});
