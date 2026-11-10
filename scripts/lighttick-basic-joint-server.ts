@@ -1,5 +1,6 @@
 // Loopback-only synthetic native UI acceptance. Never imported by runtime entry points.
 import http from "node:http";
+import { coreUIControls } from "../test/support/lighttick-core-ui-controls.ts";
 import { createAdminServer } from "../apps/admin-web/server.ts";
 import { ManualPlanningService } from "../src/modules/lighttick/manual/manual-planning.service.ts";
 import { createApplication } from "../src/app.module.ts";
@@ -8,8 +9,9 @@ import { KVManager } from "../src/infrastructure/kv/kv-manager.ts";
 import { resolveBodyLogStores } from "../src/application-bodylog-stores.ts";
 import { writeFileSync } from "node:fs";
 import { buildDefaultSeed } from "../src/infrastructure/database/prisma/default-seed.ts";
-const withWeb = process.argv.includes("--with-web");
-const expectedDatabase = withWeb ? "/joint_three_surface_qa" : "/joint_acceptance_qa";
+const coreMatrix = process.argv.includes("--core-matrix");
+const withWeb = coreMatrix || process.argv.includes("--with-web");
+const expectedDatabase = coreMatrix ? "/joint_core_matrix_qa" : withWeb ? "/joint_three_surface_qa" : "/joint_acceptance_qa";
 const databaseUrl = process.env.LIGHTTICK_TEST_DATABASE_URL ?? "";
 const url = new URL(databaseUrl);
 if (url.hostname !== "127.0.0.1" || url.port !== "58671" || url.pathname !== expectedDatabase)
@@ -28,7 +30,7 @@ config.minimumClientVersions={ios:"0.1.0",android:"0.1.0"};
 config.featureFlags={guestSessions:true,accountUpgrade:true,offlineSync:true,notifications:false,aiPlanning:false};
 config.settings.runtimeScope="core";
 delivery.configValue=JSON.stringify(config);
-const redisUrl=withWeb?"redis://127.0.0.1:58674":"redis://127.0.0.1:58672";
+const redisUrl=coreMatrix?"redis://127.0.0.1:58676":withWeb?"redis://127.0.0.1:58674":"redis://127.0.0.1:58672";
 const kvManager=await KVManager.create({redisUrl});
 const app=await createApplication({seed,lighttickEnabled:enabled,lighttickSeedEnabled:true,frogsleepEnabled:true,
   appEnvironment:"test",kvManager,queueBackend:"redis",queueRedisUrl:redisUrl,
@@ -49,6 +51,7 @@ const owner = { appId: "lighttick" as const, userId: "user_alice" };
 let offline = false,
   dropNext = "",
   nativePhase = "";
+const core = coreMatrix ? coreUIControls(app,owner) : undefined;
 const manual = new ManualPlanningService(repository);
 let web: ReturnType<typeof http.createServer> | undefined;
 if (withWeb) {
@@ -64,7 +67,7 @@ if (withWeb) {
     }
     frontend.emit("request",request,response);
   });
-  await new Promise<void>(resolve=>web!.listen(3108,"127.0.0.1",resolve));
+  await new Promise<void>(resolve=>web!.listen(coreMatrix?3118:3108,"127.0.0.1",resolve));
 }
 const requests: { method: string; path: string; status: number }[] = [];
 const workerStats={ticks:0,otherJobs:0,errors:0};
@@ -84,6 +87,8 @@ const workerTimer=setInterval(async()=>{
 const server = http.createServer(async (req, res) => {
   try {
     const target = new URL(req.url ?? "/", "http://127.0.0.1:3107");
+    const controlled = await core?.handle(target);
+    if(controlled!==undefined){res.setHeader("Content-Type","application/json");res.end(JSON.stringify(controlled));return;}
     if(target.pathname==="/__worker") {res.end(JSON.stringify(workerStats));return;}
     if (target.pathname === "/__phase") {
       if (target.searchParams.has("value"))
@@ -132,7 +137,7 @@ const server = http.createServer(async (req, res) => {
       );
       return;
     }
-    if (offline) {
+    if (offline || core?.offline) {
       requests.push({
         method: req.method ?? "",
         path: target.pathname,
@@ -149,6 +154,7 @@ const server = http.createServer(async (req, res) => {
     }
     let raw = "";
     for await (const chunk of req) raw += chunk;
+    if(coreMatrix && req.headers.authorization==='Bearer record-ui-only')req.headers.authorization='Bearer '+app.services.tokenService.issueAccessToken(owner.userId,'lighttick');
     const response = await app.app.handle({
       method: req.method as any,
       path: target.pathname,
@@ -172,6 +178,7 @@ const server = http.createServer(async (req, res) => {
       res.destroy();
       return;
     }
+    if(response.statusCode<300 && req.method==='POST' && target.pathname==='/api/v1/lighttick/action-plans/practices' && core?.takePracticeDrop()){res.destroy();return;}
     res.writeHead(response.statusCode, {
       ...response.headers,
       "Content-Type": "application/json",
@@ -187,9 +194,14 @@ const server = http.createServer(async (req, res) => {
     );
   }
 });
+let native: ReturnType<typeof http.createServer> | undefined;
+if(coreMatrix){
+ native=http.createServer((req,res)=>{const proxy=http.request({hostname:'127.0.0.1',port:3107,path:req.url,method:req.method,headers:req.headers},reply=>{res.writeHead(reply.statusCode??500,reply.headers);reply.pipe(res);});proxy.on('error',()=>{res.statusCode=502;res.end();});req.pipe(proxy);});
+ await new Promise<void>(resolve=>native!.listen(3106,'127.0.0.1',resolve));
+}
 server.listen(3107, "127.0.0.1", () =>
   process.stdout.write(
     "Basic joint acceptance: loopback 3107; complete PostgreSQL + Redis; core scope.\n",
   ),
 );
-for(const signal of ["SIGINT","SIGTERM"] as const)process.on(signal,()=>{clearInterval(workerTimer);web?.close();server.close(async()=>{await app.close();await kvManager.disconnect();process.exit(0);});});
+for(const signal of ["SIGINT","SIGTERM"] as const)process.on(signal,()=>{clearInterval(workerTimer);web?.close();native?.close();server.close(async()=>{await app.close();await kvManager.disconnect();process.exit(0);});});
