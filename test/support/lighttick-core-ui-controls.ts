@@ -38,15 +38,17 @@ export function coreUIControls(app:Runtime,owner:{appId:'lighttick';userId:strin
     if(!oldVersion){const op=await repo.getOperation(owner,'learning:core-publication');oldVersion=String(op?.resultPayload?.content_version??'');}
     const publication=await learning.publication(owner,lessonId).catch(()=>undefined);
     return {id:lessonId,old_version:oldVersion,authority:await learning.authority(owner),publication,
-     old_private:await learning.privateState(owner,lessonId,oldVersion).catch(()=>null)};
+     old_private:await learning.privateState(owner,lessonId,oldVersion).catch(()=>null),
+     current_private:publication ? await learning.privateState(owner,lessonId,publication.lesson.publishedVersion!).catch(()=>null) : null};
    }
    if(url.pathname==='/__core_learning_publish_next'){
     const current=await learning.publication(owner,lessonId);
     return learning.publish(owner,lessonId,{base_revision:current.lesson.revision,collection_id:'core-shared',number:1,title:'Core published lesson',content:'# Revised Core lesson\n\n## 思考题\n- What changed?',references:'',source_url:''},'core-publication-next');
    }
-   if(url.pathname==='/__core_learning_revoke'){
+   if(url.pathname==='/__core_learning_revoke'||url.pathname==='/__core_learning_regrant'){
     const a=(await learning.authority(owner))!;
-    return learning.consent(owner,{base_revision:a.revision,reading_enabled:false,private_enabled:false},'core-revoke');
+    const enabled=url.pathname.endsWith('regrant');
+    return learning.consent(owner,{base_revision:a.revision,reading_enabled:enabled,private_enabled:enabled},'core-consent-'+a.revision+'-'+enabled);
    }
    if(url.pathname==='/__actions_snapshot')return app.services.lighttickRuntime.actions.request(owner,'GET','');
    if(url.pathname==='/__practice_drop_next'){dropPractice=true;return {};}
