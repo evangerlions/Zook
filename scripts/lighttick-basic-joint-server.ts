@@ -8,6 +8,7 @@ import { PostgresDatabase } from "../src/infrastructure/database/postgres/postgr
 import { KVManager } from "../src/infrastructure/kv/kv-manager.ts";
 import { resolveBodyLogStores } from "../src/application-bodylog-stores.ts";
 import { writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { buildDefaultSeed } from "../src/infrastructure/database/prisma/default-seed.ts";
 const closeout = process.argv.includes("--core-closeout");
 const coreMatrix = closeout || process.argv.includes("--core-matrix");
@@ -74,7 +75,7 @@ if (withWeb) {
   });
   await new Promise<void>(resolve=>web!.listen(ports.web,"127.0.0.1",resolve));
 }
-const requests: { method: string; path: string; status: number }[] = [];
+const requests: { method: string; path: string; status: number; operation_key?:string; body_sha256?:string }[] = [];
 const workerStats={ticks:0,otherJobs:0,errors:0};
 let ticking=false;
 const workerTimer=setInterval(async()=>{
@@ -143,8 +144,14 @@ const server = http.createServer(async (req, res) => {
       );
       return;
     }
+    let raw = "";
+    for await (const chunk of req) raw += chunk;
+    const recordEvidence = target.pathname.startsWith("/api/v1/lighttick/records/") && req.method !== "GET"
+      ? {operation_key:String(req.headers["idempotency-key"]??""),body_sha256:createHash("sha256").update(raw).digest("hex")}
+      : {};
     if (offline || core?.offline) {
       requests.push({
+        ...recordEvidence,
         method: req.method ?? "",
         path: target.pathname,
         status: 503,
@@ -158,8 +165,6 @@ const server = http.createServer(async (req, res) => {
       );
       return;
     }
-    let raw = "";
-    for await (const chunk of req) raw += chunk;
     if(coreMatrix && req.headers.authorization==='Bearer record-ui-only')req.headers.authorization='Bearer '+app.services.tokenService.issueAccessToken(owner.userId,'lighttick');
     const response = await app.app.handle({
       method: req.method as any,
@@ -169,6 +174,7 @@ const server = http.createServer(async (req, res) => {
       body: raw ? JSON.parse(raw) : undefined,
     });
     requests.push({
+      ...recordEvidence,
       method: req.method ?? "",
       path: target.pathname,
       status: response.statusCode,

@@ -10,7 +10,11 @@ Actual browser/iOS/Android flows verify canonical lesson notes/answers, stale We
 
 Native UI testing exposed a real empty-answer adoption bug on both platforms: adopting a new publication's empty saved-answer array hid all current question editors. Native candidates now preserve same-version answers by stable ID and append unanswered current questions; old-version answers are not reused. Regression tests fail before repair and pass afterward. Approved current UI is saved in isolated native candidate commits; original user files retain their hashes. iOS 223 unit executions/1 existing skip/0 failures, Android 174/0 failures and APK builds, Web 65/type/build pass.
 
-The iPhone 16 Plus independent QA application builds, installs and launches. Two XCTest attempts execute **zero test cases** because automation mode initialization times out. This is not physical cloud/VoiceOver acceptance. Android physical/TalkBack, minimum OS/actual supported old packages, full V4.5 recovery, target-resource other-App checks, observation and publication remain open.
+The iPhone 16 Plus independent QA application builds, installs and launches. After two automation-mode initialization timeouts and a separate runner-network preflight failure, the current UI normal-login/cloud-record/relaunch/authorized-learning flow passes 1/1, and the local full loop passes 1/1 on 2026-11-11. The Mac confirms the created cloud record once. The user separately reports actually completing the base-loop VoiceOver walk-through with correct labels, reading order, focus and reachability; this is human evidence, not an automated VoiceOver result.
+
+A separate recovery QA bundle preserves that handoff app. Its serial offline/relaunch/account-switch tools compile, but the next run is waiting for device unlock; no V4.5 completion is claimed. Record-write tracing now records only non-secret idempotency key plus exact request-body SHA256, including controlled offline responses, to verify original-request identity without logging raw user/auth payloads. Actual local HTTP smoke confirms the metadata; invalid guided-answer array input was correctly rejected before the object-shaped smoke passed.
+
+Android physical/TalkBack, minimum OS/actual supported old packages, full V4.5 recovery, target-resource other-App checks, observation and publication remain open.
 
 Full report, immutable snapshots, exact source/binary hashes and verifier are maintained in plan:
 
