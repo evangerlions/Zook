@@ -57,6 +57,7 @@ const owner = { appId: "lighttick" as const, userId: "user_alice" };
 let offline = false,
   dropNext = "",
   nativePhase = "";
+let disconnected = false;
 const core = coreMatrix ? coreUIControls(app,owner) : undefined;
 const manual = new ManualPlanningService(repository);
 let web: ReturnType<typeof http.createServer> | undefined;
@@ -93,6 +94,12 @@ const workerTimer=setInterval(async()=>{
 const server = http.createServer(async (req, res) => {
   try {
     const target = new URL(req.url ?? "/", `http://127.0.0.1:${ports.api}`);
+    if (closeout && target.pathname === "/__disconnect") {
+      disconnected = true;
+      res.end("{}");
+      return;
+    }
+    if (["/__online", "/__reset"].includes(target.pathname)) disconnected = false;
     if(core && (target.pathname==="/__online" || target.pathname==="/__offline" && target.searchParams.get("value")==="0"))offline=false;
     const controlled = await core?.handle(target);
     if(controlled!==undefined){res.setHeader("Content-Type","application/json");res.end(JSON.stringify(controlled));return;}
@@ -149,6 +156,13 @@ const server = http.createServer(async (req, res) => {
     const recordEvidence = target.pathname.startsWith("/api/v1/lighttick/records/") && req.method !== "GET"
       ? {operation_key:String(req.headers["idempotency-key"]??""),body_sha256:createHash("sha256").update(raw).digest("hex")}
       : {};
+    // A dropped transport exercises offline session recovery without asserting
+    // that the product has been administratively disabled.
+    if (disconnected) {
+      requests.push({ ...recordEvidence, method: req.method ?? "", path: target.pathname, status: 0 });
+      res.destroy();
+      return;
+    }
     if (offline || core?.offline) {
       requests.push({
         ...recordEvidence,
@@ -208,7 +222,18 @@ const server = http.createServer(async (req, res) => {
 });
 let native: ReturnType<typeof http.createServer> | undefined;
 if(coreMatrix){
- native=http.createServer((req,res)=>{const proxy=http.request({hostname:'127.0.0.1',port:ports.api,path:req.url,method:req.method,headers:req.headers},reply=>{res.writeHead(reply.statusCode??500,reply.headers);reply.pipe(res);});proxy.on('error',()=>{res.statusCode=502;res.end();});req.pipe(proxy);});
+ native=http.createServer((req,res)=>{
+   const proxy=http.request({hostname:'127.0.0.1',port:ports.api,path:req.url,method:req.method,headers:req.headers},reply=>{
+     res.writeHead(reply.statusCode??500,reply.headers);
+     reply.pipe(res);
+   });
+   proxy.on('error',()=>{
+     if(disconnected){res.destroy();return;}
+     res.statusCode=502;
+     res.end();
+   });
+   req.pipe(proxy);
+ });
  await new Promise<void>(resolve=>native!.listen(ports.native,'127.0.0.1',resolve));
 }
 server.listen(ports.api, "127.0.0.1", () =>
