@@ -3,6 +3,7 @@ import { billingEnvironment } from "../modules/billing/billing-environment.ts";
 import type { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import type { AiNovelBillingMembershipRecord, AiNovelBillingTransactionRecord } from "../shared/types.ts";
 import type { AlipayOrder } from "../modules/billing/alipay-models.ts";
+import type { AlipayFullRefund } from "../modules/billing/alipay-refund.ts";
 import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 
 export function alipayTransaction(order: AlipayOrder, now: string): AiNovelBillingTransactionRecord {
@@ -14,6 +15,22 @@ export function alipayTransaction(order: AlipayOrder, now: string): AiNovelBilli
     autoRenew: false, isSandbox: order.environment === "sandbox", amountMinor: order.amountMinor,
     refundAmountMinor: null, currency: "CNY", observedAt: now, accountDeletedAt: order.accountDeletedAt };
 }
+
+export function alipaySettlementTransaction(order: AlipayOrder, now: string,
+  existing?: AiNovelBillingTransactionRecord, refund?: AlipayFullRefund): AiNovelBillingTransactionRecord | undefined {
+  const observedAt = existing && existing.observedAt > now ? existing.observedAt : now;
+  if (existing?.status === "refunded") {
+    if (existing.purchasedAt || !order.paidAt) return;
+    return { ...existing, purchasedAt: order.paidAt, originalPurchaseDate: order.paidAt, observedAt };
+  }
+  if (refund) return {
+    ...alipayTransaction(order, observedAt), status: "refunded", expiresAt: null,
+    refundAmountMinor: refund.amountMinor, refundedAt: refund.refundedAt,
+  };
+  if (existing?.status === "revoked") return;
+  return alipayTransaction(order, now);
+}
+
 /** Pure local read: time can select Plus after Pro expires without another sync. */
 export async function readAlipayMembership(database: ApplicationDatabase, userId: string, now: Date, selectAlipay = false): Promise<AiNovelBillingMembershipRecord | undefined> {
   const current = await database.findAiNovelBillingMembership("ai_novel", userId);
