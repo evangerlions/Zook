@@ -70364,6 +70364,17 @@ export const LightTickReadingSourceSchema = {
           "type": "null"
         }
       ]
+    },
+    "catalog_origin_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -70385,6 +70396,7 @@ export type LightTickReadingSource = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 };
 
 export const LightTickReadingSourceWriteSchema = {
@@ -70611,6 +70623,17 @@ export const LightTickReadingSourcePageSchema = {
                 "type": "null"
               }
             ]
+          },
+          "catalog_origin_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -70648,6 +70671,7 @@ export type LightTickReadingSourcePage = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 )[];
   "next_cursor": string | unknown;
@@ -70755,6 +70779,261 @@ export const LightTickReadingWorkScopeSchema = {
       "type": "string",
       "maxLength": 64,
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preferences",
+        "sources",
+        "catalog_revision",
+        "date",
+        "ranking_version",
+        "seen_count",
+        "digest",
+        "extraction_version"
+      ],
+      "properties": {
+        "preferences": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "value",
+            "updated_at"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "enabled",
+                "hour",
+                "minute",
+                "count",
+                "mode",
+                "topics",
+                "languages",
+                "query",
+                "auto_guide"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "hour": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 23
+                },
+                "minute": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 59
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "recent",
+                    "classic",
+                    "mixed"
+                  ]
+                },
+                "topics": {
+                  "type": "array",
+                  "maxItems": 6,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "enum": [
+                      "认知",
+                      "科技",
+                      "经济学",
+                      "社会学",
+                      "心理",
+                      "成长"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "languages": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "zh",
+                      "en"
+                    ]
+                  }
+                },
+                "query": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "auto_guide": {
+                  "type": "boolean"
+                },
+                "source_ids": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "maxItems": 1000,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "title",
+              "url",
+              "format"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 1500,
+                "format": "uri"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "article",
+                  "rss",
+                  "atom"
+                ]
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "zh",
+                  "en",
+                  "unknown"
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20,
+                  "enum": [
+                    "认知",
+                    "科技",
+                    "经济学",
+                    "社会学",
+                    "心理",
+                    "成长"
+                  ]
+                }
+              },
+              "domains": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "maxLength": 253,
+                  "minLength": 1
+                }
+              },
+              "catalog_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "catalog_revision": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "ranking_version": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "seen_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        },
+        "extraction_version": {
+          "type": "string",
+          "maxLength": 140
+        }
+      }
     }
   }
 } as const;
@@ -70770,6 +71049,49 @@ export type LightTickReadingWorkScope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
 
 export const LightTickReadingWorkSummarySchema = {
@@ -70809,7 +71131,8 @@ export const LightTickReadingWorkSummarySchema = {
         "translation",
         "summary",
         "english",
-        "fetch_full"
+        "fetch_full",
+        "recommend"
       ]
     },
     "status": {
@@ -70974,6 +71297,261 @@ export const LightTickReadingWorkSummarySchema = {
           "type": "string",
           "maxLength": 64,
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preferences",
+            "sources",
+            "catalog_revision",
+            "date",
+            "ranking_version",
+            "seen_count",
+            "digest",
+            "extraction_version"
+          ],
+          "properties": {
+            "preferences": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "value",
+                "updated_at"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "value": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "enabled",
+                    "hour",
+                    "minute",
+                    "count",
+                    "mode",
+                    "topics",
+                    "languages",
+                    "query",
+                    "auto_guide"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "hour": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 23
+                    },
+                    "minute": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 59
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 8
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "recent",
+                        "classic",
+                        "mixed"
+                      ]
+                    },
+                    "topics": {
+                      "type": "array",
+                      "maxItems": 6,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 20,
+                        "enum": [
+                          "认知",
+                          "科技",
+                          "经济学",
+                          "社会学",
+                          "心理",
+                          "成长"
+                        ]
+                      },
+                      "minItems": 1
+                    },
+                    "languages": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "zh",
+                          "en"
+                        ]
+                      }
+                    },
+                    "query": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "auto_guide": {
+                      "type": "boolean"
+                    },
+                    "source_ids": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "maxItems": 1000,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time",
+                      "maxLength": 40
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "title",
+                  "url",
+                  "format"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 1500,
+                    "format": "uri"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "article",
+                      "rss",
+                      "atom"
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "zh",
+                      "en",
+                      "unknown"
+                    ]
+                  },
+                  "topics": {
+                    "type": "array",
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 20,
+                      "enum": [
+                        "认知",
+                        "科技",
+                        "经济学",
+                        "社会学",
+                        "心理",
+                        "成长"
+                      ]
+                    }
+                  },
+                  "domains": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 253,
+                      "minLength": 1
+                    }
+                  },
+                  "catalog_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "maxItems": 20
+            },
+            "catalog_revision": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "ranking_version": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "seen_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "maxLength": 64
+            },
+            "extraction_version": {
+              "type": "string",
+              "maxLength": 140
+            }
+          }
         }
       }
     },
@@ -70998,7 +71576,7 @@ export const LightTickReadingWorkSummarySchema = {
 export type LightTickReadingWorkSummary = {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "adopted": {
   [key: string]: {
@@ -71021,6 +71599,49 @@ export type LightTickReadingWorkSummary = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
   "has_output": boolean;
@@ -71091,13 +71712,7 @@ export const LightTickReadingWorkDocumentSchema = {
           "encoding"
         ]
       },
-      "then": {
-        "properties": {
-          "content_type": {
-            "const": "application/pdf"
-          }
-        }
-      },
+      "then": {},
       "else": {
         "properties": {
           "body": {
@@ -71384,13 +71999,7 @@ export const LightTickReadingWorkOutputSchema = {
               "encoding"
             ]
           },
-          "then": {
-            "properties": {
-              "content_type": {
-                "const": "application/pdf"
-              }
-            }
-          },
+          "then": {},
           "else": {
             "properties": {
               "body": {
@@ -71613,6 +72222,281 @@ export const LightTickReadingWorkOutputSchema = {
         "type": "string",
         "maxLength": 2000
       }
+    },
+    "entry_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_id",
+          "content",
+          "content_digest",
+          "document_id",
+          "source_id",
+          "extraction_version"
+        ],
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "pattern": "^readasset-[a-f0-9]{40}$",
+            "maxLength": 50
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "source_url",
+              "language",
+              "published_at"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 35,
+                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "translated_title": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "publisher": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "access": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "recommendation_reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "minLength": 1
+                }
+              },
+              "category": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "recent",
+                      "classic",
+                      "manual"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "published_date": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10,
+                    "format": "date"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "maxLength": 64
+          },
+          "document_id": {
+            "type": "string",
+            "pattern": "^readasset-[a-f0-9]{40}$",
+            "maxLength": 50
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extraction_version": {
+            "type": "string",
+            "maxLength": 140
+          }
+        }
+      },
+      "maxItems": 8
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_id",
+          "url",
+          "sha256"
+        ],
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "pattern": "^readasset-[a-f0-9]{40}$",
+            "maxLength": 50
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1500
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "maxLength": 64
+          }
+        }
+      },
+      "maxItems": 44
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "requested",
+        "selected",
+        "attempted",
+        "ranking_version",
+        "scope_digest"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "requested": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "selected": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "attempted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "ranking_version": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        }
+      }
     }
   }
 } as const;
@@ -71693,6 +72577,1891 @@ export type LightTickReadingWorkOutput = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
+};
+
+export const LightTickReadingSelectedSourceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "title",
+    "url",
+    "format"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 1500,
+      "format": "uri"
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "article",
+        "rss",
+        "atom"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "zh",
+        "en",
+        "unknown"
+      ]
+    },
+    "topics": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "maxLength": 20,
+        "enum": [
+          "认知",
+          "科技",
+          "经济学",
+          "社会学",
+          "心理",
+          "成长"
+        ]
+      }
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "maxLength": 253,
+        "minLength": 1
+      }
+    },
+    "catalog_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 80
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingSelectedSource = {
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+};
+
+export const LightTickReadingRecommendationScopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "preferences",
+    "sources",
+    "catalog_revision",
+    "date",
+    "ranking_version",
+    "seen_count",
+    "digest",
+    "extraction_version"
+  ],
+  "properties": {
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "value",
+        "updated_at"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "hour",
+            "minute",
+            "count",
+            "mode",
+            "topics",
+            "languages",
+            "query",
+            "auto_guide"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "hour": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "minute": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 59
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "recent",
+                "classic",
+                "mixed"
+              ]
+            },
+            "topics": {
+              "type": "array",
+              "maxItems": 6,
+              "items": {
+                "type": "string",
+                "maxLength": 20,
+                "enum": [
+                  "认知",
+                  "科技",
+                  "经济学",
+                  "社会学",
+                  "心理",
+                  "成长"
+                ]
+              },
+              "minItems": 1
+            },
+            "languages": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "zh",
+                  "en"
+                ]
+              }
+            },
+            "query": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "auto_guide": {
+              "type": "boolean"
+            },
+            "source_ids": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 1000,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 40
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "title",
+          "url",
+          "format"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1500,
+            "format": "uri"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "article",
+              "rss",
+              "atom"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "zh",
+              "en",
+              "unknown"
+            ]
+          },
+          "topics": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "maxLength": 20,
+              "enum": [
+                "认知",
+                "科技",
+                "经济学",
+                "社会学",
+                "心理",
+                "成长"
+              ]
+            }
+          },
+          "domains": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "maxLength": 253,
+              "minLength": 1
+            }
+          },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "catalog_revision": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "ranking_version": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "seen_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "extraction_version": {
+      "type": "string",
+      "maxLength": 140
+    }
+  }
+} as const;
+
+export type LightTickReadingRecommendationScope = {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+
+export const LightTickReadingRecommendationCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scope_digest"
+  ],
+  "properties": {
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    }
+  }
+} as const;
+
+export type LightTickReadingRecommendationCreate = {
+  "scope_digest": string;
+};
+
+export const LightTickReadingEntryReferenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "asset_id",
+    "content",
+    "content_digest",
+    "document_id",
+    "source_id",
+    "extraction_version"
+  ],
+  "properties": {
+    "asset_id": {
+      "type": "string",
+      "pattern": "^readasset-[a-f0-9]{40}$",
+      "maxLength": 50
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "source_url",
+        "language",
+        "published_at"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 500,
+          "minLength": 1
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 35,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "translated_title": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publisher": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 10000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "access": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recommendation_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "topics": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          }
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "recent",
+                "classic",
+                "manual"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "published_date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 10,
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "content_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "document_id": {
+      "type": "string",
+      "pattern": "^readasset-[a-f0-9]{40}$",
+      "maxLength": 50
+    },
+    "source_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "extraction_version": {
+      "type": "string",
+      "maxLength": 140
+    }
+  }
+} as const;
+
+export type LightTickReadingEntryReference = {
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+};
+
+export const LightTickReadingAssetSummarySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "work_id",
+    "sha256",
+    "kind"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^readasset-[a-f0-9]{40}$",
+      "maxLength": 50
+    },
+    "work_id": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "entry",
+        "document"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingAssetSummary = {
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+};
+
+export const LightTickReadingAssetSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "work_id",
+    "sha256",
+    "kind",
+    "value"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^readasset-[a-f0-9]{40}$",
+      "maxLength": 50
+    },
+    "work_id": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "entry",
+        "document"
+      ]
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "body",
+            "source_url",
+            "language",
+            "published_at"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "body": {
+              "type": "string",
+              "maxLength": 500000,
+              "minLength": 1
+            },
+            "source_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "language": {
+              "type": "string",
+              "maxLength": 35,
+              "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+            },
+            "published_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "author": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "translated_title": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "publisher": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 10000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "access": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "recommendation_reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "topics": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              }
+            },
+            "category": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "recent",
+                    "classic",
+                    "manual"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "published_date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 10,
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "body",
+            "content_type",
+            "url",
+            "sha256",
+            "capture_kind"
+          ],
+          "properties": {
+            "body": {
+              "type": "string",
+              "maxLength": 10666668
+            },
+            "content_type": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "url": {
+              "type": "string",
+              "maxLength": 1500
+            },
+            "sha256": {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "capture_kind": {
+              "type": "string",
+              "enum": [
+                "web_text",
+                "pdf_text",
+                "feed_entry",
+                "full_fetch"
+              ]
+            },
+            "extraction_version": {
+              "type": "string",
+              "maxLength": 140
+            },
+            "encoding": {
+              "type": "string",
+              "enum": [
+                "base64"
+              ]
+            },
+            "resolved_url": {
+              "type": "string",
+              "maxLength": 1500,
+              "format": "uri"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "encoding": {
+                    "const": "base64"
+                  }
+                },
+                "required": [
+                  "encoding"
+                ]
+              },
+              "then": {},
+              "else": {
+                "properties": {
+                  "body": {
+                    "maxLength": 8000000
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingAsset = {
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+  "value": (
+{
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+}
+) | (
+(
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+)
+);
+};
+
+export const LightTickReadingAssetPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "work_id",
+          "sha256",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^readasset-[a-f0-9]{40}$",
+            "maxLength": 50
+          },
+          "work_id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "maxLength": 64
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "entry",
+              "document"
+            ]
+          }
+        }
+      },
+      "maxItems": 100
+    }
+  }
+} as const;
+
+export type LightTickReadingAssetPage = {
+  "items": (
+{
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+}
+)[];
+};
+
+export const LightTickReadingRecommendationScopeEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preferences",
+        "sources",
+        "catalog_revision",
+        "date",
+        "ranking_version",
+        "seen_count",
+        "digest",
+        "extraction_version"
+      ],
+      "properties": {
+        "preferences": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "value",
+            "updated_at"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "enabled",
+                "hour",
+                "minute",
+                "count",
+                "mode",
+                "topics",
+                "languages",
+                "query",
+                "auto_guide"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "hour": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 23
+                },
+                "minute": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 59
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "recent",
+                    "classic",
+                    "mixed"
+                  ]
+                },
+                "topics": {
+                  "type": "array",
+                  "maxItems": 6,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "enum": [
+                      "认知",
+                      "科技",
+                      "经济学",
+                      "社会学",
+                      "心理",
+                      "成长"
+                    ]
+                  },
+                  "minItems": 1
+                },
+                "languages": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "zh",
+                      "en"
+                    ]
+                  }
+                },
+                "query": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "auto_guide": {
+                  "type": "boolean"
+                },
+                "source_ids": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "maxItems": 1000,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "updated_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "title",
+              "url",
+              "format"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 1500,
+                "format": "uri"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "article",
+                  "rss",
+                  "atom"
+                ]
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "zh",
+                  "en",
+                  "unknown"
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20,
+                  "enum": [
+                    "认知",
+                    "科技",
+                    "经济学",
+                    "社会学",
+                    "心理",
+                    "成长"
+                  ]
+                }
+              },
+              "domains": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "maxLength": 253,
+                  "minLength": 1
+                }
+              },
+              "catalog_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 20
+        },
+        "catalog_revision": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "ranking_version": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "seen_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        },
+        "extraction_version": {
+          "type": "string",
+          "maxLength": 140
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingRecommendationScopeEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+};
+
+export const LightTickReadingAssetEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "work_id",
+        "sha256",
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^readasset-[a-f0-9]{40}$",
+          "maxLength": 50
+        },
+        "work_id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "maxLength": 64
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "entry",
+            "document"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "body",
+                "source_url",
+                "language",
+                "published_at"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                "body": {
+                  "type": "string",
+                  "maxLength": 500000,
+                  "minLength": 1
+                },
+                "source_url": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 2048
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "language": {
+                  "type": "string",
+                  "maxLength": 35,
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                },
+                "published_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "author": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "translated_title": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "publisher": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 10000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "access": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "recommendation_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "topics": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  }
+                },
+                "category": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "recent",
+                        "classic",
+                        "manual"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "published_date": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 10,
+                      "format": "date"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "body",
+                "content_type",
+                "url",
+                "sha256",
+                "capture_kind"
+              ],
+              "properties": {
+                "body": {
+                  "type": "string",
+                  "maxLength": 10666668
+                },
+                "content_type": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "sha256": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "capture_kind": {
+                  "type": "string",
+                  "enum": [
+                    "web_text",
+                    "pdf_text",
+                    "feed_entry",
+                    "full_fetch"
+                  ]
+                },
+                "extraction_version": {
+                  "type": "string",
+                  "maxLength": 140
+                },
+                "encoding": {
+                  "type": "string",
+                  "enum": [
+                    "base64"
+                  ]
+                },
+                "resolved_url": {
+                  "type": "string",
+                  "maxLength": 1500,
+                  "format": "uri"
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "encoding": {
+                        "const": "base64"
+                      }
+                    },
+                    "required": [
+                      "encoding"
+                    ]
+                  },
+                  "then": {},
+                  "else": {
+                    "properties": {
+                      "body": {
+                        "maxLength": 8000000
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingAssetEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+  "value": (
+{
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+}
+) | (
+(
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+)
+);
+};
+};
+
+export const LightTickReadingAssetPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "work_id",
+              "sha256",
+              "kind"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^readasset-[a-f0-9]{40}$",
+                "maxLength": 50
+              },
+              "work_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "entry",
+                  "document"
+                ]
+              }
+            }
+          },
+          "maxItems": 100
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingAssetPageEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+}
+)[];
+};
 };
 
 export const LightTickReadingWorkSchema = {
@@ -71732,7 +74501,8 @@ export const LightTickReadingWorkSchema = {
         "translation",
         "summary",
         "english",
-        "fetch_full"
+        "fetch_full",
+        "recommend"
       ]
     },
     "status": {
@@ -71998,13 +74768,7 @@ export const LightTickReadingWorkSchema = {
                       "encoding"
                     ]
                   },
-                  "then": {
-                    "properties": {
-                      "content_type": {
-                        "const": "application/pdf"
-                      }
-                    }
-                  },
+                  "then": {},
                   "else": {
                     "properties": {
                       "body": {
@@ -72227,6 +74991,281 @@ export const LightTickReadingWorkSchema = {
                 "type": "string",
                 "maxLength": 2000
               }
+            },
+            "entry_refs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "asset_id",
+                  "content",
+                  "content_digest",
+                  "document_id",
+                  "source_id",
+                  "extraction_version"
+                ],
+                "properties": {
+                  "asset_id": {
+                    "type": "string",
+                    "pattern": "^readasset-[a-f0-9]{40}$",
+                    "maxLength": 50
+                  },
+                  "content": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title",
+                      "source_url",
+                      "language",
+                      "published_at"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 1
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "language": {
+                        "type": "string",
+                        "maxLength": 35,
+                        "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                      },
+                      "published_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "author": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "translated_title": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "publisher": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 10000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "access": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recommendation_reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "topics": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        }
+                      },
+                      "category": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "recent",
+                              "classic",
+                              "manual"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "published_date": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 10,
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "content_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "maxLength": 64
+                  },
+                  "document_id": {
+                    "type": "string",
+                    "pattern": "^readasset-[a-f0-9]{40}$",
+                    "maxLength": 50
+                  },
+                  "source_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "extraction_version": {
+                    "type": "string",
+                    "maxLength": 140
+                  }
+                }
+              },
+              "maxItems": 8
+            },
+            "documents": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "asset_id",
+                  "url",
+                  "sha256"
+                ],
+                "properties": {
+                  "asset_id": {
+                    "type": "string",
+                    "pattern": "^readasset-[a-f0-9]{40}$",
+                    "maxLength": 50
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 1500
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "maxLength": 64
+                  }
+                }
+              },
+              "maxItems": 44
+            },
+            "recommendation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "date",
+                "requested",
+                "selected",
+                "attempted",
+                "ranking_version",
+                "scope_digest"
+              ],
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "requested": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "selected": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8
+                },
+                "attempted": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 24
+                },
+                "ranking_version": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "scope_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$",
+                  "maxLength": 64
+                }
+              }
             }
           }
         },
@@ -72387,6 +75426,261 @@ export const LightTickReadingWorkSchema = {
           "type": "string",
           "maxLength": 64,
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preferences",
+            "sources",
+            "catalog_revision",
+            "date",
+            "ranking_version",
+            "seen_count",
+            "digest",
+            "extraction_version"
+          ],
+          "properties": {
+            "preferences": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "revision",
+                "value",
+                "updated_at"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "value": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "enabled",
+                    "hour",
+                    "minute",
+                    "count",
+                    "mode",
+                    "topics",
+                    "languages",
+                    "query",
+                    "auto_guide"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "hour": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 23
+                    },
+                    "minute": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 59
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 8
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "recent",
+                        "classic",
+                        "mixed"
+                      ]
+                    },
+                    "topics": {
+                      "type": "array",
+                      "maxItems": 6,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 20,
+                        "enum": [
+                          "认知",
+                          "科技",
+                          "经济学",
+                          "社会学",
+                          "心理",
+                          "成长"
+                        ]
+                      },
+                      "minItems": 1
+                    },
+                    "languages": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "zh",
+                          "en"
+                        ]
+                      }
+                    },
+                    "query": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "auto_guide": {
+                      "type": "boolean"
+                    },
+                    "source_ids": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "maxItems": 1000,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time",
+                      "maxLength": 40
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "revision",
+                  "title",
+                  "url",
+                  "format"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 1500,
+                    "format": "uri"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "article",
+                      "rss",
+                      "atom"
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "zh",
+                      "en",
+                      "unknown"
+                    ]
+                  },
+                  "topics": {
+                    "type": "array",
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 20,
+                      "enum": [
+                        "认知",
+                        "科技",
+                        "经济学",
+                        "社会学",
+                        "心理",
+                        "成长"
+                      ]
+                    }
+                  },
+                  "domains": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 253,
+                      "minLength": 1
+                    }
+                  },
+                  "catalog_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "maxItems": 20
+            },
+            "catalog_revision": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "ranking_version": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "seen_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "maxLength": 64
+            },
+            "extraction_version": {
+              "type": "string",
+              "maxLength": 140
+            }
+          }
         }
       }
     },
@@ -72408,7 +75702,7 @@ export const LightTickReadingWorkSchema = {
 export type LightTickReadingWork = {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -72487,6 +75781,48 @@ export type LightTickReadingWork = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -72510,6 +75846,49 @@ export type LightTickReadingWork = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
 };
@@ -72562,7 +75941,8 @@ export const LightTickReadingWorkPageSchema = {
               "translation",
               "summary",
               "english",
-              "fetch_full"
+              "fetch_full",
+              "recommend"
             ]
           },
           "status": {
@@ -72727,6 +76107,261 @@ export const LightTickReadingWorkPageSchema = {
                 "type": "string",
                 "maxLength": 64,
                 "pattern": "^[a-f0-9]{64}$"
+              },
+              "recommendation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "preferences",
+                  "sources",
+                  "catalog_revision",
+                  "date",
+                  "ranking_version",
+                  "seen_count",
+                  "digest",
+                  "extraction_version"
+                ],
+                "properties": {
+                  "preferences": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "revision",
+                      "value",
+                      "updated_at"
+                    ],
+                    "properties": {
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "value": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "enabled",
+                          "hour",
+                          "minute",
+                          "count",
+                          "mode",
+                          "topics",
+                          "languages",
+                          "query",
+                          "auto_guide"
+                        ],
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "hour": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 23
+                          },
+                          "minute": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 59
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 8
+                          },
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "recent",
+                              "classic",
+                              "mixed"
+                            ]
+                          },
+                          "topics": {
+                            "type": "array",
+                            "maxItems": 6,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 20,
+                              "enum": [
+                                "认知",
+                                "科技",
+                                "经济学",
+                                "社会学",
+                                "心理",
+                                "成长"
+                              ]
+                            },
+                            "minItems": 1
+                          },
+                          "languages": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 2,
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "zh",
+                                "en"
+                              ]
+                            }
+                          },
+                          "query": {
+                            "type": "string",
+                            "maxLength": 300
+                          },
+                          "auto_guide": {
+                            "type": "boolean"
+                          },
+                          "source_ids": {
+                            "anyOf": [
+                              {
+                                "type": "array",
+                                "maxItems": 1000,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "updated_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "maxLength": 40
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "revision",
+                        "title",
+                        "url",
+                        "format"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "title": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 1500,
+                          "format": "uri"
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": [
+                            "article",
+                            "rss",
+                            "atom"
+                          ]
+                        },
+                        "language": {
+                          "type": "string",
+                          "enum": [
+                            "zh",
+                            "en",
+                            "unknown"
+                          ]
+                        },
+                        "topics": {
+                          "type": "array",
+                          "maxItems": 6,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 20,
+                            "enum": [
+                              "认知",
+                              "科技",
+                              "经济学",
+                              "社会学",
+                              "心理",
+                              "成长"
+                            ]
+                          }
+                        },
+                        "domains": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 20,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 253,
+                            "minLength": 1
+                          }
+                        },
+                        "catalog_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 80
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "maxItems": 20
+                  },
+                  "catalog_revision": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "ranking_version": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "seen_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "maxLength": 64
+                  },
+                  "extraction_version": {
+                    "type": "string",
+                    "maxLength": 140
+                  }
+                }
               }
             }
           },
@@ -72768,7 +76403,7 @@ export type LightTickReadingWorkPage = {
 {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "adopted": {
   [key: string]: {
@@ -72791,6 +76426,49 @@ export type LightTickReadingWorkPage = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
   "has_output": boolean;
@@ -73031,6 +76709,10 @@ export const LightTickReadingWorkAdoptSchema = {
           "type": "null"
         }
       ]
+    },
+    "response_view": {
+      "type": "string",
+      "const": "summary"
     }
   }
 } as const;
@@ -73040,6 +76722,7 @@ export type LightTickReadingWorkAdopt = {
   "output_digest": string;
   "index": number | unknown;
   "base_article_revision": number | unknown;
+  "response_view"?: string;
 };
 
 export const LightTickReadingWorkAdoptResultSchema = {
@@ -73053,349 +76736,74 @@ export const LightTickReadingWorkAdoptResultSchema = {
   ],
   "properties": {
     "work": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "revision",
-        "kind",
-        "status",
-        "output",
-        "adopted",
-        "attempt",
-        "error_code",
-        "created_at",
-        "updated_at",
-        "scope",
-        "output_digest"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "maxLength": 128,
-          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-        },
-        "revision": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 2147483647
-        },
-        "kind": {
-          "type": "string",
-          "enum": [
-            "collect_url",
-            "collect_source",
-            "guide",
-            "translation",
-            "summary",
-            "english",
-            "fetch_full"
-          ]
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "queued",
-            "running",
-            "succeeded",
-            "failed",
-            "cancelled"
-          ]
-        },
-        "output": {
-          "anyOf": [
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [],
-              "properties": {
-                "entries": {
-                  "type": "array",
-                  "maxItems": 80,
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                      "title",
-                      "body",
-                      "source_url",
-                      "language",
-                      "published_at"
-                    ],
-                    "properties": {
-                      "title": {
-                        "type": "string",
-                        "maxLength": 500,
-                        "minLength": 1
-                      },
-                      "body": {
-                        "type": "string",
-                        "maxLength": 500000,
-                        "minLength": 1
-                      },
-                      "source_url": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 2048
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "language": {
-                        "type": "string",
-                        "maxLength": 35,
-                        "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
-                      },
-                      "published_at": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "author": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 500
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "tags": {
-                        "type": "array",
-                        "maxItems": 100,
-                        "items": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 200
-                        }
-                      },
-                      "translated_title": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 500
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "publisher": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 500
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "description": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 10000
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "access": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 2000
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "recommendation_reason": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 2000
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "topics": {
-                        "type": "array",
-                        "maxItems": 100,
-                        "items": {
-                          "type": "string",
-                          "maxLength": 200,
-                          "minLength": 1
-                        }
-                      },
-                      "category": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "enum": [
-                              "recent",
-                              "classic",
-                              "manual"
-                            ]
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "published_date": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "maxLength": 10,
-                            "format": "date"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      }
-                    }
-                  }
-                },
-                "text": {
-                  "type": "string",
-                  "maxLength": 100000
-                },
-                "provider": {
-                  "type": "string",
-                  "maxLength": 500
-                },
-                "model": {
-                  "type": "string",
-                  "maxLength": 500
-                },
-                "prompt_version": {
-                  "type": "string",
-                  "maxLength": 40
-                },
-                "document": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "kind",
+            "status",
+            "output",
+            "adopted",
+            "attempt",
+            "error_code",
+            "created_at",
+            "updated_at",
+            "scope",
+            "output_digest"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "collect_url",
+                "collect_source",
+                "guide",
+                "translation",
+                "summary",
+                "english",
+                "fetch_full",
+                "recommend"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "cancelled"
+              ]
+            },
+            "output": {
+              "anyOf": [
+                {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": [
-                    "body",
-                    "content_type",
-                    "url",
-                    "sha256",
-                    "capture_kind"
-                  ],
+                  "required": [],
                   "properties": {
-                    "body": {
-                      "type": "string",
-                      "maxLength": 10666668
-                    },
-                    "content_type": {
-                      "type": "string",
-                      "maxLength": 500
-                    },
-                    "url": {
-                      "type": "string",
-                      "maxLength": 1500
-                    },
-                    "sha256": {
-                      "type": "string",
-                      "maxLength": 64,
-                      "pattern": "^[a-f0-9]{64}$"
-                    },
-                    "capture_kind": {
-                      "type": "string",
-                      "enum": [
-                        "web_text",
-                        "pdf_text",
-                        "feed_entry",
-                        "full_fetch"
-                      ]
-                    },
-                    "extraction_version": {
-                      "type": "string",
-                      "maxLength": 140
-                    },
-                    "encoding": {
-                      "type": "string",
-                      "enum": [
-                        "base64"
-                      ]
-                    },
-                    "resolved_url": {
-                      "type": "string",
-                      "maxLength": 1500,
-                      "format": "uri"
-                    }
-                  },
-                  "allOf": [
-                    {
-                      "if": {
-                        "properties": {
-                          "encoding": {
-                            "const": "base64"
-                          }
-                        },
-                        "required": [
-                          "encoding"
-                        ]
-                      },
-                      "then": {
-                        "properties": {
-                          "content_type": {
-                            "const": "application/pdf"
-                          }
-                        }
-                      },
-                      "else": {
-                        "properties": {
-                          "body": {
-                            "maxLength": 8000000
-                          }
-                        }
-                      }
-                    }
-                  ]
-                },
-                "candidates": {
-                  "type": "array",
-                  "maxItems": 80,
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                      "id",
-                      "content",
-                      "excerpt",
-                      "source_id",
-                      "source_revision"
-                    ],
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "maxLength": 50,
-                        "pattern": "^candidate-[a-f0-9]{40}$"
-                      },
-                      "content": {
+                    "entries": {
+                      "type": "array",
+                      "maxItems": 80,
+                      "items": {
                         "type": "object",
                         "additionalProperties": false,
                         "required": [
                           "title",
+                          "body",
                           "source_url",
                           "language",
                           "published_at"
@@ -73404,6 +76812,11 @@ export const LightTickReadingWorkAdoptResultSchema = {
                           "title": {
                             "type": "string",
                             "maxLength": 500,
+                            "minLength": 1
+                          },
+                          "body": {
+                            "type": "string",
+                            "maxLength": 500000,
                             "minLength": 1
                           },
                           "source_url": {
@@ -73545,164 +76958,1481 @@ export const LightTickReadingWorkAdoptResultSchema = {
                             ]
                           }
                         }
+                      }
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 100000
+                    },
+                    "provider": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "model": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "prompt_version": {
+                      "type": "string",
+                      "maxLength": 40
+                    },
+                    "document": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "body",
+                        "content_type",
+                        "url",
+                        "sha256",
+                        "capture_kind"
+                      ],
+                      "properties": {
+                        "body": {
+                          "type": "string",
+                          "maxLength": 10666668
+                        },
+                        "content_type": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 1500
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "capture_kind": {
+                          "type": "string",
+                          "enum": [
+                            "web_text",
+                            "pdf_text",
+                            "feed_entry",
+                            "full_fetch"
+                          ]
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        },
+                        "encoding": {
+                          "type": "string",
+                          "enum": [
+                            "base64"
+                          ]
+                        },
+                        "resolved_url": {
+                          "type": "string",
+                          "maxLength": 1500,
+                          "format": "uri"
+                        }
                       },
-                      "excerpt": {
-                        "type": "string",
-                        "maxLength": 100000
-                      },
-                      "source_id": {
-                        "anyOf": [
-                          {
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "encoding": {
+                                "const": "base64"
+                              }
+                            },
+                            "required": [
+                              "encoding"
+                            ]
+                          },
+                          "then": {},
+                          "else": {
+                            "properties": {
+                              "body": {
+                                "maxLength": 8000000
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "candidates": {
+                      "type": "array",
+                      "maxItems": 80,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "content",
+                          "excerpt",
+                          "source_id",
+                          "source_revision"
+                        ],
+                        "properties": {
+                          "id": {
                             "type": "string",
-                            "maxLength": 128,
-                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                            "maxLength": 50,
+                            "pattern": "^candidate-[a-f0-9]{40}$"
                           },
-                          {
-                            "type": "null"
+                          "content": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "source_url",
+                              "language",
+                              "published_at"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 1
+                              },
+                              "source_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2048
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "language": {
+                                "type": "string",
+                                "maxLength": 35,
+                                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                              },
+                              "published_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "author": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "tags": {
+                                "type": "array",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "translated_title": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "publisher": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "description": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 10000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "access": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "recommendation_reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "minLength": 1
+                                }
+                              },
+                              "category": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "recent",
+                                      "classic",
+                                      "manual"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "published_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 10,
+                                    "format": "date"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "excerpt": {
+                            "type": "string",
+                            "maxLength": 100000
+                          },
+                          "source_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "source_revision": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
-                        ]
+                        }
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "entry_refs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "asset_id",
+                          "content",
+                          "content_digest",
+                          "document_id",
+                          "source_id",
+                          "extraction_version"
+                        ],
+                        "properties": {
+                          "asset_id": {
+                            "type": "string",
+                            "pattern": "^readasset-[a-f0-9]{40}$",
+                            "maxLength": 50
+                          },
+                          "content": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "source_url",
+                              "language",
+                              "published_at"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 1
+                              },
+                              "source_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2048
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "language": {
+                                "type": "string",
+                                "maxLength": 35,
+                                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                              },
+                              "published_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "author": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "tags": {
+                                "type": "array",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "translated_title": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "publisher": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "description": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 10000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "access": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "recommendation_reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "minLength": 1
+                                }
+                              },
+                              "category": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "recent",
+                                      "classic",
+                                      "manual"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "published_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 10,
+                                    "format": "date"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "content_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
+                          },
+                          "document_id": {
+                            "type": "string",
+                            "pattern": "^readasset-[a-f0-9]{40}$",
+                            "maxLength": 50
+                          },
+                          "source_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "extraction_version": {
+                            "type": "string",
+                            "maxLength": 140
+                          }
+                        }
                       },
-                      "source_revision": {
-                        "anyOf": [
-                          {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 2147483647
+                      "maxItems": 8
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "asset_id",
+                          "url",
+                          "sha256"
+                        ],
+                        "properties": {
+                          "asset_id": {
+                            "type": "string",
+                            "pattern": "^readasset-[a-f0-9]{40}$",
+                            "maxLength": 50
                           },
-                          {
-                            "type": "null"
+                          "url": {
+                            "type": "string",
+                            "maxLength": 1500
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
                           }
-                        ]
+                        }
+                      },
+                      "maxItems": 44
+                    },
+                    "recommendation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "date",
+                        "requested",
+                        "selected",
+                        "attempted",
+                        "ranking_version",
+                        "scope_digest"
+                      ],
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "requested": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8
+                        },
+                        "selected": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "attempted": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 24
+                        },
+                        "ranking_version": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "scope_digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        }
                       }
                     }
                   }
                 },
-                "warnings": {
-                  "type": "array",
-                  "maxItems": 100,
-                  "items": {
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "adopted": {
+              "type": "object",
+              "maxProperties": 81,
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "article_id",
+                  "revision"
+                ],
+                "properties": {
+                  "article_id": {
                     "type": "string",
-                    "maxLength": 2000
+                    "maxLength": 128,
+                    "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
                   }
                 }
               }
             },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "adopted": {
-          "type": "object",
-          "maxProperties": 81,
-          "additionalProperties": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "article_id",
-              "revision"
-            ],
-            "properties": {
-              "article_id": {
-                "type": "string",
-                "maxLength": 128,
-                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
-              },
-              "revision": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 2147483647
+            "attempt": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "error_code": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "created_at": {
+              "type": "string",
+              "maxLength": 40,
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "maxLength": 40,
+              "format": "date-time"
+            },
+            "scope": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_id",
+                "source_revision",
+                "url",
+                "article_id",
+                "content_version",
+                "paragraph_id",
+                "selected_characters"
+              ],
+              "properties": {
+                "source_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "source_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "url": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "article_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "content_version": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "paragraph_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 10
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "selected_characters": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "candidate_work_id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                "candidate_id": {
+                  "type": "string",
+                  "maxLength": 50,
+                  "pattern": "^candidate-[a-f0-9]{40}$"
+                },
+                "candidate_output_digest": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "recommendation": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "preferences",
+                    "sources",
+                    "catalog_revision",
+                    "date",
+                    "ranking_version",
+                    "seen_count",
+                    "digest",
+                    "extraction_version"
+                  ],
+                  "properties": {
+                    "preferences": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "revision",
+                        "value",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "value": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "enabled",
+                            "hour",
+                            "minute",
+                            "count",
+                            "mode",
+                            "topics",
+                            "languages",
+                            "query",
+                            "auto_guide"
+                          ],
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "hour": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 23
+                            },
+                            "minute": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 59
+                            },
+                            "count": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 8
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "recent",
+                                "classic",
+                                "mixed"
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "maxItems": 6,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 20,
+                                "enum": [
+                                  "认知",
+                                  "科技",
+                                  "经济学",
+                                  "社会学",
+                                  "心理",
+                                  "成长"
+                                ]
+                              },
+                              "minItems": 1
+                            },
+                            "languages": {
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 2,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "zh",
+                                  "en"
+                                ]
+                              }
+                            },
+                            "query": {
+                              "type": "string",
+                              "maxLength": 300
+                            },
+                            "auto_guide": {
+                              "type": "boolean"
+                            },
+                            "source_ids": {
+                              "anyOf": [
+                                {
+                                  "type": "array",
+                                  "maxItems": 1000,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "updated_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "maxLength": 40
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "title",
+                          "url",
+                          "format"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          },
+                          "url": {
+                            "type": "string",
+                            "maxLength": 1500,
+                            "format": "uri"
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "article",
+                              "rss",
+                              "atom"
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "enum": [
+                              "zh",
+                              "en",
+                              "unknown"
+                            ]
+                          },
+                          "topics": {
+                            "type": "array",
+                            "maxItems": 6,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 20,
+                              "enum": [
+                                "认知",
+                                "科技",
+                                "经济学",
+                                "社会学",
+                                "心理",
+                                "成长"
+                              ]
+                            }
+                          },
+                          "domains": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 20,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 253,
+                              "minLength": 1
+                            }
+                          },
+                          "catalog_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 80
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "maxItems": 20
+                    },
+                    "catalog_revision": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "ranking_version": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "seen_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$",
+                      "maxLength": 64
+                    },
+                    "extraction_version": {
+                      "type": "string",
+                      "maxLength": 140
+                    }
+                  }
+                }
               }
+            },
+            "output_digest": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         },
-        "attempt": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 2147483647
-        },
-        "error_code": {
-          "anyOf": [
-            {
-              "type": "string",
-              "maxLength": 100
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "created_at": {
-          "type": "string",
-          "maxLength": 40,
-          "format": "date-time"
-        },
-        "updated_at": {
-          "type": "string",
-          "maxLength": 40,
-          "format": "date-time"
-        },
-        "scope": {
+        {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "source_id",
-            "source_revision",
-            "url",
-            "article_id",
-            "content_version",
-            "paragraph_id",
-            "selected_characters"
+            "id",
+            "revision",
+            "kind",
+            "status",
+            "adopted",
+            "attempt",
+            "error_code",
+            "created_at",
+            "updated_at",
+            "scope",
+            "output_digest",
+            "has_output"
           ],
           "properties": {
-            "source_id": {
+            "id": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "collect_url",
+                "collect_source",
+                "guide",
+                "translation",
+                "summary",
+                "english",
+                "fetch_full",
+                "recommend"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "cancelled"
+              ]
+            },
+            "adopted": {
+              "type": "object",
+              "maxProperties": 81,
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "article_id",
+                  "revision"
+                ],
+                "properties": {
+                  "article_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  }
+                }
+              }
+            },
+            "attempt": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "error_code": {
               "anyOf": [
                 {
                   "type": "string",
-                  "maxLength": 128,
-                  "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                  "maxLength": 100
                 },
                 {
                   "type": "null"
                 }
               ]
             },
-            "source_revision": {
-              "anyOf": [
-                {
+            "created_at": {
+              "type": "string",
+              "maxLength": 40,
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "maxLength": 40,
+              "format": "date-time"
+            },
+            "scope": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_id",
+                "source_revision",
+                "url",
+                "article_id",
+                "content_version",
+                "paragraph_id",
+                "selected_characters"
+              ],
+              "properties": {
+                "source_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "source_revision": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "url": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1500
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "article_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "content_version": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "paragraph_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 10
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "selected_characters": {
                   "type": "integer",
-                  "minimum": 1,
-                  "maximum": 2147483647
+                  "minimum": 0,
+                  "maximum": 100000
                 },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "url": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 1500
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "article_id": {
-              "anyOf": [
-                {
+                "candidate_work_id": {
                   "type": "string",
                   "maxLength": 128,
-                  "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
                 },
-                {
-                  "type": "null"
+                "candidate_id": {
+                  "type": "string",
+                  "maxLength": 50,
+                  "pattern": "^candidate-[a-f0-9]{40}$"
+                },
+                "candidate_output_digest": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "recommendation": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "preferences",
+                    "sources",
+                    "catalog_revision",
+                    "date",
+                    "ranking_version",
+                    "seen_count",
+                    "digest",
+                    "extraction_version"
+                  ],
+                  "properties": {
+                    "preferences": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "revision",
+                        "value",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "value": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "enabled",
+                            "hour",
+                            "minute",
+                            "count",
+                            "mode",
+                            "topics",
+                            "languages",
+                            "query",
+                            "auto_guide"
+                          ],
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "hour": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 23
+                            },
+                            "minute": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 59
+                            },
+                            "count": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 8
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "recent",
+                                "classic",
+                                "mixed"
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "maxItems": 6,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 20,
+                                "enum": [
+                                  "认知",
+                                  "科技",
+                                  "经济学",
+                                  "社会学",
+                                  "心理",
+                                  "成长"
+                                ]
+                              },
+                              "minItems": 1
+                            },
+                            "languages": {
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 2,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "zh",
+                                  "en"
+                                ]
+                              }
+                            },
+                            "query": {
+                              "type": "string",
+                              "maxLength": 300
+                            },
+                            "auto_guide": {
+                              "type": "boolean"
+                            },
+                            "source_ids": {
+                              "anyOf": [
+                                {
+                                  "type": "array",
+                                  "maxItems": 1000,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "updated_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "maxLength": 40
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "title",
+                          "url",
+                          "format"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          },
+                          "url": {
+                            "type": "string",
+                            "maxLength": 1500,
+                            "format": "uri"
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "article",
+                              "rss",
+                              "atom"
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "enum": [
+                              "zh",
+                              "en",
+                              "unknown"
+                            ]
+                          },
+                          "topics": {
+                            "type": "array",
+                            "maxItems": 6,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 20,
+                              "enum": [
+                                "认知",
+                                "科技",
+                                "经济学",
+                                "社会学",
+                                "心理",
+                                "成长"
+                              ]
+                            }
+                          },
+                          "domains": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 20,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 253,
+                              "minLength": 1
+                            }
+                          },
+                          "catalog_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 80
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "maxItems": 20
+                    },
+                    "catalog_revision": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "ranking_version": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "seen_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$",
+                      "maxLength": 64
+                    },
+                    "extraction_version": {
+                      "type": "string",
+                      "maxLength": 140
+                    }
+                  }
                 }
-              ]
+              }
             },
-            "content_version": {
+            "output_digest": {
               "anyOf": [
                 {
                   "type": "string",
@@ -73714,52 +78444,12 @@ export const LightTickReadingWorkAdoptResultSchema = {
                 }
               ]
             },
-            "paragraph_id": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 10
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "selected_characters": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "candidate_work_id": {
-              "type": "string",
-              "maxLength": 128,
-              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-            },
-            "candidate_id": {
-              "type": "string",
-              "maxLength": 50,
-              "pattern": "^candidate-[a-f0-9]{40}$"
-            },
-            "candidate_output_digest": {
-              "type": "string",
-              "maxLength": 64,
-              "pattern": "^[a-f0-9]{64}$"
+            "has_output": {
+              "type": "boolean"
             }
           }
-        },
-        "output_digest": {
-          "anyOf": [
-            {
-              "type": "string",
-              "maxLength": 64,
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
-      }
+      ]
     },
     "work_id": {
       "type": "string",
@@ -73780,10 +78470,11 @@ export const LightTickReadingWorkAdoptResultSchema = {
 } as const;
 
 export type LightTickReadingWorkAdoptResult = {
-  "work": {
+  "work": (
+{
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -73862,6 +78553,48 @@ export type LightTickReadingWorkAdoptResult = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -73885,9 +78618,127 @@ export type LightTickReadingWorkAdoptResult = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "adopted": {
+  [key: string]: {
+  "article_id": string;
+  "revision": number;
 };
+};
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "scope": {
+  "source_id": string | unknown;
+  "source_revision": number | unknown;
+  "url": string | unknown;
+  "article_id": string | unknown;
+  "content_version": string | unknown;
+  "paragraph_id": string | unknown;
+  "selected_characters": number;
+  "candidate_work_id"?: string;
+  "candidate_id"?: string;
+  "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+};
+  "output_digest": string | unknown;
+  "has_output": boolean;
+}
+);
   "work_id": string;
   "article_id": string;
   "revision": number;
@@ -74192,6 +79043,10 @@ export const LightTickReadingWorkReceiptSchema = {
                   "type": "null"
                 }
               ]
+            },
+            "response_view": {
+              "type": "string",
+              "const": "summary"
             }
           }
         },
@@ -74302,6 +79157,20 @@ export const LightTickReadingWorkReceiptSchema = {
                   ]
                 }
               }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scope_digest"
+          ],
+          "properties": {
+            "scope_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "maxLength": 64
             }
           }
         }
@@ -74436,6 +79305,17 @@ export const LightTickReadingWorkReceiptSchema = {
                   "type": "null"
                 }
               ]
+            },
+            "catalog_origin_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         },
@@ -74476,7 +79356,8 @@ export const LightTickReadingWorkReceiptSchema = {
                 "translation",
                 "summary",
                 "english",
-                "fetch_full"
+                "fetch_full",
+                "recommend"
               ]
             },
             "status": {
@@ -74742,13 +79623,7 @@ export const LightTickReadingWorkReceiptSchema = {
                               "encoding"
                             ]
                           },
-                          "then": {
-                            "properties": {
-                              "content_type": {
-                                "const": "application/pdf"
-                              }
-                            }
-                          },
+                          "then": {},
                           "else": {
                             "properties": {
                               "body": {
@@ -74971,6 +79846,281 @@ export const LightTickReadingWorkReceiptSchema = {
                         "type": "string",
                         "maxLength": 2000
                       }
+                    },
+                    "entry_refs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "asset_id",
+                          "content",
+                          "content_digest",
+                          "document_id",
+                          "source_id",
+                          "extraction_version"
+                        ],
+                        "properties": {
+                          "asset_id": {
+                            "type": "string",
+                            "pattern": "^readasset-[a-f0-9]{40}$",
+                            "maxLength": 50
+                          },
+                          "content": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "title",
+                              "source_url",
+                              "language",
+                              "published_at"
+                            ],
+                            "properties": {
+                              "title": {
+                                "type": "string",
+                                "maxLength": 500,
+                                "minLength": 1
+                              },
+                              "source_url": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2048
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "language": {
+                                "type": "string",
+                                "maxLength": 35,
+                                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                              },
+                              "published_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "author": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "tags": {
+                                "type": "array",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "translated_title": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "publisher": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 500
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "description": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 10000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "access": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "recommendation_reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 100,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "minLength": 1
+                                }
+                              },
+                              "category": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "recent",
+                                      "classic",
+                                      "manual"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "published_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 10,
+                                    "format": "date"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "content_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
+                          },
+                          "document_id": {
+                            "type": "string",
+                            "pattern": "^readasset-[a-f0-9]{40}$",
+                            "maxLength": 50
+                          },
+                          "source_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "extraction_version": {
+                            "type": "string",
+                            "maxLength": 140
+                          }
+                        }
+                      },
+                      "maxItems": 8
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "asset_id",
+                          "url",
+                          "sha256"
+                        ],
+                        "properties": {
+                          "asset_id": {
+                            "type": "string",
+                            "pattern": "^readasset-[a-f0-9]{40}$",
+                            "maxLength": 50
+                          },
+                          "url": {
+                            "type": "string",
+                            "maxLength": 1500
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
+                          }
+                        }
+                      },
+                      "maxItems": 44
+                    },
+                    "recommendation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "date",
+                        "requested",
+                        "selected",
+                        "attempted",
+                        "ranking_version",
+                        "scope_digest"
+                      ],
+                      "properties": {
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "requested": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8
+                        },
+                        "selected": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 8
+                        },
+                        "attempted": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 24
+                        },
+                        "ranking_version": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "scope_digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        }
+                      }
                     }
                   }
                 },
@@ -75131,6 +80281,261 @@ export const LightTickReadingWorkReceiptSchema = {
                   "type": "string",
                   "maxLength": 64,
                   "pattern": "^[a-f0-9]{64}$"
+                },
+                "recommendation": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "preferences",
+                    "sources",
+                    "catalog_revision",
+                    "date",
+                    "ranking_version",
+                    "seen_count",
+                    "digest",
+                    "extraction_version"
+                  ],
+                  "properties": {
+                    "preferences": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "revision",
+                        "value",
+                        "updated_at"
+                      ],
+                      "properties": {
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "value": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "enabled",
+                            "hour",
+                            "minute",
+                            "count",
+                            "mode",
+                            "topics",
+                            "languages",
+                            "query",
+                            "auto_guide"
+                          ],
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "hour": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 23
+                            },
+                            "minute": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 59
+                            },
+                            "count": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 8
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "recent",
+                                "classic",
+                                "mixed"
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "maxItems": 6,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 20,
+                                "enum": [
+                                  "认知",
+                                  "科技",
+                                  "经济学",
+                                  "社会学",
+                                  "心理",
+                                  "成长"
+                                ]
+                              },
+                              "minItems": 1
+                            },
+                            "languages": {
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 2,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "zh",
+                                  "en"
+                                ]
+                              }
+                            },
+                            "query": {
+                              "type": "string",
+                              "maxLength": 300
+                            },
+                            "auto_guide": {
+                              "type": "boolean"
+                            },
+                            "source_ids": {
+                              "anyOf": [
+                                {
+                                  "type": "array",
+                                  "maxItems": 1000,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  }
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "updated_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "maxLength": 40
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "revision",
+                          "title",
+                          "url",
+                          "format"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200,
+                            "minLength": 1
+                          },
+                          "url": {
+                            "type": "string",
+                            "maxLength": 1500,
+                            "format": "uri"
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "article",
+                              "rss",
+                              "atom"
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "enum": [
+                              "zh",
+                              "en",
+                              "unknown"
+                            ]
+                          },
+                          "topics": {
+                            "type": "array",
+                            "maxItems": 6,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 20,
+                              "enum": [
+                                "认知",
+                                "科技",
+                                "经济学",
+                                "社会学",
+                                "心理",
+                                "成长"
+                              ]
+                            }
+                          },
+                          "domains": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 20,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 253,
+                              "minLength": 1
+                            }
+                          },
+                          "catalog_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 80
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "maxItems": 20
+                    },
+                    "catalog_revision": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "ranking_version": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "seen_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$",
+                      "maxLength": 64
+                    },
+                    "extraction_version": {
+                      "type": "string",
+                      "maxLength": 140
+                    }
+                  }
                 }
               }
             },
@@ -75159,349 +80564,74 @@ export const LightTickReadingWorkReceiptSchema = {
           ],
           "properties": {
             "work": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": [
-                "id",
-                "revision",
-                "kind",
-                "status",
-                "output",
-                "adopted",
-                "attempt",
-                "error_code",
-                "created_at",
-                "updated_at",
-                "scope",
-                "output_digest"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "maxLength": 128,
-                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-                },
-                "revision": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 2147483647
-                },
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "collect_url",
-                    "collect_source",
-                    "guide",
-                    "translation",
-                    "summary",
-                    "english",
-                    "fetch_full"
-                  ]
-                },
-                "status": {
-                  "type": "string",
-                  "enum": [
-                    "queued",
-                    "running",
-                    "succeeded",
-                    "failed",
-                    "cancelled"
-                  ]
-                },
-                "output": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "required": [],
-                      "properties": {
-                        "entries": {
-                          "type": "array",
-                          "maxItems": 80,
-                          "items": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                              "title",
-                              "body",
-                              "source_url",
-                              "language",
-                              "published_at"
-                            ],
-                            "properties": {
-                              "title": {
-                                "type": "string",
-                                "maxLength": 500,
-                                "minLength": 1
-                              },
-                              "body": {
-                                "type": "string",
-                                "maxLength": 500000,
-                                "minLength": 1
-                              },
-                              "source_url": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 2048
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "language": {
-                                "type": "string",
-                                "maxLength": 35,
-                                "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
-                              },
-                              "published_at": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "format": "date-time"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "author": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 500
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "tags": {
-                                "type": "array",
-                                "maxItems": 100,
-                                "items": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 200
-                                }
-                              },
-                              "translated_title": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 500
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "publisher": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 500
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "description": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 10000
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "access": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 2000
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "recommendation_reason": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 2000
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "topics": {
-                                "type": "array",
-                                "maxItems": 100,
-                                "items": {
-                                  "type": "string",
-                                  "maxLength": 200,
-                                  "minLength": 1
-                                }
-                              },
-                              "category": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "enum": [
-                                      "recent",
-                                      "classic",
-                                      "manual"
-                                    ]
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "published_date": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "maxLength": 10,
-                                    "format": "date"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              }
-                            }
-                          }
-                        },
-                        "text": {
-                          "type": "string",
-                          "maxLength": 100000
-                        },
-                        "provider": {
-                          "type": "string",
-                          "maxLength": 500
-                        },
-                        "model": {
-                          "type": "string",
-                          "maxLength": 500
-                        },
-                        "prompt_version": {
-                          "type": "string",
-                          "maxLength": 40
-                        },
-                        "document": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "revision",
+                    "kind",
+                    "status",
+                    "output",
+                    "adopted",
+                    "attempt",
+                    "error_code",
+                    "created_at",
+                    "updated_at",
+                    "scope",
+                    "output_digest"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "collect_url",
+                        "collect_source",
+                        "guide",
+                        "translation",
+                        "summary",
+                        "english",
+                        "fetch_full",
+                        "recommend"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    "output": {
+                      "anyOf": [
+                        {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": [
-                            "body",
-                            "content_type",
-                            "url",
-                            "sha256",
-                            "capture_kind"
-                          ],
+                          "required": [],
                           "properties": {
-                            "body": {
-                              "type": "string",
-                              "maxLength": 10666668
-                            },
-                            "content_type": {
-                              "type": "string",
-                              "maxLength": 500
-                            },
-                            "url": {
-                              "type": "string",
-                              "maxLength": 1500
-                            },
-                            "sha256": {
-                              "type": "string",
-                              "maxLength": 64,
-                              "pattern": "^[a-f0-9]{64}$"
-                            },
-                            "capture_kind": {
-                              "type": "string",
-                              "enum": [
-                                "web_text",
-                                "pdf_text",
-                                "feed_entry",
-                                "full_fetch"
-                              ]
-                            },
-                            "extraction_version": {
-                              "type": "string",
-                              "maxLength": 140
-                            },
-                            "encoding": {
-                              "type": "string",
-                              "enum": [
-                                "base64"
-                              ]
-                            },
-                            "resolved_url": {
-                              "type": "string",
-                              "maxLength": 1500,
-                              "format": "uri"
-                            }
-                          },
-                          "allOf": [
-                            {
-                              "if": {
-                                "properties": {
-                                  "encoding": {
-                                    "const": "base64"
-                                  }
-                                },
-                                "required": [
-                                  "encoding"
-                                ]
-                              },
-                              "then": {
-                                "properties": {
-                                  "content_type": {
-                                    "const": "application/pdf"
-                                  }
-                                }
-                              },
-                              "else": {
-                                "properties": {
-                                  "body": {
-                                    "maxLength": 8000000
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        },
-                        "candidates": {
-                          "type": "array",
-                          "maxItems": 80,
-                          "items": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": [
-                              "id",
-                              "content",
-                              "excerpt",
-                              "source_id",
-                              "source_revision"
-                            ],
-                            "properties": {
-                              "id": {
-                                "type": "string",
-                                "maxLength": 50,
-                                "pattern": "^candidate-[a-f0-9]{40}$"
-                              },
-                              "content": {
+                            "entries": {
+                              "type": "array",
+                              "maxItems": 80,
+                              "items": {
                                 "type": "object",
                                 "additionalProperties": false,
                                 "required": [
                                   "title",
+                                  "body",
                                   "source_url",
                                   "language",
                                   "published_at"
@@ -75510,6 +80640,11 @@ export const LightTickReadingWorkReceiptSchema = {
                                   "title": {
                                     "type": "string",
                                     "maxLength": 500,
+                                    "minLength": 1
+                                  },
+                                  "body": {
+                                    "type": "string",
+                                    "maxLength": 500000,
                                     "minLength": 1
                                   },
                                   "source_url": {
@@ -75651,164 +80786,1481 @@ export const LightTickReadingWorkReceiptSchema = {
                                     ]
                                   }
                                 }
+                              }
+                            },
+                            "text": {
+                              "type": "string",
+                              "maxLength": 100000
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 40
+                            },
+                            "document": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "body",
+                                "content_type",
+                                "url",
+                                "sha256",
+                                "capture_kind"
+                              ],
+                              "properties": {
+                                "body": {
+                                  "type": "string",
+                                  "maxLength": 10666668
+                                },
+                                "content_type": {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 1500
+                                },
+                                "sha256": {
+                                  "type": "string",
+                                  "maxLength": 64,
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "capture_kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "web_text",
+                                    "pdf_text",
+                                    "feed_entry",
+                                    "full_fetch"
+                                  ]
+                                },
+                                "extraction_version": {
+                                  "type": "string",
+                                  "maxLength": 140
+                                },
+                                "encoding": {
+                                  "type": "string",
+                                  "enum": [
+                                    "base64"
+                                  ]
+                                },
+                                "resolved_url": {
+                                  "type": "string",
+                                  "maxLength": 1500,
+                                  "format": "uri"
+                                }
                               },
-                              "excerpt": {
-                                "type": "string",
-                                "maxLength": 100000
-                              },
-                              "source_id": {
-                                "anyOf": [
-                                  {
+                              "allOf": [
+                                {
+                                  "if": {
+                                    "properties": {
+                                      "encoding": {
+                                        "const": "base64"
+                                      }
+                                    },
+                                    "required": [
+                                      "encoding"
+                                    ]
+                                  },
+                                  "then": {},
+                                  "else": {
+                                    "properties": {
+                                      "body": {
+                                        "maxLength": 8000000
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "candidates": {
+                              "type": "array",
+                              "maxItems": 80,
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "content",
+                                  "excerpt",
+                                  "source_id",
+                                  "source_revision"
+                                ],
+                                "properties": {
+                                  "id": {
                                     "type": "string",
-                                    "maxLength": 128,
-                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                    "maxLength": 50,
+                                    "pattern": "^candidate-[a-f0-9]{40}$"
                                   },
-                                  {
-                                    "type": "null"
+                                  "content": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "title",
+                                      "source_url",
+                                      "language",
+                                      "published_at"
+                                    ],
+                                    "properties": {
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "minLength": 1
+                                      },
+                                      "source_url": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 2048
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "language": {
+                                        "type": "string",
+                                        "maxLength": 35,
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                      },
+                                      "published_at": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date-time"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "author": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "tags": {
+                                        "type": "array",
+                                        "maxItems": 100,
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        }
+                                      },
+                                      "translated_title": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "publisher": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "description": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 10000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "access": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 2000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "recommendation_reason": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 2000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "topics": {
+                                        "type": "array",
+                                        "maxItems": 100,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 200,
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "category": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "recent",
+                                              "classic",
+                                              "manual"
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "published_date": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 10,
+                                            "format": "date"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "excerpt": {
+                                    "type": "string",
+                                    "maxLength": 100000
+                                  },
+                                  "source_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "source_revision": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 2147483647
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
-                                ]
+                                }
+                              }
+                            },
+                            "warnings": {
+                              "type": "array",
+                              "maxItems": 100,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 2000
+                              }
+                            },
+                            "entry_refs": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "asset_id",
+                                  "content",
+                                  "content_digest",
+                                  "document_id",
+                                  "source_id",
+                                  "extraction_version"
+                                ],
+                                "properties": {
+                                  "asset_id": {
+                                    "type": "string",
+                                    "pattern": "^readasset-[a-f0-9]{40}$",
+                                    "maxLength": 50
+                                  },
+                                  "content": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "title",
+                                      "source_url",
+                                      "language",
+                                      "published_at"
+                                    ],
+                                    "properties": {
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 500,
+                                        "minLength": 1
+                                      },
+                                      "source_url": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 2048
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "language": {
+                                        "type": "string",
+                                        "maxLength": 35,
+                                        "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                      },
+                                      "published_at": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date-time"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "author": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "tags": {
+                                        "type": "array",
+                                        "maxItems": 100,
+                                        "items": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        }
+                                      },
+                                      "translated_title": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "publisher": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 500
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "description": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 10000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "access": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 2000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "recommendation_reason": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 2000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "topics": {
+                                        "type": "array",
+                                        "maxItems": 100,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 200,
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "category": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "recent",
+                                              "classic",
+                                              "manual"
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "published_date": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 10,
+                                            "format": "date"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "content_digest": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "maxLength": 64
+                                  },
+                                  "document_id": {
+                                    "type": "string",
+                                    "pattern": "^readasset-[a-f0-9]{40}$",
+                                    "maxLength": 50
+                                  },
+                                  "source_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "extraction_version": {
+                                    "type": "string",
+                                    "maxLength": 140
+                                  }
+                                }
                               },
-                              "source_revision": {
-                                "anyOf": [
-                                  {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "maximum": 2147483647
+                              "maxItems": 8
+                            },
+                            "documents": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "asset_id",
+                                  "url",
+                                  "sha256"
+                                ],
+                                "properties": {
+                                  "asset_id": {
+                                    "type": "string",
+                                    "pattern": "^readasset-[a-f0-9]{40}$",
+                                    "maxLength": 50
                                   },
-                                  {
-                                    "type": "null"
+                                  "url": {
+                                    "type": "string",
+                                    "maxLength": 1500
+                                  },
+                                  "sha256": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "maxLength": 64
                                   }
-                                ]
+                                }
+                              },
+                              "maxItems": 44
+                            },
+                            "recommendation": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "date",
+                                "requested",
+                                "selected",
+                                "attempted",
+                                "ranking_version",
+                                "scope_digest"
+                              ],
+                              "properties": {
+                                "date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "requested": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 8
+                                },
+                                "selected": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 8
+                                },
+                                "attempted": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 24
+                                },
+                                "ranking_version": {
+                                  "type": "string",
+                                  "maxLength": 100
+                                },
+                                "scope_digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$",
+                                  "maxLength": 64
+                                }
                               }
                             }
                           }
                         },
-                        "warnings": {
-                          "type": "array",
-                          "maxItems": 100,
-                          "items": {
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "adopted": {
+                      "type": "object",
+                      "maxProperties": 81,
+                      "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "article_id",
+                          "revision"
+                        ],
+                        "properties": {
+                          "article_id": {
                             "type": "string",
-                            "maxLength": 2000
+                            "maxLength": 128,
+                            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
                           }
                         }
                       }
                     },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "adopted": {
-                  "type": "object",
-                  "maxProperties": 81,
-                  "additionalProperties": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                      "article_id",
-                      "revision"
-                    ],
-                    "properties": {
-                      "article_id": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
-                      },
-                      "revision": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 2147483647
+                    "attempt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "error_code": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time"
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "source_id",
+                        "source_revision",
+                        "url",
+                        "article_id",
+                        "content_version",
+                        "paragraph_id",
+                        "selected_characters"
+                      ],
+                      "properties": {
+                        "source_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "source_revision": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "url": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 1500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "article_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "content_version": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 64,
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "paragraph_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 10
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "selected_characters": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 100000
+                        },
+                        "candidate_work_id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "candidate_id": {
+                          "type": "string",
+                          "maxLength": 50,
+                          "pattern": "^candidate-[a-f0-9]{40}$"
+                        },
+                        "candidate_output_digest": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "recommendation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "preferences",
+                            "sources",
+                            "catalog_revision",
+                            "date",
+                            "ranking_version",
+                            "seen_count",
+                            "digest",
+                            "extraction_version"
+                          ],
+                          "properties": {
+                            "preferences": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "revision",
+                                "value",
+                                "updated_at"
+                              ],
+                              "properties": {
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "value": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "enabled",
+                                    "hour",
+                                    "minute",
+                                    "count",
+                                    "mode",
+                                    "topics",
+                                    "languages",
+                                    "query",
+                                    "auto_guide"
+                                  ],
+                                  "properties": {
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "hour": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 23
+                                    },
+                                    "minute": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 59
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 8
+                                    },
+                                    "mode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "recent",
+                                        "classic",
+                                        "mixed"
+                                      ]
+                                    },
+                                    "topics": {
+                                      "type": "array",
+                                      "maxItems": 6,
+                                      "items": {
+                                        "type": "string",
+                                        "maxLength": 20,
+                                        "enum": [
+                                          "认知",
+                                          "科技",
+                                          "经济学",
+                                          "社会学",
+                                          "心理",
+                                          "成长"
+                                        ]
+                                      },
+                                      "minItems": 1
+                                    },
+                                    "languages": {
+                                      "type": "array",
+                                      "minItems": 1,
+                                      "maxItems": 2,
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "zh",
+                                          "en"
+                                        ]
+                                      }
+                                    },
+                                    "query": {
+                                      "type": "string",
+                                      "maxLength": 300
+                                    },
+                                    "auto_guide": {
+                                      "type": "boolean"
+                                    },
+                                    "source_ids": {
+                                      "anyOf": [
+                                        {
+                                          "type": "array",
+                                          "maxItems": 1000,
+                                          "items": {
+                                            "type": "string",
+                                            "maxLength": 128,
+                                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                          }
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "updated_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "maxLength": 40
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "sources": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "revision",
+                                  "title",
+                                  "url",
+                                  "format"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 200,
+                                    "minLength": 1
+                                  },
+                                  "url": {
+                                    "type": "string",
+                                    "maxLength": 1500,
+                                    "format": "uri"
+                                  },
+                                  "format": {
+                                    "type": "string",
+                                    "enum": [
+                                      "article",
+                                      "rss",
+                                      "atom"
+                                    ]
+                                  },
+                                  "language": {
+                                    "type": "string",
+                                    "enum": [
+                                      "zh",
+                                      "en",
+                                      "unknown"
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "maxItems": 6,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 20,
+                                      "enum": [
+                                        "认知",
+                                        "科技",
+                                        "经济学",
+                                        "社会学",
+                                        "心理",
+                                        "成长"
+                                      ]
+                                    }
+                                  },
+                                  "domains": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 20,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 253,
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "catalog_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 80
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "maxItems": 20
+                            },
+                            "catalog_revision": {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "ranking_version": {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            "seen_count": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$",
+                              "maxLength": 64
+                            },
+                            "extraction_version": {
+                              "type": "string",
+                              "maxLength": 140
+                            }
+                          }
+                        }
                       }
+                    },
+                    "output_digest": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 },
-                "attempt": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 2147483647
-                },
-                "error_code": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "maxLength": 100
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "created_at": {
-                  "type": "string",
-                  "maxLength": 40,
-                  "format": "date-time"
-                },
-                "updated_at": {
-                  "type": "string",
-                  "maxLength": 40,
-                  "format": "date-time"
-                },
-                "scope": {
+                {
                   "type": "object",
                   "additionalProperties": false,
                   "required": [
-                    "source_id",
-                    "source_revision",
-                    "url",
-                    "article_id",
-                    "content_version",
-                    "paragraph_id",
-                    "selected_characters"
+                    "id",
+                    "revision",
+                    "kind",
+                    "status",
+                    "adopted",
+                    "attempt",
+                    "error_code",
+                    "created_at",
+                    "updated_at",
+                    "scope",
+                    "output_digest",
+                    "has_output"
                   ],
                   "properties": {
-                    "source_id": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "collect_url",
+                        "collect_source",
+                        "guide",
+                        "translation",
+                        "summary",
+                        "english",
+                        "fetch_full",
+                        "recommend"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled"
+                      ]
+                    },
+                    "adopted": {
+                      "type": "object",
+                      "maxProperties": 81,
+                      "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "article_id",
+                          "revision"
+                        ],
+                        "properties": {
+                          "article_id": {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                          },
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          }
+                        }
+                      }
+                    },
+                    "attempt": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "error_code": {
                       "anyOf": [
                         {
                           "type": "string",
-                          "maxLength": 128,
-                          "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          "maxLength": 100
                         },
                         {
                           "type": "null"
                         }
                       ]
                     },
-                    "source_revision": {
-                      "anyOf": [
-                        {
+                    "created_at": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time"
+                    },
+                    "scope": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "source_id",
+                        "source_revision",
+                        "url",
+                        "article_id",
+                        "content_version",
+                        "paragraph_id",
+                        "selected_characters"
+                      ],
+                      "properties": {
+                        "source_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "source_revision": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "url": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 1500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "article_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "content_version": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 64,
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "paragraph_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 10
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "selected_characters": {
                           "type": "integer",
-                          "minimum": 1,
-                          "maximum": 2147483647
+                          "minimum": 0,
+                          "maximum": 100000
                         },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "url": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "maxLength": 1500
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "article_id": {
-                      "anyOf": [
-                        {
+                        "candidate_work_id": {
                           "type": "string",
                           "maxLength": 128,
-                          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
                         },
-                        {
-                          "type": "null"
+                        "candidate_id": {
+                          "type": "string",
+                          "maxLength": 50,
+                          "pattern": "^candidate-[a-f0-9]{40}$"
+                        },
+                        "candidate_output_digest": {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "recommendation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "preferences",
+                            "sources",
+                            "catalog_revision",
+                            "date",
+                            "ranking_version",
+                            "seen_count",
+                            "digest",
+                            "extraction_version"
+                          ],
+                          "properties": {
+                            "preferences": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "revision",
+                                "value",
+                                "updated_at"
+                              ],
+                              "properties": {
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "value": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "enabled",
+                                    "hour",
+                                    "minute",
+                                    "count",
+                                    "mode",
+                                    "topics",
+                                    "languages",
+                                    "query",
+                                    "auto_guide"
+                                  ],
+                                  "properties": {
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "hour": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 23
+                                    },
+                                    "minute": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 59
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 8
+                                    },
+                                    "mode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "recent",
+                                        "classic",
+                                        "mixed"
+                                      ]
+                                    },
+                                    "topics": {
+                                      "type": "array",
+                                      "maxItems": 6,
+                                      "items": {
+                                        "type": "string",
+                                        "maxLength": 20,
+                                        "enum": [
+                                          "认知",
+                                          "科技",
+                                          "经济学",
+                                          "社会学",
+                                          "心理",
+                                          "成长"
+                                        ]
+                                      },
+                                      "minItems": 1
+                                    },
+                                    "languages": {
+                                      "type": "array",
+                                      "minItems": 1,
+                                      "maxItems": 2,
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "zh",
+                                          "en"
+                                        ]
+                                      }
+                                    },
+                                    "query": {
+                                      "type": "string",
+                                      "maxLength": 300
+                                    },
+                                    "auto_guide": {
+                                      "type": "boolean"
+                                    },
+                                    "source_ids": {
+                                      "anyOf": [
+                                        {
+                                          "type": "array",
+                                          "maxItems": 1000,
+                                          "items": {
+                                            "type": "string",
+                                            "maxLength": 128,
+                                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                          }
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "updated_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "maxLength": 40
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "sources": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "id",
+                                  "revision",
+                                  "title",
+                                  "url",
+                                  "format"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  },
+                                  "revision": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 2147483647
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 200,
+                                    "minLength": 1
+                                  },
+                                  "url": {
+                                    "type": "string",
+                                    "maxLength": 1500,
+                                    "format": "uri"
+                                  },
+                                  "format": {
+                                    "type": "string",
+                                    "enum": [
+                                      "article",
+                                      "rss",
+                                      "atom"
+                                    ]
+                                  },
+                                  "language": {
+                                    "type": "string",
+                                    "enum": [
+                                      "zh",
+                                      "en",
+                                      "unknown"
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "maxItems": 6,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 20,
+                                      "enum": [
+                                        "认知",
+                                        "科技",
+                                        "经济学",
+                                        "社会学",
+                                        "心理",
+                                        "成长"
+                                      ]
+                                    }
+                                  },
+                                  "domains": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 20,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 253,
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "catalog_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 80
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "maxItems": 20
+                            },
+                            "catalog_revision": {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "ranking_version": {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            "seen_count": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 10000
+                            },
+                            "digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$",
+                              "maxLength": 64
+                            },
+                            "extraction_version": {
+                              "type": "string",
+                              "maxLength": 140
+                            }
+                          }
                         }
-                      ]
+                      }
                     },
-                    "content_version": {
+                    "output_digest": {
                       "anyOf": [
                         {
                           "type": "string",
@@ -75820,52 +82272,12 @@ export const LightTickReadingWorkReceiptSchema = {
                         }
                       ]
                     },
-                    "paragraph_id": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "maxLength": 10
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "selected_characters": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 100000
-                    },
-                    "candidate_work_id": {
-                      "type": "string",
-                      "maxLength": 128,
-                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-                    },
-                    "candidate_id": {
-                      "type": "string",
-                      "maxLength": 50,
-                      "pattern": "^candidate-[a-f0-9]{40}$"
-                    },
-                    "candidate_output_digest": {
-                      "type": "string",
-                      "maxLength": 64,
-                      "pattern": "^[a-f0-9]{64}$"
+                    "has_output": {
+                      "type": "boolean"
                     }
                   }
-                },
-                "output_digest": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "maxLength": 64,
-                      "pattern": "^[a-f0-9]{64}$"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
                 }
-              }
+              ]
             },
             "work_id": {
               "type": "string",
@@ -76061,6 +82473,7 @@ export type LightTickReadingWorkReceipt = {
   "output_digest": string;
   "index": number | unknown;
   "base_article_revision": number | unknown;
+  "response_view"?: string;
 }
 ) | (
 {
@@ -76081,6 +82494,10 @@ export type LightTickReadingWorkReceipt = {
   "auto_guide": boolean;
   "source_ids"?: string[] | unknown;
 };
+}
+) | (
+{
+  "scope_digest": string;
 }
 );
   "operation_id": string;
@@ -76104,12 +82521,13 @@ export type LightTickReadingWorkReceipt = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 ) | (
 {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -76188,6 +82606,48 @@ export type LightTickReadingWorkReceipt = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -76211,15 +82671,59 @@ export type LightTickReadingWorkReceipt = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
 }
 ) | (
 {
-  "work": {
+  "work": (
+{
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -76298,6 +82802,48 @@ export type LightTickReadingWorkReceipt = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -76321,9 +82867,127 @@ export type LightTickReadingWorkReceipt = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "adopted": {
+  [key: string]: {
+  "article_id": string;
+  "revision": number;
 };
+};
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "scope": {
+  "source_id": string | unknown;
+  "source_revision": number | unknown;
+  "url": string | unknown;
+  "article_id": string | unknown;
+  "content_version": string | unknown;
+  "paragraph_id": string | unknown;
+  "selected_characters": number;
+  "candidate_work_id"?: string;
+  "candidate_id"?: string;
+  "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+};
+  "output_digest": string | unknown;
+  "has_output": boolean;
+}
+);
   "work_id": string;
   "article_id": string;
   "revision": number;
@@ -76388,7 +83052,8 @@ export const LightTickReadingWorkExportSchema = {
         "translation",
         "summary",
         "english",
-        "fetch_full"
+        "fetch_full",
+        "recommend"
       ]
     },
     "status": {
@@ -76654,13 +83319,7 @@ export const LightTickReadingWorkExportSchema = {
                       "encoding"
                     ]
                   },
-                  "then": {
-                    "properties": {
-                      "content_type": {
-                        "const": "application/pdf"
-                      }
-                    }
-                  },
+                  "then": {},
                   "else": {
                     "properties": {
                       "body": {
@@ -76882,6 +83541,281 @@ export const LightTickReadingWorkExportSchema = {
               "items": {
                 "type": "string",
                 "maxLength": 2000
+              }
+            },
+            "entry_refs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "asset_id",
+                  "content",
+                  "content_digest",
+                  "document_id",
+                  "source_id",
+                  "extraction_version"
+                ],
+                "properties": {
+                  "asset_id": {
+                    "type": "string",
+                    "pattern": "^readasset-[a-f0-9]{40}$",
+                    "maxLength": 50
+                  },
+                  "content": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title",
+                      "source_url",
+                      "language",
+                      "published_at"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 1
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "language": {
+                        "type": "string",
+                        "maxLength": 35,
+                        "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                      },
+                      "published_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "author": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "translated_title": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "publisher": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 10000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "access": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recommendation_reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "topics": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        }
+                      },
+                      "category": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "recent",
+                              "classic",
+                              "manual"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "published_date": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 10,
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "content_digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "maxLength": 64
+                  },
+                  "document_id": {
+                    "type": "string",
+                    "pattern": "^readasset-[a-f0-9]{40}$",
+                    "maxLength": 50
+                  },
+                  "source_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "extraction_version": {
+                    "type": "string",
+                    "maxLength": 140
+                  }
+                }
+              },
+              "maxItems": 8
+            },
+            "documents": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "asset_id",
+                  "url",
+                  "sha256"
+                ],
+                "properties": {
+                  "asset_id": {
+                    "type": "string",
+                    "pattern": "^readasset-[a-f0-9]{40}$",
+                    "maxLength": 50
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 1500
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "maxLength": 64
+                  }
+                }
+              },
+              "maxItems": 44
+            },
+            "recommendation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "date",
+                "requested",
+                "selected",
+                "attempted",
+                "ranking_version",
+                "scope_digest"
+              ],
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "requested": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                },
+                "selected": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8
+                },
+                "attempted": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 24
+                },
+                "ranking_version": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "scope_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$",
+                  "maxLength": 64
+                }
               }
             }
           }
@@ -77201,6 +84135,341 @@ export const LightTickReadingWorkExportSchema = {
           "type": "string",
           "maxLength": 64,
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scope",
+            "seen",
+            "feedback",
+            "automatic"
+          ],
+          "properties": {
+            "scope": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "preferences",
+                "sources",
+                "catalog_revision",
+                "date",
+                "ranking_version",
+                "seen_count",
+                "digest",
+                "extraction_version"
+              ],
+              "properties": {
+                "preferences": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "revision",
+                    "value",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "enabled",
+                        "hour",
+                        "minute",
+                        "count",
+                        "mode",
+                        "topics",
+                        "languages",
+                        "query",
+                        "auto_guide"
+                      ],
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "hour": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 23
+                        },
+                        "minute": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 59
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "recent",
+                            "classic",
+                            "mixed"
+                          ]
+                        },
+                        "topics": {
+                          "type": "array",
+                          "maxItems": 6,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 20,
+                            "enum": [
+                              "认知",
+                              "科技",
+                              "经济学",
+                              "社会学",
+                              "心理",
+                              "成长"
+                            ]
+                          },
+                          "minItems": 1
+                        },
+                        "languages": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 2,
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "zh",
+                              "en"
+                            ]
+                          }
+                        },
+                        "query": {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "auto_guide": {
+                          "type": "boolean"
+                        },
+                        "source_ids": {
+                          "anyOf": [
+                            {
+                              "type": "array",
+                              "maxItems": 1000,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "maxLength": 40
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "revision",
+                      "title",
+                      "url",
+                      "format"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "format": "uri"
+                      },
+                      "format": {
+                        "type": "string",
+                        "enum": [
+                          "article",
+                          "rss",
+                          "atom"
+                        ]
+                      },
+                      "language": {
+                        "type": "string",
+                        "enum": [
+                          "zh",
+                          "en",
+                          "unknown"
+                        ]
+                      },
+                      "topics": {
+                        "type": "array",
+                        "maxItems": 6,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 20,
+                          "enum": [
+                            "认知",
+                            "科技",
+                            "经济学",
+                            "社会学",
+                            "心理",
+                            "成长"
+                          ]
+                        }
+                      },
+                      "domains": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 253,
+                          "minLength": 1
+                        }
+                      },
+                      "catalog_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "maxItems": 20
+                },
+                "catalog_revision": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "ranking_version": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "seen_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$",
+                  "maxLength": 64
+                },
+                "extraction_version": {
+                  "type": "string",
+                  "maxLength": 140
+                }
+              }
+            },
+            "seen": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 1500
+              },
+              "maxItems": 10000
+            },
+            "feedback": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source_url",
+                  "topics",
+                  "feedback_value",
+                  "saved_at"
+                ],
+                "properties": {
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "topics": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "maxItems": 100
+                  },
+                  "feedback_value": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "saved_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "maxItems": 60
+            },
+            "automatic": {
+              "type": "boolean"
+            }
+          }
         }
       }
     }
@@ -77210,7 +84479,7 @@ export const LightTickReadingWorkExportSchema = {
 export type LightTickReadingWorkExport = {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -77289,6 +84558,48 @@ export type LightTickReadingWorkExport = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -77338,6 +84649,61 @@ export type LightTickReadingWorkExport = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "scope": {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+  "seen": string[];
+  "feedback": (
+{
+  "source_url": string | unknown;
+  "topics": string[];
+  "feedback_value": string | unknown;
+  "saved_at": string | unknown;
+}
+)[];
+  "automatic": boolean;
+};
 };
 };
 
@@ -77474,6 +84840,17 @@ export const LightTickReadingSourceEnvelopeSchema = {
               "type": "null"
             }
           ]
+        },
+        "catalog_origin_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 100
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     }
@@ -77501,6 +84878,7 @@ export type LightTickReadingSourceEnvelope = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 };
 };
 
@@ -77648,6 +85026,17 @@ export const LightTickReadingSourcePageEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "catalog_origin_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -77691,6 +85080,7 @@ export type LightTickReadingSourcePageEnvelope = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 )[];
   "next_cursor": string | unknown;
@@ -77753,7 +85143,8 @@ export const LightTickReadingWorkEnvelopeSchema = {
             "translation",
             "summary",
             "english",
-            "fetch_full"
+            "fetch_full",
+            "recommend"
           ]
         },
         "status": {
@@ -78019,13 +85410,7 @@ export const LightTickReadingWorkEnvelopeSchema = {
                           "encoding"
                         ]
                       },
-                      "then": {
-                        "properties": {
-                          "content_type": {
-                            "const": "application/pdf"
-                          }
-                        }
-                      },
+                      "then": {},
                       "else": {
                         "properties": {
                           "body": {
@@ -78248,6 +85633,281 @@ export const LightTickReadingWorkEnvelopeSchema = {
                     "type": "string",
                     "maxLength": 2000
                   }
+                },
+                "entry_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "asset_id",
+                      "content",
+                      "content_digest",
+                      "document_id",
+                      "source_id",
+                      "extraction_version"
+                    ],
+                    "properties": {
+                      "asset_id": {
+                        "type": "string",
+                        "pattern": "^readasset-[a-f0-9]{40}$",
+                        "maxLength": 50
+                      },
+                      "content": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "source_url",
+                          "language",
+                          "published_at"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "minLength": 1
+                          },
+                          "source_url": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 2048
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "language": {
+                            "type": "string",
+                            "maxLength": 35,
+                            "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                          },
+                          "published_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "author": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "tags": {
+                            "type": "array",
+                            "maxItems": 100,
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "translated_title": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "publisher": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 500
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 10000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "access": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "recommendation_reason": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "topics": {
+                            "type": "array",
+                            "maxItems": 100,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "minLength": 1
+                            }
+                          },
+                          "category": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "recent",
+                                  "classic",
+                                  "manual"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "published_date": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 10,
+                                "format": "date"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "content_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$",
+                        "maxLength": 64
+                      },
+                      "document_id": {
+                        "type": "string",
+                        "pattern": "^readasset-[a-f0-9]{40}$",
+                        "maxLength": 50
+                      },
+                      "source_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 128,
+                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "extraction_version": {
+                        "type": "string",
+                        "maxLength": 140
+                      }
+                    }
+                  },
+                  "maxItems": 8
+                },
+                "documents": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "asset_id",
+                      "url",
+                      "sha256"
+                    ],
+                    "properties": {
+                      "asset_id": {
+                        "type": "string",
+                        "pattern": "^readasset-[a-f0-9]{40}$",
+                        "maxLength": 50
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 1500
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$",
+                        "maxLength": 64
+                      }
+                    }
+                  },
+                  "maxItems": 44
+                },
+                "recommendation": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "date",
+                    "requested",
+                    "selected",
+                    "attempted",
+                    "ranking_version",
+                    "scope_digest"
+                  ],
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "requested": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 8
+                    },
+                    "selected": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 8
+                    },
+                    "attempted": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 24
+                    },
+                    "ranking_version": {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    "scope_digest": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$",
+                      "maxLength": 64
+                    }
+                  }
                 }
               }
             },
@@ -78408,6 +86068,261 @@ export const LightTickReadingWorkEnvelopeSchema = {
               "type": "string",
               "maxLength": 64,
               "pattern": "^[a-f0-9]{64}$"
+            },
+            "recommendation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "preferences",
+                "sources",
+                "catalog_revision",
+                "date",
+                "ranking_version",
+                "seen_count",
+                "digest",
+                "extraction_version"
+              ],
+              "properties": {
+                "preferences": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "revision",
+                    "value",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "value": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "enabled",
+                        "hour",
+                        "minute",
+                        "count",
+                        "mode",
+                        "topics",
+                        "languages",
+                        "query",
+                        "auto_guide"
+                      ],
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "hour": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 23
+                        },
+                        "minute": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 59
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 8
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "recent",
+                            "classic",
+                            "mixed"
+                          ]
+                        },
+                        "topics": {
+                          "type": "array",
+                          "maxItems": 6,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 20,
+                            "enum": [
+                              "认知",
+                              "科技",
+                              "经济学",
+                              "社会学",
+                              "心理",
+                              "成长"
+                            ]
+                          },
+                          "minItems": 1
+                        },
+                        "languages": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 2,
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "zh",
+                              "en"
+                            ]
+                          }
+                        },
+                        "query": {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "auto_guide": {
+                          "type": "boolean"
+                        },
+                        "source_ids": {
+                          "anyOf": [
+                            {
+                              "type": "array",
+                              "maxItems": 1000,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              }
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "updated_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "maxLength": 40
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "revision",
+                      "title",
+                      "url",
+                      "format"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "title": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "format": "uri"
+                      },
+                      "format": {
+                        "type": "string",
+                        "enum": [
+                          "article",
+                          "rss",
+                          "atom"
+                        ]
+                      },
+                      "language": {
+                        "type": "string",
+                        "enum": [
+                          "zh",
+                          "en",
+                          "unknown"
+                        ]
+                      },
+                      "topics": {
+                        "type": "array",
+                        "maxItems": 6,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 20,
+                          "enum": [
+                            "认知",
+                            "科技",
+                            "经济学",
+                            "社会学",
+                            "心理",
+                            "成长"
+                          ]
+                        }
+                      },
+                      "domains": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 253,
+                          "minLength": 1
+                        }
+                      },
+                      "catalog_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 80
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "maxItems": 20
+                },
+                "catalog_revision": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "ranking_version": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "seen_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$",
+                  "maxLength": 64
+                },
+                "extraction_version": {
+                  "type": "string",
+                  "maxLength": 140
+                }
+              }
             }
           }
         },
@@ -78435,7 +86350,7 @@ export type LightTickReadingWorkEnvelope = {
   "data": {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -78514,6 +86429,48 @@ export type LightTickReadingWorkEnvelope = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -78537,6 +86494,49 @@ export type LightTickReadingWorkEnvelope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
 };
@@ -78609,7 +86609,8 @@ export const LightTickReadingWorkPageEnvelopeSchema = {
                   "translation",
                   "summary",
                   "english",
-                  "fetch_full"
+                  "fetch_full",
+                  "recommend"
                 ]
               },
               "status": {
@@ -78774,6 +86775,261 @@ export const LightTickReadingWorkPageEnvelopeSchema = {
                     "type": "string",
                     "maxLength": 64,
                     "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "recommendation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "preferences",
+                      "sources",
+                      "catalog_revision",
+                      "date",
+                      "ranking_version",
+                      "seen_count",
+                      "digest",
+                      "extraction_version"
+                    ],
+                    "properties": {
+                      "preferences": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "revision",
+                          "value",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "value": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "enabled",
+                              "hour",
+                              "minute",
+                              "count",
+                              "mode",
+                              "topics",
+                              "languages",
+                              "query",
+                              "auto_guide"
+                            ],
+                            "properties": {
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "hour": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 23
+                              },
+                              "minute": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 59
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 8
+                              },
+                              "mode": {
+                                "type": "string",
+                                "enum": [
+                                  "recent",
+                                  "classic",
+                                  "mixed"
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 6,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 20,
+                                  "enum": [
+                                    "认知",
+                                    "科技",
+                                    "经济学",
+                                    "社会学",
+                                    "心理",
+                                    "成长"
+                                  ]
+                                },
+                                "minItems": 1
+                              },
+                              "languages": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 2,
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "zh",
+                                    "en"
+                                  ]
+                                }
+                              },
+                              "query": {
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              "auto_guide": {
+                                "type": "boolean"
+                              },
+                              "source_ids": {
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "maxItems": 1000,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 128,
+                                      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "updated_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "maxLength": 40
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "sources": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "revision",
+                            "title",
+                            "url",
+                            "format"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "minLength": 1
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 1500,
+                              "format": "uri"
+                            },
+                            "format": {
+                              "type": "string",
+                              "enum": [
+                                "article",
+                                "rss",
+                                "atom"
+                              ]
+                            },
+                            "language": {
+                              "type": "string",
+                              "enum": [
+                                "zh",
+                                "en",
+                                "unknown"
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "maxItems": 6,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 20,
+                                "enum": [
+                                  "认知",
+                                  "科技",
+                                  "经济学",
+                                  "社会学",
+                                  "心理",
+                                  "成长"
+                                ]
+                              }
+                            },
+                            "domains": {
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 20,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 253,
+                                "minLength": 1
+                              }
+                            },
+                            "catalog_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 80
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "maxItems": 20
+                      },
+                      "catalog_revision": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "ranking_version": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "seen_count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10000
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$",
+                        "maxLength": 64
+                      },
+                      "extraction_version": {
+                        "type": "string",
+                        "maxLength": 140
+                      }
+                    }
                   }
                 }
               },
@@ -78821,7 +87077,7 @@ export type LightTickReadingWorkPageEnvelope = {
 {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "adopted": {
   [key: string]: {
@@ -78844,6 +87100,49 @@ export type LightTickReadingWorkPageEnvelope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
   "has_output": boolean;
@@ -78883,349 +87182,74 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
       ],
       "properties": {
         "work": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "id",
-            "revision",
-            "kind",
-            "status",
-            "output",
-            "adopted",
-            "attempt",
-            "error_code",
-            "created_at",
-            "updated_at",
-            "scope",
-            "output_digest"
-          ],
-          "properties": {
-            "id": {
-              "type": "string",
-              "maxLength": 128,
-              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-            },
-            "revision": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 2147483647
-            },
-            "kind": {
-              "type": "string",
-              "enum": [
-                "collect_url",
-                "collect_source",
-                "guide",
-                "translation",
-                "summary",
-                "english",
-                "fetch_full"
-              ]
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "queued",
-                "running",
-                "succeeded",
-                "failed",
-                "cancelled"
-              ]
-            },
-            "output": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [],
-                  "properties": {
-                    "entries": {
-                      "type": "array",
-                      "maxItems": 80,
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "title",
-                          "body",
-                          "source_url",
-                          "language",
-                          "published_at"
-                        ],
-                        "properties": {
-                          "title": {
-                            "type": "string",
-                            "maxLength": 500,
-                            "minLength": 1
-                          },
-                          "body": {
-                            "type": "string",
-                            "maxLength": 500000,
-                            "minLength": 1
-                          },
-                          "source_url": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 2048
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "language": {
-                            "type": "string",
-                            "maxLength": 35,
-                            "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
-                          },
-                          "published_at": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "author": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 500
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "tags": {
-                            "type": "array",
-                            "maxItems": 100,
-                            "items": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 200
-                            }
-                          },
-                          "translated_title": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 500
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "publisher": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 500
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "description": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 10000
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "access": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 2000
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "recommendation_reason": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 2000
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "topics": {
-                            "type": "array",
-                            "maxItems": 100,
-                            "items": {
-                              "type": "string",
-                              "maxLength": 200,
-                              "minLength": 1
-                            }
-                          },
-                          "category": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "enum": [
-                                  "recent",
-                                  "classic",
-                                  "manual"
-                                ]
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "published_date": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "maxLength": 10,
-                                "format": "date"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    },
-                    "text": {
-                      "type": "string",
-                      "maxLength": 100000
-                    },
-                    "provider": {
-                      "type": "string",
-                      "maxLength": 500
-                    },
-                    "model": {
-                      "type": "string",
-                      "maxLength": 500
-                    },
-                    "prompt_version": {
-                      "type": "string",
-                      "maxLength": 40
-                    },
-                    "document": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "revision",
+                "kind",
+                "status",
+                "output",
+                "adopted",
+                "attempt",
+                "error_code",
+                "created_at",
+                "updated_at",
+                "scope",
+                "output_digest"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "collect_url",
+                    "collect_source",
+                    "guide",
+                    "translation",
+                    "summary",
+                    "english",
+                    "fetch_full",
+                    "recommend"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "output": {
+                  "anyOf": [
+                    {
                       "type": "object",
                       "additionalProperties": false,
-                      "required": [
-                        "body",
-                        "content_type",
-                        "url",
-                        "sha256",
-                        "capture_kind"
-                      ],
+                      "required": [],
                       "properties": {
-                        "body": {
-                          "type": "string",
-                          "maxLength": 10666668
-                        },
-                        "content_type": {
-                          "type": "string",
-                          "maxLength": 500
-                        },
-                        "url": {
-                          "type": "string",
-                          "maxLength": 1500
-                        },
-                        "sha256": {
-                          "type": "string",
-                          "maxLength": 64,
-                          "pattern": "^[a-f0-9]{64}$"
-                        },
-                        "capture_kind": {
-                          "type": "string",
-                          "enum": [
-                            "web_text",
-                            "pdf_text",
-                            "feed_entry",
-                            "full_fetch"
-                          ]
-                        },
-                        "extraction_version": {
-                          "type": "string",
-                          "maxLength": 140
-                        },
-                        "encoding": {
-                          "type": "string",
-                          "enum": [
-                            "base64"
-                          ]
-                        },
-                        "resolved_url": {
-                          "type": "string",
-                          "maxLength": 1500,
-                          "format": "uri"
-                        }
-                      },
-                      "allOf": [
-                        {
-                          "if": {
-                            "properties": {
-                              "encoding": {
-                                "const": "base64"
-                              }
-                            },
-                            "required": [
-                              "encoding"
-                            ]
-                          },
-                          "then": {
-                            "properties": {
-                              "content_type": {
-                                "const": "application/pdf"
-                              }
-                            }
-                          },
-                          "else": {
-                            "properties": {
-                              "body": {
-                                "maxLength": 8000000
-                              }
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    "candidates": {
-                      "type": "array",
-                      "maxItems": 80,
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "id",
-                          "content",
-                          "excerpt",
-                          "source_id",
-                          "source_revision"
-                        ],
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "maxLength": 50,
-                            "pattern": "^candidate-[a-f0-9]{40}$"
-                          },
-                          "content": {
+                        "entries": {
+                          "type": "array",
+                          "maxItems": 80,
+                          "items": {
                             "type": "object",
                             "additionalProperties": false,
                             "required": [
                               "title",
+                              "body",
                               "source_url",
                               "language",
                               "published_at"
@@ -79234,6 +87258,11 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                               "title": {
                                 "type": "string",
                                 "maxLength": 500,
+                                "minLength": 1
+                              },
+                              "body": {
+                                "type": "string",
+                                "maxLength": 500000,
                                 "minLength": 1
                               },
                               "source_url": {
@@ -79375,164 +87404,1481 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                                 ]
                               }
                             }
+                          }
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 100000
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "document": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "body",
+                            "content_type",
+                            "url",
+                            "sha256",
+                            "capture_kind"
+                          ],
+                          "properties": {
+                            "body": {
+                              "type": "string",
+                              "maxLength": 10666668
+                            },
+                            "content_type": {
+                              "type": "string",
+                              "maxLength": 500
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 1500
+                            },
+                            "sha256": {
+                              "type": "string",
+                              "maxLength": 64,
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "capture_kind": {
+                              "type": "string",
+                              "enum": [
+                                "web_text",
+                                "pdf_text",
+                                "feed_entry",
+                                "full_fetch"
+                              ]
+                            },
+                            "extraction_version": {
+                              "type": "string",
+                              "maxLength": 140
+                            },
+                            "encoding": {
+                              "type": "string",
+                              "enum": [
+                                "base64"
+                              ]
+                            },
+                            "resolved_url": {
+                              "type": "string",
+                              "maxLength": 1500,
+                              "format": "uri"
+                            }
                           },
-                          "excerpt": {
-                            "type": "string",
-                            "maxLength": 100000
-                          },
-                          "source_id": {
-                            "anyOf": [
-                              {
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "encoding": {
+                                    "const": "base64"
+                                  }
+                                },
+                                "required": [
+                                  "encoding"
+                                ]
+                              },
+                              "then": {},
+                              "else": {
+                                "properties": {
+                                  "body": {
+                                    "maxLength": 8000000
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "candidates": {
+                          "type": "array",
+                          "maxItems": 80,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "content",
+                              "excerpt",
+                              "source_id",
+                              "source_revision"
+                            ],
+                            "properties": {
+                              "id": {
                                 "type": "string",
-                                "maxLength": 128,
-                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                "maxLength": 50,
+                                "pattern": "^candidate-[a-f0-9]{40}$"
                               },
-                              {
-                                "type": "null"
+                              "content": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "title",
+                                  "source_url",
+                                  "language",
+                                  "published_at"
+                                ],
+                                "properties": {
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                  },
+                                  "source_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2048
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "language": {
+                                    "type": "string",
+                                    "maxLength": 35,
+                                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                  },
+                                  "published_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "author": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "tags": {
+                                    "type": "array",
+                                    "maxItems": 100,
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    }
+                                  },
+                                  "translated_title": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "publisher": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 10000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "access": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "recommendation_reason": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "maxItems": 100,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 200,
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "category": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "recent",
+                                          "classic",
+                                          "manual"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "published_date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 10,
+                                        "format": "date"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "excerpt": {
+                                "type": "string",
+                                "maxLength": 100000
+                              },
+                              "source_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "source_revision": {
+                                "anyOf": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
-                            ]
+                            }
+                          }
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "maxItems": 100,
+                          "items": {
+                            "type": "string",
+                            "maxLength": 2000
+                          }
+                        },
+                        "entry_refs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "asset_id",
+                              "content",
+                              "content_digest",
+                              "document_id",
+                              "source_id",
+                              "extraction_version"
+                            ],
+                            "properties": {
+                              "asset_id": {
+                                "type": "string",
+                                "pattern": "^readasset-[a-f0-9]{40}$",
+                                "maxLength": 50
+                              },
+                              "content": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "title",
+                                  "source_url",
+                                  "language",
+                                  "published_at"
+                                ],
+                                "properties": {
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                  },
+                                  "source_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2048
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "language": {
+                                    "type": "string",
+                                    "maxLength": 35,
+                                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                  },
+                                  "published_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "author": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "tags": {
+                                    "type": "array",
+                                    "maxItems": 100,
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    }
+                                  },
+                                  "translated_title": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "publisher": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 10000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "access": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "recommendation_reason": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "maxItems": 100,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 200,
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "category": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "recent",
+                                          "classic",
+                                          "manual"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "published_date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 10,
+                                        "format": "date"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "content_digest": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$",
+                                "maxLength": 64
+                              },
+                              "document_id": {
+                                "type": "string",
+                                "pattern": "^readasset-[a-f0-9]{40}$",
+                                "maxLength": 50
+                              },
+                              "source_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "extraction_version": {
+                                "type": "string",
+                                "maxLength": 140
+                              }
+                            }
                           },
-                          "source_revision": {
-                            "anyOf": [
-                              {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 2147483647
+                          "maxItems": 8
+                        },
+                        "documents": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "asset_id",
+                              "url",
+                              "sha256"
+                            ],
+                            "properties": {
+                              "asset_id": {
+                                "type": "string",
+                                "pattern": "^readasset-[a-f0-9]{40}$",
+                                "maxLength": 50
                               },
-                              {
-                                "type": "null"
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1500
+                              },
+                              "sha256": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$",
+                                "maxLength": 64
                               }
-                            ]
+                            }
+                          },
+                          "maxItems": 44
+                        },
+                        "recommendation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "date",
+                            "requested",
+                            "selected",
+                            "attempted",
+                            "ranking_version",
+                            "scope_digest"
+                          ],
+                          "properties": {
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "requested": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 8
+                            },
+                            "selected": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 8
+                            },
+                            "attempted": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 24
+                            },
+                            "ranking_version": {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            "scope_digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$",
+                              "maxLength": 64
+                            }
                           }
                         }
                       }
                     },
-                    "warnings": {
-                      "type": "array",
-                      "maxItems": 100,
-                      "items": {
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "adopted": {
+                  "type": "object",
+                  "maxProperties": 81,
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "article_id",
+                      "revision"
+                    ],
+                    "properties": {
+                      "article_id": {
                         "type": "string",
-                        "maxLength": 2000
+                        "maxLength": 128,
+                        "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
                       }
                     }
                   }
                 },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "adopted": {
-              "type": "object",
-              "maxProperties": 81,
-              "additionalProperties": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "article_id",
-                  "revision"
-                ],
-                "properties": {
-                  "article_id": {
-                    "type": "string",
-                    "maxLength": 128,
-                    "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
-                  },
-                  "revision": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 2147483647
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "error_code": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "format": "date-time"
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_id",
+                    "source_revision",
+                    "url",
+                    "article_id",
+                    "content_version",
+                    "paragraph_id",
+                    "selected_characters"
+                  ],
+                  "properties": {
+                    "source_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "source_revision": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 1500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "article_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "content_version": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "paragraph_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 10
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "selected_characters": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000
+                    },
+                    "candidate_work_id": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                    },
+                    "candidate_id": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^candidate-[a-f0-9]{40}$"
+                    },
+                    "candidate_output_digest": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "recommendation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "preferences",
+                        "sources",
+                        "catalog_revision",
+                        "date",
+                        "ranking_version",
+                        "seen_count",
+                        "digest",
+                        "extraction_version"
+                      ],
+                      "properties": {
+                        "preferences": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "revision",
+                            "value",
+                            "updated_at"
+                          ],
+                          "properties": {
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "value": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "enabled",
+                                "hour",
+                                "minute",
+                                "count",
+                                "mode",
+                                "topics",
+                                "languages",
+                                "query",
+                                "auto_guide"
+                              ],
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "hour": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 23
+                                },
+                                "minute": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 59
+                                },
+                                "count": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 8
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recent",
+                                    "classic",
+                                    "mixed"
+                                  ]
+                                },
+                                "topics": {
+                                  "type": "array",
+                                  "maxItems": 6,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 20,
+                                    "enum": [
+                                      "认知",
+                                      "科技",
+                                      "经济学",
+                                      "社会学",
+                                      "心理",
+                                      "成长"
+                                    ]
+                                  },
+                                  "minItems": 1
+                                },
+                                "languages": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "maxItems": 2,
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "zh",
+                                      "en"
+                                    ]
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "maxLength": 300
+                                },
+                                "auto_guide": {
+                                  "type": "boolean"
+                                },
+                                "source_ids": {
+                                  "anyOf": [
+                                    {
+                                      "type": "array",
+                                      "maxItems": 1000,
+                                      "items": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "updated_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "maxLength": 40
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "title",
+                              "url",
+                              "format"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "title": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "format": "uri"
+                              },
+                              "format": {
+                                "type": "string",
+                                "enum": [
+                                  "article",
+                                  "rss",
+                                  "atom"
+                                ]
+                              },
+                              "language": {
+                                "type": "string",
+                                "enum": [
+                                  "zh",
+                                  "en",
+                                  "unknown"
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 6,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 20,
+                                  "enum": [
+                                    "认知",
+                                    "科技",
+                                    "经济学",
+                                    "社会学",
+                                    "心理",
+                                    "成长"
+                                  ]
+                                }
+                              },
+                              "domains": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 20,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 253,
+                                  "minLength": 1
+                                }
+                              },
+                              "catalog_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 80
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "maxItems": 20
+                        },
+                        "catalog_revision": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "ranking_version": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "seen_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        }
+                      }
+                    }
                   }
+                },
+                "output_digest": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
-            "attempt": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 2147483647
-            },
-            "error_code": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 100
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "created_at": {
-              "type": "string",
-              "maxLength": 40,
-              "format": "date-time"
-            },
-            "updated_at": {
-              "type": "string",
-              "maxLength": 40,
-              "format": "date-time"
-            },
-            "scope": {
+            {
               "type": "object",
               "additionalProperties": false,
               "required": [
-                "source_id",
-                "source_revision",
-                "url",
-                "article_id",
-                "content_version",
-                "paragraph_id",
-                "selected_characters"
+                "id",
+                "revision",
+                "kind",
+                "status",
+                "adopted",
+                "attempt",
+                "error_code",
+                "created_at",
+                "updated_at",
+                "scope",
+                "output_digest",
+                "has_output"
               ],
               "properties": {
-                "source_id": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "collect_url",
+                    "collect_source",
+                    "guide",
+                    "translation",
+                    "summary",
+                    "english",
+                    "fetch_full",
+                    "recommend"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                },
+                "adopted": {
+                  "type": "object",
+                  "maxProperties": 81,
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "article_id",
+                      "revision"
+                    ],
+                    "properties": {
+                      "article_id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      }
+                    }
+                  }
+                },
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "error_code": {
                   "anyOf": [
                     {
                       "type": "string",
-                      "maxLength": 128,
-                      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                      "maxLength": 100
                     },
                     {
                       "type": "null"
                     }
                   ]
                 },
-                "source_revision": {
-                  "anyOf": [
-                    {
+                "created_at": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "maxLength": 40,
+                  "format": "date-time"
+                },
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_id",
+                    "source_revision",
+                    "url",
+                    "article_id",
+                    "content_version",
+                    "paragraph_id",
+                    "selected_characters"
+                  ],
+                  "properties": {
+                    "source_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "source_revision": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 1500
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "article_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "content_version": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 64,
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "paragraph_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 10
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "selected_characters": {
                       "type": "integer",
-                      "minimum": 1,
-                      "maximum": 2147483647
+                      "minimum": 0,
+                      "maximum": 100000
                     },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "url": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "maxLength": 1500
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "article_id": {
-                  "anyOf": [
-                    {
+                    "candidate_work_id": {
                       "type": "string",
                       "maxLength": 128,
-                      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
                     },
-                    {
-                      "type": "null"
+                    "candidate_id": {
+                      "type": "string",
+                      "maxLength": 50,
+                      "pattern": "^candidate-[a-f0-9]{40}$"
+                    },
+                    "candidate_output_digest": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "recommendation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "preferences",
+                        "sources",
+                        "catalog_revision",
+                        "date",
+                        "ranking_version",
+                        "seen_count",
+                        "digest",
+                        "extraction_version"
+                      ],
+                      "properties": {
+                        "preferences": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "revision",
+                            "value",
+                            "updated_at"
+                          ],
+                          "properties": {
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "value": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "enabled",
+                                "hour",
+                                "minute",
+                                "count",
+                                "mode",
+                                "topics",
+                                "languages",
+                                "query",
+                                "auto_guide"
+                              ],
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "hour": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 23
+                                },
+                                "minute": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 59
+                                },
+                                "count": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 8
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recent",
+                                    "classic",
+                                    "mixed"
+                                  ]
+                                },
+                                "topics": {
+                                  "type": "array",
+                                  "maxItems": 6,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 20,
+                                    "enum": [
+                                      "认知",
+                                      "科技",
+                                      "经济学",
+                                      "社会学",
+                                      "心理",
+                                      "成长"
+                                    ]
+                                  },
+                                  "minItems": 1
+                                },
+                                "languages": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "maxItems": 2,
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "zh",
+                                      "en"
+                                    ]
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "maxLength": 300
+                                },
+                                "auto_guide": {
+                                  "type": "boolean"
+                                },
+                                "source_ids": {
+                                  "anyOf": [
+                                    {
+                                      "type": "array",
+                                      "maxItems": 1000,
+                                      "items": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "updated_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "maxLength": 40
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "title",
+                              "url",
+                              "format"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "title": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "format": "uri"
+                              },
+                              "format": {
+                                "type": "string",
+                                "enum": [
+                                  "article",
+                                  "rss",
+                                  "atom"
+                                ]
+                              },
+                              "language": {
+                                "type": "string",
+                                "enum": [
+                                  "zh",
+                                  "en",
+                                  "unknown"
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 6,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 20,
+                                  "enum": [
+                                    "认知",
+                                    "科技",
+                                    "经济学",
+                                    "社会学",
+                                    "心理",
+                                    "成长"
+                                  ]
+                                }
+                              },
+                              "domains": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 20,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 253,
+                                  "minLength": 1
+                                }
+                              },
+                              "catalog_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 80
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "maxItems": 20
+                        },
+                        "catalog_revision": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "ranking_version": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "seen_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        }
+                      }
                     }
-                  ]
+                  }
                 },
-                "content_version": {
+                "output_digest": {
                   "anyOf": [
                     {
                       "type": "string",
@@ -79544,52 +88890,12 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                     }
                   ]
                 },
-                "paragraph_id": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "maxLength": 10
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "selected_characters": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 100000
-                },
-                "candidate_work_id": {
-                  "type": "string",
-                  "maxLength": 128,
-                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-                },
-                "candidate_id": {
-                  "type": "string",
-                  "maxLength": 50,
-                  "pattern": "^candidate-[a-f0-9]{40}$"
-                },
-                "candidate_output_digest": {
-                  "type": "string",
-                  "maxLength": 64,
-                  "pattern": "^[a-f0-9]{64}$"
+                "has_output": {
+                  "type": "boolean"
                 }
               }
-            },
-            "output_digest": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 64,
-                  "pattern": "^[a-f0-9]{64}$"
-                },
-                {
-                  "type": "null"
-                }
-              ]
             }
-          }
+          ]
         },
         "work_id": {
           "type": "string",
@@ -79616,10 +88922,11 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "message": string;
   "requestId": string;
   "data": {
-  "work": {
+  "work": (
+{
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -79698,6 +89005,48 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -79721,9 +89070,127 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "adopted": {
+  [key: string]: {
+  "article_id": string;
+  "revision": number;
 };
+};
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "scope": {
+  "source_id": string | unknown;
+  "source_revision": number | unknown;
+  "url": string | unknown;
+  "article_id": string | unknown;
+  "content_version": string | unknown;
+  "paragraph_id": string | unknown;
+  "selected_characters": number;
+  "candidate_work_id"?: string;
+  "candidate_id"?: string;
+  "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+};
+  "output_digest": string | unknown;
+  "has_output": boolean;
+}
+);
   "work_id": string;
   "article_id": string;
   "revision": number;
@@ -80048,6 +89515,10 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "response_view": {
+                  "type": "string",
+                  "const": "summary"
                 }
               }
             },
@@ -80158,6 +89629,20 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                       ]
                     }
                   }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scope_digest"
+              ],
+              "properties": {
+                "scope_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$",
+                  "maxLength": 64
                 }
               }
             }
@@ -80292,6 +89777,17 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "catalog_origin_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -80332,7 +89828,8 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                     "translation",
                     "summary",
                     "english",
-                    "fetch_full"
+                    "fetch_full",
+                    "recommend"
                   ]
                 },
                 "status": {
@@ -80598,13 +90095,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                   "encoding"
                                 ]
                               },
-                              "then": {
-                                "properties": {
-                                  "content_type": {
-                                    "const": "application/pdf"
-                                  }
-                                }
-                              },
+                              "then": {},
                               "else": {
                                 "properties": {
                                   "body": {
@@ -80827,6 +90318,281 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                             "type": "string",
                             "maxLength": 2000
                           }
+                        },
+                        "entry_refs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "asset_id",
+                              "content",
+                              "content_digest",
+                              "document_id",
+                              "source_id",
+                              "extraction_version"
+                            ],
+                            "properties": {
+                              "asset_id": {
+                                "type": "string",
+                                "pattern": "^readasset-[a-f0-9]{40}$",
+                                "maxLength": 50
+                              },
+                              "content": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "title",
+                                  "source_url",
+                                  "language",
+                                  "published_at"
+                                ],
+                                "properties": {
+                                  "title": {
+                                    "type": "string",
+                                    "maxLength": 500,
+                                    "minLength": 1
+                                  },
+                                  "source_url": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2048
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "language": {
+                                    "type": "string",
+                                    "maxLength": 35,
+                                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                  },
+                                  "published_at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "author": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "tags": {
+                                    "type": "array",
+                                    "maxItems": 100,
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    }
+                                  },
+                                  "translated_title": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "publisher": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 500
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "description": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 10000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "access": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "recommendation_reason": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "maxItems": 100,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 200,
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "category": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "recent",
+                                          "classic",
+                                          "manual"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "published_date": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 10,
+                                        "format": "date"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "content_digest": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$",
+                                "maxLength": 64
+                              },
+                              "document_id": {
+                                "type": "string",
+                                "pattern": "^readasset-[a-f0-9]{40}$",
+                                "maxLength": 50
+                              },
+                              "source_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "extraction_version": {
+                                "type": "string",
+                                "maxLength": 140
+                              }
+                            }
+                          },
+                          "maxItems": 8
+                        },
+                        "documents": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "asset_id",
+                              "url",
+                              "sha256"
+                            ],
+                            "properties": {
+                              "asset_id": {
+                                "type": "string",
+                                "pattern": "^readasset-[a-f0-9]{40}$",
+                                "maxLength": 50
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1500
+                              },
+                              "sha256": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$",
+                                "maxLength": 64
+                              }
+                            }
+                          },
+                          "maxItems": 44
+                        },
+                        "recommendation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "date",
+                            "requested",
+                            "selected",
+                            "attempted",
+                            "ranking_version",
+                            "scope_digest"
+                          ],
+                          "properties": {
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "requested": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 8
+                            },
+                            "selected": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 8
+                            },
+                            "attempted": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 24
+                            },
+                            "ranking_version": {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            "scope_digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$",
+                              "maxLength": 64
+                            }
+                          }
                         }
                       }
                     },
@@ -80987,6 +90753,261 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                       "type": "string",
                       "maxLength": 64,
                       "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "recommendation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "preferences",
+                        "sources",
+                        "catalog_revision",
+                        "date",
+                        "ranking_version",
+                        "seen_count",
+                        "digest",
+                        "extraction_version"
+                      ],
+                      "properties": {
+                        "preferences": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "revision",
+                            "value",
+                            "updated_at"
+                          ],
+                          "properties": {
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "value": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "enabled",
+                                "hour",
+                                "minute",
+                                "count",
+                                "mode",
+                                "topics",
+                                "languages",
+                                "query",
+                                "auto_guide"
+                              ],
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "hour": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 23
+                                },
+                                "minute": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 59
+                                },
+                                "count": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 8
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recent",
+                                    "classic",
+                                    "mixed"
+                                  ]
+                                },
+                                "topics": {
+                                  "type": "array",
+                                  "maxItems": 6,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 20,
+                                    "enum": [
+                                      "认知",
+                                      "科技",
+                                      "经济学",
+                                      "社会学",
+                                      "心理",
+                                      "成长"
+                                    ]
+                                  },
+                                  "minItems": 1
+                                },
+                                "languages": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "maxItems": 2,
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "zh",
+                                      "en"
+                                    ]
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "maxLength": 300
+                                },
+                                "auto_guide": {
+                                  "type": "boolean"
+                                },
+                                "source_ids": {
+                                  "anyOf": [
+                                    {
+                                      "type": "array",
+                                      "maxItems": 1000,
+                                      "items": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "updated_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "maxLength": 40
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "id",
+                              "revision",
+                              "title",
+                              "url",
+                              "format"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "title": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1500,
+                                "format": "uri"
+                              },
+                              "format": {
+                                "type": "string",
+                                "enum": [
+                                  "article",
+                                  "rss",
+                                  "atom"
+                                ]
+                              },
+                              "language": {
+                                "type": "string",
+                                "enum": [
+                                  "zh",
+                                  "en",
+                                  "unknown"
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 6,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 20,
+                                  "enum": [
+                                    "认知",
+                                    "科技",
+                                    "经济学",
+                                    "社会学",
+                                    "心理",
+                                    "成长"
+                                  ]
+                                }
+                              },
+                              "domains": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 20,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 253,
+                                  "minLength": 1
+                                }
+                              },
+                              "catalog_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 80
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "maxItems": 20
+                        },
+                        "catalog_revision": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "ranking_version": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "seen_count": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        }
+                      }
                     }
                   }
                 },
@@ -81015,349 +91036,74 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
               ],
               "properties": {
                 "work": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "id",
-                    "revision",
-                    "kind",
-                    "status",
-                    "output",
-                    "adopted",
-                    "attempt",
-                    "error_code",
-                    "created_at",
-                    "updated_at",
-                    "scope",
-                    "output_digest"
-                  ],
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "maxLength": 128,
-                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-                    },
-                    "revision": {
-                      "type": "integer",
-                      "minimum": 1,
-                      "maximum": 2147483647
-                    },
-                    "kind": {
-                      "type": "string",
-                      "enum": [
-                        "collect_url",
-                        "collect_source",
-                        "guide",
-                        "translation",
-                        "summary",
-                        "english",
-                        "fetch_full"
-                      ]
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "queued",
-                        "running",
-                        "succeeded",
-                        "failed",
-                        "cancelled"
-                      ]
-                    },
-                    "output": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "required": [],
-                          "properties": {
-                            "entries": {
-                              "type": "array",
-                              "maxItems": 80,
-                              "items": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "required": [
-                                  "title",
-                                  "body",
-                                  "source_url",
-                                  "language",
-                                  "published_at"
-                                ],
-                                "properties": {
-                                  "title": {
-                                    "type": "string",
-                                    "maxLength": 500,
-                                    "minLength": 1
-                                  },
-                                  "body": {
-                                    "type": "string",
-                                    "maxLength": 500000,
-                                    "minLength": 1
-                                  },
-                                  "source_url": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 2048
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "language": {
-                                    "type": "string",
-                                    "maxLength": 35,
-                                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
-                                  },
-                                  "published_at": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "format": "date-time"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "author": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 500
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "tags": {
-                                    "type": "array",
-                                    "maxItems": 100,
-                                    "items": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 200
-                                    }
-                                  },
-                                  "translated_title": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 500
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "publisher": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 500
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "description": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 10000
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "access": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 2000
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "recommendation_reason": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 2000
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "topics": {
-                                    "type": "array",
-                                    "maxItems": 100,
-                                    "items": {
-                                      "type": "string",
-                                      "maxLength": 200,
-                                      "minLength": 1
-                                    }
-                                  },
-                                  "category": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "enum": [
-                                          "recent",
-                                          "classic",
-                                          "manual"
-                                        ]
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "published_date": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string",
-                                        "maxLength": 10,
-                                        "format": "date"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  }
-                                }
-                              }
-                            },
-                            "text": {
-                              "type": "string",
-                              "maxLength": 100000
-                            },
-                            "provider": {
-                              "type": "string",
-                              "maxLength": 500
-                            },
-                            "model": {
-                              "type": "string",
-                              "maxLength": 500
-                            },
-                            "prompt_version": {
-                              "type": "string",
-                              "maxLength": 40
-                            },
-                            "document": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "revision",
+                        "kind",
+                        "status",
+                        "output",
+                        "adopted",
+                        "attempt",
+                        "error_code",
+                        "created_at",
+                        "updated_at",
+                        "scope",
+                        "output_digest"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "collect_url",
+                            "collect_source",
+                            "guide",
+                            "translation",
+                            "summary",
+                            "english",
+                            "fetch_full",
+                            "recommend"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled"
+                          ]
+                        },
+                        "output": {
+                          "anyOf": [
+                            {
                               "type": "object",
                               "additionalProperties": false,
-                              "required": [
-                                "body",
-                                "content_type",
-                                "url",
-                                "sha256",
-                                "capture_kind"
-                              ],
+                              "required": [],
                               "properties": {
-                                "body": {
-                                  "type": "string",
-                                  "maxLength": 10666668
-                                },
-                                "content_type": {
-                                  "type": "string",
-                                  "maxLength": 500
-                                },
-                                "url": {
-                                  "type": "string",
-                                  "maxLength": 1500
-                                },
-                                "sha256": {
-                                  "type": "string",
-                                  "maxLength": 64,
-                                  "pattern": "^[a-f0-9]{64}$"
-                                },
-                                "capture_kind": {
-                                  "type": "string",
-                                  "enum": [
-                                    "web_text",
-                                    "pdf_text",
-                                    "feed_entry",
-                                    "full_fetch"
-                                  ]
-                                },
-                                "extraction_version": {
-                                  "type": "string",
-                                  "maxLength": 140
-                                },
-                                "encoding": {
-                                  "type": "string",
-                                  "enum": [
-                                    "base64"
-                                  ]
-                                },
-                                "resolved_url": {
-                                  "type": "string",
-                                  "maxLength": 1500,
-                                  "format": "uri"
-                                }
-                              },
-                              "allOf": [
-                                {
-                                  "if": {
-                                    "properties": {
-                                      "encoding": {
-                                        "const": "base64"
-                                      }
-                                    },
-                                    "required": [
-                                      "encoding"
-                                    ]
-                                  },
-                                  "then": {
-                                    "properties": {
-                                      "content_type": {
-                                        "const": "application/pdf"
-                                      }
-                                    }
-                                  },
-                                  "else": {
-                                    "properties": {
-                                      "body": {
-                                        "maxLength": 8000000
-                                      }
-                                    }
-                                  }
-                                }
-                              ]
-                            },
-                            "candidates": {
-                              "type": "array",
-                              "maxItems": 80,
-                              "items": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "required": [
-                                  "id",
-                                  "content",
-                                  "excerpt",
-                                  "source_id",
-                                  "source_revision"
-                                ],
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "maxLength": 50,
-                                    "pattern": "^candidate-[a-f0-9]{40}$"
-                                  },
-                                  "content": {
+                                "entries": {
+                                  "type": "array",
+                                  "maxItems": 80,
+                                  "items": {
                                     "type": "object",
                                     "additionalProperties": false,
                                     "required": [
                                       "title",
+                                      "body",
                                       "source_url",
                                       "language",
                                       "published_at"
@@ -81366,6 +91112,11 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                       "title": {
                                         "type": "string",
                                         "maxLength": 500,
+                                        "minLength": 1
+                                      },
+                                      "body": {
+                                        "type": "string",
+                                        "maxLength": 500000,
                                         "minLength": 1
                                       },
                                       "source_url": {
@@ -81507,164 +91258,1481 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                         ]
                                       }
                                     }
+                                  }
+                                },
+                                "text": {
+                                  "type": "string",
+                                  "maxLength": 100000
+                                },
+                                "provider": {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                "prompt_version": {
+                                  "type": "string",
+                                  "maxLength": 40
+                                },
+                                "document": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "body",
+                                    "content_type",
+                                    "url",
+                                    "sha256",
+                                    "capture_kind"
+                                  ],
+                                  "properties": {
+                                    "body": {
+                                      "type": "string",
+                                      "maxLength": 10666668
+                                    },
+                                    "content_type": {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 1500
+                                    },
+                                    "sha256": {
+                                      "type": "string",
+                                      "maxLength": 64,
+                                      "pattern": "^[a-f0-9]{64}$"
+                                    },
+                                    "capture_kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "web_text",
+                                        "pdf_text",
+                                        "feed_entry",
+                                        "full_fetch"
+                                      ]
+                                    },
+                                    "extraction_version": {
+                                      "type": "string",
+                                      "maxLength": 140
+                                    },
+                                    "encoding": {
+                                      "type": "string",
+                                      "enum": [
+                                        "base64"
+                                      ]
+                                    },
+                                    "resolved_url": {
+                                      "type": "string",
+                                      "maxLength": 1500,
+                                      "format": "uri"
+                                    }
                                   },
-                                  "excerpt": {
-                                    "type": "string",
-                                    "maxLength": 100000
-                                  },
-                                  "source_id": {
-                                    "anyOf": [
-                                      {
+                                  "allOf": [
+                                    {
+                                      "if": {
+                                        "properties": {
+                                          "encoding": {
+                                            "const": "base64"
+                                          }
+                                        },
+                                        "required": [
+                                          "encoding"
+                                        ]
+                                      },
+                                      "then": {},
+                                      "else": {
+                                        "properties": {
+                                          "body": {
+                                            "maxLength": 8000000
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "candidates": {
+                                  "type": "array",
+                                  "maxItems": 80,
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "id",
+                                      "content",
+                                      "excerpt",
+                                      "source_id",
+                                      "source_revision"
+                                    ],
+                                    "properties": {
+                                      "id": {
                                         "type": "string",
-                                        "maxLength": 128,
-                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                        "maxLength": 50,
+                                        "pattern": "^candidate-[a-f0-9]{40}$"
                                       },
-                                      {
-                                        "type": "null"
+                                      "content": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "title",
+                                          "source_url",
+                                          "language",
+                                          "published_at"
+                                        ],
+                                        "properties": {
+                                          "title": {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                          },
+                                          "source_url": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 2048
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "language": {
+                                            "type": "string",
+                                            "maxLength": 35,
+                                            "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                          },
+                                          "published_at": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "date-time"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "author": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "tags": {
+                                            "type": "array",
+                                            "maxItems": 100,
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 200
+                                            }
+                                          },
+                                          "translated_title": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "publisher": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "description": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 10000
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "access": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 2000
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "recommendation_reason": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 2000
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "topics": {
+                                            "type": "array",
+                                            "maxItems": 100,
+                                            "items": {
+                                              "type": "string",
+                                              "maxLength": 200,
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "category": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "recent",
+                                                  "classic",
+                                                  "manual"
+                                                ]
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "published_date": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 10,
+                                                "format": "date"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "excerpt": {
+                                        "type": "string",
+                                        "maxLength": 100000
+                                      },
+                                      "source_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 128,
+                                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "source_revision": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 2147483647
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
                                       }
-                                    ]
+                                    }
+                                  }
+                                },
+                                "warnings": {
+                                  "type": "array",
+                                  "maxItems": 100,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  }
+                                },
+                                "entry_refs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "asset_id",
+                                      "content",
+                                      "content_digest",
+                                      "document_id",
+                                      "source_id",
+                                      "extraction_version"
+                                    ],
+                                    "properties": {
+                                      "asset_id": {
+                                        "type": "string",
+                                        "pattern": "^readasset-[a-f0-9]{40}$",
+                                        "maxLength": 50
+                                      },
+                                      "content": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": [
+                                          "title",
+                                          "source_url",
+                                          "language",
+                                          "published_at"
+                                        ],
+                                        "properties": {
+                                          "title": {
+                                            "type": "string",
+                                            "maxLength": 500,
+                                            "minLength": 1
+                                          },
+                                          "source_url": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 2048
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "language": {
+                                            "type": "string",
+                                            "maxLength": 35,
+                                            "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                          },
+                                          "published_at": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "date-time"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "author": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "tags": {
+                                            "type": "array",
+                                            "maxItems": 100,
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 200
+                                            }
+                                          },
+                                          "translated_title": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "publisher": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 500
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "description": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 10000
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "access": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 2000
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "recommendation_reason": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 2000
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "topics": {
+                                            "type": "array",
+                                            "maxItems": 100,
+                                            "items": {
+                                              "type": "string",
+                                              "maxLength": 200,
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "category": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "recent",
+                                                  "classic",
+                                                  "manual"
+                                                ]
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "published_date": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 10,
+                                                "format": "date"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "content_digest": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$",
+                                        "maxLength": 64
+                                      },
+                                      "document_id": {
+                                        "type": "string",
+                                        "pattern": "^readasset-[a-f0-9]{40}$",
+                                        "maxLength": 50
+                                      },
+                                      "source_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 128,
+                                            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "extraction_version": {
+                                        "type": "string",
+                                        "maxLength": 140
+                                      }
+                                    }
                                   },
-                                  "source_revision": {
-                                    "anyOf": [
-                                      {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 2147483647
+                                  "maxItems": 8
+                                },
+                                "documents": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "asset_id",
+                                      "url",
+                                      "sha256"
+                                    ],
+                                    "properties": {
+                                      "asset_id": {
+                                        "type": "string",
+                                        "pattern": "^readasset-[a-f0-9]{40}$",
+                                        "maxLength": 50
                                       },
-                                      {
-                                        "type": "null"
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 1500
+                                      },
+                                      "sha256": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$",
+                                        "maxLength": 64
                                       }
-                                    ]
+                                    }
+                                  },
+                                  "maxItems": 44
+                                },
+                                "recommendation": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "date",
+                                    "requested",
+                                    "selected",
+                                    "attempted",
+                                    "ranking_version",
+                                    "scope_digest"
+                                  ],
+                                  "properties": {
+                                    "date": {
+                                      "type": "string",
+                                      "format": "date"
+                                    },
+                                    "requested": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 8
+                                    },
+                                    "selected": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 8
+                                    },
+                                    "attempted": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 24
+                                    },
+                                    "ranking_version": {
+                                      "type": "string",
+                                      "maxLength": 100
+                                    },
+                                    "scope_digest": {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{64}$",
+                                      "maxLength": 64
+                                    }
                                   }
                                 }
                               }
                             },
-                            "warnings": {
-                              "type": "array",
-                              "maxItems": 100,
-                              "items": {
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "adopted": {
+                          "type": "object",
+                          "maxProperties": 81,
+                          "additionalProperties": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "article_id",
+                              "revision"
+                            ],
+                            "properties": {
+                              "article_id": {
                                 "type": "string",
-                                "maxLength": 2000
+                                "maxLength": 128,
+                                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
                               }
                             }
                           }
                         },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "adopted": {
-                      "type": "object",
-                      "maxProperties": 81,
-                      "additionalProperties": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "article_id",
-                          "revision"
-                        ],
-                        "properties": {
-                          "article_id": {
-                            "type": "string",
-                            "maxLength": 128,
-                            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
-                          },
-                          "revision": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 2147483647
+                        "attempt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "error_code": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time"
+                        },
+                        "scope": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source_id",
+                            "source_revision",
+                            "url",
+                            "article_id",
+                            "content_version",
+                            "paragraph_id",
+                            "selected_characters"
+                          ],
+                          "properties": {
+                            "source_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "source_revision": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 1500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "article_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "content_version": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 64,
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "paragraph_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 10
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "selected_characters": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 100000
+                            },
+                            "candidate_work_id": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "candidate_id": {
+                              "type": "string",
+                              "maxLength": 50,
+                              "pattern": "^candidate-[a-f0-9]{40}$"
+                            },
+                            "candidate_output_digest": {
+                              "type": "string",
+                              "maxLength": 64,
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "recommendation": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "preferences",
+                                "sources",
+                                "catalog_revision",
+                                "date",
+                                "ranking_version",
+                                "seen_count",
+                                "digest",
+                                "extraction_version"
+                              ],
+                              "properties": {
+                                "preferences": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "revision",
+                                    "value",
+                                    "updated_at"
+                                  ],
+                                  "properties": {
+                                    "revision": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2147483647
+                                    },
+                                    "value": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "enabled",
+                                        "hour",
+                                        "minute",
+                                        "count",
+                                        "mode",
+                                        "topics",
+                                        "languages",
+                                        "query",
+                                        "auto_guide"
+                                      ],
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "boolean"
+                                        },
+                                        "hour": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 23
+                                        },
+                                        "minute": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 59
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 8
+                                        },
+                                        "mode": {
+                                          "type": "string",
+                                          "enum": [
+                                            "recent",
+                                            "classic",
+                                            "mixed"
+                                          ]
+                                        },
+                                        "topics": {
+                                          "type": "array",
+                                          "maxItems": 6,
+                                          "items": {
+                                            "type": "string",
+                                            "maxLength": 20,
+                                            "enum": [
+                                              "认知",
+                                              "科技",
+                                              "经济学",
+                                              "社会学",
+                                              "心理",
+                                              "成长"
+                                            ]
+                                          },
+                                          "minItems": 1
+                                        },
+                                        "languages": {
+                                          "type": "array",
+                                          "minItems": 1,
+                                          "maxItems": 2,
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "zh",
+                                              "en"
+                                            ]
+                                          }
+                                        },
+                                        "query": {
+                                          "type": "string",
+                                          "maxLength": 300
+                                        },
+                                        "auto_guide": {
+                                          "type": "boolean"
+                                        },
+                                        "source_ids": {
+                                          "anyOf": [
+                                            {
+                                              "type": "array",
+                                              "maxItems": 1000,
+                                              "items": {
+                                                "type": "string",
+                                                "maxLength": 128,
+                                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                              }
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "updated_at": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "maxLength": 40
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "sources": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "id",
+                                      "revision",
+                                      "title",
+                                      "url",
+                                      "format"
+                                    ],
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 2147483647
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 200,
+                                        "minLength": 1
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 1500,
+                                        "format": "uri"
+                                      },
+                                      "format": {
+                                        "type": "string",
+                                        "enum": [
+                                          "article",
+                                          "rss",
+                                          "atom"
+                                        ]
+                                      },
+                                      "language": {
+                                        "type": "string",
+                                        "enum": [
+                                          "zh",
+                                          "en",
+                                          "unknown"
+                                        ]
+                                      },
+                                      "topics": {
+                                        "type": "array",
+                                        "maxItems": 6,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 20,
+                                          "enum": [
+                                            "认知",
+                                            "科技",
+                                            "经济学",
+                                            "社会学",
+                                            "心理",
+                                            "成长"
+                                          ]
+                                        }
+                                      },
+                                      "domains": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "maxItems": 20,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 253,
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "catalog_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 80
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "maxItems": 20
+                                },
+                                "catalog_revision": {
+                                  "type": "string",
+                                  "maxLength": 100
+                                },
+                                "date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "ranking_version": {
+                                  "type": "string",
+                                  "maxLength": 100
+                                },
+                                "seen_count": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10000
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$",
+                                  "maxLength": 64
+                                },
+                                "extraction_version": {
+                                  "type": "string",
+                                  "maxLength": 140
+                                }
+                              }
+                            }
                           }
+                        },
+                        "output_digest": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 64,
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     },
-                    "attempt": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 2147483647
-                    },
-                    "error_code": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "maxLength": 100
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "created_at": {
-                      "type": "string",
-                      "maxLength": 40,
-                      "format": "date-time"
-                    },
-                    "updated_at": {
-                      "type": "string",
-                      "maxLength": 40,
-                      "format": "date-time"
-                    },
-                    "scope": {
+                    {
                       "type": "object",
                       "additionalProperties": false,
                       "required": [
-                        "source_id",
-                        "source_revision",
-                        "url",
-                        "article_id",
-                        "content_version",
-                        "paragraph_id",
-                        "selected_characters"
+                        "id",
+                        "revision",
+                        "kind",
+                        "status",
+                        "adopted",
+                        "attempt",
+                        "error_code",
+                        "created_at",
+                        "updated_at",
+                        "scope",
+                        "output_digest",
+                        "has_output"
                       ],
                       "properties": {
-                        "source_id": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "collect_url",
+                            "collect_source",
+                            "guide",
+                            "translation",
+                            "summary",
+                            "english",
+                            "fetch_full",
+                            "recommend"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled"
+                          ]
+                        },
+                        "adopted": {
+                          "type": "object",
+                          "maxProperties": 81,
+                          "additionalProperties": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "article_id",
+                              "revision"
+                            ],
+                            "properties": {
+                              "article_id": {
+                                "type": "string",
+                                "maxLength": 128,
+                                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                              }
+                            }
+                          }
+                        },
+                        "attempt": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "error_code": {
                           "anyOf": [
                             {
                               "type": "string",
-                              "maxLength": 128,
-                              "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                              "maxLength": 100
                             },
                             {
                               "type": "null"
                             }
                           ]
                         },
-                        "source_revision": {
-                          "anyOf": [
-                            {
+                        "created_at": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time"
+                        },
+                        "scope": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source_id",
+                            "source_revision",
+                            "url",
+                            "article_id",
+                            "content_version",
+                            "paragraph_id",
+                            "selected_characters"
+                          ],
+                          "properties": {
+                            "source_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "source_revision": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 1500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "article_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "content_version": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 64,
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "paragraph_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 10
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "selected_characters": {
                               "type": "integer",
-                              "minimum": 1,
-                              "maximum": 2147483647
+                              "minimum": 0,
+                              "maximum": 100000
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "url": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 1500
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "article_id": {
-                          "anyOf": [
-                            {
+                            "candidate_work_id": {
                               "type": "string",
                               "maxLength": 128,
-                              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
                             },
-                            {
-                              "type": "null"
+                            "candidate_id": {
+                              "type": "string",
+                              "maxLength": 50,
+                              "pattern": "^candidate-[a-f0-9]{40}$"
+                            },
+                            "candidate_output_digest": {
+                              "type": "string",
+                              "maxLength": 64,
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "recommendation": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "preferences",
+                                "sources",
+                                "catalog_revision",
+                                "date",
+                                "ranking_version",
+                                "seen_count",
+                                "digest",
+                                "extraction_version"
+                              ],
+                              "properties": {
+                                "preferences": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "revision",
+                                    "value",
+                                    "updated_at"
+                                  ],
+                                  "properties": {
+                                    "revision": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2147483647
+                                    },
+                                    "value": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "enabled",
+                                        "hour",
+                                        "minute",
+                                        "count",
+                                        "mode",
+                                        "topics",
+                                        "languages",
+                                        "query",
+                                        "auto_guide"
+                                      ],
+                                      "properties": {
+                                        "enabled": {
+                                          "type": "boolean"
+                                        },
+                                        "hour": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 23
+                                        },
+                                        "minute": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 59
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 8
+                                        },
+                                        "mode": {
+                                          "type": "string",
+                                          "enum": [
+                                            "recent",
+                                            "classic",
+                                            "mixed"
+                                          ]
+                                        },
+                                        "topics": {
+                                          "type": "array",
+                                          "maxItems": 6,
+                                          "items": {
+                                            "type": "string",
+                                            "maxLength": 20,
+                                            "enum": [
+                                              "认知",
+                                              "科技",
+                                              "经济学",
+                                              "社会学",
+                                              "心理",
+                                              "成长"
+                                            ]
+                                          },
+                                          "minItems": 1
+                                        },
+                                        "languages": {
+                                          "type": "array",
+                                          "minItems": 1,
+                                          "maxItems": 2,
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "zh",
+                                              "en"
+                                            ]
+                                          }
+                                        },
+                                        "query": {
+                                          "type": "string",
+                                          "maxLength": 300
+                                        },
+                                        "auto_guide": {
+                                          "type": "boolean"
+                                        },
+                                        "source_ids": {
+                                          "anyOf": [
+                                            {
+                                              "type": "array",
+                                              "maxItems": 1000,
+                                              "items": {
+                                                "type": "string",
+                                                "maxLength": 128,
+                                                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                              }
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "updated_at": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "maxLength": 40
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "sources": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "id",
+                                      "revision",
+                                      "title",
+                                      "url",
+                                      "format"
+                                    ],
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "maxLength": 128,
+                                        "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                      },
+                                      "revision": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 2147483647
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "maxLength": 200,
+                                        "minLength": 1
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 1500,
+                                        "format": "uri"
+                                      },
+                                      "format": {
+                                        "type": "string",
+                                        "enum": [
+                                          "article",
+                                          "rss",
+                                          "atom"
+                                        ]
+                                      },
+                                      "language": {
+                                        "type": "string",
+                                        "enum": [
+                                          "zh",
+                                          "en",
+                                          "unknown"
+                                        ]
+                                      },
+                                      "topics": {
+                                        "type": "array",
+                                        "maxItems": 6,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 20,
+                                          "enum": [
+                                            "认知",
+                                            "科技",
+                                            "经济学",
+                                            "社会学",
+                                            "心理",
+                                            "成长"
+                                          ]
+                                        }
+                                      },
+                                      "domains": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "maxItems": 20,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 253,
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "catalog_id": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 80
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "maxItems": 20
+                                },
+                                "catalog_revision": {
+                                  "type": "string",
+                                  "maxLength": 100
+                                },
+                                "date": {
+                                  "type": "string",
+                                  "format": "date"
+                                },
+                                "ranking_version": {
+                                  "type": "string",
+                                  "maxLength": 100
+                                },
+                                "seen_count": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10000
+                                },
+                                "digest": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$",
+                                  "maxLength": 64
+                                },
+                                "extraction_version": {
+                                  "type": "string",
+                                  "maxLength": 140
+                                }
+                              }
                             }
-                          ]
+                          }
                         },
-                        "content_version": {
+                        "output_digest": {
                           "anyOf": [
                             {
                               "type": "string",
@@ -81676,52 +92744,12 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                             }
                           ]
                         },
-                        "paragraph_id": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "maxLength": 10
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "selected_characters": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 100000
-                        },
-                        "candidate_work_id": {
-                          "type": "string",
-                          "maxLength": 128,
-                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
-                        },
-                        "candidate_id": {
-                          "type": "string",
-                          "maxLength": 50,
-                          "pattern": "^candidate-[a-f0-9]{40}$"
-                        },
-                        "candidate_output_digest": {
-                          "type": "string",
-                          "maxLength": 64,
-                          "pattern": "^[a-f0-9]{64}$"
+                        "has_output": {
+                          "type": "boolean"
                         }
                       }
-                    },
-                    "output_digest": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "maxLength": 64,
-                          "pattern": "^[a-f0-9]{64}$"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
                     }
-                  }
+                  ]
                 },
                 "work_id": {
                   "type": "string",
@@ -81923,6 +92951,7 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "output_digest": string;
   "index": number | unknown;
   "base_article_revision": number | unknown;
+  "response_view"?: string;
 }
 ) | (
 {
@@ -81943,6 +92972,10 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "auto_guide": boolean;
   "source_ids"?: string[] | unknown;
 };
+}
+) | (
+{
+  "scope_digest": string;
 }
 );
   "operation_id": string;
@@ -81966,12 +92999,13 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 ) | (
 {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -82050,6 +93084,48 @@ export type LightTickReadingWorkReceiptEnvelope = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -82073,15 +93149,59 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
 }
 ) | (
 {
-  "work": {
+  "work": (
+{
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -82160,6 +93280,48 @@ export type LightTickReadingWorkReceiptEnvelope = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -82183,9 +93345,127 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
 };
   "output_digest": string | unknown;
+}
+) | (
+{
+  "id": string;
+  "revision": number;
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "adopted": {
+  [key: string]: {
+  "article_id": string;
+  "revision": number;
 };
+};
+  "attempt": number;
+  "error_code": string | unknown;
+  "created_at": string;
+  "updated_at": string;
+  "scope": {
+  "source_id": string | unknown;
+  "source_revision": number | unknown;
+  "url": string | unknown;
+  "article_id": string | unknown;
+  "content_version": string | unknown;
+  "paragraph_id": string | unknown;
+  "selected_characters": number;
+  "candidate_work_id"?: string;
+  "candidate_id"?: string;
+  "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+};
+  "output_digest": string | unknown;
+  "has_output": boolean;
+}
+);
   "work_id": string;
   "article_id": string;
   "revision": number;
@@ -85125,6 +96405,17 @@ export const LightTickReadingExportSchema = {
                 "type": "null"
               }
             ]
+          },
+          "catalog_origin_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -85260,6 +96551,17 @@ export const LightTickReadingExportSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "catalog_origin_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 100
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             }
@@ -85306,7 +96608,8 @@ export const LightTickReadingExportSchema = {
               "translation",
               "summary",
               "english",
-              "fetch_full"
+              "fetch_full",
+              "recommend"
             ]
           },
           "status": {
@@ -85572,13 +96875,7 @@ export const LightTickReadingExportSchema = {
                             "encoding"
                           ]
                         },
-                        "then": {
-                          "properties": {
-                            "content_type": {
-                              "const": "application/pdf"
-                            }
-                          }
-                        },
+                        "then": {},
                         "else": {
                           "properties": {
                             "body": {
@@ -85800,6 +97097,281 @@ export const LightTickReadingExportSchema = {
                     "items": {
                       "type": "string",
                       "maxLength": 2000
+                    }
+                  },
+                  "entry_refs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "asset_id",
+                        "content",
+                        "content_digest",
+                        "document_id",
+                        "source_id",
+                        "extraction_version"
+                      ],
+                      "properties": {
+                        "asset_id": {
+                          "type": "string",
+                          "pattern": "^readasset-[a-f0-9]{40}$",
+                          "maxLength": 50
+                        },
+                        "content": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "title",
+                            "source_url",
+                            "language",
+                            "published_at"
+                          ],
+                          "properties": {
+                            "title": {
+                              "type": "string",
+                              "maxLength": 500,
+                              "minLength": 1
+                            },
+                            "source_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 2048
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "language": {
+                              "type": "string",
+                              "maxLength": 35,
+                              "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                            },
+                            "published_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "author": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "tags": {
+                              "type": "array",
+                              "maxItems": 100,
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              }
+                            },
+                            "translated_title": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "publisher": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "description": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 10000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "access": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "recommendation_reason": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "maxItems": 100,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 200,
+                                "minLength": 1
+                              }
+                            },
+                            "category": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "recent",
+                                    "classic",
+                                    "manual"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "published_date": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 10,
+                                  "format": "date"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "content_digest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        },
+                        "document_id": {
+                          "type": "string",
+                          "pattern": "^readasset-[a-f0-9]{40}$",
+                          "maxLength": 50
+                        },
+                        "source_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        }
+                      }
+                    },
+                    "maxItems": 8
+                  },
+                  "documents": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "asset_id",
+                        "url",
+                        "sha256"
+                      ],
+                      "properties": {
+                        "asset_id": {
+                          "type": "string",
+                          "pattern": "^readasset-[a-f0-9]{40}$",
+                          "maxLength": 50
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 1500
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$",
+                          "maxLength": 64
+                        }
+                      }
+                    },
+                    "maxItems": 44
+                  },
+                  "recommendation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "date",
+                      "requested",
+                      "selected",
+                      "attempted",
+                      "ranking_version",
+                      "scope_digest"
+                    ],
+                    "properties": {
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "requested": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 8
+                      },
+                      "selected": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 8
+                      },
+                      "attempted": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 24
+                      },
+                      "ranking_version": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "scope_digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$",
+                        "maxLength": 64
+                      }
                     }
                   }
                 }
@@ -86119,6 +97691,341 @@ export const LightTickReadingExportSchema = {
                 "type": "string",
                 "maxLength": 64,
                 "pattern": "^[a-f0-9]{64}$"
+              },
+              "recommendation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "scope",
+                  "seen",
+                  "feedback",
+                  "automatic"
+                ],
+                "properties": {
+                  "scope": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "preferences",
+                      "sources",
+                      "catalog_revision",
+                      "date",
+                      "ranking_version",
+                      "seen_count",
+                      "digest",
+                      "extraction_version"
+                    ],
+                    "properties": {
+                      "preferences": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "revision",
+                          "value",
+                          "updated_at"
+                        ],
+                        "properties": {
+                          "revision": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "value": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "enabled",
+                              "hour",
+                              "minute",
+                              "count",
+                              "mode",
+                              "topics",
+                              "languages",
+                              "query",
+                              "auto_guide"
+                            ],
+                            "properties": {
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "hour": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 23
+                              },
+                              "minute": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 59
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 8
+                              },
+                              "mode": {
+                                "type": "string",
+                                "enum": [
+                                  "recent",
+                                  "classic",
+                                  "mixed"
+                                ]
+                              },
+                              "topics": {
+                                "type": "array",
+                                "maxItems": 6,
+                                "items": {
+                                  "type": "string",
+                                  "maxLength": 20,
+                                  "enum": [
+                                    "认知",
+                                    "科技",
+                                    "经济学",
+                                    "社会学",
+                                    "心理",
+                                    "成长"
+                                  ]
+                                },
+                                "minItems": 1
+                              },
+                              "languages": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 2,
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "zh",
+                                    "en"
+                                  ]
+                                }
+                              },
+                              "query": {
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              "auto_guide": {
+                                "type": "boolean"
+                              },
+                              "source_ids": {
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "maxItems": 1000,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 128,
+                                      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                    }
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "updated_at": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "maxLength": 40
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "sources": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "revision",
+                            "title",
+                            "url",
+                            "format"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "maxLength": 128,
+                              "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "title": {
+                              "type": "string",
+                              "maxLength": 200,
+                              "minLength": 1
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 1500,
+                              "format": "uri"
+                            },
+                            "format": {
+                              "type": "string",
+                              "enum": [
+                                "article",
+                                "rss",
+                                "atom"
+                              ]
+                            },
+                            "language": {
+                              "type": "string",
+                              "enum": [
+                                "zh",
+                                "en",
+                                "unknown"
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "maxItems": 6,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 20,
+                                "enum": [
+                                  "认知",
+                                  "科技",
+                                  "经济学",
+                                  "社会学",
+                                  "心理",
+                                  "成长"
+                                ]
+                              }
+                            },
+                            "domains": {
+                              "type": "array",
+                              "minItems": 1,
+                              "maxItems": 20,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 253,
+                                "minLength": 1
+                              }
+                            },
+                            "catalog_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 80
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "maxItems": 20
+                      },
+                      "catalog_revision": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "ranking_version": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "seen_count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10000
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$",
+                        "maxLength": 64
+                      },
+                      "extraction_version": {
+                        "type": "string",
+                        "maxLength": 140
+                      }
+                    }
+                  },
+                  "seen": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 1500
+                    },
+                    "maxItems": 10000
+                  },
+                  "feedback": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "source_url",
+                        "topics",
+                        "feedback_value",
+                        "saved_at"
+                      ],
+                      "properties": {
+                        "source_url": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 1500
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "topics": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "maxItems": 100
+                        },
+                        "feedback_value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 100
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "saved_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 40
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "maxItems": 60
+                  },
+                  "automatic": {
+                    "type": "boolean"
+                  }
+                }
               }
             }
           }
@@ -87608,6 +99515,286 @@ export const LightTickReadingExportSchema = {
           }
         }
       }
+    },
+    "work_assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "work_id",
+          "sha256",
+          "kind",
+          "value"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^readasset-[a-f0-9]{40}$",
+            "maxLength": 50
+          },
+          "work_id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "maxLength": 64
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "entry",
+              "document"
+            ]
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "body",
+                  "source_url",
+                  "language",
+                  "published_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 500000,
+                    "minLength": 1
+                  },
+                  "source_url": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2048
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35,
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                  },
+                  "published_at": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "translated_title": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "publisher": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 10000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "access": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recommendation_reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "topics": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "minLength": 1
+                    }
+                  },
+                  "category": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "recent",
+                          "classic",
+                          "manual"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "published_date": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 10,
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "body",
+                  "content_type",
+                  "url",
+                  "sha256",
+                  "capture_kind"
+                ],
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "maxLength": 10666668
+                  },
+                  "content_type": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 1500
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "capture_kind": {
+                    "type": "string",
+                    "enum": [
+                      "web_text",
+                      "pdf_text",
+                      "feed_entry",
+                      "full_fetch"
+                    ]
+                  },
+                  "extraction_version": {
+                    "type": "string",
+                    "maxLength": 140
+                  },
+                  "encoding": {
+                    "type": "string",
+                    "enum": [
+                      "base64"
+                    ]
+                  },
+                  "resolved_url": {
+                    "type": "string",
+                    "maxLength": 1500,
+                    "format": "uri"
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "encoding": {
+                          "const": "base64"
+                        }
+                      },
+                      "required": [
+                        "encoding"
+                      ]
+                    },
+                    "then": {},
+                    "else": {
+                      "properties": {
+                        "body": {
+                          "maxLength": 8000000
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "maxItems": 44000
     }
   }
 } as const;
@@ -87631,6 +99818,7 @@ export type LightTickReadingExport = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 )[];
   "source_history"?: (
@@ -87654,6 +99842,7 @@ export type LightTickReadingExport = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 )[];
 }
@@ -87662,7 +99851,7 @@ export type LightTickReadingExport = {
 {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -87741,6 +99930,48 @@ export type LightTickReadingExport = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -87790,6 +100021,61 @@ export type LightTickReadingExport = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "scope": {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+  "seen": string[];
+  "feedback": (
+{
+  "source_url": string | unknown;
+  "topics": string[];
+  "feedback_value": string | unknown;
+  "saved_at": string | unknown;
+}
+)[];
+  "automatic": boolean;
+};
 };
 }
 )[];
@@ -88032,6 +100318,59 @@ export type LightTickReadingExport = {
   "source_ids"?: string[] | unknown;
 };
   "updated_at": string | unknown;
+}
+)[];
+  "work_assets"?: (
+{
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+  "value": (
+{
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+}
+) | (
+(
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+)
+);
 }
 )[];
 };
@@ -90169,6 +102508,17 @@ export const LightTickReadingExportEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "catalog_origin_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -90304,6 +102654,17 @@ export const LightTickReadingExportEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "catalog_origin_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -90350,7 +102711,8 @@ export const LightTickReadingExportEnvelopeSchema = {
                   "translation",
                   "summary",
                   "english",
-                  "fetch_full"
+                  "fetch_full",
+                  "recommend"
                 ]
               },
               "status": {
@@ -90616,13 +102978,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                                 "encoding"
                               ]
                             },
-                            "then": {
-                              "properties": {
-                                "content_type": {
-                                  "const": "application/pdf"
-                                }
-                              }
-                            },
+                            "then": {},
                             "else": {
                               "properties": {
                                 "body": {
@@ -90844,6 +103200,281 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "items": {
                           "type": "string",
                           "maxLength": 2000
+                        }
+                      },
+                      "entry_refs": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "asset_id",
+                            "content",
+                            "content_digest",
+                            "document_id",
+                            "source_id",
+                            "extraction_version"
+                          ],
+                          "properties": {
+                            "asset_id": {
+                              "type": "string",
+                              "pattern": "^readasset-[a-f0-9]{40}$",
+                              "maxLength": 50
+                            },
+                            "content": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "title",
+                                "source_url",
+                                "language",
+                                "published_at"
+                              ],
+                              "properties": {
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 500,
+                                  "minLength": 1
+                                },
+                                "source_url": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 2048
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "language": {
+                                  "type": "string",
+                                  "maxLength": 35,
+                                  "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                                },
+                                "published_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "author": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "maxItems": 100,
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "translated_title": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "publisher": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 500
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "description": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 10000
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "access": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "recommendation_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 2000
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "topics": {
+                                  "type": "array",
+                                  "maxItems": 100,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 200,
+                                    "minLength": 1
+                                  }
+                                },
+                                "category": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "recent",
+                                        "classic",
+                                        "manual"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "published_date": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 10,
+                                      "format": "date"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "content_digest": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$",
+                              "maxLength": 64
+                            },
+                            "document_id": {
+                              "type": "string",
+                              "pattern": "^readasset-[a-f0-9]{40}$",
+                              "maxLength": 50
+                            },
+                            "source_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "extraction_version": {
+                              "type": "string",
+                              "maxLength": 140
+                            }
+                          }
+                        },
+                        "maxItems": 8
+                      },
+                      "documents": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "asset_id",
+                            "url",
+                            "sha256"
+                          ],
+                          "properties": {
+                            "asset_id": {
+                              "type": "string",
+                              "pattern": "^readasset-[a-f0-9]{40}$",
+                              "maxLength": 50
+                            },
+                            "url": {
+                              "type": "string",
+                              "maxLength": 1500
+                            },
+                            "sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$",
+                              "maxLength": 64
+                            }
+                          }
+                        },
+                        "maxItems": 44
+                      },
+                      "recommendation": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "date",
+                          "requested",
+                          "selected",
+                          "attempted",
+                          "ranking_version",
+                          "scope_digest"
+                        ],
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "requested": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 8
+                          },
+                          "selected": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 8
+                          },
+                          "attempted": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 24
+                          },
+                          "ranking_version": {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          "scope_digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
+                          }
                         }
                       }
                     }
@@ -91163,6 +103794,341 @@ export const LightTickReadingExportEnvelopeSchema = {
                     "type": "string",
                     "maxLength": 64,
                     "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "recommendation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "scope",
+                      "seen",
+                      "feedback",
+                      "automatic"
+                    ],
+                    "properties": {
+                      "scope": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "preferences",
+                          "sources",
+                          "catalog_revision",
+                          "date",
+                          "ranking_version",
+                          "seen_count",
+                          "digest",
+                          "extraction_version"
+                        ],
+                        "properties": {
+                          "preferences": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "revision",
+                              "value",
+                              "updated_at"
+                            ],
+                            "properties": {
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              },
+                              "value": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "enabled",
+                                  "hour",
+                                  "minute",
+                                  "count",
+                                  "mode",
+                                  "topics",
+                                  "languages",
+                                  "query",
+                                  "auto_guide"
+                                ],
+                                "properties": {
+                                  "enabled": {
+                                    "type": "boolean"
+                                  },
+                                  "hour": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 23
+                                  },
+                                  "minute": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 59
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 8
+                                  },
+                                  "mode": {
+                                    "type": "string",
+                                    "enum": [
+                                      "recent",
+                                      "classic",
+                                      "mixed"
+                                    ]
+                                  },
+                                  "topics": {
+                                    "type": "array",
+                                    "maxItems": 6,
+                                    "items": {
+                                      "type": "string",
+                                      "maxLength": 20,
+                                      "enum": [
+                                        "认知",
+                                        "科技",
+                                        "经济学",
+                                        "社会学",
+                                        "心理",
+                                        "成长"
+                                      ]
+                                    },
+                                    "minItems": 1
+                                  },
+                                  "languages": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 2,
+                                    "items": {
+                                      "type": "string",
+                                      "enum": [
+                                        "zh",
+                                        "en"
+                                      ]
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "maxLength": 300
+                                  },
+                                  "auto_guide": {
+                                    "type": "boolean"
+                                  },
+                                  "source_ids": {
+                                    "anyOf": [
+                                      {
+                                        "type": "array",
+                                        "maxItems": 1000,
+                                        "items": {
+                                          "type": "string",
+                                          "maxLength": 128,
+                                          "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                        }
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "updated_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "maxLength": 40
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "sources": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "id",
+                                "revision",
+                                "title",
+                                "url",
+                                "format"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "maxLength": 128,
+                                  "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+                                },
+                                "revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "title": {
+                                  "type": "string",
+                                  "maxLength": 200,
+                                  "minLength": 1
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 1500,
+                                  "format": "uri"
+                                },
+                                "format": {
+                                  "type": "string",
+                                  "enum": [
+                                    "article",
+                                    "rss",
+                                    "atom"
+                                  ]
+                                },
+                                "language": {
+                                  "type": "string",
+                                  "enum": [
+                                    "zh",
+                                    "en",
+                                    "unknown"
+                                  ]
+                                },
+                                "topics": {
+                                  "type": "array",
+                                  "maxItems": 6,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 20,
+                                    "enum": [
+                                      "认知",
+                                      "科技",
+                                      "经济学",
+                                      "社会学",
+                                      "心理",
+                                      "成长"
+                                    ]
+                                  }
+                                },
+                                "domains": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "maxItems": 20,
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 253,
+                                    "minLength": 1
+                                  }
+                                },
+                                "catalog_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 80
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "maxItems": 20
+                          },
+                          "catalog_revision": {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "ranking_version": {
+                            "type": "string",
+                            "maxLength": 100
+                          },
+                          "seen_count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                          },
+                          "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "maxLength": 64
+                          },
+                          "extraction_version": {
+                            "type": "string",
+                            "maxLength": 140
+                          }
+                        }
+                      },
+                      "seen": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 1500
+                        },
+                        "maxItems": 10000
+                      },
+                      "feedback": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source_url",
+                            "topics",
+                            "feedback_value",
+                            "saved_at"
+                          ],
+                          "properties": {
+                            "source_url": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 1500
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "topics": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "maxItems": 100
+                            },
+                            "feedback_value": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 100
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "saved_at": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 40
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "maxItems": 60
+                      },
+                      "automatic": {
+                        "type": "boolean"
+                      }
+                    }
                   }
                 }
               }
@@ -92652,6 +105618,286 @@ export const LightTickReadingExportEnvelopeSchema = {
               }
             }
           }
+        },
+        "work_assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "work_id",
+              "sha256",
+              "kind",
+              "value"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^readasset-[a-f0-9]{40}$",
+                "maxLength": 50
+              },
+              "work_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$",
+                "maxLength": 64
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "entry",
+                  "document"
+                ]
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title",
+                      "body",
+                      "source_url",
+                      "language",
+                      "published_at"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 1
+                      },
+                      "body": {
+                        "type": "string",
+                        "maxLength": 500000,
+                        "minLength": 1
+                      },
+                      "source_url": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2048
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "language": {
+                        "type": "string",
+                        "maxLength": 35,
+                        "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+                      },
+                      "published_at": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "author": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "tags": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "translated_title": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "publisher": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 10000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "access": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "recommendation_reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "topics": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 200,
+                          "minLength": 1
+                        }
+                      },
+                      "category": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "recent",
+                              "classic",
+                              "manual"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "published_date": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 10,
+                            "format": "date"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "body",
+                      "content_type",
+                      "url",
+                      "sha256",
+                      "capture_kind"
+                    ],
+                    "properties": {
+                      "body": {
+                        "type": "string",
+                        "maxLength": 10666668
+                      },
+                      "content_type": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "url": {
+                        "type": "string",
+                        "maxLength": 1500
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "capture_kind": {
+                        "type": "string",
+                        "enum": [
+                          "web_text",
+                          "pdf_text",
+                          "feed_entry",
+                          "full_fetch"
+                        ]
+                      },
+                      "extraction_version": {
+                        "type": "string",
+                        "maxLength": 140
+                      },
+                      "encoding": {
+                        "type": "string",
+                        "enum": [
+                          "base64"
+                        ]
+                      },
+                      "resolved_url": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "format": "uri"
+                      }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "encoding": {
+                              "const": "base64"
+                            }
+                          },
+                          "required": [
+                            "encoding"
+                          ]
+                        },
+                        "then": {},
+                        "else": {
+                          "properties": {
+                            "body": {
+                              "maxLength": 8000000
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 44000
         }
       }
     },
@@ -92684,6 +105930,7 @@ export type LightTickReadingExportEnvelope = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 )[];
   "source_history"?: (
@@ -92707,6 +105954,7 @@ export type LightTickReadingExportEnvelope = {
   "custom"?: boolean;
   "catalog_id"?: string | unknown;
   "deleted_at"?: string | unknown;
+  "catalog_origin_id"?: string | unknown;
 }
 )[];
 }
@@ -92715,7 +105963,7 @@ export type LightTickReadingExportEnvelope = {
 {
   "id": string;
   "revision": number;
-  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full";
+  "kind": "collect_url" | "collect_source" | "guide" | "translation" | "summary" | "english" | "fetch_full" | "recommend";
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "output": (
 {
@@ -92794,6 +106042,48 @@ export type LightTickReadingExportEnvelope = {
 }
 )[];
   "warnings"?: string[];
+  "entry_refs"?: (
+{
+  "asset_id": string;
+  "content": {
+  "title": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+};
+  "content_digest": string;
+  "document_id": string;
+  "source_id": string | unknown;
+  "extraction_version": string;
+}
+)[];
+  "documents"?: (
+{
+  "asset_id": string;
+  "url": string;
+  "sha256": string;
+}
+)[];
+  "recommendation"?: {
+  "date": string;
+  "requested": number;
+  "selected": number;
+  "attempted": number;
+  "ranking_version": string;
+  "scope_digest": string;
+};
 }
 ) | unknown;
   "adopted": {
@@ -92843,6 +106133,61 @@ export type LightTickReadingExportEnvelope = {
   "candidate_work_id"?: string;
   "candidate_id"?: string;
   "candidate_output_digest"?: string;
+  "recommendation"?: {
+  "scope": {
+  "preferences": {
+  "revision": number;
+  "value": {
+  "enabled": boolean;
+  "hour": number;
+  "minute": number;
+  "count": number;
+  "mode": "recent" | "classic" | "mixed";
+  "topics": (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "languages": (
+"zh" | "en"
+)[];
+  "query": string;
+  "auto_guide": boolean;
+  "source_ids"?: string[] | unknown;
+};
+  "updated_at": string | unknown;
+};
+  "sources": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+}
+)[];
+  "catalog_revision": string;
+  "date": string;
+  "ranking_version": string;
+  "seen_count": number;
+  "digest": string;
+  "extraction_version": string;
+};
+  "seen": string[];
+  "feedback": (
+{
+  "source_url": string | unknown;
+  "topics": string[];
+  "feedback_value": string | unknown;
+  "saved_at": string | unknown;
+}
+)[];
+  "automatic": boolean;
+};
 };
 }
 )[];
@@ -93085,6 +106430,59 @@ export type LightTickReadingExportEnvelope = {
   "source_ids"?: string[] | unknown;
 };
   "updated_at": string | unknown;
+}
+)[];
+  "work_assets"?: (
+{
+  "id": string;
+  "work_id": string;
+  "sha256": string;
+  "kind": "entry" | "document";
+  "value": (
+{
+  "title": string;
+  "body": string;
+  "source_url": string | unknown;
+  "language": string;
+  "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
+  "translated_title"?: string | unknown;
+  "publisher"?: string | unknown;
+  "description"?: string | unknown;
+  "access"?: string | unknown;
+  "recommendation_reason"?: string | unknown;
+  "topics"?: string[];
+  "category"?: (
+"recent" | "classic" | "manual"
+) | unknown;
+  "published_date"?: string | unknown;
+}
+) | (
+(
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+)
+);
 }
 )[];
 };
@@ -167447,6 +180845,11 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingAdoptWrite",
   "LightTickReadingArticle",
   "LightTickReadingArticleEnvelope",
+  "LightTickReadingAsset",
+  "LightTickReadingAssetEnvelope",
+  "LightTickReadingAssetPage",
+  "LightTickReadingAssetPageEnvelope",
+  "LightTickReadingAssetSummary",
   "LightTickReadingCandidate",
   "LightTickReadingCandidateReference",
   "LightTickReadingCatalogSource",
@@ -167454,6 +180857,7 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingDraftWrite",
   "LightTickReadingEditions",
   "LightTickReadingEditionsEnvelope",
+  "LightTickReadingEntryReference",
   "LightTickReadingExport",
   "LightTickReadingExportEnvelope",
   "LightTickReadingFeedback",
@@ -167475,6 +180879,10 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingPrivate",
   "LightTickReadingPrivateWrite",
   "LightTickReadingProvenance",
+  "LightTickReadingRecommendationCreate",
+  "LightTickReadingRecommendationScope",
+  "LightTickReadingRecommendationScopeEnvelope",
+  "LightTickReadingSelectedSource",
   "LightTickReadingSetup",
   "LightTickReadingSetupEnvelope",
   "LightTickReadingSource",

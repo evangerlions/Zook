@@ -82,6 +82,7 @@ export interface ArticleQuery {
 }
 import type { VocabularyStore } from "./vocabulary.types.ts";
 export interface ReadingRepository extends VocabularyStore {
+  recommendationHistory(o:LightTickOwner):Promise<import("./reading-recommendation.ts").ReadingRecommendationHistory[]>;
   get(o: LightTickOwner, id: string): Promise<ReadingArticle | undefined>;
   list(o: LightTickOwner, q: ArticleQuery): Promise<ReadingArticle[]>;
   history(

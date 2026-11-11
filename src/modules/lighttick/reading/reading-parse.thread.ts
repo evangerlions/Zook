@@ -41,6 +41,7 @@ try {
             : "plain-text/lighttick-text-v1",
     };
   } else result = collectReadingDocument(work, document);
+  if(result.document?.body.includes("\0"))result.document={...result.document,body:Buffer.from(result.document.body,"utf8").toString("base64"),encoding:"base64"};
   parentPort!.postMessage({ ok: true, result });
 } catch (error: any) {
   parentPort!.postMessage({

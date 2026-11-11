@@ -65,6 +65,7 @@ export function readingSourceFields(
     topics: [...new Set(topics as string[])],
     domains: [...new Set(validated)],
     catalog_id: catalog?.catalog_id ?? null,
+    catalog_origin_id: old?.catalog_origin_id ?? old?.catalog_id ?? catalog?.catalog_id ?? null,
     custom: !catalog,
     deleted_at: null,
   };

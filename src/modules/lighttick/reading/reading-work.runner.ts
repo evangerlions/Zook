@@ -1,3 +1,5 @@
+import {validateReadingRecommendation} from "./reading-recommendation-context.ts";
+import { performReadingRecommendation } from "./reading-recommendation.runner.ts";
 import { readingFailureCode } from "./reading-failure.ts";
 import { parseReadingDocument } from "./reading-parser.ts";
 import { captureModel } from "../personal-model/personal-model.service.ts";
@@ -90,6 +92,7 @@ export class ReadingWorkRunner {
       )
         throw Error("PERSONAL_MODEL_SETTINGS_CHANGED");
     }
+    await validateReadingRecommendation(this.service,row);
     if (row.input.source_id) {
       const source = await this.store.source(row, row.input.source_id);
       if (
@@ -141,9 +144,13 @@ export class ReadingWorkRunner {
         fence: randomUUID(),
         lease_until: new Date(
           this.service.clock().getTime() +
-            (["collect_url", "collect_source", "fetch_full"].includes(old.kind)
-              ? 60000
-              : 45000),
+            (old.kind === "recommend"
+              ? 170000
+              : ["collect_url", "collect_source", "fetch_full"].includes(
+                    old.kind,
+                  )
+                ? 60000
+                : 45000),
         ).toISOString(),
         error_code: null,
         updated_at: now,
@@ -155,9 +162,11 @@ export class ReadingWorkRunner {
     const controller = new AbortController(),
       timer = setTimeout(
         () => controller.abort(Error("READING_TIMEOUT")),
-        ["collect_url", "collect_source", "fetch_full"].includes(row.kind)
-          ? 45000
-          : 30000,
+        row.kind === "recommend"
+          ? 155000
+          : ["collect_url", "collect_source", "fetch_full"].includes(row.kind)
+            ? 45000
+            : 30000,
       );
     let checking = false;
     const poll = setInterval(() => {
@@ -243,6 +252,8 @@ export class ReadingWorkRunner {
     row: ReadingWork,
     signal: AbortSignal,
   ): Promise<NonNullable<ReadingWork["output"]>> {
+    if (row.kind === "recommend")
+      return performReadingRecommendation(this, row, signal);
     if (
       row.kind === "collect_url" ||
       row.kind === "collect_source" ||

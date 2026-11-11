@@ -1,3 +1,4 @@
+import {PostgresReadingAssetsStore} from "./postgres-reading-assets-store.ts";
 import { PostgresReadingPreferencesStore } from "./postgres-reading-preferences-store.ts";
 import type {
   ReadingWorkRepository,
@@ -11,8 +12,10 @@ type Query = (
   args?: unknown[],
 ) => Promise<{ rows: Record<string, any>[] }>;
 export class PostgresReadingWorkStore implements ReadingWorkRepository {
+  readonly assets: PostgresReadingAssetsStore;
   readonly preferences: PostgresReadingPreferencesStore;
   constructor(readonly query: Query) {
+    this.assets = new PostgresReadingAssetsStore(query);
     this.preferences = new PostgresReadingPreferencesStore(query);
   }
   async source(o: LightTickOwner, id: string) {

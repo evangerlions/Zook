@@ -1,3 +1,5 @@
+import { adoptReadingWork } from "./reading-work-adoption.ts";
+import { assertReadingJSON } from "./reading-json-safe.ts";
 import { candidateReadingInput } from "./reading-candidate-input.ts";
 import { readingSourceFields } from "./reading-source-fields.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
@@ -52,6 +54,9 @@ export class ReadingWorkService {
         content_version: input.content_version ?? null,
         paragraph_id: input.paragraph_id ?? null,
         selected_characters: input.text?.length ?? 0,
+        ...(input.recommendation
+          ? { recommendation: input.recommendation.scope }
+          : {}),
         ...(input.candidate_work_id
           ? {
               candidate_work_id: input.candidate_work_id,
@@ -63,6 +68,29 @@ export class ReadingWorkService {
       output_digest: row.output ? digest(row.output) : null,
     };
   }
+  summary(row: ReadingWork) {
+    const { output, ...data } = this.data(row);
+    return { ...data, has_output: output !== null };
+  }
+  async asset(o: LightTickOwner, id: string, assetId: string) {
+    identity(id, "readwork-");
+    identity(assetId, "readasset-");
+    return this.repo.transaction(o, async () => {
+      await this.read(o, id);
+      const row = await this.store.assets.get(o, id, assetId);
+      if (!row) fail(404, "Reading asset not found");
+      if (digest(row.value) !== row.sha256)
+        fail(409, "Reading asset integrity check failed");
+      return row;
+    });
+  }
+  async assets(o: LightTickOwner, id: string) {
+    identity(id, "readwork-");
+    return this.repo.transaction(o, async () => {
+      await this.read(o, id);
+      return { items: await this.store.assets.list(o, id) };
+    });
+  }
   async command<T extends Record<string, any>>(
     o: LightTickOwner,
     id: string,
@@ -71,6 +99,7 @@ export class ReadingWorkService {
     key: string,
     perform: () => Promise<T>,
   ): Promise<T> {
+    assertReadingJSON(b);
     if (!/^[a-zA-Z0-9_-]{8,128}$/.test(key))
       fail(422, "请保留有效原请求编号。");
     const hash = digest({ id, action, b });
@@ -214,10 +243,7 @@ export class ReadingWorkService {
       await this.authorize();
       const rows = await this.store.list(o, after, 31);
       return {
-        items: rows.slice(0, 30).map((r) => {
-          const { output, ...data } = this.data(r);
-          return { ...data, has_output: output !== null };
-        }),
+        items: rows.slice(0, 30).map((r) => this.summary(r)),
         next_cursor: rows.length > 30 ? rows[29].id : null,
       };
     });
@@ -263,9 +289,19 @@ export class ReadingWorkService {
         if (
           recent.filter(
             (r) =>
-              !["collect_url", "collect_source", "fetch_full"].includes(r.kind),
+              ![
+                "collect_url",
+                "collect_source",
+                "fetch_full",
+                "recommend",
+              ].includes(r.kind),
           ).length >= 12 &&
-          !["collect_url", "collect_source", "fetch_full"].includes(kind)
+          ![
+            "collect_url",
+            "collect_source",
+            "fetch_full",
+            "recommend",
+          ].includes(kind)
         )
           fail(429, "今日阅读模型预算已达上限。");
         if (recent.length >= 20)
@@ -459,99 +495,13 @@ export class ReadingWorkService {
       "output_digest",
       "index",
       "base_article_revision",
+      "response_view",
     ]);
+    if (b.response_view !== undefined && b.response_view !== "summary")
+      fail(422, "Invalid reading response view");
     integer(b.base_revision, 1, 2147483646);
     return this.command(o, id, "work:adopt", b, key, async () => {
-      const row = await this.store.get(o, id);
-      if (
-        !row ||
-        row.status !== "succeeded" ||
-        row.revision !== b.base_revision ||
-        !row.output ||
-        digest(row.output) !== b.output_digest
-      )
-        fail(409, "请核对已完成任务的精确结果。");
-      const reading = new ReadingService(this.repo, this.authorize, this.clock);
-      if (row.kind === "fetch_full") {
-        const parent = await reading.read(o, row.input.article_id!);
-        if (
-          parent.archived ||
-          parent.content_version !== row.input.content_version
-        )
-          fail(409, "补取来源已变化或已归档，请保留结果核对。");
-      }
-      let result: { article_id: string; revision: number };
-      let target: string;
-      if (row.output.entries) {
-        const index = integer(b.index, 0, row.output.entries.length - 1);
-        if (b.base_article_revision !== null)
-          fail(422, "原文导入不覆盖已有文章。");
-        target = String(index);
-        if (row.adopted[target]) fail(409, "此结果已导入，请打开原对象。");
-        const content = row.output.entries[index],
-          articleId = "article-" + digest(content).slice(0, 40);
-        const old = await this.repo.reading.get(o, articleId);
-        const article =
-          old ??
-          (await reading.write(
-            o,
-            articleId,
-            "import",
-            { base_revision: 0, content },
-            "reading-import-" + digest([id, index]).slice(0, 40),
-            "manual",
-            {
-              kind:
-                row.kind === "fetch_full"
-                  ? "full_fetch"
-                  : row.output.document?.capture_kind === "feed_entry"
-                    ? "feed_entry"
-                    : row.output.document?.encoding === "base64"
-                      ? "pdf_text"
-                      : row.output.document
-                        ? "web_text"
-                        : "legacy_import",
-              work_id: row.id,
-              source_id: row.input.source_id ?? null,
-              parent_article_id:
-                row.kind === "fetch_full" ? row.input.article_id! : null,
-              root_article_id: row.input.parent_root_id ?? articleId,
-              fetched_at: row.output.document ? row.updated_at : null,
-              raw_sha256: row.output.document?.sha256 ?? null,
-            },
-          ));
-        if (old && old.content_version !== digest(content))
-          fail(409, "导入对象已变化，不能覆盖。");
-        result = { article_id: article.id, revision: article.revision };
-      } else {
-        if (b.index !== null) fail(422, "AI草稿不使用条目编号。");
-        target = "draft";
-        if (row.adopted[target])
-          fail(409, "此任务已保存为草稿，请核对文章历史。");
-        const article = await reading.write(
-          o,
-          row.input.article_id!,
-          "draft",
-          {
-            base_revision: integer(b.base_article_revision, 1, 2147483646),
-            content_version: row.input.content_version,
-            kind: row.kind,
-            paragraph_id: row.input.paragraph_id,
-            text: row.output.text,
-          },
-          "reading-ai-draft-" + digest(id).slice(0, 40),
-          "ai",
-        );
-        result = { article_id: article.id, revision: article.revision };
-      }
-      const next = {
-        ...row,
-        revision: row.revision + 1,
-        adopted: { ...row.adopted, [target]: result },
-        updated_at: this.clock().toISOString(),
-      };
-      await this.store.save(next, row.revision);
-      return { work_id: id, ...result, work: this.data(next) };
+      return adoptReadingWork(this, o, id, b);
     });
   }
 }

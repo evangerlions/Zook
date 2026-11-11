@@ -1,3 +1,4 @@
+import {assertReadingJSON} from "./reading-json-safe.ts";
 import { writeReadingFeedback } from "./reading-feedback.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -172,7 +173,10 @@ export class ReadingService {
         );
       if (preferences_history.length > 1000)
         fail(413, "阅读偏好历史超过容量，请使用历史分页核对。");
+      const work_assets=[];
+      for(const row of workRows){for(const meta of await this.repo.readingWork.assets.list(o,row.id)){const asset=await this.repo.readingWork.assets.get(o,row.id,meta.id);if(!asset)fail(409,"Reading export asset unavailable");work_assets.push(asset);if(Buffer.byteLength(JSON.stringify(work_assets))>8*1024*1024)fail(413,"Reading asset export exceeds8MiB; no truncated copy returned");}}
       const data = {
+        work_assets,
         preferences,
         preferences_history,
         format_version: 1,
@@ -224,6 +228,7 @@ export class ReadingService {
       fail(422, "阅读操作无效。");
     // Freeze before waiting for the owner lock: the receipt fingerprints the actual intent.
     const body = structuredClone(object(raw));
+    assertReadingJSON(body);
     const base = integer(body.base_revision, 0, 2147483646);
     const hash = digest({
       id,

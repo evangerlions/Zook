@@ -1,3 +1,4 @@
+import {assertReadingJSON} from "./reading-json-safe.ts";
 import {
   identity,
   text,
@@ -14,6 +15,7 @@ import type {
 export const articleId = (v: unknown) => identity(v, "article-");
 export function articleContent(raw: unknown): ArticleContent {
   const b = object(raw);
+  assertReadingJSON(b);
   keys(b, [
     "title",
     "body",

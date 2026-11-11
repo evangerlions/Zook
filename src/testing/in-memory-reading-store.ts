@@ -116,6 +116,7 @@ export class InMemoryReadingStore implements ReadingRepository {
     string,
     { owner: LightTickOwner; versions: ReadingArticle[] }
   >();
+  async recommendationHistory(o:LightTickOwner){return structuredClone([...this.rows.values()].filter(r=>r.owner.appId===o.appId&&r.owner.userId===o.userId).map(r=>r.versions.at(-1)!).map(r=>({source_url:r.content.source_url,topics:r.content.topics??[],feedback_value:r.personal.structured_feedback?.value??null,saved_at:r.created_at})));}
   async get(o: LightTickOwner, id: string) {
     return structuredClone(this.rows.get(key(o, id))?.versions.at(-1));
   }

@@ -46,15 +46,19 @@ paths:
     get:
       operationId: getLightTickFormReceipt
       summary: Read the original form command result without replaying a mutation
-      description: Owner-authorized historical form snapshot for an exact original request key. Available in core scope; does not rerun the command or restore an older snapshot over current data. Other owners and non-form command keys return 404. Account deletion removes these receipts with the domain data.
-      tags: [lighttick-records]
+      description: Owner-authorized historical form snapshot for an exact original request key. Available
+        in core scope; does not rerun the command or restore an older snapshot over current data. Other
+        owners and non-form command keys return 404. Account deletion removes these receipts with the
+        domain data.
+      tags:
+      - lighttick-records
       parameters:
       - in: path
         name: request_key
         required: true
         schema:
           type: string
-          pattern: '^[a-zA-Z0-9_-]{8,128}$'
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
       responses:
         '200':
           description: Historical result of the original form command, not current state
@@ -78,11 +82,11 @@ paths:
       tags:
       - lighttick-records
       summary: Save one bounded legacy form section
-      description: Owner-only explicit section replacement with whole-document CAS and
-        original receipt. Preserves other sections, unknown historical fields and source
-        identities; never creates native tasks, reflections or learning completions.
-        custom pairs field definitions and values atomically. Stale revision returns
-        409 even when another section changed. No array-index command may rebase automatically.
+      description: Owner-only explicit section replacement with whole-document CAS and original receipt.
+        Preserves other sections, unknown historical fields and source identities; never creates native
+        tasks, reflections or learning completions. custom pairs field definitions and values atomically.
+        Stale revision returns 409 even when another section changed. No array-index command may rebase
+        automatically.
       security:
       - bearerAuth: []
       responses:
@@ -104,7 +108,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       - in: path
@@ -132,11 +137,10 @@ paths:
       tags:
       - lighttick-records
       summary: getFormRecords
-      description: Owner-only partial form records. Categories and legacy form fields
-        only; excludes independent records, actions, learning content, credentials and
-        browser drafts. Whole-document CAS and exact original request replay. Clear
-        does not erase prior operation receipts. No generic sync or automatic historical
-        import.
+      description: Owner-only partial form records. Categories and legacy form fields only; excludes independent
+        records, actions, learning content, credentials and browser drafts. Whole-document CAS and exact
+        original request replay. Clear does not erase prior operation receipts. No generic sync or automatic
+        historical import.
       security:
       - bearerAuth: []
       responses:
@@ -161,11 +165,10 @@ paths:
       tags:
       - lighttick-records
       summary: saveFormRecords
-      description: Owner-only partial form records. Categories and legacy form fields
-        only; excludes independent records, actions, learning content, credentials and
-        browser drafts. Whole-document CAS and exact original request replay. Clear
-        does not erase prior operation receipts. No generic sync or automatic historical
-        import.
+      description: Owner-only partial form records. Categories and legacy form fields only; excludes independent
+        records, actions, learning content, credentials and browser drafts. Whole-document CAS and exact
+        original request replay. Clear does not erase prior operation receipts. No generic sync or automatic
+        historical import.
       security:
       - bearerAuth: []
       responses:
@@ -187,7 +190,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -202,11 +206,10 @@ paths:
       tags:
       - lighttick-records
       summary: exportFormRecords
-      description: Owner-only partial form records. Categories and legacy form fields
-        only; excludes independent records, actions, learning content, credentials and
-        browser drafts. Whole-document CAS and exact original request replay. Clear
-        does not erase prior operation receipts. No generic sync or automatic historical
-        import.
+      description: Owner-only partial form records. Categories and legacy form fields only; excludes independent
+        records, actions, learning content, credentials and browser drafts. Whole-document CAS and exact
+        original request replay. Clear does not erase prior operation receipts. No generic sync or automatic
+        historical import.
       security:
       - bearerAuth: []
       responses:
@@ -232,11 +235,10 @@ paths:
       tags:
       - lighttick-records
       summary: clearFormRecords
-      description: Owner-only partial form records. Categories and legacy form fields
-        only; excludes independent records, actions, learning content, credentials and
-        browser drafts. Whole-document CAS and exact original request replay. Clear
-        does not erase prior operation receipts. No generic sync or automatic historical
-        import.
+      description: Owner-only partial form records. Categories and legacy form fields only; excludes independent
+        records, actions, learning content, credentials and browser drafts. Whole-document CAS and exact
+        original request replay. Clear does not erase prior operation receipts. No generic sync or automatic
+        historical import.
       security:
       - bearerAuth: []
       responses:
@@ -258,7 +260,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -407,7 +410,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -509,7 +513,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -557,7 +562,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -631,7 +637,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -823,8 +830,8 @@ paths:
       summary: appendInvestmentLedgerEvent
       description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
         Existing worker calculates outside owner transactions and commits facts only after account CAS.
-        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
-        not market valuations. No entities enter legacy sync.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots
+        are not market valuations. No entities enter legacy sync.
       parameters:
       - name: resourceId
         in: path
@@ -857,7 +864,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -872,16 +880,19 @@ paths:
       summary: readInvestmentLedger
       description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
         Existing worker calculates outside owner transactions and commits facts only after account CAS.
-        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
-        not market valuations. No entities enter legacy sync.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots
+        are not market valuations. No entities enter legacy sync.
       parameters:
       - name: ledger_schema
         in: query
         required: false
-        description: Explicitly negotiate schema2 for immutable correction history. Existing schema1 accounts with corrections return409 LEDGER_SCHEMA_UPGRADE_REQUIRED; retain drafts and pending requests.
+        description: Explicitly negotiate schema2 for immutable correction history. Existing schema1 accounts
+          with corrections return409 LEDGER_SCHEMA_UPGRADE_REQUIRED; retain drafts and pending requests.
         schema:
           type: string
-          enum: ['1', '2']
+          enum:
+          - '1'
+          - '2'
       - name: resourceId
         in: path
         required: true
@@ -931,8 +942,8 @@ paths:
       summary: readInvestmentLedgerWork
       description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
         Existing worker calculates outside owner transactions and commits facts only after account CAS.
-        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
-        not market valuations. No entities enter legacy sync.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots
+        are not market valuations. No entities enter legacy sync.
       parameters:
       - name: resourceId
         in: path
@@ -972,8 +983,8 @@ paths:
       summary: cancelInvestmentLedgerWork
       description: Owner-scoped immutable ledger commands. Exact decimal strings; explicit unknown fees/settlement.
         Existing worker calculates outside owner transactions and commits facts only after account CAS.
-        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots are
-        not market valuations. No entities enter legacy sync.
+        Durable work is the terminal receipt; replay retains the original identity. Unpriced snapshots
+        are not market valuations. No entities enter legacy sync.
       parameters:
       - name: resourceId
         in: path
@@ -1018,9 +1029,9 @@ paths:
       tags:
       - lighttick-investments
       summary: listInvestmentInstruments
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: cursor
         in: query
@@ -1061,9 +1072,9 @@ paths:
       tags:
       - lighttick-investments
       summary: createInvestmentInstrument
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -1089,7 +1100,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -1102,9 +1114,9 @@ paths:
       tags:
       - lighttick-investments
       summary: readInvestmentInstrument
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: resourceId
         in: path
@@ -1141,9 +1153,9 @@ paths:
       tags:
       - lighttick-investments
       summary: updateInvestmentInstrument
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: resourceId
         in: path
@@ -1176,7 +1188,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -1189,9 +1202,9 @@ paths:
       tags:
       - lighttick-investments
       summary: listInvestmentAccounts
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: cursor
         in: query
@@ -1233,9 +1246,9 @@ paths:
       tags:
       - lighttick-investments
       summary: readInvestmentAccount
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: resourceId
         in: path
@@ -1272,9 +1285,9 @@ paths:
       tags:
       - lighttick-investments
       summary: createInvestmentAccount
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: resourceId
         in: path
@@ -1307,7 +1320,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -1320,9 +1334,9 @@ paths:
       tags:
       - lighttick-investments
       summary: investmentAccountStatus
-      description: Registered owner only; exact decimal strings and owner-scoped original
-        request receipts. Account baseline is immutable; status edits do not rewrite
-        money. New entities never enter old generic sync.
+      description: Registered owner only; exact decimal strings and owner-scoped original request receipts.
+        Account baseline is immutable; status edits do not rewrite money. New entities never enter old
+        generic sync.
       parameters:
       - name: resourceId
         in: path
@@ -1355,7 +1369,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -1368,10 +1383,9 @@ paths:
       tags:
       - lighttick-review
       summary: Download authorized owner data
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       responses:
         '200':
           description: Authorized owner result
@@ -1401,10 +1415,9 @@ paths:
       tags:
       - lighttick-review
       summary: Read an exact authorized source version
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: kind
         in: query
@@ -1453,10 +1466,9 @@ paths:
       tags:
       - lighttick-review
       summary: readKnowledge
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: entryId
         in: path
@@ -1492,10 +1504,9 @@ paths:
       tags:
       - lighttick-review
       summary: saveKnowledge
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: entryId
         in: path
@@ -1539,10 +1550,9 @@ paths:
       tags:
       - lighttick-review
       summary: archiveKnowledge
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: entryId
         in: path
@@ -1594,10 +1604,9 @@ paths:
       tags:
       - lighttick-review
       summary: restoreKnowledge
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: entryId
         in: path
@@ -1649,10 +1658,9 @@ paths:
       tags:
       - lighttick-review
       summary: knowledgeHistory
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: entryId
         in: path
@@ -1701,10 +1709,9 @@ paths:
       tags:
       - lighttick-review
       summary: reviewConfirmedFacts
-      description: Registered LightTick owner only. Saved facts preserve source versions
-        and current grants. Read-only snapshots are rebuildable; never delete local
-        drafts or pending requests on cursor expiry. New entities do not enter generic
-        sync.
+      description: Registered LightTick owner only. Saved facts preserve source versions and current grants.
+        Read-only snapshots are rebuildable; never delete local drafts or pending requests on cursor expiry.
+        New entities do not enter generic sync.
       parameters:
       - name: q
         in: query
@@ -2422,7 +2429,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -2502,7 +2510,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -2546,7 +2555,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -2596,7 +2606,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -2640,7 +2651,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -2684,7 +2696,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -3307,7 +3320,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
   /api/v1/lighttick/onboarding/starter:
     post:
       operationId: createLightTickStarter
@@ -3559,7 +3573,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
   /api/v1/lighttick/plans:
     get:
       operationId: listLightTickPlans
@@ -3990,7 +4005,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
   /api/v1/lighttick/coach-runs:
     post:
       operationId: createLightTickCoachRun
@@ -4024,7 +4040,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
   /api/v1/lighttick/reviews:
     get:
       operationId: listLightTickReviews
@@ -4092,7 +4109,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
   /api/v1/lighttick/change-proposals:
     get:
       operationId: listLightTickChangeProposals
@@ -5001,7 +5019,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -5615,7 +5634,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -5695,8 +5715,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Collections
-      description: Registered LightTick owner only. Native authority is required. Writes use immutable Idempotency-Key
-        and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: cursor
         in: query
@@ -5714,8 +5734,8 @@ paths:
           default: 50
       - name: module_id
         in: query
-        description: Owner module ID; unassigned selects collections without a module. Omitted selects all.
-          Filtering occurs before pagination.
+        description: Owner module ID; unassigned selects collections without a module. Omitted selects
+          all. Filtering occurs before pagination.
         schema:
           type: string
           maxLength: 128
@@ -5746,8 +5766,8 @@ paths:
       tags:
       - lighttick-learning
       summary: SaveCollection
-      description: Registered LightTick owner only. Native authority is required. Writes use immutable Idempotency-Key
-        and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: collectionId
         in: path
@@ -5791,8 +5811,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Read owner collection metadata for explicit conflict comparison
-      description: Registered LightTick owner only. Native authority is required. Writes use immutable Idempotency-Key
-        and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: collectionId
         in: path
@@ -5830,8 +5850,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Lessons
-      description: Registered LightTick owner only. Native authority is required. Writes use immutable Idempotency-Key
-        and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: cursor
         in: query
@@ -5856,8 +5876,8 @@ paths:
           maxLength: 100
       - name: module_id
         in: query
-        description: Owner module ID; unassigned selects collections without a module. Omitted selects all.
-          Filtering occurs before pagination.
+        description: Owner module ID; unassigned selects collections without a module. Omitted selects
+          all. Filtering occurs before pagination.
         schema:
           type: string
           maxLength: 128
@@ -5921,7 +5941,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6237,7 +6258,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6283,7 +6305,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6329,7 +6352,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6465,7 +6489,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6551,7 +6576,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6686,7 +6712,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
-          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE; preserve input and use authorized history, cancellation and receipt lookup.
+          description: Version scope may reject new optional commands with LIGHTTICK_CAPABILITY_UNAVAILABLE;
+            preserve input and use authorized history, cancellation and receipt lookup.
       requestBody:
         required: true
         content:
@@ -6737,9 +6764,9 @@ paths:
       tags:
       - lighttick-learning
       summary: List owner learning modules
-      description: Owner modules are optional collection categories. Templates do not preload personal projects.
-        Native learning authority, reading consent, owner-bound cursor and catalog revision apply. Module
-        archive changes classification visibility without deleting lessons or private facts.
+      description: Owner modules are optional collection categories. Templates do not preload personal
+        projects. Native learning authority, reading consent, owner-bound cursor and catalog revision
+        apply. Module archive changes classification visibility without deleting lessons or private facts.
       parameters:
       - name: cursor
         in: query
@@ -6791,9 +6818,9 @@ paths:
       tags:
       - lighttick-learning
       summary: Read one owner learning module
-      description: Owner modules are optional collection categories. Templates do not preload personal projects.
-        Native learning authority, reading consent, owner-bound cursor and catalog revision apply. Module
-        archive changes classification visibility without deleting lessons or private facts.
+      description: Owner modules are optional collection categories. Templates do not preload personal
+        projects. Native learning authority, reading consent, owner-bound cursor and catalog revision
+        apply. Module archive changes classification visibility without deleting lessons or private facts.
       parameters:
       - name: moduleId
         in: path
@@ -6828,8 +6855,8 @@ paths:
       tags:
       - lighttick-learning
       summary: Create or replace owner module metadata with CAS
-      description: Registered LightTick owner only. Native authority is required. Writes use immutable Idempotency-Key
-        and CAS; cached results still require active membership.
+      description: Registered LightTick owner only. Native authority is required. Writes use immutable
+        Idempotency-Key and CAS; cached results still require active membership.
       parameters:
       - name: moduleId
         in: path
@@ -6874,9 +6901,9 @@ paths:
       tags:
       - lighttick-learning
       summary: Read optional learning category suggestions
-      description: Owner modules are optional collection categories. Templates do not preload personal projects.
-        Native learning authority, reading consent, owner-bound cursor and catalog revision apply. Module
-        archive changes classification visibility without deleting lessons or private facts.
+      description: Owner modules are optional collection categories. Templates do not preload personal
+        projects. Native learning authority, reading consent, owner-bound cursor and catalog revision
+        apply. Module archive changes classification visibility without deleting lessons or private facts.
       parameters: []
       responses:
         '200':
@@ -6905,9 +6932,9 @@ paths:
       tags:
       - lighttick-learning
       summary: Read immutable module metadata revisions
-      description: Owner modules are optional collection categories. Templates do not preload personal projects.
-        Native learning authority, reading consent, owner-bound cursor and catalog revision apply. Module
-        archive changes classification visibility without deleting lessons or private facts.
+      description: Owner modules are optional collection categories. Templates do not preload personal
+        projects. Native learning authority, reading consent, owner-bound cursor and catalog revision
+        apply. Module archive changes classification visibility without deleting lessons or private facts.
       parameters:
       - name: moduleId
         in: path
@@ -6950,12 +6977,11 @@ paths:
       summary: listIndependentReadingArticles
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7020,12 +7046,11 @@ paths:
       summary: exportIndependentReading
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7059,12 +7084,11 @@ paths:
       summary: getIndependentReadingReceipt
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7107,12 +7131,11 @@ paths:
       summary: getIndependentReadingArticle
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7154,12 +7177,11 @@ paths:
       summary: importPastedReadingArticle
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7209,12 +7231,11 @@ paths:
       summary: getIndependentReadingHistory
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7263,12 +7284,11 @@ paths:
       summary: personalIndependentReadingArticle
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7318,12 +7338,11 @@ paths:
       summary: positionIndependentReadingArticle
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7373,12 +7392,11 @@ paths:
       summary: archiveIndependentReadingArticle
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7428,12 +7446,11 @@ paths:
       summary: restoreIndependentReadingArticle
       tags:
       - lighttick-reading
-      description: Owner-only independent article reading. Immutable pasted source;
-        private facts use whole-article CAS and exact original operation replay. Core
-        scope allows history/export/receipts but rejects new writes. No automatic source
-        fetch, model call, task completion or real historical import. Export fails instead
-        of truncating at 1000 articles/history rows or 8 MiB. Read pages use ID keyset
-        cursors; refresh after filter changes.
+      description: Owner-only independent article reading. Immutable pasted source; private facts use
+        whole-article CAS and exact original operation replay. Core scope allows history/export/receipts
+        but rejects new writes. No automatic source fetch, model call, task completion or real historical
+        import. Export fails instead of truncating at 1000 articles/history rows or 8 MiB. Read pages
+        use ID keyset cursors; refresh after filter changes.
       security:
       - bearerAuth: []
       responses:
@@ -7983,11 +8000,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: cursor
         in: query
@@ -8030,11 +8046,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: sourceId
         in: path
@@ -8077,11 +8092,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: sourceId
         in: path
@@ -8132,11 +8146,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: sourceId
         in: path
@@ -8186,11 +8199,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: cursor
         in: query
@@ -8232,11 +8244,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -8280,11 +8291,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: workId
         in: path
@@ -8328,11 +8338,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: workId
         in: path
@@ -8383,11 +8392,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: workId
         in: path
@@ -8438,11 +8446,10 @@ paths:
       - lighttick-reading
       security:
       - bearerAuth: []
-      description: Owner-only reading sources and durable work. New work requires full
-        scope; core allows history, receipts and cancellation. Frozen input, CAS and
-        original-key replay apply. Collection and model output require explicit saving;
-        feed entries may be excerpts. No automatic provider fallback or model rerun
-        after interrupted outcome.
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
       parameters:
       - name: operationId
         in: path
@@ -8787,6 +8794,191 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickReadingSourceDelete'
+  /api/v1/lighttick/reading/recommendation-scope:
+    get:
+      operationId: getReadingRecommendationScope
+      summary: getReadingRecommendationScope
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
+      parameters: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingRecommendationScopeEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/recommendations:
+    post:
+      operationId: createReadingRecommendation
+      summary: createReadingRecommendation
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingWorkEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingRecommendationCreate'
+  /api/v1/lighttick/reading/work/{workId}/assets:
+    get:
+      operationId: listReadingWorkAssets
+      summary: listReadingWorkAssets
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema: &id001
+          type: string
+          maxLength: 128
+          pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingAssetPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/work/{workId}/assets/{assetId}:
+    get:
+      operationId: getReadingWorkAsset
+      summary: getReadingWorkAsset
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only reading sources and durable work. New work requires full scope; core allows
+        history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
+        and model output require explicit saving; feed entries may be excerpts. No automatic provider
+        fallback or model rerun after interrupted outcome.
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema: *id001
+      - name: assetId
+        in: path
+        required: true
+        schema: &id022
+          type: string
+          pattern: ^readasset-[a-f0-9]{40}$
+          maxLength: 50
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingAssetEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -9110,7 +9302,9 @@ components:
         data:
           $ref: '#/components/schemas/LightTickFormData'
         updated_at:
-          type: [string, "null"]
+          type:
+          - string
+          - 'null'
     LightTickFormWrite:
       type: object
       additionalProperties: false
@@ -9212,9 +9406,8 @@ components:
         quantity:
           type: string
           maxLength: 120
-          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional
-            places; numeric JSON and nonfinite values are rejected. Scientific notation
-            is normalized, not rounded.
+          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional places;
+            numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded.
         cost:
           type:
           - string
@@ -9353,9 +9546,8 @@ components:
         opening_cash:
           type: string
           maxLength: 120
-          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional
-            places; numeric JSON and nonfinite values are rejected. Scientific notation
-            is normalized, not rounded.
+          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional places;
+            numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded.
         opening_positions:
           type: array
           maxItems: 100
@@ -9391,9 +9583,8 @@ components:
         opening_cash:
           type: string
           maxLength: 120
-          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional
-            places; numeric JSON and nonfinite values are rejected. Scientific notation
-            is normalized, not rounded.
+          description: Exact nonnegative decimal string, at most 18 integer and 10 fractional places;
+            numeric JSON and nonfinite values are rejected. Scientific notation is normalized, not rounded.
         opening_positions:
           type: array
           maxItems: 100
@@ -9418,8 +9609,10 @@ components:
         opening_instruments:
           type: array
           maxItems: 100
-          description: Current owner instrument labels; identity is immutable, labels do not rewrite opening quantities or costs.
-          items: {$ref: '#/components/schemas/LightTickInvestmentInstrument'}
+          description: Current owner instrument labels; identity is immutable, labels do not rewrite opening
+            quantities or costs.
+          items:
+            $ref: '#/components/schemas/LightTickInvestmentInstrument'
         baseline_version:
           type: integer
           minimum: 1
@@ -9605,10 +9798,10 @@ components:
         content:
           type: string
           maxLength: 8388608
-          description: UTF-8 JSON export format 1. Contains facts, authorized knowledge/history,
-            learning publications/private/history, records/versions, action plans/executions,
-            tasks, goals and reflections. No operations/jobs/configuration or credentials.
-            Oversized exports fail with 413.
+          description: UTF-8 JSON export format 1. Contains facts, authorized knowledge/history, learning
+            publications/private/history, records/versions, action plans/executions, tasks, goals and
+            reflections. No operations/jobs/configuration or credentials. Oversized exports fail with
+            413.
     LightTickReviewExportEnvelope:
       type: object
       additionalProperties: false
@@ -13742,8 +13935,14 @@ components:
       properties:
         runtime_scope:
           type: string
-          enum: [core, full]
-          description: Version scope from versioned settings.runtimeScope; absent, invalid or unavailable configuration resolves to core. Older servers may omit this field and Web must fail closed. Core keeps authorized history, cancellation and receipt lookup, rejects optional new commands with 503 LIGHTTICK_CAPABILITY_UNAVAILABLE and durably defers background execution. Scope does not authorize identity or migration.
+          enum:
+          - core
+          - full
+          description: Version scope from versioned settings.runtimeScope; absent, invalid or unavailable
+            configuration resolves to core. Older servers may omit this field and Web must fail closed.
+            Core keeps authorized history, cancellation and receipt lookup, rejects optional new commands
+            with 503 LIGHTTICK_CAPABILITY_UNAVAILABLE and durably defers background execution. Scope does
+            not authorize identity or migration.
         app_id:
           type: string
           const: lighttick
@@ -18492,7 +18691,7 @@ components:
       - document
       - updated_at
       properties:
-        id: &id001
+        id: &id002
           type: string
           pattern: ^plan-[a-zA-Z0-9-]+$
           maxLength: 75
@@ -18561,7 +18760,7 @@ components:
       - digest
       - created_at
       properties:
-        id: *id001
+        id: *id002
         version:
           type: integer
           minimum: 1
@@ -18715,7 +18914,7 @@ components:
       - stages
       - lessons
       properties:
-        id: *id001
+        id: *id002
         name:
           type: string
           maxLength: 4000
@@ -18730,19 +18929,19 @@ components:
           - active
           - paused
           - archived
-        total_lessons: &id002
+        total_lessons: &id003
           type: integer
           minimum: 0
           maximum: 364
-        published_lessons: &id003
+        published_lessons: &id004
           type: integer
           minimum: 0
           maximum: 364
-        completed_lessons: &id004
+        completed_lessons: &id005
           type: integer
           minimum: 0
           maximum: 364
-        percent: &id005
+        percent: &id006
           type: integer
           minimum: 0
           maximum: 100
@@ -18768,10 +18967,10 @@ components:
                 type: string
                 maxLength: 4000
                 minLength: 1
-              total_lessons: *id002
-              published_lessons: *id003
-              completed_lessons: *id004
-              percent: *id005
+              total_lessons: *id003
+              published_lessons: *id004
+              completed_lessons: *id005
+              percent: *id006
         lessons:
           type: array
           maxItems: 364
@@ -18999,8 +19198,8 @@ components:
             type: string
             enum:
             - route_draft
-          route_id: *id001
-          base_revision: &id006
+          route_id: *id002
+          base_revision: &id007
             type: integer
             minimum: 0
             maximum: 2147483647
@@ -19018,8 +19217,8 @@ components:
             type: string
             enum:
             - collect_sources
-          route_id: *id001
-          base_revision: *id006
+          route_id: *id002
+          base_revision: *id007
           sources:
             type: array
             minItems: 1
@@ -19039,8 +19238,8 @@ components:
             type: string
             enum:
             - file_ingest
-          route_id: *id001
-          base_revision: *id006
+          route_id: *id002
+          base_revision: *id007
           file_name:
             type: string
             maxLength: 200
@@ -19062,8 +19261,8 @@ components:
             type: string
             enum:
             - lesson_draft
-          route_id: *id001
-          base_revision: *id006
+          route_id: *id002
+          base_revision: *id007
           number:
             type: integer
             minimum: 1
@@ -19087,8 +19286,8 @@ components:
             type: string
             enum:
             - lesson_draft
-          route_id: *id001
-          base_revision: *id006
+          route_id: *id002
+          base_revision: *id007
           number:
             type: integer
             minimum: 1
@@ -19112,19 +19311,19 @@ components:
           $ref: '#/components/schemas/LightTickNativeLearningCourseBrief'
         document:
           $ref: '#/components/schemas/LightTickNativeLearningCourseDocument'
-        prompt_version: &id007
+        prompt_version: &id008
           type: string
           maxLength: 40
           minLength: 1
-        scene_key: &id008
+        scene_key: &id009
           type: string
           maxLength: 80
           minLength: 1
-        provider: &id009
+        provider: &id010
           type: string
           maxLength: 100
           minLength: 1
-        model: &id010
+        model: &id011
           type: string
           maxLength: 200
           minLength: 1
@@ -19153,10 +19352,10 @@ components:
           maxItems: 10
           items:
             type: string
-        prompt_version: *id007
-        scene_key: *id008
-        provider: *id009
-        model: *id010
+        prompt_version: *id008
+        scene_key: *id009
+        provider: *id010
+        model: *id011
     LightTickNativeLearningWork:
       type: object
       additionalProperties: false
@@ -19178,7 +19377,7 @@ components:
         id:
           type: string
           pattern: ^work-[a-zA-Z0-9-]+$
-        route_id: *id001
+        route_id: *id002
         revision:
           type: integer
           minimum: 1
@@ -19407,7 +19606,7 @@ components:
       - settlement_amount
       - source
       properties:
-        instrument_id: &ledger008
+        instrument_id: &id019
           type: string
           pattern: ^inv-[a-zA-Z0-9_-]{8,96}$
           maxLength: 100
@@ -19416,22 +19615,22 @@ components:
           enum:
           - buy
           - sell
-        price: &ledger001
+        price: &id012
           type: string
           maxLength: 120
           pattern: ^[+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$
-        quantity: *ledger001
+        quantity: *id012
         fee:
           anyOf:
-          - *ledger001
+          - *id012
           - type: 'null'
         tax:
           anyOf:
-          - *ledger001
+          - *id012
           - type: 'null'
         settlement_amount:
           anyOf:
-          - *ledger001
+          - *id012
           - type: 'null'
         source:
           type: string
@@ -19457,7 +19656,7 @@ components:
           - fee
           - fund_receivable_hold
           - fund_receivable_release
-        amount: *ledger001
+        amount: *id012
     LightTickInvestmentLedgerInput:
       oneOf:
       - type: object
@@ -19467,14 +19666,14 @@ components:
         - kind
         - fill
         properties:
-          business_date: &ledger002
+          business_date: &id013
             type: string
             format: date
-          kind: &ledger003
+          kind: &id014
             type: string
             enum:
             - fill
-          fill: &ledger004
+          fill: &id015
             $ref: '#/components/schemas/LightTickInvestmentFill'
       - type: object
         additionalProperties: false
@@ -19483,34 +19682,44 @@ components:
         - kind
         - cash
         properties:
-          business_date: *ledger002
-          kind: &ledger006
+          business_date: *id013
+          kind: &id016
             type: string
             enum:
             - cash
-          cash: &ledger007
+          cash: &id017
             $ref: '#/components/schemas/LightTickInvestmentCash'
       - $ref: '#/components/schemas/LightTickInvestmentLedgerCorrectionInput'
     LightTickInvestmentLedgerFact:
       oneOf:
       - type: object
         additionalProperties: false
-        required: [business_date, kind, fill]
+        required:
+        - business_date
+        - kind
+        - fill
         properties:
-          business_date: *ledger002
-          kind: *ledger003
-          fill: *ledger004
+          business_date: *id013
+          kind: *id014
+          fill: *id015
       - type: object
         additionalProperties: false
-        required: [business_date, kind, cash]
+        required:
+        - business_date
+        - kind
+        - cash
         properties:
-          business_date: *ledger002
-          kind: *ledger006
-          cash: *ledger007
+          business_date: *id013
+          kind: *id016
+          cash: *id017
     LightTickInvestmentLedgerCorrection:
       type: object
       additionalProperties: false
-      required: [target_event_id, target_input_digest, reason, replacement]
+      required:
+      - target_event_id
+      - target_input_digest
+      - reason
+      - replacement
       properties:
         target_event_id:
           type: string
@@ -19529,12 +19738,16 @@ components:
     LightTickInvestmentLedgerCorrectionInput:
       type: object
       additionalProperties: false
-      required: [business_date, kind, correction]
+      required:
+      - business_date
+      - kind
+      - correction
       properties:
-        business_date: *ledger002
+        business_date: *id013
         kind:
           type: string
-          enum: [correction]
+          enum:
+          - correction
         correction:
           $ref: '#/components/schemas/LightTickInvestmentLedgerCorrection'
     LightTickInvestmentLedgerWrite:
@@ -19547,13 +19760,13 @@ components:
         - kind
         - fill
         properties:
-          base_revision: &ledger005
+          base_revision: &id018
             type: integer
             minimum: 1
             maximum: 2147483647
-          business_date: *ledger002
-          kind: *ledger003
-          fill: *ledger004
+          business_date: *id013
+          kind: *id014
+          fill: *id015
       - type: object
         additionalProperties: false
         required:
@@ -19562,19 +19775,24 @@ components:
         - kind
         - cash
         properties:
-          base_revision: *ledger005
-          business_date: *ledger002
-          kind: *ledger006
-          cash: *ledger007
+          base_revision: *id018
+          business_date: *id013
+          kind: *id016
+          cash: *id017
       - type: object
         additionalProperties: false
-        required: [base_revision, business_date, kind, correction]
+        required:
+        - base_revision
+        - business_date
+        - kind
+        - correction
         properties:
-          base_revision: *ledger005
-          business_date: *ledger002
+          base_revision: *id018
+          business_date: *id013
           kind:
             type: string
-            enum: [correction]
+            enum:
+            - correction
           correction:
             $ref: '#/components/schemas/LightTickInvestmentLedgerCorrection'
     LightTickInvestmentLedgerPosition:
@@ -19591,17 +19809,17 @@ components:
       - unrealized
       - mark
       properties:
-        instrument_id: *ledger008
-        quantity: &ledger009
+        instrument_id: *id019
+        quantity: &id020
           type: string
           maxLength: 240
         cost:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         realized:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         fees_complete:
           type: boolean
@@ -19609,15 +19827,15 @@ components:
           type: boolean
         market_value:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         unrealized:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         mark:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
     LightTickInvestmentLedgerResult:
       type: object
@@ -19634,10 +19852,10 @@ components:
       - settlements_complete
       - warnings
       properties:
-        cash: *ledger009
+        cash: *id020
         cash_verified:
           type: boolean
-        receivables: *ledger009
+        receivables: *id020
         positions:
           type: array
           maxItems: 10100
@@ -19645,17 +19863,17 @@ components:
             $ref: '#/components/schemas/LightTickInvestmentLedgerPosition'
         realized:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         fees_complete:
           type: boolean
         net_realized:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         equity:
           anyOf:
-          - *ledger009
+          - *id020
           - type: 'null'
         settlements_complete:
           type: boolean
@@ -19678,9 +19896,9 @@ components:
       - valuation
       - result
       properties:
-        account_id: *ledger008
-        account_revision: *ledger005
-        baseline_version: *ledger005
+        account_id: *id019
+        account_revision: *id018
+        baseline_version: *id018
         algorithm_version:
           type: string
           enum:
@@ -19702,7 +19920,8 @@ components:
           maximum: 10000
         projection_version:
           type: string
-          enum: [immutable-ledger-corrections-v1]
+          enum:
+          - immutable-ledger-corrections-v1
         valuation:
           type: string
           enum:
@@ -19725,10 +19944,10 @@ components:
       - created_at
       - updated_at
       properties:
-        id: *ledger008
-        account_id: *ledger008
-        revision: *ledger005
-        base_revision: *ledger005
+        id: *id019
+        account_id: *id019
+        revision: *id018
+        base_revision: *id018
         status:
           type: string
           enum:
@@ -19752,10 +19971,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/LightTickInvestmentLedgerReport'
           - type: 'null'
-        created_at: &ledger010
+        created_at: &id021
           type: string
           format: date-time
-        updated_at: *ledger010
+        updated_at: *id021
     LightTickInvestmentLedgerEvent:
       type: object
       additionalProperties: false
@@ -19766,17 +19985,19 @@ components:
       - input
       - created_at
       properties:
-        id: *ledger008
-        account_id: *ledger008
-        sequence: *ledger005
+        id: *id019
+        account_id: *id019
+        sequence: *id018
         input:
           $ref: '#/components/schemas/LightTickInvestmentLedgerInput'
-        created_at: *ledger010
+        created_at: *id021
         effective_fact:
           anyOf:
           - type: object
             additionalProperties: false
-            required: [input, input_digest]
+            required:
+            - input
+            - input_digest
             properties:
               input:
                 anyOf:
@@ -19790,7 +20011,6 @@ components:
           anyOf:
           - type: string
           - type: 'null'
-
     LightTickInvestmentLedgerPage:
       type: object
       additionalProperties: false
@@ -19804,7 +20024,7 @@ components:
           type: integer
           minimum: 1
           maximum: 500
-        account_revision: *ledger005
+        account_revision: *id018
         items:
           type: array
           maxItems: 100
@@ -19825,7 +20045,7 @@ components:
       required:
       - base_revision
       properties:
-        base_revision: *ledger005
+        base_revision: *id018
     LightTickInvestmentLedgerWorkEnvelope:
       type: object
       additionalProperties: false
@@ -20611,7 +20831,8 @@ components:
         material_sources:
           type: array
           maxItems: 30
-          description: Exact independent material versions. Omission retains prior references; explicit empty array detaches.
+          description: Exact independent material versions. Omission retains prior references; explicit
+            empty array detaches.
           items:
             $ref: '#/components/schemas/LightTickInvestmentMaterialSource'
         market_context:
@@ -20715,7 +20936,8 @@ components:
         material_sources:
           type: array
           maxItems: 30
-          description: Exact independent material versions. Omission retains prior references; explicit empty array detaches.
+          description: Exact independent material versions. Omission retains prior references; explicit
+            empty array detaches.
           items:
             $ref: '#/components/schemas/LightTickInvestmentMaterialSource'
         market_context:
@@ -20928,7 +21150,6 @@ components:
         content_digest:
           type: string
           pattern: ^[a-f0-9]{64}$
-
     LightTickNativeLearningModule:
       type: object
       additionalProperties: false
@@ -21098,7 +21319,6 @@ components:
           $ref: '#/components/schemas/LightTickNativeLearningModuleTemplates'
         requestId:
           type: string
-
     LightTickReadingContent:
       type: object
       additionalProperties: false
@@ -21481,6 +21701,11 @@ components:
           maxItems: 1000
           items:
             $ref: '#/components/schemas/LightTickReadingPreferences'
+        work_assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingAsset'
+          maxItems: 44000
     LightTickReadingArticleEnvelope:
       type: object
       additionalProperties: false
@@ -21565,7 +21790,6 @@ components:
         requestId:
           type: string
           maxLength: 128
-
     LightTickReadingVocabularyEntry:
       type: object
       additionalProperties: false
@@ -21875,7 +22099,6 @@ components:
         requestId:
           type: string
           maxLength: 128
-
     LightTickReadingMaterial:
       type: object
       additionalProperties: false
@@ -22016,7 +22239,6 @@ components:
           type: integer
           minimum: 1
           maximum: 2147483647
-
     LightTickReadingSource:
       type: object
       additionalProperties: false
@@ -22101,6 +22323,11 @@ components:
           - type: string
             format: date-time
             maxLength: 40
+          - type: 'null'
+        catalog_origin_id:
+          anyOf:
+          - type: string
+            maxLength: 100
           - type: 'null'
     LightTickReadingSourceWrite:
       type: object
@@ -22243,6 +22470,8 @@ components:
           type: string
           maxLength: 64
           pattern: ^[a-f0-9]{64}$
+        recommendation:
+          $ref: '#/components/schemas/LightTickReadingRecommendationScope'
     LightTickReadingWorkDocument:
       type: object
       additionalProperties: false
@@ -22291,10 +22520,7 @@ components:
               const: base64
           required:
           - encoding
-        then:
-          properties:
-            content_type:
-              const: application/pdf
+        then: {}
         else:
           properties:
             body:
@@ -22334,6 +22560,60 @@ components:
           items:
             type: string
             maxLength: 2000
+        entry_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingEntryReference'
+          maxItems: 8
+        documents:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - asset_id
+            - url
+            - sha256
+            properties:
+              asset_id: *id022
+              url:
+                type: string
+                maxLength: 1500
+              sha256: &id023
+                type: string
+                pattern: ^[a-f0-9]{64}$
+                maxLength: 64
+          maxItems: 44
+        recommendation:
+          type: object
+          additionalProperties: false
+          required:
+          - date
+          - requested
+          - selected
+          - attempted
+          - ranking_version
+          - scope_digest
+          properties:
+            date:
+              type: string
+              format: date
+            requested:
+              type: integer
+              minimum: 1
+              maximum: 8
+            selected:
+              type: integer
+              minimum: 0
+              maximum: 8
+            attempted:
+              type: integer
+              minimum: 0
+              maximum: 24
+            ranking_version:
+              type: string
+              maxLength: 100
+            scope_digest: *id023
     LightTickReadingWork:
       type: object
       additionalProperties: false
@@ -22369,6 +22649,7 @@ components:
           - summary
           - english
           - fetch_full
+          - recommend
         status:
           type: string
           enum:
@@ -22565,6 +22846,9 @@ components:
             minimum: 1
             maximum: 2147483647
           - type: 'null'
+        response_view:
+          type: string
+          const: summary
     LightTickReadingWorkAdoptResult:
       type: object
       additionalProperties: false
@@ -22575,7 +22859,9 @@ components:
       - work
       properties:
         work:
-          $ref: '#/components/schemas/LightTickReadingWork'
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingWork'
+          - $ref: '#/components/schemas/LightTickReadingWorkSummary'
         work_id:
           type: string
           maxLength: 128
@@ -22605,6 +22891,7 @@ components:
           - $ref: '#/components/schemas/LightTickReadingWorkCancel'
           - $ref: '#/components/schemas/LightTickReadingWorkAdopt'
           - $ref: '#/components/schemas/LightTickReadingPreferencesWrite'
+          - $ref: '#/components/schemas/LightTickReadingRecommendationCreate'
         operation_id:
           type: string
           maxLength: 128
@@ -22655,6 +22942,7 @@ components:
           - summary
           - english
           - fetch_full
+          - recommend
         status:
           type: string
           enum:
@@ -22783,6 +23071,58 @@ components:
               type: string
               maxLength: 64
               pattern: ^[a-f0-9]{64}$
+            recommendation:
+              type: object
+              additionalProperties: false
+              required:
+              - scope
+              - seen
+              - feedback
+              - automatic
+              properties:
+                scope:
+                  $ref: '#/components/schemas/LightTickReadingRecommendationScope'
+                seen:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 1500
+                  maxItems: 10000
+                feedback:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required:
+                    - source_url
+                    - topics
+                    - feedback_value
+                    - saved_at
+                    properties:
+                      source_url:
+                        anyOf:
+                        - type: string
+                          maxLength: 1500
+                        - type: 'null'
+                      topics:
+                        type: array
+                        items:
+                          type: string
+                          maxLength: 200
+                        maxItems: 100
+                      feedback_value:
+                        anyOf:
+                        - type: string
+                          maxLength: 100
+                        - type: 'null'
+                      saved_at:
+                        anyOf:
+                        - type: string
+                          maxLength: 40
+                        - type: 'null'
+                  maxItems: 60
+                automatic:
+                  type: boolean
     LightTickReadingSourceEnvelope:
       type: object
       additionalProperties: false
@@ -22885,7 +23225,6 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickReadingWorkReceipt'
-
     LightTickReadingWorkSummary:
       type: object
       additionalProperties: false
@@ -22921,6 +23260,7 @@ components:
           - summary
           - english
           - fetch_full
+          - recommend
         status:
           type: string
           enum:
@@ -22974,7 +23314,6 @@ components:
           - type: 'null'
         has_output:
           type: boolean
-
     LightTickReadingSourceMetadata:
       type: object
       additionalProperties: false
@@ -23724,3 +24063,246 @@ components:
           type: string
           maxLength: 50
           pattern: ^candidate-[a-f0-9]{40}$
+    LightTickReadingSelectedSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - title
+      - url
+      - format
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        url:
+          type: string
+          maxLength: 1500
+          format: uri
+        format:
+          type: string
+          enum:
+          - article
+          - rss
+          - atom
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+          - unknown
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+        domains:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 253
+            minLength: 1
+        catalog_id:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+    LightTickReadingRecommendationScope:
+      type: object
+      additionalProperties: false
+      required:
+      - preferences
+      - sources
+      - catalog_revision
+      - date
+      - ranking_version
+      - seen_count
+      - digest
+      - extraction_version
+      properties:
+        preferences:
+          $ref: '#/components/schemas/LightTickReadingPreferences'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingSelectedSource'
+          maxItems: 20
+        catalog_revision:
+          type: string
+          maxLength: 100
+        date:
+          type: string
+          format: date
+        ranking_version:
+          type: string
+          maxLength: 100
+        seen_count:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        digest: *id023
+        extraction_version:
+          type: string
+          maxLength: 140
+    LightTickReadingRecommendationCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - scope_digest
+      properties:
+        scope_digest: *id023
+    LightTickReadingEntryReference:
+      type: object
+      additionalProperties: false
+      required:
+      - asset_id
+      - content
+      - content_digest
+      - document_id
+      - source_id
+      - extraction_version
+      properties:
+        asset_id: *id022
+        content:
+          $ref: '#/components/schemas/LightTickReadingSourceMetadata'
+        content_digest: *id023
+        document_id: *id022
+        source_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+        extraction_version:
+          type: string
+          maxLength: 140
+    LightTickReadingAssetSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - work_id
+      - sha256
+      - kind
+      properties:
+        id:
+          type: string
+          pattern: ^readasset-[a-f0-9]{40}$
+          maxLength: 50
+        work_id:
+          type: string
+          maxLength: 128
+          pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+          maxLength: 64
+        kind:
+          type: string
+          enum:
+          - entry
+          - document
+    LightTickReadingAsset:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - work_id
+      - sha256
+      - kind
+      - value
+      properties:
+        id: *id022
+        work_id: *id001
+        sha256: *id023
+        kind:
+          type: string
+          enum:
+          - entry
+          - document
+        value:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingContent'
+          - $ref: '#/components/schemas/LightTickReadingWorkDocument'
+    LightTickReadingAssetPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingAssetSummary'
+          maxItems: 100
+    LightTickReadingRecommendationScopeEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReadingRecommendationScope'
+    LightTickReadingAssetEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReadingAsset'
+    LightTickReadingAssetPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickReadingAssetPage'

@@ -1,3 +1,8 @@
+import type { ReadingRecommendationInput } from "./reading-recommendation.types.ts";
+import type {
+  ReadingAssetsRepository,
+  ReadingEntryReference,
+} from "./reading-assets.types.ts";
 import type { ReadingCandidate } from "./reading-candidate.types.ts";
 import type { ReadingPreferencesRepository } from "./reading-preferences.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -9,6 +14,7 @@ export interface ReadingSource {
   domains?: string[];
   custom?: boolean;
   catalog_id?: string | null;
+  catalog_origin_id?: string | null;
   deleted_at?: string | null;
   id: string;
   revision: number;
@@ -20,6 +26,7 @@ export interface ReadingSource {
   updated_at: string;
 }
 export type ReadingWorkKind =
+  | "recommend"
   | "collect_url"
   | "collect_source"
   | "fetch_full"
@@ -30,6 +37,7 @@ export interface ReadingWork extends LightTickOwner {
   kind: ReadingWorkKind;
   status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
   input: {
+    recommendation?: ReadingRecommendationInput;
     source_id?: string;
     source_revision?: number;
     source_domains?: string[];
@@ -48,6 +56,16 @@ export interface ReadingWork extends LightTickOwner {
     candidate_output_digest?: string;
   };
   output: {
+    recommendation?: {
+      date: string;
+      requested: number;
+      selected: number;
+      attempted: number;
+      ranking_version: string;
+      scope_digest: string;
+    };
+    documents?: { asset_id: string; url: string; sha256: string }[];
+    entry_refs?: ReadingEntryReference[];
     entries?: ArticleContent[];
     candidates?: ReadingCandidate[];
     warnings?: string[];
@@ -75,6 +93,7 @@ export interface ReadingWork extends LightTickOwner {
   updated_at: string;
 }
 export interface ReadingWorkRepository {
+  readonly assets: ReadingAssetsRepository;
   readonly preferences: ReadingPreferencesRepository;
   source(o: LightTickOwner, id: string): Promise<ReadingSource | undefined>;
   sources(

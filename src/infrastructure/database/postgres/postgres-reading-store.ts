@@ -132,6 +132,9 @@ export class PostgresReadingStore implements ReadingRepository {
       [o.appId, o.userId, id],
     );
   }
+  async recommendationHistory(o:LightTickOwner) {
+    return (await this.query(`SELECT payload->'content'->>'source_url' AS source_url,coalesce(payload->'content'->'topics','[]'::jsonb) AS topics,payload->'personal'->'structured_feedback'->>'value' AS feedback_value,payload->>'created_at' AS saved_at FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 ORDER BY id COLLATE "C" LIMIT 10001`,[o.appId,o.userId])).rows as import("../../../modules/lighttick/reading/reading-recommendation.ts").ReadingRecommendationHistory[];
+  }
   async get(o: LightTickOwner, id: string) {
     return (
       await this.query(

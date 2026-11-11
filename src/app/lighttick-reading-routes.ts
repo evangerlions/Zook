@@ -1,3 +1,4 @@
+import { ReadingRecommendationService } from "../modules/lighttick/reading/reading-recommendation.service.ts";
 import { ReadingPreferencesService } from "../modules/lighttick/reading/reading-preferences.service.ts";
 import { ReadingWorkService } from "../modules/lighttick/reading/reading-work.service.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
@@ -21,7 +22,13 @@ export async function handleReadingRequest(
   const service = new ReadingService(repo, authorize),
     part = r.path.slice(root.length);
   if (
-    ["/setup", "/preferences", "/preferences/history"].includes(part) ||
+    [
+      "/recommendation-scope",
+      "/recommendations",
+      "/setup",
+      "/preferences",
+      "/preferences/history",
+    ].includes(part) ||
     part === "/sources" ||
     part.startsWith("/sources/") ||
     part === "/work" ||
@@ -31,7 +38,12 @@ export async function handleReadingRequest(
     if (!work) fail(503, "阅读采集和模型worker暂不可用，请保留输入。");
     const w = new ReadingWorkService(repo, work.queue, authorize, work.clock),
       key = r.headers["idempotency-key"] ?? r.headers["Idempotency-Key"] ?? "";
-    const prefs = new ReadingPreferencesService(w);
+    const prefs = new ReadingPreferencesService(w),
+      recommendation = new ReadingRecommendationService(w);
+    if (part === "/recommendation-scope" && r.method === "GET")
+      return recommendation.scope(owner);
+    if (part === "/recommendations" && r.method === "POST")
+      return recommendation.create(owner, r.body, key);
     if (part === "/setup" && r.method === "GET") return prefs.setup(owner);
     if (part === "/preferences" && r.method === "GET") return prefs.read(owner);
     if (part === "/preferences/history" && r.method === "GET")
@@ -77,6 +89,14 @@ export async function handleReadingRequest(
       if (r.method === "POST" && source[2] === "delete")
         return w.deleteSource(owner, source[1], r.body, key);
     }
+    const asset =
+      /^\/work\/(readwork-[a-zA-Z0-9_-]+)\/assets(?:\/(readasset-[a-zA-Z0-9_-]+))?$/.exec(
+        part,
+      );
+    if (asset && r.method === "GET")
+      return asset[2]
+        ? w.asset(owner, asset[1], asset[2])
+        : w.assets(owner, asset[1]);
     const job = /^\/work\/(readwork-[a-zA-Z0-9_-]+)(?:\/(cancel|adopt))?$/.exec(
       part,
     );
