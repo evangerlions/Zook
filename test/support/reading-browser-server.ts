@@ -1,8 +1,9 @@
+import { ReadingWorkRunner } from "../../src/modules/lighttick/reading/reading-work.runner.ts";
 /** Loopback-only synthetic acceptance fixture, never a deployable backend.
  * Real LightTick route handlers and dedicated PG repository; ephemeral synthetic
  * membership/session bootstrap avoids collecting any user's login credentials.
  */
-import {NativeLearningService} from "../../src/modules/lighttick/learning/native-learning.service.ts";
+import { NativeLearningService } from "../../src/modules/lighttick/learning/native-learning.service.ts";
 import { createServer } from "node:http";
 import { Pool } from "pg";
 import { createApplication } from "./create-test-application.ts";
@@ -12,8 +13,10 @@ import { createGrowStaticHandler } from "../../apps/admin-web/grow-static.ts";
 const url = process.env.LIGHTTICK_READING_TEST_DATABASE_URL;
 if (
   !url ||
-  !["localhost","127.0.0.1"].includes(new URL(url).hostname) ||
-  !/^(?:lighttick_full_migration_[0-9]+|grow_web_u1_content_completion_[0-9]+)$/.test(new URL(url).pathname.slice(1))
+  !["localhost", "127.0.0.1"].includes(new URL(url).hostname) ||
+  !/^(?:lighttick_full_migration_[0-9]+|grow_web_u1_content_completion_[0-9]+)$/.test(
+    new URL(url).pathname.slice(1),
+  )
 )
   throw Error("Dedicated synthetic database required.");
 const root = process.argv[process.argv.indexOf("--artifact") + 1];
@@ -35,11 +38,44 @@ const runtime = await createApplication({
   lighttickEnabled: true,
   lighttickRepository: repository,
 });
-runtime.services.lighttickRuntime!.nativeLearning=new NativeLearningService(repository,true);
+runtime.services.lighttickRuntime!.nativeLearning = new NativeLearningService(
+  repository,
+  true,
+);
 const staticHandler = createGrowStaticHandler({
   growEnabled: true,
   growRoot: root,
 });
+const syntheticProviders = process.argv.includes(
+  "--synthetic-reading-providers",
+);
+const syntheticRunner = new ReadingWorkRunner(
+  runtime.services.lighttickRuntime!.readingWork!,
+  {
+    complete: async () => ({
+      text: "合成模型验收输出：这是用于核对任务、草稿与显式采用的替身结果，不是真实模型验证。",
+      provider: "synthetic-acceptance",
+      providerModel: "fixture",
+    }),
+  } as any,
+  async (url) => {
+    if (new URL(url).hostname !== "reading.example.test")
+      throw Error(
+        "Only the disclosed synthetic provider is available in this fixture",
+      );
+    return url.includes("feed")
+      ? {
+          body: "<rss><channel><language>en</language><item><title>Synthetic feed article</title><link>https://reading.example.test/article</link><description><![CDATA[<p>Original synthetic feed excerpt.</p>]]></description><author>Synthetic author</author></item></channel></rss>",
+          content_type: "application/rss+xml",
+        }
+      : {
+          body: "<article><p>Original synthetic paragraph one.</p><p>Original synthetic paragraph two.</p></article>",
+          content_type: "text/html",
+        };
+  },
+  async () => runtime.services.lighttickRuntime!.scopePolicy.assertFull(),
+);
+let dropNext: string | null = null;
 const server = createServer(async (req, res) => {
   const send = (status: number, body: unknown) => {
     res.writeHead(status, {
@@ -83,6 +119,58 @@ const server = createServer(async (req, res) => {
         Array.isArray(v) ? v[0] : v,
       ]),
     );
+    if (u.pathname.startsWith("/__synthetic/")) {
+      if (
+        req.method !== "POST" ||
+        req.headers["x-lighttick-acceptance"] !== "local-synthetic"
+      ) {
+        send(403, { code: "SYNTHETIC_CONTROL_DENIED" });
+        return;
+      }
+      const body = raw ? JSON.parse(raw) : {};
+      if (
+        u.pathname === "/__synthetic/scope" &&
+        ["core", "full"].includes(body.scope)
+      ) {
+        await runtime.services.appConfigService.setValue(
+          "lighttick",
+          "admin.delivery_config",
+          JSON.stringify({
+            enabled: true,
+            settings: { runtimeScope: body.scope },
+          }),
+        );
+        send(200, { scope: body.scope });
+        return;
+      }
+      if (
+        u.pathname === "/__synthetic/drop-next" &&
+        typeof body.path === "string" &&
+        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources)(?:\/|$)|learning\/modules\/)/.test(
+          body.path,
+        )
+      ) {
+        dropNext = body.path;
+        send(200, { armed: true });
+        return;
+      }
+      if (u.pathname === "/__synthetic/run-reading" && syntheticProviders) {
+        const rows = await repository.readingWork.recoverable(
+          new Date().toISOString(),
+          100,
+        );
+        for (const row of rows)
+          if (row.userId === "user_alice" && row.status === "queued")
+            await syntheticRunner.execute(row, row.id);
+        send(200, {
+          processed: rows.filter((r) => r.userId === "user_alice").length,
+          provider_validation: "synthetic_only",
+        });
+        return;
+      }
+      send(404, { code: "UNKNOWN_SYNTHETIC_CONTROL" });
+      return;
+    }
     const result = await runtime.app.handle({
       method: req.method ?? "GET",
       path: u.pathname,
@@ -90,6 +178,19 @@ const server = createServer(async (req, res) => {
       body: raw ? JSON.parse(raw) : undefined,
       headers,
     });
+    if (
+      dropNext === u.pathname &&
+      result.statusCode === 200 &&
+      !["GET", "HEAD"].includes(req.method ?? "")
+    ) {
+      dropNext = null;
+      send(503, {
+        code: "SYNTHETIC_RESPONSE_LOST",
+        message: "Committed result intentionally hidden by synthetic fixture",
+        data: null,
+      });
+      return;
+    }
     res.writeHead(result.statusCode, {
       "Content-Type": result.contentType ?? "application/json",
       ...result.headers,

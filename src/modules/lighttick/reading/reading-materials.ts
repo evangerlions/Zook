@@ -13,6 +13,7 @@ export function writeReadingMaterial(
   raw: unknown,
   adopt: boolean,
   now: string,
+  origin:"manual"|"ai"="manual",
 ) {
   const b = object(raw);
   keys(b, [
@@ -62,7 +63,7 @@ export function writeReadingMaterial(
       draft: {
         text: text(b.text, 100000),
         version,
-        origin: "manual",
+        origin,
         created_at: now,
       },
       adopted: previous?.adopted ?? null,

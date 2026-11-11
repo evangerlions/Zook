@@ -1,0 +1,456 @@
+import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
+import type { LightTickRepository } from "../lighttick.repository.ts";
+import type { LightTickOwner } from "../lighttick.types.ts";
+import type {
+  ReadingWork,
+  ReadingSource,
+  ReadingWorkKind,
+} from "./reading-work.types.ts";
+import { captureModel } from "../personal-model/personal-model.service.ts";
+import { ReadingService } from "./reading.service.ts";
+import { writeReadingMaterial } from "./reading-materials.ts";
+import {
+  digest,
+  fail,
+  integer,
+  keys,
+  object,
+  text,
+  identity,
+} from "../learning/native-learning.validation.ts";
+export const READING_WORK_JOB = "lighttick.reading.work";
+export const readingURL = (raw: unknown) => {
+  let u: URL;
+  try {
+    u = new URL(text(raw, 1500, true));
+  } catch {
+    fail(422, "请输入可核对的HTTPS来源链接。");
+  }
+  if (
+    u.protocol !== "https:" ||
+    u.username ||
+    u.password ||
+    (u.port && u.port !== "443")
+  )
+    fail(422, "仅支持无凭据、443端口的HTTPS来源。");
+  u.hash = "";
+  return u.toString();
+};
+export class ReadingWorkService {
+  constructor(
+    readonly repo: LightTickRepository,
+    readonly queue: JobQueue,
+    readonly authorize: () => Promise<void> = async () => {},
+    readonly clock = () => new Date(),
+  ) {}
+  get store() {
+    return this.repo.readingWork;
+  }
+  data(row: ReadingWork) {
+    const {
+      appId: _,
+      userId: __,
+      input,
+      fence: ___,
+      lease_until: ____,
+      ...data
+    } = row;
+    return {
+      ...data,
+      scope: {
+        source_id: input.source_id ?? null,
+        source_revision: input.source_revision ?? null,
+        url: input.url ?? null,
+        article_id: input.article_id ?? null,
+        content_version: input.content_version ?? null,
+        paragraph_id: input.paragraph_id ?? null,
+        selected_characters: input.text?.length ?? 0,
+      },
+      output_digest: row.output ? digest(row.output) : null,
+    };
+  }
+  async command<T extends Record<string, any>>(
+    o: LightTickOwner,
+    id: string,
+    action: string,
+    b: Record<string, unknown>,
+    key: string,
+    perform: () => Promise<T>,
+  ): Promise<T> {
+    if (!/^[a-zA-Z0-9_-]{8,128}$/.test(key))
+      fail(422, "请保留有效原请求编号。");
+    const hash = digest({ id, action, b });
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const old = await this.repo.getOperation(o, key);
+      if (old) {
+        if (
+          old.entityType !== "reading_work" ||
+          old.entityId !== id ||
+          old.payloadHash !== hash
+        )
+          fail(409, "原请求编号已用于其他操作。");
+        return structuredClone(old.resultPayload) as T;
+      }
+      const result = await perform(),
+        now = this.clock().toISOString();
+      await this.repo.saveOperation({
+        ...o,
+        operationId: key,
+        deviceId: "reading-work",
+        entityType: "reading_work",
+        entityId: id,
+        action,
+        payloadHash: hash,
+        requestPayload: b,
+        resultPayload: result,
+        status: "accepted",
+        createdAt: now,
+        updatedAt: now,
+      });
+      return result;
+    });
+  }
+  async source(o: LightTickOwner, id: string) {
+    identity(id, "source-");
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const row = await this.store.source(o, id);
+      if (!row) fail(404, "未找到本人的阅读源。");
+      return row;
+    });
+  }
+  async sources(o: LightTickOwner, after = "") {
+    if (after) identity(after, "source-");
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const rows = await this.store.sources(o, after, 51);
+      return {
+        items: rows.slice(0, 50),
+        next_cursor: rows.length > 50 ? rows[49].id : null,
+      };
+    });
+  }
+  async sourceHistory(o: LightTickOwner, id: string, before = 2147483648) {
+    identity(id, "source-");
+    integer(before, 1, 2147483648);
+    return this.repo.transaction(o, async () => {
+      await this.source(o, id);
+      const rows = await this.store.sourceHistory(o, id, before, 31);
+      return {
+        items: rows.slice(0, 30),
+        next_cursor: rows.length > 30 ? String(rows[29].revision) : null,
+      };
+    });
+  }
+  async saveSource(o: LightTickOwner, id: string, raw: unknown, key: string) {
+    identity(id, "source-");
+    const b = structuredClone(object(raw));
+    keys(b, ["base_revision", "title", "url", "format", "archived"]);
+    const base = integer(b.base_revision, 0, 2147483646),
+      title = text(b.title, 200, true),
+      url = readingURL(b.url);
+    if (
+      !["article", "rss", "atom"].includes(String(b.format)) ||
+      typeof b.archived !== "boolean"
+    )
+      fail(422, "请明确来源格式与归档状态。");
+    return this.command(o, id, "source:save", b, key, async () => {
+      const old = await this.store.source(o, id),
+        now = this.clock().toISOString();
+      const row: ReadingSource = {
+        id,
+        revision: base + 1,
+        title,
+        url,
+        format: b.format as ReadingSource["format"],
+        archived: b.archived as boolean,
+        created_at: old?.created_at ?? now,
+        updated_at: now,
+      };
+      await this.store.saveSource(o, row, base);
+      return row;
+    });
+  }
+  async read(o: LightTickOwner, id: string) {
+    identity(id, "readwork-");
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const row = await this.store.get(o, id);
+      if (!row) fail(404, "未找到本人的阅读任务。");
+      return this.data(row);
+    });
+  }
+  async list(o: LightTickOwner, after = "") {
+    if (after) identity(after, "readwork-");
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const rows = await this.store.list(o, after, 31);
+      return {
+        items: rows.slice(0, 30).map((r) => {
+          const { output, ...data } = this.data(r);
+          return { ...data, has_output: output !== null };
+        }),
+        next_cursor: rows.length > 30 ? rows[29].id : null,
+      };
+    });
+  }
+  async create(o: LightTickOwner, raw: unknown, key: string) {
+    const b = structuredClone(object(raw)),
+      kind = b.kind as ReadingWorkKind,
+      id = "readwork-" + digest([o.appId, o.userId, key]).slice(0, 40);
+    if (
+      ![
+        "collect_url",
+        "collect_source",
+        "guide",
+        "translation",
+        "summary",
+        "english",
+      ].includes(kind)
+    )
+      fail(422, "请选择阅读采集或AI资料类型。");
+    keys(
+      b,
+      kind === "collect_url"
+        ? ["kind", "url", "title"]
+        : kind === "collect_source"
+          ? ["kind", "source_id", "base_revision"]
+          : ["kind", "article_id", "content_version", "paragraph_id"],
+    );
+    const result = await this.command(
+      o,
+      id,
+      "work:create",
+      b,
+      key,
+      async () => {
+        const now = this.clock().toISOString(),
+          recent = await this.store.recent(
+            o,
+            now.slice(0, 10) + "T00:00:00.000Z",
+          );
+        if (
+          recent.filter(
+            (r) => !["collect_url", "collect_source"].includes(r.kind),
+          ).length >= 12 &&
+          !["collect_url", "collect_source"].includes(kind)
+        )
+          fail(429, "今日阅读模型预算已达上限。");
+        if (recent.length >= 20)
+          fail(429, "今日阅读任务已达20次，请保留输入稍后再试。");
+        if (
+          recent.filter((r) => ["queued", "running"].includes(r.status))
+            .length >= 2
+        )
+          fail(429, "请先完成或取消未决阅读任务。");
+        let input: ReadingWork["input"];
+        if (kind === "collect_url")
+          input = {
+            url: readingURL(b.url),
+            title: text(b.title, 200, true),
+            format: "article",
+          };
+        else if (kind === "collect_source") {
+          const source = await this.source(o, identity(b.source_id, "source-"));
+          if (
+            source.revision !== integer(b.base_revision, 1, 2147483647) ||
+            source.archived
+          )
+            fail(409, "来源已变化或已归档，请核对后采集。");
+          input = {
+            source_id: source.id,
+            source_revision: source.revision,
+            url: source.url,
+            title: source.title,
+            format: source.format,
+          };
+        } else {
+          const article = await new ReadingService(
+            this.repo,
+            this.authorize,
+            this.clock,
+          ).read(o, identity(b.article_id, "article-"));
+          const check = structuredClone(article);
+          writeReadingMaterial(
+            check,
+            {
+              base_revision: article.revision,
+              content_version: b.content_version,
+              kind,
+              paragraph_id: b.paragraph_id,
+              text: "",
+            },
+            false,
+            now,
+          );
+          const selected =
+            kind === "translation"
+              ? article.content.body.split(/\n\s*\n/)[
+                  Number(String(b.paragraph_id).slice(2)) - 1
+                ]
+              : article.content.body;
+          if (Buffer.byteLength(selected) > 20000)
+            fail(413, "本次模型范围超过20000字节，请先按段落整理。");
+          input = {
+            article_id: article.id,
+            content_version: article.content_version,
+            paragraph_id: b.paragraph_id as string | null,
+            text: selected,
+            model_selection: await captureModel(this.repo, o),
+          };
+        }
+        const row: ReadingWork = {
+          ...o,
+          id,
+          revision: 1,
+          kind,
+          status: "queued",
+          input,
+          output: null,
+          adopted: {},
+          attempt: 0,
+          fence: null,
+          lease_until: null,
+          error_code: null,
+          created_at: now,
+          updated_at: now,
+        };
+        await this.store.save(row, 0);
+        return this.data(row);
+      },
+    );
+    await this.dispatch(o, id);
+    return result;
+  }
+  async dispatch(o: LightTickOwner, id: string) {
+    const row = await this.store.get(o, id);
+    if (!row || row.status !== "queued") return;
+    try {
+      await this.queue.add(
+        READING_WORK_JOB,
+        { app_id: o.appId, user_id: o.userId, work_id: id },
+        {
+          attempts: 3,
+          jobId: "reading-" + digest([o.userId, id]).slice(0, 40),
+          backoffMs: 2000,
+        },
+      );
+    } catch {
+      await this.repo.transaction(o, async () => {
+        const latest = await this.store.get(o, id);
+        if (latest?.status === "queued")
+          await this.store.save(
+            {
+              ...latest,
+              revision: latest.revision + 1,
+              error_code: "QUEUE_UNAVAILABLE",
+              updated_at: this.clock().toISOString(),
+            },
+            latest.revision,
+          );
+      });
+    }
+  }
+  async cancel(o: LightTickOwner, id: string, raw: unknown, key: string) {
+    identity(id, "readwork-");
+    const b = structuredClone(object(raw));
+    keys(b, ["base_revision"]);
+    integer(b.base_revision, 1, 2147483646);
+    return this.command(o, id, "work:cancel", b, key, async () => {
+      const row = await this.store.get(o, id);
+      if (!row) fail(404, "未找到本人的任务。");
+      if (
+        row.revision !== b.base_revision ||
+        !["queued", "running"].includes(row.status)
+      )
+        fail(409, "任务已变化或终结，请核对原请求。");
+      const next: ReadingWork = {
+        ...row,
+        status: "cancelled",
+        revision: row.revision + 1,
+        fence: null,
+        lease_until: null,
+        error_code: "CANCELLED",
+        updated_at: this.clock().toISOString(),
+      };
+      await this.store.save(next, row.revision);
+      return this.data(next);
+    });
+  }
+  async adopt(o: LightTickOwner, id: string, raw: unknown, key: string) {
+    identity(id, "readwork-");
+    const b = structuredClone(object(raw));
+    keys(b, [
+      "base_revision",
+      "output_digest",
+      "index",
+      "base_article_revision",
+    ]);
+    integer(b.base_revision, 1, 2147483646);
+    return this.command(o, id, "work:adopt", b, key, async () => {
+      const row = await this.store.get(o, id);
+      if (
+        !row ||
+        row.status !== "succeeded" ||
+        row.revision !== b.base_revision ||
+        !row.output ||
+        digest(row.output) !== b.output_digest
+      )
+        fail(409, "请核对已完成任务的精确结果。");
+      const reading = new ReadingService(this.repo, this.authorize, this.clock);
+      let result: { article_id: string; revision: number };
+      let target: string;
+      if (row.output.entries) {
+        const index = integer(b.index, 0, row.output.entries.length - 1);
+        if (b.base_article_revision !== null)
+          fail(422, "原文导入不覆盖已有文章。");
+        target = String(index);
+        if (row.adopted[target]) fail(409, "此结果已导入，请打开原对象。");
+        const content = row.output.entries[index],
+          articleId = "article-" + digest(content).slice(0, 40);
+        const old = await this.repo.reading.get(o, articleId);
+        const article =
+          old ??
+          (await reading.write(
+            o,
+            articleId,
+            "import",
+            { base_revision: 0, content },
+            "reading-import-" + digest([id, index]).slice(0, 40),
+          ));
+        if (old && old.content_version !== digest(content))
+          fail(409, "导入对象已变化，不能覆盖。");
+        result = { article_id: article.id, revision: article.revision };
+      } else {
+        if (b.index !== null) fail(422, "AI草稿不使用条目编号。");
+        target = "draft";
+        if (row.adopted[target])
+          fail(409, "此任务已保存为草稿，请核对文章历史。");
+        const article = await reading.write(
+          o,
+          row.input.article_id!,
+          "draft",
+          {
+            base_revision: integer(b.base_article_revision, 1, 2147483646),
+            content_version: row.input.content_version,
+            kind: row.kind,
+            paragraph_id: row.input.paragraph_id,
+            text: row.output.text,
+          },
+          "reading-ai-draft-" + digest(id).slice(0, 40),
+          "ai",
+        );
+        result = { article_id: article.id, revision: article.revision };
+      }
+      const next = {
+        ...row,
+        revision: row.revision + 1,
+        adopted: { ...row.adopted, [target]: result },
+        updated_at: this.clock().toISOString(),
+      };
+      await this.store.save(next, row.revision);
+      return { work_id: id, ...result, work: this.data(next) };
+    });
+  }
+}

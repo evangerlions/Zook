@@ -1,3 +1,4 @@
+import {ReadingWorkService} from "../modules/lighttick/reading/reading-work.service.ts";
 import type { LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type { HttpRequest } from "../shared/types.ts";
@@ -12,11 +13,26 @@ export async function handleReadingRequest(
   owner: LightTickOwner,
   r: HttpRequest,
   authorize: () => Promise<void>,
+  work?:ReadingWorkService,
 ) {
   const root = "/api/v1/lighttick/reading";
   if (r.path !== root && !r.path.startsWith(root + "/")) return;
   const service = new ReadingService(repo, authorize),
     part = r.path.slice(root.length);
+  if(part==="/sources"||part.startsWith("/sources/")||part==="/work"||part.startsWith("/work/")||part.startsWith("/work-receipts/")){
+    if(!work)fail(503,"阅读采集和模型worker暂不可用，请保留输入。");
+    const w=new ReadingWorkService(repo,work.queue,authorize,work.clock),key=r.headers["idempotency-key"]??r.headers["Idempotency-Key"]??"";
+    if(part==="/sources"&&r.method==="GET")return w.sources(owner,r.query?.cursor??"");
+    if(part==="/work"&&r.method==="GET")return w.list(owner,r.query?.cursor??"");
+    if(part==="/work"&&r.method==="POST")return w.create(owner,r.body,key);
+    const receipt=/^\/work-receipts\/([a-zA-Z0-9_-]+)$/.exec(part);
+    if(receipt&&r.method==="GET")return repo.transaction(owner,async()=>{await authorize();const row=await repo.getOperation(owner,receipt[1]);if(!row||row.entityType!=="reading_work")fail(404,"未找到本人的阅读任务原回执。");return {operation_id:row.operationId,entity_id:row.entityId,action:row.action,request:row.requestPayload,result:row.resultPayload};});
+    const source=/^\/sources\/(source-[a-zA-Z0-9_-]+)(?:\/(history))?$/.exec(part);
+    if(source){if(r.method==="GET")return source[2]?w.sourceHistory(owner,source[1],r.query?.cursor===undefined?2147483648:Number(r.query.cursor)):w.source(owner,source[1]);if(r.method==="PUT"&&!source[2])return w.saveSource(owner,source[1],r.body,key);}
+    const job=/^\/work\/(readwork-[a-zA-Z0-9_-]+)(?:\/(cancel|adopt))?$/.exec(part);
+    if(job){if(r.method==="GET"&&!job[2])return w.read(owner,job[1]);if(r.method==="POST"&&job[2]==="cancel")return w.cancel(owner,job[1],r.body,key);if(r.method==="POST"&&job[2]==="adopt")return w.adopt(owner,job[1],r.body,key);}
+    fail(405,"请核对阅读来源/任务的具体操作方法。");
+  }
   if (r.method === "GET" && part === "/library")
     return service.list(owner, r.query);
   if (r.method === "GET" && part === "/export") return service.export(owner);

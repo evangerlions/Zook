@@ -113,10 +113,16 @@ export class ReadingService {
           id: entry.id,
           reviews: await this.repo.reading.listVocabularyReviews(o, entry.id),
         });
+      const sources=await this.repo.readingWork.sources(o,"",1001),workRows=await this.repo.readingWork.list(o,"",1001);
+      if(sources.length>1000||workRows.length>1000)fail(413,"阅读来源或任务超过1000项，未返回截断副本。");
+      const source_history=[];let sourceVersions=0;
+      for(const source of sources){const versions=await this.repo.readingWork.sourceHistory(o,source.id,2147483648,1001);sourceVersions+=versions.length;if(sourceVersions>1000)fail(413,"阅读来源历史超过1000项，需分批导出。");source_history.push({id:source.id,versions});}
+      const work=workRows.map(({appId:_,userId:__,fence:___,lease_until:____,input,...r})=>({...r,input}));
       const data = {
         format_version: 1,
         scope: "lighttick_reading",
         articles: items,
+        sources,source_history,work,
         vocabulary,
         vocabulary_reviews,
         history,
@@ -140,6 +146,7 @@ export class ReadingService {
     action: string,
     raw: unknown,
     key: string,
+    materialOrigin:"manual"|"ai"="manual",
   ) {
     articleId(id);
     this.key(key);
@@ -158,7 +165,7 @@ export class ReadingService {
     // Freeze before waiting for the owner lock: the receipt fingerprints the actual intent.
     const body = structuredClone(object(raw));
     const base = integer(body.base_revision, 0, 2147483646);
-    const hash = digest({ id, action, body });
+    const hash = digest({ id, action, body,...(materialOrigin==="ai"?{materialOrigin}:{}) });
     return this.repo.transaction(o, async () => {
       await this.authorize();
       const receipt = await this.repo.getOperation(o, key);
@@ -237,7 +244,7 @@ export class ReadingService {
             );
           }
         } else if (action === "draft" || action === "adopt") {
-          writeReadingMaterial(row, body, action === "adopt", now);
+          writeReadingMaterial(row, body, action === "adopt", now,materialOrigin);
         } else {
           keys(body, ["base_revision"]);
           if (row.archived === (action === "archive"))

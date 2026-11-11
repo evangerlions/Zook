@@ -22,7 +22,7 @@ export function validateRuntimeScope(appId: string, raw: string) {
 export function restrictedRequest(r: Pick<HttpRequest, "path" | "method">): boolean {
   if (["GET", "HEAD", "OPTIONS"].includes(r.method)) return false;
   const p = r.path.replace(/^\/api\/v1\/lighttick\//, "");
-  if (r.method === "POST" && /^(investments\/(work|market\/work|research-ai|screening\/runs|observations\/work|backtests|accounts\/[^/]+\/portfolio\/work)|learning\/work|ai\/model-settings\/tests|account\/github\/tests)\/[^/]+\/cancel$/.test(p)) return false;
+  if (r.method === "POST" && /^(investments\/(work|market\/work|research-ai|screening\/runs|observations\/work|backtests|accounts\/[^/]+\/portfolio\/work)|learning\/work|reading\/work|ai\/model-settings\/tests|account\/github\/tests)\/[^/]+\/cancel$/.test(p)) return false;
   if (r.method === "POST" && /^investments\/observations\/monitors\/[^/]+\/stop$/.test(p)) return false;
   if (r.method === "DELETE" && ["ai/model-settings", "account/github"].includes(p)) return false;
   return /^(reading|investments|form-records|planning-sessions|ai\/model-settings|account\/github)(\/|$)/.test(p)

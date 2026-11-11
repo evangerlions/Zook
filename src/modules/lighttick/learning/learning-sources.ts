@@ -29,25 +29,30 @@ export function publicSourceAddress(ip: string): boolean {
   return first>=0x2000&&first<0x4000&&first!==0x2002&&!(first===0x2001&&(second<0x0200||second===0x0db8));
 }
 /** Resolve and pin a public address, keep TLS hostname verification, reject redirects and bounded response data. */
-export async function fetchLearningSource(raw: string, signal: AbortSignal, io = { lookup, request }): Promise<string> {
+export async function fetchPublicSource(raw: string, signal: AbortSignal, io = { lookup, request },maxBytes=80000): Promise<{body:string;content_type:string}> {
   const url=new URL(raw);
   if(url.protocol!=='https:'||url.username||url.password||url.port&&url.port!=='443')throw Error("SOURCE_URL_FORBIDDEN");
   const hostname=url.hostname.replace(/^\[|\]$/g,''),addresses=await io.lookup(hostname,{all:true});
   if(!addresses.length||addresses.some(a=>!publicSourceAddress(a.address)))throw Error("SOURCE_ADDRESS_FORBIDDEN");
   const pinned=addresses[0];
-  return new Promise<string>((resolve,reject)=>{
+  return new Promise<{body:string;content_type:string}>((resolve,reject)=>{
     signal.throwIfAborted();
     const req=io.request(url,{signal,lookup:(_host,options,callback)=>{
       if(typeof options==='object'&&options.all)(callback as any)(null,[pinned]);else callback(null,pinned.address,pinned.family);
-    },headers:{Accept:'text/plain,text/markdown,text/html','User-Agent':'Zook-LightTick-Learning/1'}},response=>{
+    },headers:{Accept:'text/plain,text/markdown,text/html,application/rss+xml,application/atom+xml,application/xml,text/xml','User-Agent':'Zook-LightTick-Learning/1'}},response=>{
       const type=String(response.headers['content-type']??'').toLowerCase();
-      if(response.statusCode!==200||!/^text\/(plain|markdown|html)(?:;|$)/.test(type)||/charset=(?!["']?(utf-8|us-ascii))/.test(type)){response.destroy();reject(Error("SOURCE_RESPONSE_UNSUPPORTED"));return;}
+      if(response.headers['content-encoding']&&response.headers['content-encoding']!=='identity'||response.statusCode!==200||! /^(?:text\/(?:plain|markdown|html|xml)|application\/(?:rss\+xml|atom\+xml|xml))(?:;|$)/.test(type)||/charset=(?!["']?(utf-8|us-ascii))/.test(type)){response.destroy();reject(Error("SOURCE_RESPONSE_UNSUPPORTED"));return;}
       const chunks:Buffer[]=[];let size=0;
-      response.on('data',(part:Buffer)=>{size+=part.length;if(size>80000){response.destroy(Error("SOURCE_TOO_LARGE"));return;}chunks.push(part);});
-      response.on('error',reject);response.on('end',()=>{try{let value=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks));if(type.startsWith('text/html'))value=value.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ');resolve(value);}catch(error){reject(error);}});
+      response.on('data',(part:Buffer)=>{size+=part.length;if(size>maxBytes){response.destroy(Error("SOURCE_TOO_LARGE"));return;}chunks.push(part);});
+      response.on('error',reject);response.on('end',()=>{try{let value=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks));resolve({body:value,content_type:type});}catch(error){reject(error);}});
     });
     req.setTimeout(15000,()=>req.destroy(Error("SOURCE_TIMEOUT")));req.on('error',reject);req.end();
   });
+}
+export async function fetchLearningSource(raw:string,signal:AbortSignal,io={lookup,request}):Promise<string>{
+ const document=await fetchPublicSource(raw,signal,io);
+ if(!/^text\/(plain|markdown|html)(?:;|$)/.test(document.content_type))throw Error("SOURCE_RESPONSE_UNSUPPORTED");
+ return document.content_type.startsWith("text/html")?document.body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,"").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,"").replace(/<[^>]*>/g," ").replace(/\s+/g," "):document.body;
 }
 export async function collectLearningSources(owner: LightTickOwner, inputs: LearningSourceInput[], adapters: LearningSourceAdapters, signal: AbortSignal): Promise<LearningSource[]> {
   const values=await Promise.all(inputs.map(async input=>{

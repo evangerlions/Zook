@@ -2060,3 +2060,18 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 作者/标签字段对已有文章与待确认旧请求保持可选：不回填或重算旧content_version。新导入未提供作者时保存null，未提供标签时保存空数组。未知作者不推断。
 
 正式路线的集合亦可经既有集合 CAS 更新分类/说明；标题与归档状态必须保持原值，标题/状态修改仍由路线版本命令完成。`/grow/content-modules` 为可直接刷新的静态深链。
+
+### LightTick 阅读来源与持久采集 / AI任务
+
+沿用 `/api/v1/lighttick/reading`、本人身份、现有队列和 worker。来源与文章、词汇及学习课程分别拥有独立对象，不进入 task-only sync。
+
+- `GET /sources?cursor=`、`GET /sources/{sourceId}`、`GET /sources/{sourceId}/history?cursor=`：本人来源、历史（50个来源/30条历史一页）。`PUT /sources/{sourceId}` 使用 `Idempotency-Key` 和 `{base_revision,title,url,format:article|rss|atom,archived}`；名称200、HTTPS链接1500字符，仅443端口、禁止内嵌身份凭据。保存不自动取数；归档保留文章及历史。
+- `GET /work?cursor=`：30项任务摘要，包含 `has_output`、冻结范围和结果摘要，不返回下载正文。`GET /work/{workId}` 返回完整任务结果和原始采集文本。稳定ID为 `readwork-...`；状态 `queued/running/succeeded/failed/cancelled`。
+- `POST /work`：`{kind:collect_url,title,url}` 采集一篇文本；`{kind:collect_source,source_id,base_revision}` 冻结所选来源；`{kind:guide|translation|summary|english,article_id,content_version,paragraph_id}` 冻结AI原文范围。翻译按 `p-1` 起的空行分段编号，其余 paragraph_id=null。模型输入最多20000 UTF-8字节且受场景更小上限约束。私人笔记、访问凭据不传模型。
+- 公网采集复用DNS解析后固定地址、TLS主机验证、拒绝私网/重定向、UTF-8及超时控制；阅读最多2 MB、每订阅80条，超限明确失败、不截断。精确下载文本、URL、SHA256和 `web_text/feed_entry` 语义保存在任务输出；feed条目可能只有摘要，不冒充全文。XML拒绝DTD/实体并限制嵌套深度。采集不自动导入、不调用模型，不静默换源。
+- AI复用本人模型选择与逻辑场景 `reading_guide/reading_translation/reading_summary/reading_english`，场景提示版本1.0.0。无模板或供应商切换。每日最多20项阅读任务，其中AI最多12项（按单次0.15美元等值预估保留在2美元内，非实际供应商账单保证）；每owner同时最多2项未决任务，运行超时最多30秒、租约45秒。队列丢投递可恢复；运行中断且外部结果未知时标记 `INTERRUPTED_OUTCOME_UNKNOWN`，不自动重跑模型。取消、账号/文章/来源/个人模型修订变化后不持久化晚到结果。
+- `POST /work/{workId}/cancel`：`{base_revision}`，基础模式亦可取消。`POST .../adopt`：`{base_revision,output_digest,index,base_article_revision}`；采集选定index（0..79）且base_article_revision=null，内容摘要去重为独立文章；AI的index=null，需当前文章CAS，仅保存 `origin=ai` 草稿。正式采用仍使用文章 `/adopt`。响应含work_id、article_id、revision及精确提交后的work副本。所有写入要求原key/body，事务包含状态、正文/草稿及回执，失败一并回滚。
+- `GET /work-receipts/{operationId}`：`{operation_id,entity_id,action,request,result}` 核对本人原请求。基础模式可读历史、取消及GET回执，新写入（包括POST重发）返回503；回执是当时结果，不代表当前任务状态。
+- 独立与综合导出增加sources/source_history/work；work包含冻结输入和原始输出，不含队列凭据/租约。现有1000项及8 MiB完整副本上限仍适用，超限413，不返回截断副本。账号删除同时清除新增表。
+
+来源偏好推荐、定时采集、旧文章全文补取/版本衔接仍在迁移清单；本接口批次不表示这些能力已全部完成。浏览器及PG测试使用的合成模型/网站仅验证协议，不作为真实供应商结果。
