@@ -1,3 +1,5 @@
+import { ReadingScheduleService } from "../../src/modules/lighttick/reading/reading-schedule.service.ts";
+import { readingShanghaiDate } from "../../src/modules/lighttick/reading/reading-recommendation.ts";
 import { readingPdfFixture } from "./reading-pdf-fixture.ts";
 import { ReadingWorkRunner } from "../../src/modules/lighttick/reading/reading-work.runner.ts";
 /** Loopback-only synthetic acceptance fixture, never a deployable backend.
@@ -189,12 +191,40 @@ const server = createServer(async (req, res) => {
       if (
         u.pathname === "/__synthetic/drop-next" &&
         typeof body.path === "string" &&
-        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources|preferences|recommendations)(?:\/|$)|learning\/modules\/)/.test(
+        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources|preferences|recommendations|schedule)(?:\/|$)|learning\/modules\/)/.test(
           body.path,
         )
       ) {
         dropNext = body.path;
         send(200, { armed: true });
+        return;
+      }
+      if (
+        u.pathname === "/__synthetic/run-reading-schedule" &&
+        syntheticProviders
+      ) {
+        if (
+          (await runtime.services.lighttickRuntime!.scopePolicy.current()) !==
+          "full"
+        ) {
+          send(200, { paused: true, provider_validation: "synthetic_only" });
+          return;
+        }
+        const work = runtime.services.lighttickRuntime!.readingWork!,
+          owner = { appId: "lighttick" as const, userId: syntheticUserId },
+          schedule = new ReadingScheduleService(work, async () =>
+            runtime.services.lighttickRuntime!.scopePolicy.assertFull(),
+          );
+        const id = await schedule.advance(
+          owner,
+          readingShanghaiDate(work.clock()),
+        );
+        if (id) await work.dispatch(owner, id);
+        send(200, {
+          current_fixture_owner_only: true,
+          admitted: !!id,
+          provider_validation: "synthetic_only",
+        });
         return;
       }
       if (u.pathname === "/__synthetic/run-reading" && syntheticProviders) {
