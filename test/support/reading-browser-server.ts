@@ -26,10 +26,27 @@ if (!process.argv.includes("--artifact") || !root)
 const pool = new Pool({ connectionString: url });
 const repository = new PostgresLightTickRepository(pool);
 const seed = buildDefaultSeed(undefined, { includeLightTick: true });
+const ownerIndex = process.argv.indexOf("--synthetic-user"),
+  syntheticUserId =
+    ownerIndex < 0 ? "user_alice" : process.argv[ownerIndex + 1];
+if (
+  !syntheticUserId ||
+  !(
+    syntheticUserId === "user_alice" ||
+    /^user_reading_acceptance_[a-zA-Z0-9_]+$/.test(syntheticUserId)
+  )
+)
+  throw Error("Only disclosed synthetic fixture identities are permitted");
+if (syntheticUserId !== "user_alice")
+  seed.users.push({
+    ...seed.users.find((u) => u.id === "user_alice")!,
+    id: syntheticUserId,
+    email: syntheticUserId + "@example.test",
+  });
 seed.appUsers.push({
   id: "reading-browser-member",
   appId: "lighttick",
-  userId: "user_alice",
+  userId: syntheticUserId,
   status: "ACTIVE",
   accountRegion: "UNKNOWN",
   joinedAt: new Date().toISOString(),
@@ -71,6 +88,24 @@ const syntheticRunner = new ReadingWorkRunner(
         encoding: "base64",
         resolved_url: url,
       };
+    if (url.includes("batch-feed"))
+      return {
+        body:
+          "<rss><channel><language>en</language>" +
+          Array.from(
+            { length: 5 },
+            (_, i) =>
+              "<item><title>Synthetic thinking evidence " +
+              i +
+              "</title><link>https://reading.example.test/batch-article-" +
+              i +
+              "</link><author>Fixture author</author><pubDate>" +
+              new Date().toISOString().slice(0, 10) +
+              "</pubDate></item>",
+          ).join("") +
+          "</channel></rss>",
+        content_type: "application/rss+xml",
+      };
     return url.includes("feed")
       ? {
           body: "<rss><channel><language>en</language><item><title>Synthetic feed article</title><link>https://reading.example.test/article</link><description><![CDATA[<p>Original synthetic feed excerpt.</p>]]></description><author>Synthetic author</author></item></channel></rss>",
@@ -102,10 +137,10 @@ const server = createServer(async (req, res) => {
         requestId: "reading-browser-fixture",
         data: {
           accessToken: runtime.services.tokenService.issueAccessToken(
-            "user_alice",
+            syntheticUserId,
             "lighttick",
           ),
-          user: { id: "user_alice", displayName: "阅读验收（合成）" },
+          user: { id: syntheticUserId, displayName: "阅读验收（合成）" },
         },
       });
       return;
@@ -154,7 +189,7 @@ const server = createServer(async (req, res) => {
       if (
         u.pathname === "/__synthetic/drop-next" &&
         typeof body.path === "string" &&
-        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources)(?:\/|$)|learning\/modules\/)/.test(
+        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources|preferences|recommendations)(?:\/|$)|learning\/modules\/)/.test(
           body.path,
         )
       ) {
@@ -168,10 +203,10 @@ const server = createServer(async (req, res) => {
           100,
         );
         for (const row of rows)
-          if (row.userId === "user_alice" && row.status === "queued")
+          if (row.userId === syntheticUserId && row.status === "queued")
             await syntheticRunner.execute(row, row.id);
         send(200, {
-          processed: rows.filter((r) => r.userId === "user_alice").length,
+          processed: rows.filter((r) => r.userId === syntheticUserId).length,
           provider_validation: "synthetic_only",
         });
         return;
