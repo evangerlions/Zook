@@ -4737,9 +4737,11 @@ paths:
       tags:
       - lighttick-actions
       summary: getLightTickActionRequestReceipt
-      description: Registered account or signed bridge required. P0 v2 core semantics are implemented,
-        but connection writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and
-        review preview do not enable writes. No native or source-delivery capability is implied.
+      description: Owner-only readonly original action receipt. Found/result stay compatible. Zook receipts
+        add payload_hash, fingerprint_version=zook-action-request-v1 and action path; hash covers canonical
+        {method:POST,path,body}. Legacy Grow receipts retain their original hash under grow-legacy-v1
+        with null action; do not compare it using the Zook algorithm. Absent receipts return null metadata
+        and found=false. Querying a receipt never resends a command or enables a closed action rollout.
       parameters:
       - name: key
         in: path
@@ -4752,7 +4754,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LightTickEnvelope'
+                $ref: '#/components/schemas/LightTickActionRequestReceiptEnvelope'
         '400':
           $ref: '#/components/responses/LightTickError'
         '401':
@@ -25751,6 +25753,62 @@ components:
           maxLength: 1000
         data:
           $ref: '#/components/schemas/LightTickReadingBackupReceipt'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickActionRequestReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - found
+      - result
+      - payload_hash
+      - fingerprint_version
+      - action
+      properties:
+        found:
+          type: boolean
+        result:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        payload_hash:
+          anyOf:
+          - type: string
+            pattern: ^[a-f0-9]{64}$
+          - type: 'null'
+        fingerprint_version:
+          type:
+          - string
+          - 'null'
+          enum:
+          - zook-action-request-v1
+          - grow-legacy-v1
+          - null
+        action:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+    LightTickActionRequestReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickActionRequestReceipt'
         requestId:
           type: string
           maxLength: 128

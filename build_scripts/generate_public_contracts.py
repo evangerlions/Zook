@@ -229,6 +229,7 @@ SPECS: dict[str, list[str]] = {
         'LightTickActionTarget',
         'LightTickPracticeFollowUpRequest',
         'LightTickPracticeFollowUpContextEnvelope',
+        'LightTickActionRequestReceipt', 'LightTickActionRequestReceiptEnvelope',
         'LightTickPracticeSource', 'LightTickPracticeSourceData',
         'LightTickPracticeSourceEnvelope',
         'LightTickActionCapabilities',

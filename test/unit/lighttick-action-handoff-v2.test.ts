@@ -113,7 +113,7 @@ test('arbitrary old request keys remain exact own properties, without prototype 
  for(const key of ['__proto__','constructor','toString'])f.snapshot.operations.push({key,hash:'d'.repeat(64),result:{key}});
  f.snapshot.claims.push({key:'__proto__',claimed_at:now().toISOString()});
  const pre=await f.service.preflight('grow-handoff',f.input());await f.service.import('grow-handoff',{...f.input(),target_version:pre.target_version});
- for(const key of ['__proto__','constructor','toString'])assert.deepEqual(await f.actions.request(owner,'GET','/requests/'+key),{found:true,result:{key}});
- assert.deepEqual(await f.actions.request(owner,'GET','/requests/valueOf'),{found:false,result:null});
+ for(const key of ['__proto__','constructor','toString'])assert.deepEqual(await f.actions.request(owner,'GET','/requests/'+key),{found:true,result:{key},payload_hash:'d'.repeat(64),fingerprint_version:'grow-legacy-v1',action:null});
+ assert.deepEqual(await f.actions.request(owner,'GET','/requests/valueOf'),{found:false,result:null,payload_hash:null,fingerprint_version:null,action:null});
  assert.equal(Object.getPrototypeOf((await f.repository.getActionWorkspace(owner))!.data.legacy_operations),Object.prototype);
 });

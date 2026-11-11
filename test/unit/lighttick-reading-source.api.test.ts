@@ -1,3 +1,4 @@
+import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -80,6 +81,17 @@ test("HTTP article-backed practice, exact source/knowledge resolution and separa
   assert.ok(
     ajv.compile(schemas.LightTickPracticeSourceSchema)(plan.practice_source),
   );
+  const receipt = check(
+    schemas.LightTickActionRequestReceiptEnvelopeSchema,
+    await call("action-plans/requests/" + input.key),
+  );
+  assert.deepEqual(receipt.result, { plan });
+  assert.equal(
+    receipt.payload_hash,
+    digest({ method: "POST", path: "/practices", body: input }),
+  );
+  assert.equal(receipt.fingerprint_version, "zook-action-request-v1");
+  assert.equal(receipt.action, "/practices");
   const source = check(
     schemas.LightTickPracticeSourceEnvelopeSchema,
     await call("action-plans/practices/" + plan.id + "/source"),

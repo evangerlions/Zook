@@ -1,3 +1,4 @@
+import { digest } from "../../src/modules/lighttick/learning/native-learning.validation.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Pool } from "pg";
@@ -66,6 +67,17 @@ test("PostgreSQL article source references remain exact across private edits/arc
       "/practices",
       input,
     )) as any;
+    const receipt = (await actions.request(
+      owner,
+      "GET",
+      "/requests/" + input.key,
+    )) as any;
+    assert.equal(receipt.fingerprint_version, "zook-action-request-v1");
+    assert.equal(receipt.action, "/practices");
+    assert.equal(
+      receipt.payload_hash,
+      digest({ method: "POST", path: "/practices", body: input }),
+    );
     const entry = await knowledge.mutate(
       owner,
       "knowledge-article-pg",
