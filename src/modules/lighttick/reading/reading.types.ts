@@ -52,6 +52,7 @@ export interface ReadingProvenance {
   kind:
     | "manual_import"
     | "web_text"
+    | "pdf_text"
     | "feed_entry"
     | "full_fetch"
     | "legacy_import";

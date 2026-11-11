@@ -49,6 +49,12 @@ test("PDF bytes are retained exactly while bounded text extraction runs outside 
   clearTimeout(timer);
   assert.equal(responsive, true);
   assert.ok(result.entries![0].body.startsWith("Synthetic PDF text"));
+  assert.equal(
+    result.entries![0].body.replace(/\s+/g, " ").trim(),
+    "Synthetic PDF text with a full original paragraph and enough readable source evidence. "
+      .repeat(3)
+      .trim(),
+  );
   assert.equal(result.document!.body, document.body);
   assert.equal(result.document!.encoding, "base64");
   assert.equal(

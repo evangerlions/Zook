@@ -67451,6 +67451,7 @@ export const LightTickReadingProvenanceSchema = {
       "enum": [
         "manual_import",
         "web_text",
+        "pdf_text",
         "feed_entry",
         "full_fetch",
         "legacy_import"
@@ -67525,7 +67526,7 @@ export const LightTickReadingProvenanceSchema = {
 } as const;
 
 export type LightTickReadingProvenance = {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -67605,6 +67606,7 @@ export const LightTickReadingEditionsSchema = {
                     "enum": [
                       "manual_import",
                       "web_text",
+                      "pdf_text",
                       "feed_entry",
                       "full_fetch",
                       "legacy_import"
@@ -67711,7 +67713,7 @@ export type LightTickReadingEditions = {
   "created_at": string;
   "provenance": (
 {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -67817,6 +67819,7 @@ export const LightTickReadingEditionsEnvelopeSchema = {
                         "enum": [
                           "manual_import",
                           "web_text",
+                          "pdf_text",
                           "feed_entry",
                           "full_fetch",
                           "legacy_import"
@@ -67929,7 +67932,7 @@ export type LightTickReadingEditionsEnvelope = {
   "created_at": string;
   "provenance": (
 {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -68529,6 +68532,7 @@ export const LightTickReadingWorkDocumentSchema = {
       "type": "string",
       "enum": [
         "web_text",
+        "pdf_text",
         "feed_entry",
         "full_fetch"
       ]
@@ -68585,7 +68589,7 @@ export type LightTickReadingWorkDocument = (
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -68596,7 +68600,7 @@ export type LightTickReadingWorkDocument = (
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -68821,6 +68825,7 @@ export const LightTickReadingWorkOutputSchema = {
           "type": "string",
           "enum": [
             "web_text",
+            "pdf_text",
             "feed_entry",
             "full_fetch"
           ]
@@ -68905,7 +68910,7 @@ export type LightTickReadingWorkOutput = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -68916,7 +68921,7 @@ export type LightTickReadingWorkOutput = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -69194,6 +69199,7 @@ export const LightTickReadingWorkSchema = {
                   "type": "string",
                   "enum": [
                     "web_text",
+                    "pdf_text",
                     "feed_entry",
                     "full_fetch"
                   ]
@@ -69443,7 +69449,7 @@ export type LightTickReadingWork = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -69454,7 +69460,7 @@ export type LightTickReadingWork = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -70243,6 +70249,7 @@ export const LightTickReadingWorkAdoptResultSchema = {
                       "type": "string",
                       "enum": [
                         "web_text",
+                        "pdf_text",
                         "feed_entry",
                         "full_fetch"
                       ]
@@ -70510,7 +70517,7 @@ export type LightTickReadingWorkAdoptResult = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -70521,7 +70528,7 @@ export type LightTickReadingWorkAdoptResult = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -71130,6 +71137,7 @@ export const LightTickReadingWorkReceiptSchema = {
                           "type": "string",
                           "enum": [
                             "web_text",
+                            "pdf_text",
                             "feed_entry",
                             "full_fetch"
                           ]
@@ -71620,6 +71628,7 @@ export const LightTickReadingWorkReceiptSchema = {
                               "type": "string",
                               "enum": [
                                 "web_text",
+                                "pdf_text",
                                 "feed_entry",
                                 "full_fetch"
                               ]
@@ -71945,7 +71954,7 @@ export type LightTickReadingWorkReceipt = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -71956,7 +71965,7 @@ export type LightTickReadingWorkReceipt = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -72025,7 +72034,7 @@ export type LightTickReadingWorkReceipt = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -72036,7 +72045,7 @@ export type LightTickReadingWorkReceipt = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -72341,6 +72350,7 @@ export const LightTickReadingWorkExportSchema = {
                   "type": "string",
                   "enum": [
                     "web_text",
+                    "pdf_text",
                     "feed_entry",
                     "full_fetch"
                   ]
@@ -72727,7 +72737,7 @@ export type LightTickReadingWorkExport = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -72738,7 +72748,7 @@ export type LightTickReadingWorkExport = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -73301,6 +73311,7 @@ export const LightTickReadingWorkEnvelopeSchema = {
                       "type": "string",
                       "enum": [
                         "web_text",
+                        "pdf_text",
                         "feed_entry",
                         "full_fetch"
                       ]
@@ -73556,7 +73567,7 @@ export type LightTickReadingWorkEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -73567,7 +73578,7 @@ export type LightTickReadingWorkEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -74190,6 +74201,7 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                           "type": "string",
                           "enum": [
                             "web_text",
+                            "pdf_text",
                             "feed_entry",
                             "full_fetch"
                           ]
@@ -74463,7 +74475,7 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -74474,7 +74486,7 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -75103,6 +75115,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                               "type": "string",
                               "enum": [
                                 "web_text",
+                                "pdf_text",
                                 "feed_entry",
                                 "full_fetch"
                               ]
@@ -75593,6 +75606,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                   "type": "string",
                                   "enum": [
                                     "web_text",
+                                    "pdf_text",
                                     "feed_entry",
                                     "full_fetch"
                                   ]
@@ -75924,7 +75938,7 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -75935,7 +75949,7 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -76004,7 +76018,7 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -76015,7 +76029,7 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -77075,6 +77089,7 @@ export const LightTickReadingArticleSchema = {
           "enum": [
             "manual_import",
             "web_text",
+            "pdf_text",
             "feed_entry",
             "full_fetch",
             "legacy_import"
@@ -77219,7 +77234,7 @@ export type LightTickReadingArticle = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -78015,6 +78030,7 @@ export const LightTickReadingPageSchema = {
                 "enum": [
                   "manual_import",
                   "web_text",
+                  "pdf_text",
                   "feed_entry",
                   "full_fetch",
                   "legacy_import"
@@ -78177,7 +78193,7 @@ export type LightTickReadingPage = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -78655,6 +78671,7 @@ export const LightTickReadingHistoryPageSchema = {
                 "enum": [
                   "manual_import",
                   "web_text",
+                  "pdf_text",
                   "feed_entry",
                   "full_fetch",
                   "legacy_import"
@@ -78815,7 +78832,7 @@ export type LightTickReadingHistoryPage = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -79253,6 +79270,7 @@ export const LightTickReadingExportSchema = {
                         "type": "string",
                         "enum": [
                           "web_text",
+                          "pdf_text",
                           "feed_entry",
                           "full_fetch"
                         ]
@@ -80066,6 +80084,7 @@ export const LightTickReadingExportSchema = {
                 "enum": [
                   "manual_import",
                   "web_text",
+                  "pdf_text",
                   "feed_entry",
                   "full_fetch",
                   "legacy_import"
@@ -80598,6 +80617,7 @@ export const LightTickReadingExportSchema = {
                 "enum": [
                   "manual_import",
                   "web_text",
+                  "pdf_text",
                   "feed_entry",
                   "full_fetch",
                   "legacy_import"
@@ -80898,7 +80918,7 @@ export type LightTickReadingExport = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -80909,7 +80929,7 @@ export type LightTickReadingExport = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -81035,7 +81055,7 @@ export type LightTickReadingExport = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -81115,7 +81135,7 @@ export type LightTickReadingExport = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -81636,6 +81656,7 @@ export const LightTickReadingArticleEnvelopeSchema = {
               "enum": [
                 "manual_import",
                 "web_text",
+                "pdf_text",
                 "feed_entry",
                 "full_fetch",
                 "legacy_import"
@@ -81789,7 +81810,7 @@ export type LightTickReadingArticleEnvelope = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -82286,6 +82307,7 @@ export const LightTickReadingPageEnvelopeSchema = {
                     "enum": [
                       "manual_import",
                       "web_text",
+                      "pdf_text",
                       "feed_entry",
                       "full_fetch",
                       "legacy_import"
@@ -82457,7 +82479,7 @@ export type LightTickReadingPageEnvelope = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -82957,6 +82979,7 @@ export const LightTickReadingHistoryPageEnvelopeSchema = {
                     "enum": [
                       "manual_import",
                       "web_text",
+                      "pdf_text",
                       "feed_entry",
                       "full_fetch",
                       "legacy_import"
@@ -83126,7 +83149,7 @@ export type LightTickReadingHistoryPageEnvelope = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -83586,6 +83609,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                             "type": "string",
                             "enum": [
                               "web_text",
+                              "pdf_text",
                               "feed_entry",
                               "full_fetch"
                             ]
@@ -84399,6 +84423,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                     "enum": [
                       "manual_import",
                       "web_text",
+                      "pdf_text",
                       "feed_entry",
                       "full_fetch",
                       "legacy_import"
@@ -84931,6 +84956,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                     "enum": [
                       "manual_import",
                       "web_text",
+                      "pdf_text",
                       "feed_entry",
                       "full_fetch",
                       "legacy_import"
@@ -85240,7 +85266,7 @@ export type LightTickReadingExportEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -85251,7 +85277,7 @@ export type LightTickReadingExportEnvelope = {
   "content_type": string;
   "url": string;
   "sha256": string;
-  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "capture_kind": "web_text" | "pdf_text" | "feed_entry" | "full_fetch";
   "extraction_version"?: string;
   "encoding"?: "base64";
   "resolved_url"?: string;
@@ -85377,7 +85403,7 @@ export type LightTickReadingExportEnvelope = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;
@@ -85457,7 +85483,7 @@ export type LightTickReadingExportEnvelope = {
 }
 )[];
   "provenance"?: {
-  "kind": "manual_import" | "web_text" | "feed_entry" | "full_fetch" | "legacy_import";
+  "kind": "manual_import" | "web_text" | "pdf_text" | "feed_entry" | "full_fetch" | "legacy_import";
   "work_id": string | unknown;
   "source_id": string | unknown;
   "parent_article_id": string | unknown;

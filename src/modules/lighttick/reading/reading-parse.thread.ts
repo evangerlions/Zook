@@ -27,7 +27,12 @@ try {
       sha256: createHash("sha256")
         .update(readingDocumentBytes(document))
         .digest("hex"),
-      capture_kind: work.kind === "fetch_full" ? "full_fetch" : "web_text",
+      capture_kind:
+        work.kind === "fetch_full"
+          ? "full_fetch"
+          : document.encoding === "base64"
+            ? "pdf_text"
+            : "web_text",
       extraction_version:
         document.encoding === "base64"
           ? "pdfjs-6.5.438/lighttick-text-v1"

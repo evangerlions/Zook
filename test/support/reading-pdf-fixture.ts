@@ -11,7 +11,16 @@ export function readingPdfFixture(
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
   ];
   for (let i = 0; i < pages; i++) {
-    const stream = `BT /F1 10 Tf 40 780 Td (${text.replace(/[\\()]/g, "\\$&")}) Tj ET`;
+    const lines: string[] = [];
+    let line = "";
+    for (const word of text.split(/\s+/).filter(Boolean)) {
+      if (line.length + word.length + 1 > 80) {
+        lines.push(line);
+        line = word;
+      } else line += (line ? " " : "") + word;
+    }
+    if (line) lines.push(line);
+    const stream = `BT /F1 10 Tf 14 TL 40 780 Td ${lines.map((line) => `(${line.trim().replace(/[\\()]/g, "\\$&")}) Tj`).join(" T* ")} ET`;
     objects.push(
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 3 0 R >> >> /Contents ${5 + i * 2} 0 R >>`,
       `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`,

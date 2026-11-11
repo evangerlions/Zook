@@ -442,9 +442,11 @@ export class ReadingWorkService {
                   ? "full_fetch"
                   : row.output.document?.capture_kind === "feed_entry"
                     ? "feed_entry"
-                    : row.output.document
-                      ? "web_text"
-                      : "legacy_import",
+                    : row.output.document?.encoding === "base64"
+                      ? "pdf_text"
+                      : row.output.document
+                        ? "web_text"
+                        : "legacy_import",
               work_id: row.id,
               source_id: row.input.source_id ?? null,
               parent_article_id:

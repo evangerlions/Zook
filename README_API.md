@@ -2093,3 +2093,5 @@ PDF.js固定6.5.438从已选字节离线提取，字体/CMap仅读取随依赖�
 HTML用固定版本htmlparser2解析，保留原始下载文本与SHA，展示文本不执行脚本；RSS/Atom沿用固定版本fast-xml-parser，拒绝DTD/实体，限制嵌套40及标记40000。采集解析在有内存上限的独立Node线程完成，取消/任务超时终止线程，避免在共享HTTP事件循环解析不可信来源；此线程是服务端CPU隔离，与浏览器策略IDE的权限沙箱无关。导出、不可变历史及账号清理包含反馈与来源版本关系。
 
 全文任务明确区分 `READING_SOURCE_SIZE`、`READING_TEXT_LIMIT`、`READING_SOURCE_UNREADABLE`、`READING_SOURCE_RESTRICTED`、`READING_PDF_ENCRYPTED`、`READING_PDF_RESTRICTED`、`READING_PDF_PAGE_LIMIT`，作为本人任务的error_code返回；不会把失败内容导入、自动换源或自动改用模型。
+
+PDF直接采集的来源方式为`pdf_text`（全文补取仍为`full_fetch`）。PDF.js按页面可见区域提取；与旧pypdf对页面外文字的提取可能不同，Web明确展示该差异，原文件单独可下载。迁移既有正文保留冻结文本，不使用新提取器重算旧报告或文章版本。

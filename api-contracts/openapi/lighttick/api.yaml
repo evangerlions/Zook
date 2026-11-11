@@ -21959,6 +21959,7 @@ components:
           type: string
           enum:
           - web_text
+          - pdf_text
           - feed_entry
           - full_fetch
         extraction_version:
@@ -22849,6 +22850,7 @@ components:
           enum:
           - manual_import
           - web_text
+          - pdf_text
           - feed_entry
           - full_fetch
           - legacy_import
