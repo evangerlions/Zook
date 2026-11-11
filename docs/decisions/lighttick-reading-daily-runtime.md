@@ -8,5 +8,5 @@ Current owner/full permission, source/preference scope and business date are che
 
 The API and Web disclose classic reference URLs, actual scopes and source failures. Rankingv3 deterministically selects duplicate metadata across concurrent feeds; frozenv2 remains executable with its original ordering behavior. Completed outputs are never recalculated.
 
-Acceptance: eight scheduler unit flows plus HTTP contracts,70 focused reading/worker/core tests, and isolated PostgreSQL concurrent claims/exact8/receipt-failure rollback/reconnect/export/cleanup. Daily Web/browser and real supplier verification remain separate gates. Shared mixed-load acceptance is still open.
+Acceptance: eight scheduler unit flows plus HTTP contracts,70 focused reading/worker/core tests, and isolated PostgreSQL concurrent claims/exact8/receipt-failure rollback/reconnect/export/cleanup. Daily Web/browser enable, three-original automatic adoption, unread state, core stop/future-disable, committed-response loss/reload reconciliation, preserved invalid local input and375px layout passed with real isolated PostgreSQL and synthetic network providers on2026-11-12. Full backend2687:2686passed,0failed,1optional PG-clock test skipped;95Web tests passed. Real supplier/model and shared mixed-load acceptance remain open.
 
