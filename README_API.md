@@ -2058,3 +2058,5 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 两条接口均复用文章CAS、原key/body回执、归档拒写、core只读和当前权限核对。文章响应、历史与导出包含 `materials:[{kind,paragraph_id,draft:{version,text,origin,created_at},adopted:null|{...draft,adopted_at}}]`；当前人工编辑写 origin=manual。AI生成/来源采集仍需独立持久任务，此批接口不表示这些调用点已经完成。采用不外发、不公开发布，不产生阅读/行动完成或时长事实。
 
 作者/标签字段对已有文章与待确认旧请求保持可选：不回填或重算旧content_version。新导入未提供作者时保存null，未提供标签时保存空数组。未知作者不推断。
+
+正式路线的集合亦可经既有集合 CAS 更新分类/说明；标题与归档状态必须保持原值，标题/状态修改仍由路线版本命令完成。`/grow/content-modules` 为可直接刷新的静态深链。

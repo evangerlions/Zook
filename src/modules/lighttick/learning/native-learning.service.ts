@@ -333,9 +333,11 @@ export class NativeLearningService {
       id,
       b,
       async () => {
-        if (await this.repository.learningRoutes.getLearningRoute(owner, id))
-          fail(409, "Edit formal course metadata through its versioned route command.");
         const old=await this.repository.getLearningCollection(owner,id);
+        if (await this.repository.learningRoutes.getLearningRoute(owner, id)) {
+          if(!old || title!==old.title || b.archived!==old.archived)
+            fail(409, "Edit formal course title and status through its versioned route command; classification and description may be changed here.");
+        }
         const moduleId=b.module_id===undefined?old?.moduleId??null:b.module_id===null?null:parseModuleId(b.module_id);
         if(moduleId){const module=await this.repository.learningModules.get(owner,moduleId);if(!module)fail(404,"未找到本人的分类模块。");if(module.archived&&old?.moduleId!==moduleId)fail(409,"请先恢复模块，再将集合移入。");}
         const description=b.description===undefined?old?.description??"":text(b.description,2000);

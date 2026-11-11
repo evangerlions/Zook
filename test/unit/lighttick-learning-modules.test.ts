@@ -50,3 +50,13 @@ test("module and category metadata roll back with failed receipt and account del
  repo.saveOperation=save;assert.equal((await modules.read(owner,"module-reading")).revision,1);assert.equal((await modules.history(owner,"module-reading")).items.length,1);
  await repo.deleteOwnerData(owner);assert.equal((await modules.list(owner)).items.length,0);
 });
+
+test("formal generated routes can be classified without changing their title, state or route revision",async()=>{
+ const {modules,native,repo}=setup();await modules.save(owner,"module-reading",input,"formal-module-create");
+ await repo.saveLearningCollection({...owner,id:"plan-personal",title:"Formal title",revision:1,archived:false,updatedAt:new Date().toISOString()},0);
+ const now=new Date().toISOString();await repo.learningRoutes.saveLearningRoute({...owner,id:"plan-personal",revision:1,publishedVersion:1,status:"active",brief:{title:"Formal title",goal:"Personal",level:"Beginner",minutes:20,pacing:"self_paced",sessions:1},document:{prerequisites:"",stages:[],lessons:[]},updatedAt:now},0);
+ await native.saveCollection(owner,"plan-personal",{base_revision:1,title:"Formal title",archived:false,module_id:"module-reading",description:"Owner grouping"},"formal-classification");
+ assert.equal((await repo.learningRoutes.getLearningRoute(owner,"plan-personal"))!.revision,1);
+ assert.equal((await native.collection(owner,"plan-personal")).module_id,"module-reading");
+ await assert.rejects(native.saveCollection(owner,"plan-personal",{base_revision:2,title:"Changed",archived:false,module_id:null},"formal-reject-title"),{statusCode:409});
+});
