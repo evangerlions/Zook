@@ -1,3 +1,4 @@
+import { readingPdfFixture } from "./reading-pdf-fixture.ts";
 import { ReadingWorkRunner } from "../../src/modules/lighttick/reading/reading-work.runner.ts";
 /** Loopback-only synthetic acceptance fixture, never a deployable backend.
  * Real LightTick route handlers and dedicated PG repository; ephemeral synthetic
@@ -63,13 +64,20 @@ const syntheticRunner = new ReadingWorkRunner(
       throw Error(
         "Only the disclosed synthetic provider is available in this fixture",
       );
+    if (new URL(url).pathname.endsWith(".pdf"))
+      return {
+        body: readingPdfFixture().toString("base64"),
+        content_type: "application/pdf",
+        encoding: "base64",
+        resolved_url: url,
+      };
     return url.includes("feed")
       ? {
           body: "<rss><channel><language>en</language><item><title>Synthetic feed article</title><link>https://reading.example.test/article</link><description><![CDATA[<p>Original synthetic feed excerpt.</p>]]></description><author>Synthetic author</author></item></channel></rss>",
           content_type: "application/rss+xml",
         }
       : {
-          body: "<article><p>Original synthetic paragraph one.</p><p>Original synthetic paragraph two.</p></article>",
+          body: "<article><p>Original synthetic paragraph one. This updated full text includes original arguments, evidence and an explicit source example.</p><p>Original synthetic paragraph two. The complete version is saved independently from the earlier excerpt.</p></article>",
           content_type: "text/html",
         };
   },

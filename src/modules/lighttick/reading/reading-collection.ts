@@ -9,6 +9,8 @@ import { fail } from "../learning/native-learning.validation.ts";
 export interface ReadingDocument {
   body: string;
   content_type: string;
+  encoding?: "base64";
+  resolved_url?: string;
 }
 const scalar = (v: any): string =>
   typeof v === "string"

@@ -94,7 +94,7 @@ export function articleContent(raw: unknown): ArticleContent {
   }
   return {
     title: text(b.title, 500, true),
-    body: text(b.body, 100000, true),
+    body: text(b.body, 500000, true),
     source_url: url,
     language,
     published_at: published,

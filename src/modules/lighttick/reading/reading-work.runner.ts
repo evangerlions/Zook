@@ -1,3 +1,4 @@
+import { readingFailureCode } from "./reading-failure.ts";
 import { parseReadingDocument } from "./reading-parser.ts";
 import { captureModel } from "../personal-model/personal-model.service.ts";
 import { randomUUID } from "node:crypto";
@@ -5,10 +6,7 @@ import type { LLMManager } from "../../../services/llm-manager.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ReadingWork } from "./reading-work.types.ts";
 import { ReadingWorkService } from "./reading-work.service.ts";
-import {
-  collectReadingDocument,
-  type ReadingDocument,
-} from "./reading-collection.ts";
+import { type ReadingDocument } from "./reading-collection.ts";
 import { selectionOption } from "../personal-model/personal-model.dispatcher.ts";
 import {
   LIGHTTICK_AI_SCENES,
@@ -142,7 +140,10 @@ export class ReadingWorkRunner {
         attempt: old.attempt + 1,
         fence: randomUUID(),
         lease_until: new Date(
-          this.service.clock().getTime() + 45000,
+          this.service.clock().getTime() +
+            (["collect_url", "collect_source", "fetch_full"].includes(old.kind)
+              ? 60000
+              : 45000),
         ).toISOString(),
         error_code: null,
         updated_at: now,
@@ -154,7 +155,9 @@ export class ReadingWorkRunner {
     const controller = new AbortController(),
       timer = setTimeout(
         () => controller.abort(Error("READING_TIMEOUT")),
-        30000,
+        ["collect_url", "collect_source", "fetch_full"].includes(row.kind)
+          ? 45000
+          : 30000,
       );
     let checking = false;
     const poll = setInterval(() => {
@@ -185,20 +188,22 @@ export class ReadingWorkRunner {
       await this.valid(row);
       controller.signal.throwIfAborted();
     } catch (error: any) {
-      error_code = controller.signal.aborted
-        ? String(controller.signal.reason?.message ?? "READING_CANCELLED")
-        : [
-              "READING_CONTEXT_STALE",
-              "READING_TIMEOUT",
-              "PERSONAL_MODEL_SETTINGS_CHANGED",
-            ].includes(error?.message)
-          ? error.message
-          : error?.statusCode === 409 &&
-              row.input.model_selection?.mode === "personal"
-            ? "PERSONAL_MODEL_SETTINGS_CHANGED"
-            : error?.statusCode === 422 || error?.statusCode === 413
-              ? "READING_OUTPUT_INVALID"
-              : "READING_PROVIDER_UNAVAILABLE";
+      error_code =
+        readingFailureCode(error) ??
+        (controller.signal.aborted
+          ? String(controller.signal.reason?.message ?? "READING_CANCELLED")
+          : [
+                "READING_CONTEXT_STALE",
+                "READING_TIMEOUT",
+                "PERSONAL_MODEL_SETTINGS_CHANGED",
+              ].includes(error?.message)
+            ? error.message
+            : error?.statusCode === 409 &&
+                row.input.model_selection?.mode === "personal"
+              ? "PERSONAL_MODEL_SETTINGS_CHANGED"
+              : error?.statusCode === 422 || error?.statusCode === 413
+                ? "READING_OUTPUT_INVALID"
+                : "READING_PROVIDER_UNAVAILABLE");
     } finally {
       clearTimeout(timer);
       clearInterval(poll);

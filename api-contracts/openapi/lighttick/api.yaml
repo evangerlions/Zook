@@ -20899,7 +20899,7 @@ components:
           minLength: 1
         body:
           type: string
-          maxLength: 100000
+          maxLength: 500000
           minLength: 1
         source_url:
           anyOf:
@@ -21944,7 +21944,7 @@ components:
       properties:
         body:
           type: string
-          maxLength: 2000000
+          maxLength: 10666668
         content_type:
           type: string
           maxLength: 500
@@ -21961,6 +21961,32 @@ components:
           - web_text
           - feed_entry
           - full_fetch
+        extraction_version:
+          type: string
+          maxLength: 140
+        encoding:
+          type: string
+          enum:
+          - base64
+        resolved_url:
+          type: string
+          maxLength: 1500
+          format: uri
+      allOf:
+      - if:
+          properties:
+            encoding:
+              const: base64
+          required:
+          - encoding
+        then:
+          properties:
+            content_type:
+              const: application/pdf
+        else:
+          properties:
+            body:
+              maxLength: 8000000
     LightTickReadingWorkOutput:
       type: object
       additionalProperties: false

@@ -113,7 +113,7 @@ test("actual PostgreSQL feedback, literal metadata search, source editions and o
           },
         } as any,
         async () => ({
-          body: "<p>Full source text</p>",
+          body: "<p>Full source text with independently checkable arguments and examples.</p>".repeat(3),
           content_type: "text/html",
         }),
       );

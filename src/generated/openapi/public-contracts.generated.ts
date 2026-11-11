@@ -68510,7 +68510,7 @@ export const LightTickReadingWorkDocumentSchema = {
   "properties": {
     "body": {
       "type": "string",
-      "maxLength": 2000000
+      "maxLength": 10666668
     },
     "content_type": {
       "type": "string",
@@ -68532,17 +68532,76 @@ export const LightTickReadingWorkDocumentSchema = {
         "feed_entry",
         "full_fetch"
       ]
+    },
+    "extraction_version": {
+      "type": "string",
+      "maxLength": 140
+    },
+    "encoding": {
+      "type": "string",
+      "enum": [
+        "base64"
+      ]
+    },
+    "resolved_url": {
+      "type": "string",
+      "maxLength": 1500,
+      "format": "uri"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "encoding": {
+            "const": "base64"
+          }
+        },
+        "required": [
+          "encoding"
+        ]
+      },
+      "then": {
+        "properties": {
+          "content_type": {
+            "const": "application/pdf"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "body": {
+            "maxLength": 8000000
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickReadingWorkDocument = {
+export type LightTickReadingWorkDocument = (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 
 export const LightTickReadingWorkOutputSchema = {
   "type": "object",
@@ -68570,7 +68629,7 @@ export const LightTickReadingWorkOutputSchema = {
           },
           "body": {
             "type": "string",
-            "maxLength": 100000,
+            "maxLength": 500000,
             "minLength": 1
           },
           "source_url": {
@@ -68743,7 +68802,7 @@ export const LightTickReadingWorkOutputSchema = {
       "properties": {
         "body": {
           "type": "string",
-          "maxLength": 2000000
+          "maxLength": 10666668
         },
         "content_type": {
           "type": "string",
@@ -68765,8 +68824,51 @@ export const LightTickReadingWorkOutputSchema = {
             "feed_entry",
             "full_fetch"
           ]
+        },
+        "extraction_version": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "encoding": {
+          "type": "string",
+          "enum": [
+            "base64"
+          ]
+        },
+        "resolved_url": {
+          "type": "string",
+          "maxLength": 1500,
+          "format": "uri"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "encoding": {
+                "const": "base64"
+              }
+            },
+            "required": [
+              "encoding"
+            ]
+          },
+          "then": {
+            "properties": {
+              "content_type": {
+                "const": "application/pdf"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "body": {
+                "maxLength": 8000000
+              }
+            }
+          }
+        }
+      ]
     }
   }
 } as const;
@@ -68797,13 +68899,29 @@ export type LightTickReadingWorkOutput = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 };
 
 export const LightTickReadingWorkSchema = {
@@ -68884,7 +69002,7 @@ export const LightTickReadingWorkSchema = {
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 100000,
+                    "maxLength": 500000,
                     "minLength": 1
                   },
                   "source_url": {
@@ -69057,7 +69175,7 @@ export const LightTickReadingWorkSchema = {
               "properties": {
                 "body": {
                   "type": "string",
-                  "maxLength": 2000000
+                  "maxLength": 10666668
                 },
                 "content_type": {
                   "type": "string",
@@ -69079,8 +69197,51 @@ export const LightTickReadingWorkSchema = {
                     "feed_entry",
                     "full_fetch"
                   ]
+                },
+                "extraction_version": {
+                  "type": "string",
+                  "maxLength": 140
+                },
+                "encoding": {
+                  "type": "string",
+                  "enum": [
+                    "base64"
+                  ]
+                },
+                "resolved_url": {
+                  "type": "string",
+                  "maxLength": 1500,
+                  "format": "uri"
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "encoding": {
+                        "const": "base64"
+                      }
+                    },
+                    "required": [
+                      "encoding"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "content_type": {
+                        "const": "application/pdf"
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "body": {
+                        "maxLength": 8000000
+                      }
+                    }
+                  }
+                }
+              ]
             }
           }
         },
@@ -69276,13 +69437,29 @@ export type LightTickReadingWork = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -69874,7 +70051,7 @@ export const LightTickReadingWorkAdoptResultSchema = {
                       },
                       "body": {
                         "type": "string",
-                        "maxLength": 100000,
+                        "maxLength": 500000,
                         "minLength": 1
                       },
                       "source_url": {
@@ -70047,7 +70224,7 @@ export const LightTickReadingWorkAdoptResultSchema = {
                   "properties": {
                     "body": {
                       "type": "string",
-                      "maxLength": 2000000
+                      "maxLength": 10666668
                     },
                     "content_type": {
                       "type": "string",
@@ -70069,8 +70246,51 @@ export const LightTickReadingWorkAdoptResultSchema = {
                         "feed_entry",
                         "full_fetch"
                       ]
+                    },
+                    "extraction_version": {
+                      "type": "string",
+                      "maxLength": 140
+                    },
+                    "encoding": {
+                      "type": "string",
+                      "enum": [
+                        "base64"
+                      ]
+                    },
+                    "resolved_url": {
+                      "type": "string",
+                      "maxLength": 1500,
+                      "format": "uri"
                     }
-                  }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "encoding": {
+                            "const": "base64"
+                          }
+                        },
+                        "required": [
+                          "encoding"
+                        ]
+                      },
+                      "then": {
+                        "properties": {
+                          "content_type": {
+                            "const": "application/pdf"
+                          }
+                        }
+                      },
+                      "else": {
+                        "properties": {
+                          "body": {
+                            "maxLength": 8000000
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -70284,13 +70504,29 @@ export type LightTickReadingWorkAdoptResult = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -70702,7 +70938,7 @@ export const LightTickReadingWorkReceiptSchema = {
                           },
                           "body": {
                             "type": "string",
-                            "maxLength": 100000,
+                            "maxLength": 500000,
                             "minLength": 1
                           },
                           "source_url": {
@@ -70875,7 +71111,7 @@ export const LightTickReadingWorkReceiptSchema = {
                       "properties": {
                         "body": {
                           "type": "string",
-                          "maxLength": 2000000
+                          "maxLength": 10666668
                         },
                         "content_type": {
                           "type": "string",
@@ -70897,8 +71133,51 @@ export const LightTickReadingWorkReceiptSchema = {
                             "feed_entry",
                             "full_fetch"
                           ]
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        },
+                        "encoding": {
+                          "type": "string",
+                          "enum": [
+                            "base64"
+                          ]
+                        },
+                        "resolved_url": {
+                          "type": "string",
+                          "maxLength": 1500,
+                          "format": "uri"
                         }
-                      }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "encoding": {
+                                "const": "base64"
+                              }
+                            },
+                            "required": [
+                              "encoding"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "content_type": {
+                                "const": "application/pdf"
+                              }
+                            }
+                          },
+                          "else": {
+                            "properties": {
+                              "body": {
+                                "maxLength": 8000000
+                              }
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 },
@@ -71149,7 +71428,7 @@ export const LightTickReadingWorkReceiptSchema = {
                               },
                               "body": {
                                 "type": "string",
-                                "maxLength": 100000,
+                                "maxLength": 500000,
                                 "minLength": 1
                               },
                               "source_url": {
@@ -71322,7 +71601,7 @@ export const LightTickReadingWorkReceiptSchema = {
                           "properties": {
                             "body": {
                               "type": "string",
-                              "maxLength": 2000000
+                              "maxLength": 10666668
                             },
                             "content_type": {
                               "type": "string",
@@ -71344,8 +71623,51 @@ export const LightTickReadingWorkReceiptSchema = {
                                 "feed_entry",
                                 "full_fetch"
                               ]
+                            },
+                            "extraction_version": {
+                              "type": "string",
+                              "maxLength": 140
+                            },
+                            "encoding": {
+                              "type": "string",
+                              "enum": [
+                                "base64"
+                              ]
+                            },
+                            "resolved_url": {
+                              "type": "string",
+                              "maxLength": 1500,
+                              "format": "uri"
                             }
-                          }
+                          },
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "encoding": {
+                                    "const": "base64"
+                                  }
+                                },
+                                "required": [
+                                  "encoding"
+                                ]
+                              },
+                              "then": {
+                                "properties": {
+                                  "content_type": {
+                                    "const": "application/pdf"
+                                  }
+                                }
+                              },
+                              "else": {
+                                "properties": {
+                                  "body": {
+                                    "maxLength": 8000000
+                                  }
+                                }
+                              }
+                            }
+                          ]
                         }
                       }
                     },
@@ -71617,13 +71939,29 @@ export type LightTickReadingWorkReceipt = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -71681,13 +72019,29 @@ export type LightTickReadingWorkReceipt = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -71795,7 +72149,7 @@ export const LightTickReadingWorkExportSchema = {
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 100000,
+                    "maxLength": 500000,
                     "minLength": 1
                   },
                   "source_url": {
@@ -71968,7 +72322,7 @@ export const LightTickReadingWorkExportSchema = {
               "properties": {
                 "body": {
                   "type": "string",
-                  "maxLength": 2000000
+                  "maxLength": 10666668
                 },
                 "content_type": {
                   "type": "string",
@@ -71990,8 +72344,51 @@ export const LightTickReadingWorkExportSchema = {
                     "feed_entry",
                     "full_fetch"
                   ]
+                },
+                "extraction_version": {
+                  "type": "string",
+                  "maxLength": 140
+                },
+                "encoding": {
+                  "type": "string",
+                  "enum": [
+                    "base64"
+                  ]
+                },
+                "resolved_url": {
+                  "type": "string",
+                  "maxLength": 1500,
+                  "format": "uri"
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "encoding": {
+                        "const": "base64"
+                      }
+                    },
+                    "required": [
+                      "encoding"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "content_type": {
+                        "const": "application/pdf"
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "body": {
+                        "maxLength": 8000000
+                      }
+                    }
+                  }
+                }
+              ]
             }
           }
         },
@@ -72324,13 +72721,29 @@ export type LightTickReadingWorkExport = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -72696,7 +73109,7 @@ export const LightTickReadingWorkEnvelopeSchema = {
                       },
                       "body": {
                         "type": "string",
-                        "maxLength": 100000,
+                        "maxLength": 500000,
                         "minLength": 1
                       },
                       "source_url": {
@@ -72869,7 +73282,7 @@ export const LightTickReadingWorkEnvelopeSchema = {
                   "properties": {
                     "body": {
                       "type": "string",
-                      "maxLength": 2000000
+                      "maxLength": 10666668
                     },
                     "content_type": {
                       "type": "string",
@@ -72891,8 +73304,51 @@ export const LightTickReadingWorkEnvelopeSchema = {
                         "feed_entry",
                         "full_fetch"
                       ]
+                    },
+                    "extraction_version": {
+                      "type": "string",
+                      "maxLength": 140
+                    },
+                    "encoding": {
+                      "type": "string",
+                      "enum": [
+                        "base64"
+                      ]
+                    },
+                    "resolved_url": {
+                      "type": "string",
+                      "maxLength": 1500,
+                      "format": "uri"
                     }
-                  }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "encoding": {
+                            "const": "base64"
+                          }
+                        },
+                        "required": [
+                          "encoding"
+                        ]
+                      },
+                      "then": {
+                        "properties": {
+                          "content_type": {
+                            "const": "application/pdf"
+                          }
+                        }
+                      },
+                      "else": {
+                        "properties": {
+                          "body": {
+                            "maxLength": 8000000
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -73094,13 +73550,29 @@ export type LightTickReadingWorkEnvelope = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -73526,7 +73998,7 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                           },
                           "body": {
                             "type": "string",
-                            "maxLength": 100000,
+                            "maxLength": 500000,
                             "minLength": 1
                           },
                           "source_url": {
@@ -73699,7 +74171,7 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                       "properties": {
                         "body": {
                           "type": "string",
-                          "maxLength": 2000000
+                          "maxLength": 10666668
                         },
                         "content_type": {
                           "type": "string",
@@ -73721,8 +74193,51 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                             "feed_entry",
                             "full_fetch"
                           ]
+                        },
+                        "extraction_version": {
+                          "type": "string",
+                          "maxLength": 140
+                        },
+                        "encoding": {
+                          "type": "string",
+                          "enum": [
+                            "base64"
+                          ]
+                        },
+                        "resolved_url": {
+                          "type": "string",
+                          "maxLength": 1500,
+                          "format": "uri"
                         }
-                      }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "encoding": {
+                                "const": "base64"
+                              }
+                            },
+                            "required": [
+                              "encoding"
+                            ]
+                          },
+                          "then": {
+                            "properties": {
+                              "content_type": {
+                                "const": "application/pdf"
+                              }
+                            }
+                          },
+                          "else": {
+                            "properties": {
+                              "body": {
+                                "maxLength": 8000000
+                              }
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 },
@@ -73942,13 +74457,29 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -74380,7 +74911,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                               },
                               "body": {
                                 "type": "string",
-                                "maxLength": 100000,
+                                "maxLength": 500000,
                                 "minLength": 1
                               },
                               "source_url": {
@@ -74553,7 +75084,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                           "properties": {
                             "body": {
                               "type": "string",
-                              "maxLength": 2000000
+                              "maxLength": 10666668
                             },
                             "content_type": {
                               "type": "string",
@@ -74575,8 +75106,51 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                 "feed_entry",
                                 "full_fetch"
                               ]
+                            },
+                            "extraction_version": {
+                              "type": "string",
+                              "maxLength": 140
+                            },
+                            "encoding": {
+                              "type": "string",
+                              "enum": [
+                                "base64"
+                              ]
+                            },
+                            "resolved_url": {
+                              "type": "string",
+                              "maxLength": 1500,
+                              "format": "uri"
                             }
-                          }
+                          },
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "encoding": {
+                                    "const": "base64"
+                                  }
+                                },
+                                "required": [
+                                  "encoding"
+                                ]
+                              },
+                              "then": {
+                                "properties": {
+                                  "content_type": {
+                                    "const": "application/pdf"
+                                  }
+                                }
+                              },
+                              "else": {
+                                "properties": {
+                                  "body": {
+                                    "maxLength": 8000000
+                                  }
+                                }
+                              }
+                            }
+                          ]
                         }
                       }
                     },
@@ -74827,7 +75401,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                   },
                                   "body": {
                                     "type": "string",
-                                    "maxLength": 100000,
+                                    "maxLength": 500000,
                                     "minLength": 1
                                   },
                                   "source_url": {
@@ -75000,7 +75574,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                               "properties": {
                                 "body": {
                                   "type": "string",
-                                  "maxLength": 2000000
+                                  "maxLength": 10666668
                                 },
                                 "content_type": {
                                   "type": "string",
@@ -75022,8 +75596,51 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                     "feed_entry",
                                     "full_fetch"
                                   ]
+                                },
+                                "extraction_version": {
+                                  "type": "string",
+                                  "maxLength": 140
+                                },
+                                "encoding": {
+                                  "type": "string",
+                                  "enum": [
+                                    "base64"
+                                  ]
+                                },
+                                "resolved_url": {
+                                  "type": "string",
+                                  "maxLength": 1500,
+                                  "format": "uri"
                                 }
-                              }
+                              },
+                              "allOf": [
+                                {
+                                  "if": {
+                                    "properties": {
+                                      "encoding": {
+                                        "const": "base64"
+                                      }
+                                    },
+                                    "required": [
+                                      "encoding"
+                                    ]
+                                  },
+                                  "then": {
+                                    "properties": {
+                                      "content_type": {
+                                        "const": "application/pdf"
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "properties": {
+                                      "body": {
+                                        "maxLength": 8000000
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
                             }
                           }
                         },
@@ -75301,13 +75918,29 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -75365,13 +75998,29 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -75661,7 +76310,7 @@ export const LightTickReadingContentSchema = {
     },
     "body": {
       "type": "string",
-      "maxLength": 100000,
+      "maxLength": 500000,
       "minLength": 1
     },
     "source_url": {
@@ -76019,7 +76668,7 @@ export const LightTickReadingArticleSchema = {
         },
         "body": {
           "type": "string",
-          "maxLength": 100000,
+          "maxLength": 500000,
           "minLength": 1
         },
         "source_url": {
@@ -76610,7 +77259,7 @@ export const LightTickReadingImportSchema = {
         },
         "body": {
           "type": "string",
-          "maxLength": 100000,
+          "maxLength": 500000,
           "minLength": 1
         },
         "source_url": {
@@ -76959,7 +77608,7 @@ export const LightTickReadingPageSchema = {
               },
               "body": {
                 "type": "string",
-                "maxLength": 100000,
+                "maxLength": 500000,
                 "minLength": 1
               },
               "source_url": {
@@ -77599,7 +78248,7 @@ export const LightTickReadingHistoryPageSchema = {
               },
               "body": {
                 "type": "string",
-                "maxLength": 100000,
+                "maxLength": 500000,
                 "minLength": 1
               },
               "source_url": {
@@ -78412,7 +79061,7 @@ export const LightTickReadingExportSchema = {
                         },
                         "body": {
                           "type": "string",
-                          "maxLength": 100000,
+                          "maxLength": 500000,
                           "minLength": 1
                         },
                         "source_url": {
@@ -78585,7 +79234,7 @@ export const LightTickReadingExportSchema = {
                     "properties": {
                       "body": {
                         "type": "string",
-                        "maxLength": 2000000
+                        "maxLength": 10666668
                       },
                       "content_type": {
                         "type": "string",
@@ -78607,8 +79256,51 @@ export const LightTickReadingExportSchema = {
                           "feed_entry",
                           "full_fetch"
                         ]
+                      },
+                      "extraction_version": {
+                        "type": "string",
+                        "maxLength": 140
+                      },
+                      "encoding": {
+                        "type": "string",
+                        "enum": [
+                          "base64"
+                        ]
+                      },
+                      "resolved_url": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "format": "uri"
                       }
-                    }
+                    },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "encoding": {
+                              "const": "base64"
+                            }
+                          },
+                          "required": [
+                            "encoding"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "content_type": {
+                              "const": "application/pdf"
+                            }
+                          }
+                        },
+                        "else": {
+                          "properties": {
+                            "body": {
+                              "maxLength": 8000000
+                            }
+                          }
+                        }
+                      }
+                    ]
                   }
                 }
               },
@@ -78967,7 +79659,7 @@ export const LightTickReadingExportSchema = {
               },
               "body": {
                 "type": "string",
-                "maxLength": 100000,
+                "maxLength": 500000,
                 "minLength": 1
               },
               "source_url": {
@@ -79499,7 +80191,7 @@ export const LightTickReadingExportSchema = {
               },
               "body": {
                 "type": "string",
-                "maxLength": 100000,
+                "maxLength": 500000,
                 "minLength": 1
               },
               "source_url": {
@@ -80200,13 +80892,29 @@ export type LightTickReadingExport = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {
@@ -80521,7 +81229,7 @@ export const LightTickReadingArticleEnvelopeSchema = {
             },
             "body": {
               "type": "string",
-              "maxLength": 100000,
+              "maxLength": 500000,
               "minLength": 1
             },
             "source_url": {
@@ -81171,7 +81879,7 @@ export const LightTickReadingPageEnvelopeSchema = {
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 100000,
+                    "maxLength": 500000,
                     "minLength": 1
                   },
                   "source_url": {
@@ -81842,7 +82550,7 @@ export const LightTickReadingHistoryPageEnvelopeSchema = {
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 100000,
+                    "maxLength": 500000,
                     "minLength": 1
                   },
                   "source_url": {
@@ -82686,7 +83394,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                             },
                             "body": {
                               "type": "string",
-                              "maxLength": 100000,
+                              "maxLength": 500000,
                               "minLength": 1
                             },
                             "source_url": {
@@ -82859,7 +83567,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "properties": {
                           "body": {
                             "type": "string",
-                            "maxLength": 2000000
+                            "maxLength": 10666668
                           },
                           "content_type": {
                             "type": "string",
@@ -82881,8 +83589,51 @@ export const LightTickReadingExportEnvelopeSchema = {
                               "feed_entry",
                               "full_fetch"
                             ]
+                          },
+                          "extraction_version": {
+                            "type": "string",
+                            "maxLength": 140
+                          },
+                          "encoding": {
+                            "type": "string",
+                            "enum": [
+                              "base64"
+                            ]
+                          },
+                          "resolved_url": {
+                            "type": "string",
+                            "maxLength": 1500,
+                            "format": "uri"
                           }
-                        }
+                        },
+                        "allOf": [
+                          {
+                            "if": {
+                              "properties": {
+                                "encoding": {
+                                  "const": "base64"
+                                }
+                              },
+                              "required": [
+                                "encoding"
+                              ]
+                            },
+                            "then": {
+                              "properties": {
+                                "content_type": {
+                                  "const": "application/pdf"
+                                }
+                              }
+                            },
+                            "else": {
+                              "properties": {
+                                "body": {
+                                  "maxLength": 8000000
+                                }
+                              }
+                            }
+                          }
+                        ]
                       }
                     }
                   },
@@ -83241,7 +83992,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 100000,
+                    "maxLength": 500000,
                     "minLength": 1
                   },
                   "source_url": {
@@ -83773,7 +84524,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                   },
                   "body": {
                     "type": "string",
-                    "maxLength": 100000,
+                    "maxLength": 500000,
                     "minLength": 1
                   },
                   "source_url": {
@@ -84483,13 +85234,29 @@ export type LightTickReadingExportEnvelope = {
   "provider"?: string;
   "model"?: string;
   "prompt_version"?: string;
-  "document"?: {
+  "document"?: (
+{
   "body": string;
   "content_type": string;
   "url": string;
   "sha256": string;
   "capture_kind": "web_text" | "feed_entry" | "full_fetch";
-};
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+) & (
+{
+  "body": string;
+  "content_type": string;
+  "url": string;
+  "sha256": string;
+  "capture_kind": "web_text" | "feed_entry" | "full_fetch";
+  "extraction_version"?: string;
+  "encoding"?: "base64";
+  "resolved_url"?: string;
+}
+);
 }
 ) | unknown;
   "adopted": {

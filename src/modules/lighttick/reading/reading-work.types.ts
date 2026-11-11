@@ -47,6 +47,9 @@ export interface ReadingWork extends LightTickOwner {
       url: string;
       sha256: string;
       capture_kind: string;
+      encoding?: "base64";
+      extraction_version?:string;
+      resolved_url?: string;
     };
   } | null;
   adopted: Record<string, { article_id: string; revision: number }>;

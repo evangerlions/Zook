@@ -1,3 +1,4 @@
+import { readingFailureCode, readingSourceFailure } from "./reading-failure.ts";
 import { Worker } from "node:worker_threads";
 import type { ReadingDocument } from "./reading-collection.ts";
 import type { ReadingWork } from "./reading-work.types.ts";
@@ -13,7 +14,7 @@ export async function parseReadingDocument(
     {
       workerData: { work, document },
       resourceLimits: {
-        maxOldGenerationSizeMb: 96,
+        maxOldGenerationSizeMb: 192,
         maxYoungGenerationSizeMb: 16,
         stackSizeMb: 4,
       },
@@ -29,6 +30,9 @@ export async function parseReadingDocument(
         if (message?.ok) resolve(message.result);
         else
           try {
+            const code = readingFailureCode(message);
+            if (code)
+              readingSourceFailure(code, message.status === 413 ? 413 : 422);
             fail(
               message?.status === 413 ? 413 : 422,
               "来源文本无法解析或超出容量，未导入部分结果。",

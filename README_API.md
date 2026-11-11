@@ -2025,7 +2025,7 @@ Canonical 前缀 `/api/v1/lighttick/learning`。`GET /module-templates` 仅返�
 Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bearer认证及本人资源权限；游客不可用。`runtimeScope=core`可读历史/导出/回执，新的阅读写入返回503 `LIGHTTICK_CAPABILITY_UNAVAILABLE`。不自动采集、调用模型或导入历史。
 
 - `GET /library?search=&filter=all|bookmark|later|read|feedback|archived&limit=20&cursor=`：按文章ID分页，最多50篇；`all`不含归档。切换筛选须清除游标。search按原文、作者、译名、出版来源、来源摘要、主题/标签、推荐理由、私人笔记、反馈和资料正文匹配，通配符按字面处理。
-- `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题500字符、正文100000字符，原空白保留；可选author为500字符以内的作者原文或null，tags为最多100个非空标签（每项200字符），两者随内容摘要/版本/历史/导出保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
+- `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题500字符、正文500000字符，原空白保留；可选author为500字符以内的作者原文或null，tags为最多100个非空标签（每项200字符），两者随内容摘要/版本/历史/导出保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
 - `GET /articles/{articleId}`、`GET /articles/{articleId}/history?cursor=`：当前文章及每次确认变更的历史，原文`content_version`为SHA256。历史倒序30条，游标为排他的修订上界。
 - `POST /articles/{articleId}/personal`：`{base_revision,content_version,personal:{notes,feedback,bookmark,later,read}}`，笔记60000字符、反馈10000字符。明确read独立于位置/笔记/行动；撤销read保留原版本历史。
 - `POST /articles/{articleId}/position`：`{base_revision,content_version,device_id,position}`，每设备位置独立且可回退；最多100设备，字符位置不得超过当前正文长度。
@@ -2065,16 +2065,22 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 
 沿用 `/api/v1/lighttick/reading`、本人身份、现有队列和 worker。来源与文章、词汇及学习课程分别拥有独立对象，不进入 task-only sync。
 
-- `GET /sources?cursor=`、`GET /sources/{sourceId}`、`GET /sources/{sourceId}/history?cursor=`：本人来源、历史（50个来源/30条历史一页）。`PUT /sources/{sourceId}` 使用 `Idempotency-Key` 和 `{base_revision,title,url,format:article|rss|atom,archived}`；名称200、HTTPS链接1500字符，仅443端口、禁止内嵌身份凭据。保存不自动取数；归档保留文章及历史。
+- `GET /sources?cursor=`、`GET /sources/{sourceId}`、`GET /sources/{sourceId}/history?cursor=`：本人来源、历史（50个来源/30条历史一页）。`PUT /sources/{sourceId}` 使用 `Idempotency-Key` 和 `{base_revision,title,url,format:article|rss|atom,archived}`；名称200、公网HTTP/HTTPS链接1500字符，仅对应默认端口、禁止内嵌身份凭据。保存不自动取数；归档保留文章及历史。
 - `GET /work?cursor=`：30项任务摘要，包含 `has_output`、冻结范围和结果摘要，不返回下载正文。`GET /work/{workId}` 返回完整任务结果和原始采集文本。稳定ID为 `readwork-...`；状态 `queued/running/succeeded/failed/cancelled`。
 - `POST /work`：`{kind:collect_url,title,url}` 采集一篇文本；`{kind:collect_source,source_id,base_revision}` 冻结所选来源；`{kind:guide|translation|summary|english,article_id,content_version,paragraph_id}` 冻结AI原文范围。翻译按 `p-1` 起的空行分段编号，其余 paragraph_id=null。模型输入最多20000 UTF-8字节且受场景更小上限约束。私人笔记、访问凭据不传模型。
-- 公网采集复用DNS解析后固定地址、TLS主机验证、拒绝私网/重定向、UTF-8及超时控制；阅读最多2 MB、每订阅80条，超限明确失败、不截断。精确下载文本、URL、SHA256和 `web_text/feed_entry` 语义保存在任务输出；feed条目可能只有摘要，不冒充全文。XML拒绝DTD/实体并限制嵌套深度。采集不自动导入、不调用模型，不静默换源。
-- AI复用本人模型选择与逻辑场景 `reading_guide/reading_translation/reading_summary/reading_english`，场景提示版本1.0.0。无模板或供应商切换。每日最多20项阅读任务，其中AI最多12项（按单次0.15美元等值预估保留在2美元内，非实际供应商账单保证）；每owner同时最多2项未决任务，运行超时最多30秒、租约45秒。队列丢投递可恢复；运行中断且外部结果未知时标记 `INTERRUPTED_OUTCOME_UNKNOWN`，不自动重跑模型。取消、账号/文章/来源/个人模型修订变化后不持久化晚到结果。
+- 公网采集逐跳固定DNS公网地址、核验TLS主机并拒绝私网和凭据，最多5次连接；订阅仍最多2 MB/80条，文章原始文件最多8 MB/100页PDF/500000字符正文，超限明确失败、不截断。精确下载文本、URL、SHA256和 `web_text/feed_entry` 语义保存在任务输出；feed条目可能只有摘要，不冒充全文。XML拒绝DTD/实体并限制嵌套深度。采集不自动导入、不调用模型，不静默换源。
+- AI复用本人模型选择与逻辑场景 `reading_guide/reading_translation/reading_summary/reading_english`，场景提示版本1.0.0。无模板或供应商切换。每日最多20项阅读任务，其中AI最多12项（按单次0.15美元等值预估保留在2美元内，非实际供应商账单保证）；每owner同时最多2项未决任务，模型超时最多30秒、租约45秒；采集含解析超时最多45秒、租约60秒。队列丢投递可恢复；运行中断且外部结果未知时标记 `INTERRUPTED_OUTCOME_UNKNOWN`，不自动重跑模型。取消、账号/文章/来源/个人模型修订变化后不持久化晚到结果。
 - `POST /work/{workId}/cancel`：`{base_revision}`，基础模式亦可取消。`POST .../adopt`：`{base_revision,output_digest,index,base_article_revision}`；采集选定index（0..79）且base_article_revision=null，内容摘要去重为独立文章；AI的index=null，需当前文章CAS，仅保存 `origin=ai` 草稿。正式采用仍使用文章 `/adopt`。响应含work_id、article_id、revision及精确提交后的work副本。所有写入要求原key/body，事务包含状态、正文/草稿及回执，失败一并回滚。
 - `GET /work-receipts/{operationId}`：`{operation_id,entity_id,action,request,result}` 核对本人原请求。基础模式可读历史、取消及GET回执，新写入（包括POST重发）返回503；回执是当时结果，不代表当前任务状态。
 - 独立与综合导出增加sources/source_history/work；work包含冻结输入和原始输出，不含队列凭据/租约。现有1000项及8 MiB完整副本上限仍适用，超限413，不返回截断副本。账号删除同时清除新增表。
 
 来源偏好推荐与定时采集仍在迁移清单；本接口批次不表示这些能力已全部完成。浏览器及PG测试使用的合成模型/网站仅验证协议，不作为真实供应商结果。
+
+### LightTick 阅读全文兼容
+
+PDF.js固定6.5.438从已选字节离线提取，字体/CMap仅读取随依赖固定的本地资源，不执行文档脚本/XFA或加载文档链接；加密、权限受限、超过100页或正文不可读时明确失败。HTML由固定Readability0.6.0与惰性LinkeDOM0.18.15识别正文，拒绝出版者JSON-LD中isAccessibleForFree=false、挑战页、NUL和不足100字符的全文补取，不将摘要凑为全文。直接网页采集保持web_text语义。
+
+`work.output.document`可选`encoding:base64`仅用于PDF；body保存原始二进制的精确base64，sha256按原始字节计算。文本保留原下载UTF-8/BOM；`resolved_url`记录核验后的最终链接，原url仍为选定链接；`extraction_version`冻结算法身份。Web显式下载原文件，PDF不展开二进制文本。既有摘要与历史正文不重算。采集解析线程内存上限192MB、取消/超时终止；学习资料URL仍限制HTTPS、拒绝跳转、80k下载，未扩大权限。导出总容量门禁继续有效，超过8MiB明确413，尚未提供完整分块备份。
 
 ### LightTick 阅读反馈、来源精度与关联原文
 
@@ -2085,3 +2091,5 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 - `POST /work` 增加 `{kind:fetch_full,article_id,content_version}`。冻结本人当前文章的来源、原文SHA和元数据，只读取该网站，不调用模型。结果仍须核对并显式 `/work/{workId}/adopt`，产生 `full_fetch` 关联原文；旧原文、笔记、反馈、位置和已采用资料不变。来源撤权/归档或原文身份变化后禁止采用晚到结果。相同内容摘要复用已有文章，不重置私人状态。core可读关系/历史/原回执及取消任务，不允许新建/采用。
 
 HTML用固定版本htmlparser2解析，保留原始下载文本与SHA，展示文本不执行脚本；RSS/Atom沿用固定版本fast-xml-parser，拒绝DTD/实体，限制嵌套40及标记40000。采集解析在有内存上限的独立Node线程完成，取消/任务超时终止线程，避免在共享HTTP事件循环解析不可信来源；此线程是服务端CPU隔离，与浏览器策略IDE的权限沙箱无关。导出、不可变历史及账号清理包含反馈与来源版本关系。
+
+全文任务明确区分 `READING_SOURCE_SIZE`、`READING_TEXT_LIMIT`、`READING_SOURCE_UNREADABLE`、`READING_SOURCE_RESTRICTED`、`READING_PDF_ENCRYPTED`、`READING_PDF_RESTRICTED`、`READING_PDF_PAGE_LIMIT`，作为本人任务的error_code返回；不会把失败内容导入、自动换源或自动改用模型。

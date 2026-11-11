@@ -1,6 +1,6 @@
+import {fetchReadingSource} from "./modules/lighttick/reading/reading-fetch.ts";
 import {ReadingWorkService} from "./modules/lighttick/reading/reading-work.service.ts";
 import {ReadingWorkRunner} from "./modules/lighttick/reading/reading-work.runner.ts";
-import {fetchPublicSource} from "./modules/lighttick/learning/learning-sources.ts";
 import { LightTickScopePolicy, scopeQueue } from "./modules/lighttick/lighttick-runtime-scope.ts";
 import {PortfolioService} from "./modules/lighttick/investments/portfolio/portfolio.service.ts";
 import {PortfolioRunner} from "./modules/lighttick/investments/portfolio/portfolio.runner.ts";
@@ -110,7 +110,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   const ledger=new InvestmentLedgerService(input.repository,queue);
   input.runtime.investmentLedger=ledger;
   const readingWork=new ReadingWorkService(input.repository,queue);input.runtime.readingWork=readingWork;
-  const reading=new ReadingWorkRunner(readingWork,personalLlm,(url,signal)=>fetchPublicSource(url,signal,undefined,2_000_000),authorizeOwner,scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
+  const reading=new ReadingWorkRunner(readingWork,personalLlm,fetchReadingSource,authorizeOwner,scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene));
   const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue);
   input.runtime.learningWork=work;
   const learning=new LearningWorkRunner(work,personalLlm,{

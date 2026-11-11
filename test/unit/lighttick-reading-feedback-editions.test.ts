@@ -236,7 +236,7 @@ test("full-text supplement creates a related immutable edition with original met
       },
     } as any,
     async () => ({
-      body: "<p>First complete paragraph.</p><p>Second complete paragraph.</p>",
+      body: "<p>First complete paragraph.</p><p>Second complete paragraph.</p>".repeat(3),
       content_type: "text/html",
     }),
   );
