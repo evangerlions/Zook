@@ -131,10 +131,15 @@ export async function adoptReadingWork(
         content_version: row.input.content_version,
         kind: row.kind,
         paragraph_id: row.input.paragraph_id,
+        ...(row.input.source_range
+          ? { source_range: row.input.source_range }
+          : {}),
         text: row.output.text,
       },
       "reading-ai-draft-" + digest(id).slice(0, 40),
       "ai",
+      undefined,
+      row.output.evidence,
     );
     result = { article_id: article.id, revision: article.revision };
   }

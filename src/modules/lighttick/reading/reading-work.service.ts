@@ -1,4 +1,5 @@
-import {assertReadingNotErased} from "./reading-erasure.service.ts";
+import { freezeReadingAI } from "./reading-ai-snapshot.ts";
+import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import { adoptReadingWork } from "./reading-work-adoption.ts";
 import { assertReadingJSON } from "./reading-json-safe.ts";
 import { candidateReadingInput } from "./reading-candidate-input.ts";
@@ -54,7 +55,22 @@ export class ReadingWorkService {
         article_id: input.article_id ?? null,
         content_version: input.content_version ?? null,
         paragraph_id: input.paragraph_id ?? null,
-        selected_characters: input.text?.length ?? 0,
+        selected_characters: input.ai_context
+          ? input.ai_context.source_range.end -
+            input.ai_context.source_range.start
+          : (input.text?.length ?? 0),
+        ...(input.source_range ? { source_range: input.source_range } : {}),
+        ...(input.ai_context
+          ? {
+              source_basis: input.ai_context.source_basis,
+              source_units: "unicode_code_points",
+              selected_bytes: input.ai_context.selected_bytes,
+              input_sha256: input.ai_context.input_sha256,
+              prompt_version: input.ai_context.prompt_version,
+              prompt_sha256: input.ai_context.prompt_sha256,
+              guide_format: input.ai_context.guide_format,
+            }
+          : {}),
         ...(input.recommendation
           ? {
               recommendation: input.recommendation.scope,
@@ -264,7 +280,7 @@ export class ReadingWorkService {
   }
   async create(o: LightTickOwner, raw: unknown, key: string) {
     const b = structuredClone(object(raw)),
-      kind = b.kind as ReadingWorkKind,
+      kind = b.kind as Exclude<ReadingWorkKind, "recommend">,
       id = "readwork-" + digest([o.appId, o.userId, key]).slice(0, 40);
     if (
       ![
@@ -286,7 +302,14 @@ export class ReadingWorkService {
           ? ["kind", "source_id", "base_revision"]
           : kind === "fetch_full"
             ? ["kind", "article_id", "content_version"]
-            : ["kind", "article_id", "content_version", "paragraph_id"],
+            : [
+                "kind",
+                "article_id",
+                "content_version",
+                "paragraph_id",
+                "source_range",
+                "guide_format",
+              ],
     );
     const result = await this.command(
       o,
@@ -391,24 +414,30 @@ export class ReadingWorkService {
                 content_version: b.content_version,
                 kind,
                 paragraph_id: b.paragraph_id,
+                ...(b.source_range === undefined
+                  ? {}
+                  : { source_range: b.source_range }),
                 text: "",
               },
               false,
               now,
             );
-            const selected =
-              kind === "translation"
-                ? article.content.body.split(/\n\s*\n/)[
-                    Number(String(b.paragraph_id).slice(2)) - 1
-                  ]
-                : article.content.body;
-            if (Buffer.byteLength(selected) > 20000)
-              fail(413, "本次模型范围超过20000字节，请先按段落整理。");
+            const selected = freezeReadingAI(
+              article,
+              kind,
+              b.paragraph_id,
+              b.source_range,
+              b.guide_format,
+            );
             input = {
               article_id: article.id,
               content_version: article.content_version,
               paragraph_id: b.paragraph_id as string | null,
-              text: selected,
+              ...(b.source_range === undefined
+                ? {}
+                : { source_range: selected.snapshot.source_range }),
+              text: selected.text,
+              ai_context: selected.snapshot,
               model_selection: await captureModel(this.repo, o),
             };
           }
@@ -419,6 +448,9 @@ export class ReadingWorkService {
           revision: 1,
           kind,
           status: "queued",
+          started_at: null,
+          finished_at: null,
+          model_usage: null,
           input,
           output: null,
           adopted: {},
@@ -485,6 +517,7 @@ export class ReadingWorkService {
         fence: null,
         lease_until: null,
         error_code: "CANCELLED",
+        finished_at: this.clock().toISOString(),
         updated_at: this.clock().toISOString(),
       };
       await this.store.save(next, row.revision);

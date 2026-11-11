@@ -21,10 +21,12 @@ type Query = (
 export class PostgresReadingStore implements ReadingRepository {
   constructor(readonly query: Query) {}
   async getVocabulary(o: LightTickOwner, id: string) {
-    const row = (await this.query(
-      "SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
-      [o.appId,o.userId,id],
-    )).rows[0];
+    const row = (
+      await this.query(
+        "SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
+        [o.appId, o.userId, id],
+      )
+    ).rows[0];
     return (row?.payload ?? undefined) as VocabularyEntry | undefined;
   }
   async duplicateVocabulary(
@@ -143,6 +145,16 @@ export class PostgresReadingStore implements ReadingRepository {
       )
     )
       .rows as import("../../../modules/lighttick/reading/reading-recommendation.ts").ReadingRecommendationHistory[];
+  }
+  async reference(o: LightTickOwner, id: string) {
+    return (
+      await this.query(
+        "SELECT jsonb_build_object('id',id,'content_version',payload->'content_version','archived',payload->'archived') AS payload FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 AND id=$3",
+        [o.appId, o.userId, id],
+      )
+    ).rows[0]?.payload as
+      | Pick<ReadingArticle, "id" | "content_version" | "archived">
+      | undefined;
   }
   async get(o: LightTickOwner, id: string) {
     return (

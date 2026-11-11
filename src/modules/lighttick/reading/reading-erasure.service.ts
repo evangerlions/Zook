@@ -180,6 +180,9 @@ export class ReadingErasureService {
             fence: null,
             lease_until: null,
             error_code: "DATA_ERASED",
+            ...(["queued", "running"].includes(w.status)
+              ? { finished_at: now }
+              : {}),
             updated_at: now,
           },
           w.revision,

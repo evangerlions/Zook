@@ -73061,6 +73061,346 @@ export type LightTickReadingErasureReceiptEnvelope = {
   "requestId": string;
 };
 
+export const LightTickReadingSourceRangeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "start",
+    "end"
+  ],
+  "properties": {
+    "start": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000
+    },
+    "end": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500000
+    }
+  },
+  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+} as const;
+
+export type LightTickReadingSourceRange = {
+  "start": number;
+  "end": number;
+};
+
+export const LightTickReadingAISnapshotSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "prompt_version",
+    "guide_format",
+    "source_basis",
+    "source_range",
+    "input_sha256",
+    "selected_bytes",
+    "prompt_sha256",
+    "messages"
+  ],
+  "properties": {
+    "prompt_version": {
+      "const": "1.1.0"
+    },
+    "guide_format": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "reading-v2",
+            "detailed-v1"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_basis": {
+      "type": "string",
+      "enum": [
+        "saved_text",
+        "feed_excerpt",
+        "legacy_unknown"
+      ]
+    },
+    "source_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500000
+        }
+      },
+      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "selected_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20000
+    },
+    "prompt_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "messages": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 24000
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingAISnapshot = {
+  "prompt_version": unknown;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "input_sha256": string;
+  "selected_bytes": number;
+  "prompt_sha256": string;
+  "messages": (
+{
+  "role": "system" | "user";
+  "content": string;
+}
+)[];
+};
+
+export const LightTickReadingAIEvidenceSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "work_id",
+    "prompt_version",
+    "prompt_sha256",
+    "input_sha256",
+    "output_sha256",
+    "source_basis",
+    "source_range",
+    "provider",
+    "model",
+    "guide_format"
+  ],
+  "properties": {
+    "work_id": {
+      "type": "string",
+      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+    },
+    "prompt_version": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "prompt_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "output_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "source_basis": {
+      "type": "string",
+      "enum": [
+        "saved_text",
+        "feed_excerpt",
+        "legacy_unknown"
+      ]
+    },
+    "source_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500000
+        }
+      },
+      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+    },
+    "provider": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "model": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "guide_format": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "reading-v2",
+            "detailed-v1"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingAIEvidence = {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+
+export const LightTickReadingModelUsageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "input_tokens",
+    "output_tokens",
+    "total_tokens",
+    "cached_input_tokens",
+    "reasoning_tokens",
+    "estimated",
+    "cost_amount",
+    "cost_currency",
+    "cost_basis"
+  ],
+  "properties": {
+    "input_tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "output_tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "total_tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "cached_input_tokens": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "reasoning_tokens": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "estimated": {
+      "type": "boolean"
+    },
+    "cost_amount": {
+      "type": "null"
+    },
+    "cost_currency": {
+      "type": "null"
+    },
+    "cost_basis": {
+      "const": "unknown"
+    }
+  },
+  "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+} as const;
+
+export type LightTickReadingModelUsage = {
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+};
+
 export const LightTickReadingCatalogEntrySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -74768,6 +75108,68 @@ export const LightTickReadingWorkScopeSchema = {
           "maximum": 8
         }
       }
+    },
+    "source_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500000
+        }
+      },
+      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+    },
+    "source_basis": {
+      "type": "string",
+      "enum": [
+        "saved_text",
+        "feed_excerpt",
+        "legacy_unknown"
+      ]
+    },
+    "source_units": {
+      "const": "unicode_code_points"
+    },
+    "selected_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20000
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "prompt_version": {
+      "const": "1.1.0"
+    },
+    "prompt_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "guide_format": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "reading-v2",
+            "detailed-v1"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -74850,6 +75252,19 @@ export type LightTickReadingWorkScope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
 
 export const LightTickReadingWorkSummarySchema = {
@@ -75488,6 +75903,68 @@ export const LightTickReadingWorkSummarySchema = {
               "maximum": 8
             }
           }
+        },
+        "source_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500000
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500000
+            }
+          },
+          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+        },
+        "source_basis": {
+          "type": "string",
+          "enum": [
+            "saved_text",
+            "feed_excerpt",
+            "legacy_unknown"
+          ]
+        },
+        "source_units": {
+          "const": "unicode_code_points"
+        },
+        "selected_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "prompt_version": {
+          "const": "1.1.0"
+        },
+        "prompt_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "guide_format": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "reading-v2",
+                "detailed-v1"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -75505,6 +75982,104 @@ export const LightTickReadingWorkSummarySchema = {
     },
     "has_output": {
       "type": "boolean"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "model_usage": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "cached_input_tokens",
+            "reasoning_tokens",
+            "estimated",
+            "cost_amount",
+            "cost_currency",
+            "cost_basis"
+          ],
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "total_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "cached_input_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reasoning_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "estimated": {
+              "type": "boolean"
+            },
+            "cost_amount": {
+              "type": "null"
+            },
+            "cost_currency": {
+              "type": "null"
+            },
+            "cost_basis": {
+              "const": "unknown"
+            }
+          },
+          "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -75602,9 +76177,37 @@ export type LightTickReadingWorkSummary = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 };
 
 export const LightTickReadingWorkDocumentSchema = {
@@ -76457,6 +77060,95 @@ export const LightTickReadingWorkOutputSchema = {
           "maxLength": 64
         }
       }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_id",
+        "prompt_version",
+        "prompt_sha256",
+        "input_sha256",
+        "output_sha256",
+        "source_basis",
+        "source_range",
+        "provider",
+        "model",
+        "guide_format"
+      ],
+      "properties": {
+        "work_id": {
+          "type": "string",
+          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+        },
+        "prompt_version": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "prompt_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "output_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_basis": {
+          "type": "string",
+          "enum": [
+            "saved_text",
+            "feed_excerpt",
+            "legacy_unknown"
+          ]
+        },
+        "source_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500000
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500000
+            }
+          },
+          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+        },
+        "provider": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "guide_format": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "reading-v2",
+                "detailed-v1"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -76578,6 +77270,23 @@ export type LightTickReadingWorkOutput = {
   "attempted": number;
   "ranking_version": string;
   "scope_digest": string;
+};
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
 };
 
@@ -81350,6 +82059,95 @@ export const LightTickReadingWorkSchema = {
                   "maxLength": 64
                 }
               }
+            },
+            "evidence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "work_id",
+                "prompt_version",
+                "prompt_sha256",
+                "input_sha256",
+                "output_sha256",
+                "source_basis",
+                "source_range",
+                "provider",
+                "model",
+                "guide_format"
+              ],
+              "properties": {
+                "work_id": {
+                  "type": "string",
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                "prompt_version": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "prompt_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "output_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "source_basis": {
+                  "type": "string",
+                  "enum": [
+                    "saved_text",
+                    "feed_excerpt",
+                    "legacy_unknown"
+                  ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "provider": {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                "model": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "guide_format": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
             }
           }
         },
@@ -81943,6 +82741,68 @@ export const LightTickReadingWorkSchema = {
               "maximum": 8
             }
           }
+        },
+        "source_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500000
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500000
+            }
+          },
+          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+        },
+        "source_basis": {
+          "type": "string",
+          "enum": [
+            "saved_text",
+            "feed_excerpt",
+            "legacy_unknown"
+          ]
+        },
+        "source_units": {
+          "const": "unicode_code_points"
+        },
+        "selected_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "prompt_version": {
+          "const": "1.1.0"
+        },
+        "prompt_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "guide_format": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "reading-v2",
+                "detailed-v1"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -81952,6 +82812,104 @@ export const LightTickReadingWorkSchema = {
           "type": "string",
           "maxLength": 64,
           "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "model_usage": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "cached_input_tokens",
+            "reasoning_tokens",
+            "estimated",
+            "cost_amount",
+            "cost_currency",
+            "cost_basis"
+          ],
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "total_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "cached_input_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reasoning_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "estimated": {
+              "type": "boolean"
+            },
+            "cost_amount": {
+              "type": "null"
+            },
+            "cost_currency": {
+              "type": "null"
+            },
+            "cost_basis": {
+              "const": "unknown"
+            }
+          },
+          "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
         },
         {
           "type": "null"
@@ -82085,6 +83043,23 @@ export type LightTickReadingWork = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -82175,8 +83150,36 @@ export type LightTickReadingWork = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 };
 
 export const LightTickReadingWorkPageSchema = {
@@ -82826,6 +83829,68 @@ export const LightTickReadingWorkPageSchema = {
                     "maximum": 8
                   }
                 }
+              },
+              "source_range": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500000
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500000
+                  }
+                },
+                "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+              },
+              "source_basis": {
+                "type": "string",
+                "enum": [
+                  "saved_text",
+                  "feed_excerpt",
+                  "legacy_unknown"
+                ]
+              },
+              "source_units": {
+                "const": "unicode_code_points"
+              },
+              "selected_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 20000
+              },
+              "input_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "prompt_version": {
+                "const": "1.1.0"
+              },
+              "prompt_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "guide_format": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "reading-v2",
+                      "detailed-v1"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           },
@@ -82843,6 +83908,104 @@ export const LightTickReadingWorkPageSchema = {
           },
           "has_output": {
             "type": "boolean"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_usage": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input_tokens",
+                  "output_tokens",
+                  "total_tokens",
+                  "cached_input_tokens",
+                  "reasoning_tokens",
+                  "estimated",
+                  "cost_amount",
+                  "cost_currency",
+                  "cost_basis"
+                ],
+                "properties": {
+                  "input_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "output_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "total_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "cached_input_tokens": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reasoning_tokens": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estimated": {
+                    "type": "boolean"
+                  },
+                  "cost_amount": {
+                    "type": "null"
+                  },
+                  "cost_currency": {
+                    "type": "null"
+                  },
+                  "cost_basis": {
+                    "const": "unknown"
+                  }
+                },
+                "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -82957,9 +84120,37 @@ export type LightTickReadingWorkPage = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 )[];
   "next_cursor": string | unknown;
@@ -83081,8 +84272,161 @@ export const LightTickReadingWorkCreateSchema = {
               "type": "null"
             }
           ]
+        },
+        "source_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500000
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500000
+            }
+          },
+          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+        },
+        "guide_format": {
+          "type": "string",
+          "enum": [
+            "reading-v2",
+            "detailed-v1"
+          ]
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "source_range"
+            ],
+            "properties": {
+              "source_range": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500000
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500000
+                  }
+                },
+                "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "paragraph_id": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "translation"
+              },
+              "paragraph_id": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "kind",
+              "paragraph_id"
+            ]
+          },
+          "then": {
+            "required": [
+              "source_range"
+            ],
+            "properties": {
+              "source_range": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500000
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500000
+                  }
+                },
+                "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "not": {
+                  "const": "translation"
+                }
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "paragraph_id": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "not": {
+                  "const": "guide"
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "guide_format"
+              ],
+              "properties": {
+                "guide_format": {}
+              }
+            }
+          }
+        }
+      ]
     },
     {
       "type": "object",
@@ -83124,12 +84468,67 @@ export type LightTickReadingWorkCreate = {
   "kind": unknown;
   "source_id": string;
   "base_revision": number;
-} | {
+} | (
+{
   "kind": "guide" | "translation" | "summary" | "english";
   "article_id": string;
   "content_version": string;
   "paragraph_id": string | unknown;
-} | {
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) | {
   "kind": unknown;
   "article_id": string;
   "content_version": string;
@@ -84027,6 +85426,95 @@ export const LightTickReadingWorkAdoptResultSchema = {
                           "maxLength": 64
                         }
                       }
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "work_id",
+                        "prompt_version",
+                        "prompt_sha256",
+                        "input_sha256",
+                        "output_sha256",
+                        "source_basis",
+                        "source_range",
+                        "provider",
+                        "model",
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "work_id": {
+                          "type": "string",
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "output_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 },
@@ -84620,6 +86108,68 @@ export const LightTickReadingWorkAdoptResultSchema = {
                       "maximum": 8
                     }
                   }
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "source_basis": {
+                  "type": "string",
+                  "enum": [
+                    "saved_text",
+                    "feed_excerpt",
+                    "legacy_unknown"
+                  ]
+                },
+                "source_units": {
+                  "const": "unicode_code_points"
+                },
+                "selected_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 20000
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "prompt_version": {
+                  "const": "1.1.0"
+                },
+                "prompt_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "guide_format": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -84629,6 +86179,104 @@ export const LightTickReadingWorkAdoptResultSchema = {
                   "type": "string",
                   "maxLength": 64,
                   "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "started_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "finished_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "model_usage": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "input_tokens",
+                    "output_tokens",
+                    "total_tokens",
+                    "cached_input_tokens",
+                    "reasoning_tokens",
+                    "estimated",
+                    "cost_amount",
+                    "cost_currency",
+                    "cost_basis"
+                  ],
+                  "properties": {
+                    "input_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "output_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "cached_input_tokens": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reasoning_tokens": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "estimated": {
+                      "type": "boolean"
+                    },
+                    "cost_amount": {
+                      "type": "null"
+                    },
+                    "cost_currency": {
+                      "type": "null"
+                    },
+                    "cost_basis": {
+                      "const": "unknown"
+                    }
+                  },
+                  "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
                 },
                 {
                   "type": "null"
@@ -85273,6 +86921,68 @@ export const LightTickReadingWorkAdoptResultSchema = {
                       "maximum": 8
                     }
                   }
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "source_basis": {
+                  "type": "string",
+                  "enum": [
+                    "saved_text",
+                    "feed_excerpt",
+                    "legacy_unknown"
+                  ]
+                },
+                "source_units": {
+                  "const": "unicode_code_points"
+                },
+                "selected_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 20000
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "prompt_version": {
+                  "const": "1.1.0"
+                },
+                "prompt_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "guide_format": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -85290,6 +87000,104 @@ export const LightTickReadingWorkAdoptResultSchema = {
             },
             "has_output": {
               "type": "boolean"
+            },
+            "started_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "finished_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "model_usage": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "input_tokens",
+                    "output_tokens",
+                    "total_tokens",
+                    "cached_input_tokens",
+                    "reasoning_tokens",
+                    "estimated",
+                    "cost_amount",
+                    "cost_currency",
+                    "cost_basis"
+                  ],
+                  "properties": {
+                    "input_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "output_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "cached_input_tokens": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reasoning_tokens": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "estimated": {
+                      "type": "boolean"
+                    },
+                    "cost_amount": {
+                      "type": "null"
+                    },
+                    "cost_currency": {
+                      "type": "null"
+                    },
+                    "cost_basis": {
+                      "const": "unknown"
+                    }
+                  },
+                  "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         }
@@ -85439,6 +87247,23 @@ export type LightTickReadingWorkAdoptResult = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -85529,8 +87354,36 @@ export type LightTickReadingWorkAdoptResult = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 ) | (
 {
@@ -85626,9 +87479,37 @@ export type LightTickReadingWorkAdoptResult = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 );
   "work_id": string;
@@ -85849,8 +87730,161 @@ export const LightTickReadingWorkReceiptSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "guide_format": {
+                  "type": "string",
+                  "enum": [
+                    "reading-v2",
+                    "detailed-v1"
+                  ]
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "source_range"
+                    ],
+                    "properties": {
+                      "source_range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "start",
+                          "end"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500000
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500000
+                          }
+                        },
+                        "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "paragraph_id": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "translation"
+                      },
+                      "paragraph_id": {
+                        "type": "null"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "paragraph_id"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "source_range"
+                    ],
+                    "properties": {
+                      "source_range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "start",
+                          "end"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500000
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500000
+                          }
+                        },
+                        "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "not": {
+                          "const": "translation"
+                        }
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "paragraph_id": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "not": {
+                          "const": "guide"
+                        }
+                      }
+                    }
+                  },
+                  "then": {
+                    "not": {
+                      "required": [
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "guide_format": {}
+                      }
+                    }
+                  }
+                }
+              ]
             },
             {
               "type": "object",
@@ -87013,6 +89047,95 @@ export const LightTickReadingWorkReceiptSchema = {
                           "maxLength": 64
                         }
                       }
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "work_id",
+                        "prompt_version",
+                        "prompt_sha256",
+                        "input_sha256",
+                        "output_sha256",
+                        "source_basis",
+                        "source_range",
+                        "provider",
+                        "model",
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "work_id": {
+                          "type": "string",
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "output_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 },
@@ -87606,6 +89729,68 @@ export const LightTickReadingWorkReceiptSchema = {
                       "maximum": 8
                     }
                   }
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "source_basis": {
+                  "type": "string",
+                  "enum": [
+                    "saved_text",
+                    "feed_excerpt",
+                    "legacy_unknown"
+                  ]
+                },
+                "source_units": {
+                  "const": "unicode_code_points"
+                },
+                "selected_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 20000
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "prompt_version": {
+                  "const": "1.1.0"
+                },
+                "prompt_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "guide_format": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -87615,6 +89800,104 @@ export const LightTickReadingWorkReceiptSchema = {
                   "type": "string",
                   "maxLength": 64,
                   "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "started_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "finished_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "model_usage": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "input_tokens",
+                    "output_tokens",
+                    "total_tokens",
+                    "cached_input_tokens",
+                    "reasoning_tokens",
+                    "estimated",
+                    "cost_amount",
+                    "cost_currency",
+                    "cost_basis"
+                  ],
+                  "properties": {
+                    "input_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "output_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    "cached_input_tokens": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "reasoning_tokens": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "estimated": {
+                      "type": "boolean"
+                    },
+                    "cost_amount": {
+                      "type": "null"
+                    },
+                    "cost_currency": {
+                      "type": "null"
+                    },
+                    "cost_basis": {
+                      "const": "unknown"
+                    }
+                  },
+                  "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
                 },
                 {
                   "type": "null"
@@ -88437,6 +90720,95 @@ export const LightTickReadingWorkReceiptSchema = {
                                   "maxLength": 64
                                 }
                               }
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "work_id",
+                                "prompt_version",
+                                "prompt_sha256",
+                                "input_sha256",
+                                "output_sha256",
+                                "source_basis",
+                                "source_range",
+                                "provider",
+                                "model",
+                                "guide_format"
+                              ],
+                              "properties": {
+                                "work_id": {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                "prompt_version": {
+                                  "type": "string",
+                                  "maxLength": 30
+                                },
+                                "prompt_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "input_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "output_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "saved_text",
+                                    "feed_excerpt",
+                                    "legacy_unknown"
+                                  ]
+                                },
+                                "source_range": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "properties": {
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 500000
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 500000
+                                    }
+                                  },
+                                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                                },
+                                "provider": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "maxLength": 200
+                                },
+                                "guide_format": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "reading-v2",
+                                        "detailed-v1"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
                             }
                           }
                         },
@@ -89030,6 +91402,68 @@ export const LightTickReadingWorkReceiptSchema = {
                               "maximum": 8
                             }
                           }
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_units": {
+                          "const": "unicode_code_points"
+                        },
+                        "selected_bytes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 20000
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "prompt_version": {
+                          "const": "1.1.0"
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     },
@@ -89039,6 +91473,104 @@ export const LightTickReadingWorkReceiptSchema = {
                           "type": "string",
                           "maxLength": 64,
                           "pattern": "^[a-f0-9]{64}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "started_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "finished_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "model_usage": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "input_tokens",
+                            "output_tokens",
+                            "total_tokens",
+                            "cached_input_tokens",
+                            "reasoning_tokens",
+                            "estimated",
+                            "cost_amount",
+                            "cost_currency",
+                            "cost_basis"
+                          ],
+                          "properties": {
+                            "input_tokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "output_tokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "total_tokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "cached_input_tokens": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reasoning_tokens": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "estimated": {
+                              "type": "boolean"
+                            },
+                            "cost_amount": {
+                              "type": "null"
+                            },
+                            "cost_currency": {
+                              "type": "null"
+                            },
+                            "cost_basis": {
+                              "const": "unknown"
+                            }
+                          },
+                          "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
                         },
                         {
                           "type": "null"
@@ -89683,6 +92215,68 @@ export const LightTickReadingWorkReceiptSchema = {
                               "maximum": 8
                             }
                           }
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_units": {
+                          "const": "unicode_code_points"
+                        },
+                        "selected_bytes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 20000
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "prompt_version": {
+                          "const": "1.1.0"
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     },
@@ -89700,6 +92294,104 @@ export const LightTickReadingWorkReceiptSchema = {
                     },
                     "has_output": {
                       "type": "boolean"
+                    },
+                    "started_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "finished_at": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "model_usage": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "input_tokens",
+                            "output_tokens",
+                            "total_tokens",
+                            "cached_input_tokens",
+                            "reasoning_tokens",
+                            "estimated",
+                            "cost_amount",
+                            "cost_currency",
+                            "cost_basis"
+                          ],
+                          "properties": {
+                            "input_tokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "output_tokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "total_tokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            "cached_input_tokens": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "reasoning_tokens": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "estimated": {
+                              "type": "boolean"
+                            },
+                            "cost_amount": {
+                              "type": "null"
+                            },
+                            "cost_currency": {
+                              "type": "null"
+                            },
+                            "cost_basis": {
+                              "const": "unknown"
+                            }
+                          },
+                          "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 }
@@ -90054,12 +92746,67 @@ export type LightTickReadingWorkReceipt = {
   "kind": unknown;
   "source_id": string;
   "base_revision": number;
-} | {
+} | (
+{
   "kind": "guide" | "translation" | "summary" | "english";
   "article_id": string;
   "content_version": string;
   "paragraph_id": string | unknown;
-} | {
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) | {
   "kind": unknown;
   "article_id": string;
   "content_version": string;
@@ -90249,6 +92996,23 @@ export type LightTickReadingWorkReceipt = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -90339,8 +93103,36 @@ export type LightTickReadingWorkReceipt = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 ) | (
 {
@@ -90469,6 +93261,23 @@ export type LightTickReadingWorkReceipt = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -90559,8 +93368,36 @@ export type LightTickReadingWorkReceipt = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 ) | (
 {
@@ -90656,9 +93493,37 @@ export type LightTickReadingWorkReceipt = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 );
   "work_id": string;
@@ -91522,6 +94387,95 @@ export const LightTickReadingWorkExportSchema = {
                   "maxLength": 64
                 }
               }
+            },
+            "evidence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "work_id",
+                "prompt_version",
+                "prompt_sha256",
+                "input_sha256",
+                "output_sha256",
+                "source_basis",
+                "source_range",
+                "provider",
+                "model",
+                "guide_format"
+              ],
+              "properties": {
+                "work_id": {
+                  "type": "string",
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                "prompt_version": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "prompt_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "output_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "source_basis": {
+                  "type": "string",
+                  "enum": [
+                    "saved_text",
+                    "feed_excerpt",
+                    "legacy_unknown"
+                  ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "provider": {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                "model": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "guide_format": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
             }
           }
         },
@@ -92339,8 +95293,228 @@ export const LightTickReadingWorkExportSchema = {
               "maximum": 8
             }
           }
+        },
+        "source_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "start",
+            "end"
+          ],
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500000
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500000
+            }
+          },
+          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+        },
+        "ai_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prompt_version",
+            "guide_format",
+            "source_basis",
+            "source_range",
+            "input_sha256",
+            "selected_bytes",
+            "prompt_sha256",
+            "messages"
+          ],
+          "properties": {
+            "prompt_version": {
+              "const": "1.1.0"
+            },
+            "guide_format": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "reading-v2",
+                    "detailed-v1"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source_basis": {
+              "type": "string",
+              "enum": [
+                "saved_text",
+                "feed_excerpt",
+                "legacy_unknown"
+              ]
+            },
+            "source_range": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end"
+              ],
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500000
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500000
+                }
+              },
+              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+            },
+            "input_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "selected_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20000
+            },
+            "prompt_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "messages": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role",
+                  "content"
+                ],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "system",
+                      "user"
+                    ]
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 24000
+                  }
+                }
+              }
+            }
+          }
         }
       }
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "model_usage": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "cached_input_tokens",
+            "reasoning_tokens",
+            "estimated",
+            "cost_amount",
+            "cost_currency",
+            "cost_basis"
+          ],
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "total_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "cached_input_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reasoning_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "estimated": {
+              "type": "boolean"
+            },
+            "cost_amount": {
+              "type": "null"
+            },
+            "cost_currency": {
+              "type": "null"
+            },
+            "cost_basis": {
+              "const": "unknown"
+            }
+          },
+          "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 } as const;
@@ -92469,6 +95643,23 @@ export type LightTickReadingWorkExport = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -92594,7 +95785,46 @@ export type LightTickReadingWorkExport = {
   "automatic": boolean;
   "target_count"?: number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
 };
+  "ai_context"?: {
+  "prompt_version": unknown;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "input_sha256": string;
+  "selected_bytes": number;
+  "prompt_sha256": string;
+  "messages": (
+{
+  "role": "system" | "user";
+  "content": string;
+}
+)[];
+};
+};
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 };
 
 export const LightTickReadingSourceEnvelopeSchema = {
@@ -93798,6 +97028,95 @@ export const LightTickReadingWorkEnvelopeSchema = {
                       "maxLength": 64
                     }
                   }
+                },
+                "evidence": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "work_id",
+                    "prompt_version",
+                    "prompt_sha256",
+                    "input_sha256",
+                    "output_sha256",
+                    "source_basis",
+                    "source_range",
+                    "provider",
+                    "model",
+                    "guide_format"
+                  ],
+                  "properties": {
+                    "work_id": {
+                      "type": "string",
+                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                    },
+                    "prompt_version": {
+                      "type": "string",
+                      "maxLength": 30
+                    },
+                    "prompt_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "input_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "output_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "source_basis": {
+                      "type": "string",
+                      "enum": [
+                        "saved_text",
+                        "feed_excerpt",
+                        "legacy_unknown"
+                      ]
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                    },
+                    "provider": {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    "model": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "guide_format": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "reading-v2",
+                            "detailed-v1"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             },
@@ -94391,6 +97710,68 @@ export const LightTickReadingWorkEnvelopeSchema = {
                   "maximum": 8
                 }
               }
+            },
+            "source_range": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end"
+              ],
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500000
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500000
+                }
+              },
+              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+            },
+            "source_basis": {
+              "type": "string",
+              "enum": [
+                "saved_text",
+                "feed_excerpt",
+                "legacy_unknown"
+              ]
+            },
+            "source_units": {
+              "const": "unicode_code_points"
+            },
+            "selected_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20000
+            },
+            "input_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "prompt_version": {
+              "const": "1.1.0"
+            },
+            "prompt_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "guide_format": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "reading-v2",
+                    "detailed-v1"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           }
         },
@@ -94400,6 +97781,104 @@ export const LightTickReadingWorkEnvelopeSchema = {
               "type": "string",
               "maxLength": 64,
               "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model_usage": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "input_tokens",
+                "output_tokens",
+                "total_tokens",
+                "cached_input_tokens",
+                "reasoning_tokens",
+                "estimated",
+                "cost_amount",
+                "cost_currency",
+                "cost_basis"
+              ],
+              "properties": {
+                "input_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "output_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "total_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "cached_input_tokens": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reasoning_tokens": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "estimated": {
+                  "type": "boolean"
+                },
+                "cost_amount": {
+                  "type": "null"
+                },
+                "cost_currency": {
+                  "type": "null"
+                },
+                "cost_basis": {
+                  "const": "unknown"
+                }
+              },
+              "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
             },
             {
               "type": "null"
@@ -94539,6 +98018,23 @@ export type LightTickReadingWorkEnvelope = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -94629,8 +98125,36 @@ export type LightTickReadingWorkEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 };
 };
 
@@ -95300,6 +98824,68 @@ export const LightTickReadingWorkPageEnvelopeSchema = {
                         "maximum": 8
                       }
                     }
+                  },
+                  "source_range": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "start",
+                      "end"
+                    ],
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 500000
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500000
+                      }
+                    },
+                    "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                  },
+                  "source_basis": {
+                    "type": "string",
+                    "enum": [
+                      "saved_text",
+                      "feed_excerpt",
+                      "legacy_unknown"
+                    ]
+                  },
+                  "source_units": {
+                    "const": "unicode_code_points"
+                  },
+                  "selected_bytes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20000
+                  },
+                  "input_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "prompt_version": {
+                    "const": "1.1.0"
+                  },
+                  "prompt_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "guide_format": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "reading-v2",
+                          "detailed-v1"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               },
@@ -95317,6 +98903,104 @@ export const LightTickReadingWorkPageEnvelopeSchema = {
               },
               "has_output": {
                 "type": "boolean"
+              },
+              "started_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "model_usage": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input_tokens",
+                      "output_tokens",
+                      "total_tokens",
+                      "cached_input_tokens",
+                      "reasoning_tokens",
+                      "estimated",
+                      "cost_amount",
+                      "cost_currency",
+                      "cost_basis"
+                    ],
+                    "properties": {
+                      "input_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "output_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "total_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "cached_input_tokens": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reasoning_tokens": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "estimated": {
+                        "type": "boolean"
+                      },
+                      "cost_amount": {
+                        "type": "null"
+                      },
+                      "cost_currency": {
+                        "type": "null"
+                      },
+                      "cost_basis": {
+                        "const": "unknown"
+                      }
+                    },
+                    "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -95437,9 +99121,37 @@ export type LightTickReadingWorkPageEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 )[];
   "next_cursor": string | unknown;
@@ -96279,6 +99991,95 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                               "maxLength": 64
                             }
                           }
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -96872,6 +100673,68 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                           "maximum": 8
                         }
                       }
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                    },
+                    "source_basis": {
+                      "type": "string",
+                      "enum": [
+                        "saved_text",
+                        "feed_excerpt",
+                        "legacy_unknown"
+                      ]
+                    },
+                    "source_units": {
+                      "const": "unicode_code_points"
+                    },
+                    "selected_bytes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 20000
+                    },
+                    "input_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "prompt_version": {
+                      "const": "1.1.0"
+                    },
+                    "prompt_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "guide_format": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "reading-v2",
+                            "detailed-v1"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 },
@@ -96881,6 +100744,104 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                       "type": "string",
                       "maxLength": 64,
                       "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "started_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "finished_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "model_usage": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "input_tokens",
+                        "output_tokens",
+                        "total_tokens",
+                        "cached_input_tokens",
+                        "reasoning_tokens",
+                        "estimated",
+                        "cost_amount",
+                        "cost_currency",
+                        "cost_basis"
+                      ],
+                      "properties": {
+                        "input_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "output_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "total_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "cached_input_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasoning_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "estimated": {
+                          "type": "boolean"
+                        },
+                        "cost_amount": {
+                          "type": "null"
+                        },
+                        "cost_currency": {
+                          "type": "null"
+                        },
+                        "cost_basis": {
+                          "const": "unknown"
+                        }
+                      },
+                      "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
                     },
                     {
                       "type": "null"
@@ -97525,6 +101486,68 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                           "maximum": 8
                         }
                       }
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                    },
+                    "source_basis": {
+                      "type": "string",
+                      "enum": [
+                        "saved_text",
+                        "feed_excerpt",
+                        "legacy_unknown"
+                      ]
+                    },
+                    "source_units": {
+                      "const": "unicode_code_points"
+                    },
+                    "selected_bytes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 20000
+                    },
+                    "input_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "prompt_version": {
+                      "const": "1.1.0"
+                    },
+                    "prompt_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "guide_format": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "reading-v2",
+                            "detailed-v1"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 },
@@ -97542,6 +101565,104 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                 },
                 "has_output": {
                   "type": "boolean"
+                },
+                "started_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "finished_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "model_usage": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "input_tokens",
+                        "output_tokens",
+                        "total_tokens",
+                        "cached_input_tokens",
+                        "reasoning_tokens",
+                        "estimated",
+                        "cost_amount",
+                        "cost_currency",
+                        "cost_basis"
+                      ],
+                      "properties": {
+                        "input_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "output_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "total_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "cached_input_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasoning_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "estimated": {
+                          "type": "boolean"
+                        },
+                        "cost_amount": {
+                          "type": "null"
+                        },
+                        "cost_currency": {
+                          "type": "null"
+                        },
+                        "cost_basis": {
+                          "const": "unknown"
+                        }
+                      },
+                      "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             }
@@ -97697,6 +101818,23 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -97787,8 +101925,36 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 ) | (
 {
@@ -97884,9 +102050,37 @@ export type LightTickReadingWorkAdoptResultEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 );
   "work_id": string;
@@ -98127,8 +102321,161 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                    },
+                    "guide_format": {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
                     }
-                  }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "required": [
+                          "source_range"
+                        ],
+                        "properties": {
+                          "source_range": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "properties": {
+                              "start": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 500000
+                              },
+                              "end": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 500000
+                              }
+                            },
+                            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "paragraph_id": {
+                            "type": "null"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "const": "translation"
+                          },
+                          "paragraph_id": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "paragraph_id"
+                        ]
+                      },
+                      "then": {
+                        "required": [
+                          "source_range"
+                        ],
+                        "properties": {
+                          "source_range": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "properties": {
+                              "start": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 500000
+                              },
+                              "end": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 500000
+                              }
+                            },
+                            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "not": {
+                              "const": "translation"
+                            }
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ]
+                      },
+                      "then": {
+                        "properties": {
+                          "paragraph_id": {
+                            "type": "null"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "kind": {
+                            "not": {
+                              "const": "guide"
+                            }
+                          }
+                        }
+                      },
+                      "then": {
+                        "not": {
+                          "required": [
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "guide_format": {}
+                          }
+                        }
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "object",
@@ -99291,6 +103638,95 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                               "maxLength": 64
                             }
                           }
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -99884,6 +104320,68 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                           "maximum": 8
                         }
                       }
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                    },
+                    "source_basis": {
+                      "type": "string",
+                      "enum": [
+                        "saved_text",
+                        "feed_excerpt",
+                        "legacy_unknown"
+                      ]
+                    },
+                    "source_units": {
+                      "const": "unicode_code_points"
+                    },
+                    "selected_bytes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 20000
+                    },
+                    "input_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "prompt_version": {
+                      "const": "1.1.0"
+                    },
+                    "prompt_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "guide_format": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "reading-v2",
+                            "detailed-v1"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 },
@@ -99893,6 +104391,104 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                       "type": "string",
                       "maxLength": 64,
                       "pattern": "^[a-f0-9]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "started_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "finished_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "model_usage": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "input_tokens",
+                        "output_tokens",
+                        "total_tokens",
+                        "cached_input_tokens",
+                        "reasoning_tokens",
+                        "estimated",
+                        "cost_amount",
+                        "cost_currency",
+                        "cost_basis"
+                      ],
+                      "properties": {
+                        "input_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "output_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "total_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
+                        },
+                        "cached_input_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "reasoning_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2147483647
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "estimated": {
+                          "type": "boolean"
+                        },
+                        "cost_amount": {
+                          "type": "null"
+                        },
+                        "cost_currency": {
+                          "type": "null"
+                        },
+                        "cost_basis": {
+                          "const": "unknown"
+                        }
+                      },
+                      "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
                     },
                     {
                       "type": "null"
@@ -100715,6 +105311,95 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                       "maxLength": 64
                                     }
                                   }
+                                },
+                                "evidence": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "work_id",
+                                    "prompt_version",
+                                    "prompt_sha256",
+                                    "input_sha256",
+                                    "output_sha256",
+                                    "source_basis",
+                                    "source_range",
+                                    "provider",
+                                    "model",
+                                    "guide_format"
+                                  ],
+                                  "properties": {
+                                    "work_id": {
+                                      "type": "string",
+                                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                    },
+                                    "prompt_version": {
+                                      "type": "string",
+                                      "maxLength": 30
+                                    },
+                                    "prompt_sha256": {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{64}$"
+                                    },
+                                    "input_sha256": {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{64}$"
+                                    },
+                                    "output_sha256": {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{64}$"
+                                    },
+                                    "source_basis": {
+                                      "type": "string",
+                                      "enum": [
+                                        "saved_text",
+                                        "feed_excerpt",
+                                        "legacy_unknown"
+                                      ]
+                                    },
+                                    "source_range": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "required": [
+                                        "start",
+                                        "end"
+                                      ],
+                                      "properties": {
+                                        "start": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 500000
+                                        },
+                                        "end": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 500000
+                                        }
+                                      },
+                                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                                    },
+                                    "provider": {
+                                      "type": "string",
+                                      "maxLength": 120
+                                    },
+                                    "model": {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    "guide_format": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "reading-v2",
+                                            "detailed-v1"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
                                 }
                               }
                             },
@@ -101308,6 +105993,68 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                   "maximum": 8
                                 }
                               }
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_units": {
+                              "const": "unicode_code_points"
+                            },
+                            "selected_bytes": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 20000
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "prompt_version": {
+                              "const": "1.1.0"
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           }
                         },
@@ -101317,6 +106064,104 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                               "type": "string",
                               "maxLength": 64,
                               "pattern": "^[a-f0-9]{64}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "started_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "finished_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "model_usage": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "input_tokens",
+                                "output_tokens",
+                                "total_tokens",
+                                "cached_input_tokens",
+                                "reasoning_tokens",
+                                "estimated",
+                                "cost_amount",
+                                "cost_currency",
+                                "cost_basis"
+                              ],
+                              "properties": {
+                                "input_tokens": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "output_tokens": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "total_tokens": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "cached_input_tokens": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2147483647
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "reasoning_tokens": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2147483647
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "estimated": {
+                                  "type": "boolean"
+                                },
+                                "cost_amount": {
+                                  "type": "null"
+                                },
+                                "cost_currency": {
+                                  "type": "null"
+                                },
+                                "cost_basis": {
+                                  "const": "unknown"
+                                }
+                              },
+                              "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
                             },
                             {
                               "type": "null"
@@ -101961,6 +106806,68 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                   "maximum": 8
                                 }
                               }
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_units": {
+                              "const": "unicode_code_points"
+                            },
+                            "selected_bytes": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 20000
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "prompt_version": {
+                              "const": "1.1.0"
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           }
                         },
@@ -101978,6 +106885,104 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                         },
                         "has_output": {
                           "type": "boolean"
+                        },
+                        "started_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "finished_at": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "model_usage": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "input_tokens",
+                                "output_tokens",
+                                "total_tokens",
+                                "cached_input_tokens",
+                                "reasoning_tokens",
+                                "estimated",
+                                "cost_amount",
+                                "cost_currency",
+                                "cost_basis"
+                              ],
+                              "properties": {
+                                "input_tokens": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "output_tokens": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "total_tokens": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 2147483647
+                                },
+                                "cached_input_tokens": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2147483647
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "reasoning_tokens": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2147483647
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "estimated": {
+                                  "type": "boolean"
+                                },
+                                "cost_amount": {
+                                  "type": "null"
+                                },
+                                "cost_currency": {
+                                  "type": "null"
+                                },
+                                "cost_basis": {
+                                  "const": "unknown"
+                                }
+                              },
+                              "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     }
@@ -102338,12 +107343,67 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "kind": unknown;
   "source_id": string;
   "base_revision": number;
-} | {
+} | (
+{
   "kind": "guide" | "translation" | "summary" | "english";
   "article_id": string;
   "content_version": string;
   "paragraph_id": string | unknown;
-} | {
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) & (
+{
+  "kind": "guide" | "translation" | "summary" | "english";
+  "article_id": string;
+  "content_version": string;
+  "paragraph_id": string | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "guide_format"?: "reading-v2" | "detailed-v1";
+}
+) | {
   "kind": unknown;
   "article_id": string;
   "content_version": string;
@@ -102533,6 +107593,23 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -102623,8 +107700,36 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 ) | (
 {
@@ -102753,6 +107858,23 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -102843,8 +107965,36 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 ) | (
 {
@@ -102940,9 +108090,37 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "date": string;
   "target_count": number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+  "source_basis"?: "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_units"?: unknown;
+  "selected_bytes"?: number;
+  "input_sha256"?: string;
+  "prompt_version"?: unknown;
+  "prompt_sha256"?: string;
+  "guide_format"?: (
+"reading-v2" | "detailed-v1"
+) | unknown;
 };
   "output_digest": string | unknown;
   "has_output": boolean;
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 );
   "work_id": string;
@@ -103065,6 +108243,129 @@ export const LightTickReadingMaterialSchema = {
         "created_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "work_id",
+            "prompt_version",
+            "prompt_sha256",
+            "input_sha256",
+            "output_sha256",
+            "source_basis",
+            "source_range",
+            "provider",
+            "model",
+            "guide_format"
+          ],
+          "properties": {
+            "work_id": {
+              "type": "string",
+              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+            },
+            "prompt_version": {
+              "type": "string",
+              "maxLength": 30
+            },
+            "prompt_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "input_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "output_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "source_basis": {
+              "type": "string",
+              "enum": [
+                "saved_text",
+                "feed_excerpt",
+                "legacy_unknown"
+              ]
+            },
+            "source_range": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start",
+                "end"
+              ],
+              "properties": {
+                "start": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500000
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500000
+                }
+              },
+              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+            },
+            "provider": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "model": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "guide_format": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "reading-v2",
+                    "detailed-v1"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "derived_from": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "origin",
+            "work_id"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "origin": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "ai"
+              ]
+            },
+            "work_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
         }
       }
     },
@@ -103104,6 +108405,129 @@ export const LightTickReadingMaterialSchema = {
             "adopted_at": {
               "type": "string",
               "format": "date-time"
+            },
+            "evidence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "work_id",
+                "prompt_version",
+                "prompt_sha256",
+                "input_sha256",
+                "output_sha256",
+                "source_basis",
+                "source_range",
+                "provider",
+                "model",
+                "guide_format"
+              ],
+              "properties": {
+                "work_id": {
+                  "type": "string",
+                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                },
+                "prompt_version": {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                "prompt_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "input_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "output_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "source_basis": {
+                  "type": "string",
+                  "enum": [
+                    "saved_text",
+                    "feed_excerpt",
+                    "legacy_unknown"
+                  ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                },
+                "provider": {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                "model": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "guide_format": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "reading-v2",
+                        "detailed-v1"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "derived_from": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "version",
+                "origin",
+                "work_id"
+              ],
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "origin": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "ai"
+                  ]
+                },
+                "work_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
             }
           }
         },
@@ -103111,6 +108535,27 @@ export const LightTickReadingMaterialSchema = {
           "type": "null"
         }
       ]
+    },
+    "source_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500000
+        }
+      },
+      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
     }
   }
 } as const;
@@ -103123,6 +108568,28 @@ export type LightTickReadingMaterial = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -103131,8 +108598,34 @@ export type LightTickReadingMaterial = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 };
 
 export const LightTickReadingDraftWriteSchema = {
@@ -103178,17 +108671,184 @@ export const LightTickReadingDraftWriteSchema = {
     "text": {
       "type": "string",
       "maxLength": 100000
+    },
+    "source_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500000
+        }
+      },
+      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "source_range"
+        ],
+        "properties": {
+          "source_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500000
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500000
+              }
+            },
+            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paragraph_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "translation"
+          },
+          "paragraph_id": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "kind",
+          "paragraph_id"
+        ]
+      },
+      "then": {
+        "required": [
+          "source_range"
+        ],
+        "properties": {
+          "source_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500000
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500000
+              }
+            },
+            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "not": {
+              "const": "translation"
+            }
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "paragraph_id": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickReadingDraftWrite = {
+export type LightTickReadingDraftWrite = (
+{
   "base_revision": number;
   "content_version": string;
   "kind": "guide" | "translation" | "summary" | "english";
   "paragraph_id": string | unknown;
   "text": string;
+  "source_range"?: {
+  "start": number;
+  "end": number;
 };
+}
+) & (
+{
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "text": string;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+}
+) & (
+{
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "text": string;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+}
+) & (
+{
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "text": string;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+}
+);
 
 export const LightTickReadingAdoptWriteSchema = {
   "type": "object",
@@ -103234,17 +108894,184 @@ export const LightTickReadingAdoptWriteSchema = {
       "type": "integer",
       "minimum": 1,
       "maximum": 2147483647
+    },
+    "source_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500000
+        }
+      },
+      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "source_range"
+        ],
+        "properties": {
+          "source_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500000
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500000
+              }
+            },
+            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paragraph_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "translation"
+          },
+          "paragraph_id": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "kind",
+          "paragraph_id"
+        ]
+      },
+      "then": {
+        "required": [
+          "source_range"
+        ],
+        "properties": {
+          "source_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500000
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500000
+              }
+            },
+            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "not": {
+              "const": "translation"
+            }
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "paragraph_id": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type LightTickReadingAdoptWrite = {
+export type LightTickReadingAdoptWrite = (
+{
   "base_revision": number;
   "content_version": string;
   "kind": "guide" | "translation" | "summary" | "english";
   "paragraph_id": string | unknown;
   "draft_version": number;
+  "source_range"?: {
+  "start": number;
+  "end": number;
 };
+}
+) & (
+{
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft_version": number;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+}
+) & (
+{
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft_version": number;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+}
+) & (
+{
+  "base_revision": number;
+  "content_version": string;
+  "kind": "guide" | "translation" | "summary" | "english";
+  "paragraph_id": string | unknown;
+  "draft_version": number;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
+}
+);
 
 export const LightTickReadingContentSchema = {
   "type": "object",
@@ -103961,6 +109788,129 @@ export const LightTickReadingArticleSchema = {
               "created_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "evidence": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "work_id",
+                  "prompt_version",
+                  "prompt_sha256",
+                  "input_sha256",
+                  "output_sha256",
+                  "source_basis",
+                  "source_range",
+                  "provider",
+                  "model",
+                  "guide_format"
+                ],
+                "properties": {
+                  "work_id": {
+                    "type": "string",
+                    "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                  },
+                  "prompt_version": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "prompt_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "input_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "output_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "source_basis": {
+                    "type": "string",
+                    "enum": [
+                      "saved_text",
+                      "feed_excerpt",
+                      "legacy_unknown"
+                    ]
+                  },
+                  "source_range": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "start",
+                      "end"
+                    ],
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 500000
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500000
+                      }
+                    },
+                    "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                  },
+                  "provider": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "model": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "guide_format": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "reading-v2",
+                          "detailed-v1"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "derived_from": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version",
+                  "origin",
+                  "work_id"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "ai"
+                    ]
+                  },
+                  "work_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
               }
             }
           },
@@ -104000,6 +109950,129 @@ export const LightTickReadingArticleSchema = {
                   "adopted_at": {
                     "type": "string",
                     "format": "date-time"
+                  },
+                  "evidence": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "work_id",
+                      "prompt_version",
+                      "prompt_sha256",
+                      "input_sha256",
+                      "output_sha256",
+                      "source_basis",
+                      "source_range",
+                      "provider",
+                      "model",
+                      "guide_format"
+                    ],
+                    "properties": {
+                      "work_id": {
+                        "type": "string",
+                        "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                      },
+                      "prompt_version": {
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      "prompt_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "input_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "output_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "source_basis": {
+                        "type": "string",
+                        "enum": [
+                          "saved_text",
+                          "feed_excerpt",
+                          "legacy_unknown"
+                        ]
+                      },
+                      "source_range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "start",
+                          "end"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500000
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500000
+                          }
+                        },
+                        "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "model": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "guide_format": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "reading-v2",
+                              "detailed-v1"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "derived_from": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "version",
+                      "origin",
+                      "work_id"
+                    ],
+                    "properties": {
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "origin": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "ai"
+                        ]
+                      },
+                      "work_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
                   }
                 }
               },
@@ -104007,6 +110080,27 @@ export const LightTickReadingArticleSchema = {
                 "type": "null"
               }
             ]
+          },
+          "source_range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 500000
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500000
+              }
+            },
+            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
           }
         }
       }
@@ -104161,6 +110255,28 @@ export type LightTickReadingArticle = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -104169,8 +110285,34 @@ export type LightTickReadingArticle = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -104902,6 +111044,129 @@ export const LightTickReadingPageSchema = {
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "work_id",
+                        "prompt_version",
+                        "prompt_sha256",
+                        "input_sha256",
+                        "output_sha256",
+                        "source_basis",
+                        "source_range",
+                        "provider",
+                        "model",
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "work_id": {
+                          "type": "string",
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "output_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "derived_from": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "origin",
+                        "work_id"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "work_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 },
@@ -104941,6 +111206,129 @@ export const LightTickReadingPageSchema = {
                         "adopted_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -104948,6 +111336,27 @@ export const LightTickReadingPageSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                 }
               }
             }
@@ -105120,6 +111529,28 @@ export type LightTickReadingPage = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -105128,8 +111559,34 @@ export type LightTickReadingPage = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -105543,6 +112000,129 @@ export const LightTickReadingHistoryPageSchema = {
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "work_id",
+                        "prompt_version",
+                        "prompt_sha256",
+                        "input_sha256",
+                        "output_sha256",
+                        "source_basis",
+                        "source_range",
+                        "provider",
+                        "model",
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "work_id": {
+                          "type": "string",
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "output_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "derived_from": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "origin",
+                        "work_id"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "work_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 },
@@ -105582,6 +112162,129 @@ export const LightTickReadingHistoryPageSchema = {
                         "adopted_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -105589,6 +112292,27 @@ export const LightTickReadingHistoryPageSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                 }
               }
             }
@@ -105759,6 +112483,28 @@ export type LightTickReadingHistoryPage = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -105767,8 +112513,34 @@ export type LightTickReadingHistoryPage = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -106884,6 +113656,95 @@ export const LightTickReadingExportSchema = {
                         "maxLength": 64
                       }
                     }
+                  },
+                  "evidence": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "work_id",
+                      "prompt_version",
+                      "prompt_sha256",
+                      "input_sha256",
+                      "output_sha256",
+                      "source_basis",
+                      "source_range",
+                      "provider",
+                      "model",
+                      "guide_format"
+                    ],
+                    "properties": {
+                      "work_id": {
+                        "type": "string",
+                        "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                      },
+                      "prompt_version": {
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      "prompt_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "input_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "output_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "source_basis": {
+                        "type": "string",
+                        "enum": [
+                          "saved_text",
+                          "feed_excerpt",
+                          "legacy_unknown"
+                        ]
+                      },
+                      "source_range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "start",
+                          "end"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500000
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500000
+                          }
+                        },
+                        "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "model": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "guide_format": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "reading-v2",
+                              "detailed-v1"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
                   }
                 }
               },
@@ -107701,8 +114562,228 @@ export const LightTickReadingExportSchema = {
                     "maximum": 8
                   }
                 }
+              },
+              "source_range": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500000
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500000
+                  }
+                },
+                "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+              },
+              "ai_context": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "prompt_version",
+                  "guide_format",
+                  "source_basis",
+                  "source_range",
+                  "input_sha256",
+                  "selected_bytes",
+                  "prompt_sha256",
+                  "messages"
+                ],
+                "properties": {
+                  "prompt_version": {
+                    "const": "1.1.0"
+                  },
+                  "guide_format": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "reading-v2",
+                          "detailed-v1"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source_basis": {
+                    "type": "string",
+                    "enum": [
+                      "saved_text",
+                      "feed_excerpt",
+                      "legacy_unknown"
+                    ]
+                  },
+                  "source_range": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "start",
+                      "end"
+                    ],
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 500000
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500000
+                      }
+                    },
+                    "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                  },
+                  "input_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "selected_bytes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20000
+                  },
+                  "prompt_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "messages": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "system",
+                            "user"
+                          ]
+                        },
+                        "content": {
+                          "type": "string",
+                          "maxLength": 24000
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_usage": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input_tokens",
+                  "output_tokens",
+                  "total_tokens",
+                  "cached_input_tokens",
+                  "reasoning_tokens",
+                  "estimated",
+                  "cost_amount",
+                  "cost_currency",
+                  "cost_basis"
+                ],
+                "properties": {
+                  "input_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "output_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "total_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647
+                  },
+                  "cached_input_tokens": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reasoning_tokens": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "estimated": {
+                    "type": "boolean"
+                  },
+                  "cost_amount": {
+                    "type": "null"
+                  },
+                  "cost_currency": {
+                    "type": "null"
+                  },
+                  "cost_basis": {
+                    "const": "unknown"
+                  }
+                },
+                "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }
@@ -108104,6 +115185,129 @@ export const LightTickReadingExportSchema = {
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "work_id",
+                        "prompt_version",
+                        "prompt_sha256",
+                        "input_sha256",
+                        "output_sha256",
+                        "source_basis",
+                        "source_range",
+                        "provider",
+                        "model",
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "work_id": {
+                          "type": "string",
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "output_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "derived_from": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "origin",
+                        "work_id"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "work_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 },
@@ -108143,6 +115347,129 @@ export const LightTickReadingExportSchema = {
                         "adopted_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -108150,6 +115477,27 @@ export const LightTickReadingExportSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                 }
               }
             }
@@ -108637,6 +115985,129 @@ export const LightTickReadingExportSchema = {
                     "created_at": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "work_id",
+                        "prompt_version",
+                        "prompt_sha256",
+                        "input_sha256",
+                        "output_sha256",
+                        "source_basis",
+                        "source_range",
+                        "provider",
+                        "model",
+                        "guide_format"
+                      ],
+                      "properties": {
+                        "work_id": {
+                          "type": "string",
+                          "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                        },
+                        "prompt_version": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "prompt_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "input_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "output_sha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "source_basis": {
+                          "type": "string",
+                          "enum": [
+                            "saved_text",
+                            "feed_excerpt",
+                            "legacy_unknown"
+                          ]
+                        },
+                        "source_range": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 500000
+                            },
+                            "end": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 500000
+                            }
+                          },
+                          "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                        },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "model": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "guide_format": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reading-v2",
+                                "detailed-v1"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "derived_from": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "version",
+                        "origin",
+                        "work_id"
+                      ],
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 2147483647
+                        },
+                        "origin": {
+                          "type": "string",
+                          "enum": [
+                            "manual",
+                            "ai"
+                          ]
+                        },
+                        "work_id": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
                     }
                   }
                 },
@@ -108676,6 +116147,129 @@ export const LightTickReadingExportSchema = {
                         "adopted_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -108683,6 +116277,27 @@ export const LightTickReadingExportSchema = {
                       "type": "null"
                     }
                   ]
+                },
+                "source_range": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "start",
+                    "end"
+                  ],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 500000
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 500000
+                    }
+                  },
+                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                 }
               }
             }
@@ -109822,6 +117437,23 @@ export type LightTickReadingExport = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -109947,7 +117579,46 @@ export type LightTickReadingExport = {
   "automatic": boolean;
   "target_count"?: number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
 };
+  "ai_context"?: {
+  "prompt_version": unknown;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "input_sha256": string;
+  "selected_bytes": number;
+  "prompt_sha256": string;
+  "messages": (
+{
+  "role": "system" | "user";
+  "content": string;
+}
+)[];
+};
+};
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 )[];
   "format_version": number;
@@ -110009,6 +117680,28 @@ export type LightTickReadingExport = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -110017,8 +117710,34 @@ export type LightTickReadingExport = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -110089,6 +117808,28 @@ export type LightTickReadingExport = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -110097,8 +117838,34 @@ export type LightTickReadingExport = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -110684,6 +118451,129 @@ export const LightTickReadingArticleEnvelopeSchema = {
                   "created_at": {
                     "type": "string",
                     "format": "date-time"
+                  },
+                  "evidence": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "work_id",
+                      "prompt_version",
+                      "prompt_sha256",
+                      "input_sha256",
+                      "output_sha256",
+                      "source_basis",
+                      "source_range",
+                      "provider",
+                      "model",
+                      "guide_format"
+                    ],
+                    "properties": {
+                      "work_id": {
+                        "type": "string",
+                        "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                      },
+                      "prompt_version": {
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      "prompt_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "input_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "output_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "source_basis": {
+                        "type": "string",
+                        "enum": [
+                          "saved_text",
+                          "feed_excerpt",
+                          "legacy_unknown"
+                        ]
+                      },
+                      "source_range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "start",
+                          "end"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500000
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500000
+                          }
+                        },
+                        "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                      },
+                      "provider": {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      "model": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "guide_format": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "reading-v2",
+                              "detailed-v1"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "derived_from": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "version",
+                      "origin",
+                      "work_id"
+                    ],
+                    "properties": {
+                      "version": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 2147483647
+                      },
+                      "origin": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "ai"
+                        ]
+                      },
+                      "work_id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
                   }
                 }
               },
@@ -110723,6 +118613,129 @@ export const LightTickReadingArticleEnvelopeSchema = {
                       "adopted_at": {
                         "type": "string",
                         "format": "date-time"
+                      },
+                      "evidence": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "work_id",
+                          "prompt_version",
+                          "prompt_sha256",
+                          "input_sha256",
+                          "output_sha256",
+                          "source_basis",
+                          "source_range",
+                          "provider",
+                          "model",
+                          "guide_format"
+                        ],
+                        "properties": {
+                          "work_id": {
+                            "type": "string",
+                            "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 30
+                          },
+                          "prompt_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "input_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "output_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "source_basis": {
+                            "type": "string",
+                            "enum": [
+                              "saved_text",
+                              "feed_excerpt",
+                              "legacy_unknown"
+                            ]
+                          },
+                          "source_range": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "properties": {
+                              "start": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 500000
+                              },
+                              "end": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 500000
+                              }
+                            },
+                            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "guide_format": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "reading-v2",
+                                  "detailed-v1"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "derived_from": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "version",
+                          "origin",
+                          "work_id"
+                        ],
+                        "properties": {
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "origin": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "ai"
+                            ]
+                          },
+                          "work_id": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
                       }
                     }
                   },
@@ -110730,6 +118743,27 @@ export const LightTickReadingArticleEnvelopeSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "source_range": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500000
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500000
+                  }
+                },
+                "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
               }
             }
           }
@@ -110893,6 +118927,28 @@ export type LightTickReadingArticleEnvelope = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -110901,8 +118957,34 @@ export type LightTickReadingArticleEnvelope = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -111335,6 +119417,129 @@ export const LightTickReadingPageEnvelopeSchema = {
                         "created_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -111374,6 +119579,129 @@ export const LightTickReadingPageEnvelopeSchema = {
                             "adopted_at": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "work_id",
+                                "prompt_version",
+                                "prompt_sha256",
+                                "input_sha256",
+                                "output_sha256",
+                                "source_basis",
+                                "source_range",
+                                "provider",
+                                "model",
+                                "guide_format"
+                              ],
+                              "properties": {
+                                "work_id": {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                "prompt_version": {
+                                  "type": "string",
+                                  "maxLength": 30
+                                },
+                                "prompt_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "input_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "output_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "saved_text",
+                                    "feed_excerpt",
+                                    "legacy_unknown"
+                                  ]
+                                },
+                                "source_range": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "properties": {
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 500000
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 500000
+                                    }
+                                  },
+                                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                                },
+                                "provider": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "maxLength": 200
+                                },
+                                "guide_format": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "reading-v2",
+                                        "detailed-v1"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "derived_from": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "version",
+                                "origin",
+                                "work_id"
+                              ],
+                              "properties": {
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "origin": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "ai"
+                                  ]
+                                },
+                                "work_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
                             }
                           }
                         },
@@ -111381,6 +119709,27 @@ export const LightTickReadingPageEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                     }
                   }
                 }
@@ -111562,6 +119911,28 @@ export type LightTickReadingPageEnvelope = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -111570,8 +119941,34 @@ export type LightTickReadingPageEnvelope = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -112007,6 +120404,129 @@ export const LightTickReadingHistoryPageEnvelopeSchema = {
                         "created_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -112046,6 +120566,129 @@ export const LightTickReadingHistoryPageEnvelopeSchema = {
                             "adopted_at": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "work_id",
+                                "prompt_version",
+                                "prompt_sha256",
+                                "input_sha256",
+                                "output_sha256",
+                                "source_basis",
+                                "source_range",
+                                "provider",
+                                "model",
+                                "guide_format"
+                              ],
+                              "properties": {
+                                "work_id": {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                "prompt_version": {
+                                  "type": "string",
+                                  "maxLength": 30
+                                },
+                                "prompt_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "input_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "output_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "saved_text",
+                                    "feed_excerpt",
+                                    "legacy_unknown"
+                                  ]
+                                },
+                                "source_range": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "properties": {
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 500000
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 500000
+                                    }
+                                  },
+                                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                                },
+                                "provider": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "maxLength": 200
+                                },
+                                "guide_format": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "reading-v2",
+                                        "detailed-v1"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "derived_from": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "version",
+                                "origin",
+                                "work_id"
+                              ],
+                              "properties": {
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "origin": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "ai"
+                                  ]
+                                },
+                                "work_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
                             }
                           }
                         },
@@ -112053,6 +120696,27 @@ export const LightTickReadingHistoryPageEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                     }
                   }
                 }
@@ -112232,6 +120896,28 @@ export type LightTickReadingHistoryPageEnvelope = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -112240,8 +120926,34 @@ export type LightTickReadingHistoryPageEnvelope = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -113379,6 +122091,95 @@ export const LightTickReadingExportEnvelopeSchema = {
                             "maxLength": 64
                           }
                         }
+                      },
+                      "evidence": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "work_id",
+                          "prompt_version",
+                          "prompt_sha256",
+                          "input_sha256",
+                          "output_sha256",
+                          "source_basis",
+                          "source_range",
+                          "provider",
+                          "model",
+                          "guide_format"
+                        ],
+                        "properties": {
+                          "work_id": {
+                            "type": "string",
+                            "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                          },
+                          "prompt_version": {
+                            "type": "string",
+                            "maxLength": 30
+                          },
+                          "prompt_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "input_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "output_sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "source_basis": {
+                            "type": "string",
+                            "enum": [
+                              "saved_text",
+                              "feed_excerpt",
+                              "legacy_unknown"
+                            ]
+                          },
+                          "source_range": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "properties": {
+                              "start": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 500000
+                              },
+                              "end": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 500000
+                              }
+                            },
+                            "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                          },
+                          "provider": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "model": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "guide_format": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "reading-v2",
+                                  "detailed-v1"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
                       }
                     }
                   },
@@ -114196,8 +122997,228 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "maximum": 8
                       }
                     }
+                  },
+                  "source_range": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "start",
+                      "end"
+                    ],
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 500000
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 500000
+                      }
+                    },
+                    "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                  },
+                  "ai_context": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "prompt_version",
+                      "guide_format",
+                      "source_basis",
+                      "source_range",
+                      "input_sha256",
+                      "selected_bytes",
+                      "prompt_sha256",
+                      "messages"
+                    ],
+                    "properties": {
+                      "prompt_version": {
+                        "const": "1.1.0"
+                      },
+                      "guide_format": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "reading-v2",
+                              "detailed-v1"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "source_basis": {
+                        "type": "string",
+                        "enum": [
+                          "saved_text",
+                          "feed_excerpt",
+                          "legacy_unknown"
+                        ]
+                      },
+                      "source_range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "start",
+                          "end"
+                        ],
+                        "properties": {
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 500000
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500000
+                          }
+                        },
+                        "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                      },
+                      "input_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "selected_bytes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 20000
+                      },
+                      "prompt_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "messages": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "role",
+                            "content"
+                          ],
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "enum": [
+                                "system",
+                                "user"
+                              ]
+                            },
+                            "content": {
+                              "type": "string",
+                              "maxLength": 24000
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
+              },
+              "started_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "model_usage": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "input_tokens",
+                      "output_tokens",
+                      "total_tokens",
+                      "cached_input_tokens",
+                      "reasoning_tokens",
+                      "estimated",
+                      "cost_amount",
+                      "cost_currency",
+                      "cost_basis"
+                    ],
+                    "properties": {
+                      "input_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "output_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "total_tokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483647
+                      },
+                      "cached_input_tokens": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reasoning_tokens": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "estimated": {
+                        "type": "boolean"
+                      },
+                      "cost_amount": {
+                        "type": "null"
+                      },
+                      "cost_currency": {
+                        "type": "null"
+                      },
+                      "cost_basis": {
+                        "const": "unknown"
+                      }
+                    },
+                    "description": "Normalized provider/estimated token facts, not a bill. Missing historical facts stay absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency remain null; platform caps are not charges."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -114599,6 +123620,129 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "created_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -114638,6 +123782,129 @@ export const LightTickReadingExportEnvelopeSchema = {
                             "adopted_at": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "work_id",
+                                "prompt_version",
+                                "prompt_sha256",
+                                "input_sha256",
+                                "output_sha256",
+                                "source_basis",
+                                "source_range",
+                                "provider",
+                                "model",
+                                "guide_format"
+                              ],
+                              "properties": {
+                                "work_id": {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                "prompt_version": {
+                                  "type": "string",
+                                  "maxLength": 30
+                                },
+                                "prompt_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "input_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "output_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "saved_text",
+                                    "feed_excerpt",
+                                    "legacy_unknown"
+                                  ]
+                                },
+                                "source_range": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "properties": {
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 500000
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 500000
+                                    }
+                                  },
+                                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                                },
+                                "provider": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "maxLength": 200
+                                },
+                                "guide_format": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "reading-v2",
+                                        "detailed-v1"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "derived_from": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "version",
+                                "origin",
+                                "work_id"
+                              ],
+                              "properties": {
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "origin": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "ai"
+                                  ]
+                                },
+                                "work_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
                             }
                           }
                         },
@@ -114645,6 +123912,27 @@ export const LightTickReadingExportEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                     }
                   }
                 }
@@ -115132,6 +124420,129 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "created_at": {
                           "type": "string",
                           "format": "date-time"
+                        },
+                        "evidence": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "work_id",
+                            "prompt_version",
+                            "prompt_sha256",
+                            "input_sha256",
+                            "output_sha256",
+                            "source_basis",
+                            "source_range",
+                            "provider",
+                            "model",
+                            "guide_format"
+                          ],
+                          "properties": {
+                            "work_id": {
+                              "type": "string",
+                              "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                            },
+                            "prompt_version": {
+                              "type": "string",
+                              "maxLength": 30
+                            },
+                            "prompt_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "input_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "output_sha256": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "source_basis": {
+                              "type": "string",
+                              "enum": [
+                                "saved_text",
+                                "feed_excerpt",
+                                "legacy_unknown"
+                              ]
+                            },
+                            "source_range": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start",
+                                "end"
+                              ],
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 500000
+                                },
+                                "end": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 500000
+                                }
+                              },
+                              "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                            },
+                            "provider": {
+                              "type": "string",
+                              "maxLength": 120
+                            },
+                            "model": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "guide_format": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading-v2",
+                                    "detailed-v1"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "derived_from": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "version",
+                            "origin",
+                            "work_id"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 2147483647
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "manual",
+                                "ai"
+                              ]
+                            },
+                            "work_id": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     },
@@ -115171,6 +124582,129 @@ export const LightTickReadingExportEnvelopeSchema = {
                             "adopted_at": {
                               "type": "string",
                               "format": "date-time"
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "work_id",
+                                "prompt_version",
+                                "prompt_sha256",
+                                "input_sha256",
+                                "output_sha256",
+                                "source_basis",
+                                "source_range",
+                                "provider",
+                                "model",
+                                "guide_format"
+                              ],
+                              "properties": {
+                                "work_id": {
+                                  "type": "string",
+                                  "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                },
+                                "prompt_version": {
+                                  "type": "string",
+                                  "maxLength": 30
+                                },
+                                "prompt_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "input_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "output_sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "source_basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "saved_text",
+                                    "feed_excerpt",
+                                    "legacy_unknown"
+                                  ]
+                                },
+                                "source_range": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "properties": {
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 500000
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 500000
+                                    }
+                                  },
+                                  "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
+                                },
+                                "provider": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "maxLength": 200
+                                },
+                                "guide_format": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "reading-v2",
+                                        "detailed-v1"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "derived_from": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "version",
+                                "origin",
+                                "work_id"
+                              ],
+                              "properties": {
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 2147483647
+                                },
+                                "origin": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "ai"
+                                  ]
+                                },
+                                "work_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^readwork-[a-zA-Z0-9_-]{1,119}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              }
                             }
                           }
                         },
@@ -115178,6 +124712,27 @@ export const LightTickReadingExportEnvelopeSchema = {
                           "type": "null"
                         }
                       ]
+                    },
+                    "source_range": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 500000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500000
+                        }
+                      },
+                      "description": "Absolute Unicode-code-point [start,end) source range. End must exceed start and fit the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated."
                     }
                   }
                 }
@@ -116326,6 +125881,23 @@ export type LightTickReadingExportEnvelope = {
   "ranking_version": string;
   "scope_digest": string;
 };
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
 }
 ) | unknown;
   "adopted": {
@@ -116451,7 +126023,46 @@ export type LightTickReadingExportEnvelope = {
   "automatic": boolean;
   "target_count"?: number;
 };
+  "source_range"?: {
+  "start": number;
+  "end": number;
 };
+  "ai_context"?: {
+  "prompt_version": unknown;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "input_sha256": string;
+  "selected_bytes": number;
+  "prompt_sha256": string;
+  "messages": (
+{
+  "role": "system" | "user";
+  "content": string;
+}
+)[];
+};
+};
+  "started_at"?: string | unknown;
+  "finished_at"?: string | unknown;
+  "model_usage"?: (
+{
+  "input_tokens": number;
+  "output_tokens": number;
+  "total_tokens": number;
+  "cached_input_tokens": number | unknown;
+  "reasoning_tokens": number | unknown;
+  "estimated": boolean;
+  "cost_amount": unknown;
+  "cost_currency": unknown;
+  "cost_basis": unknown;
+}
+) | unknown;
 }
 )[];
   "format_version": number;
@@ -116513,6 +126124,28 @@ export type LightTickReadingExportEnvelope = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -116521,8 +126154,34 @@ export type LightTickReadingExportEnvelope = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -116593,6 +126252,28 @@ export type LightTickReadingExportEnvelope = {
   "text": string;
   "origin": "manual" | "ai";
   "created_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 };
   "adopted": (
 {
@@ -116601,8 +126282,34 @@ export type LightTickReadingExportEnvelope = {
   "origin": "manual" | "ai";
   "created_at": string;
   "adopted_at": string;
+  "evidence"?: {
+  "work_id": string;
+  "prompt_version": string;
+  "prompt_sha256": string;
+  "input_sha256": string;
+  "output_sha256": string;
+  "source_basis": "saved_text" | "feed_excerpt" | "legacy_unknown";
+  "source_range": {
+  "start": number;
+  "end": number;
+};
+  "provider": string;
+  "model": string;
+  "guide_format": (
+"reading-v2" | "detailed-v1"
+) | unknown;
+};
+  "derived_from"?: {
+  "version": number;
+  "origin": "manual" | "ai";
+  "work_id": string | unknown;
+};
 }
 ) | unknown;
+  "source_range"?: {
+  "start": number;
+  "end": number;
+};
 }
 )[];
   "provenance"?: {
@@ -191417,6 +201124,8 @@ export const GeneratedPublicContractNames = [
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",
   "LightTickPushProvider",
+  "LightTickReadingAIEvidence",
+  "LightTickReadingAISnapshot",
   "LightTickReadingAdoptWrite",
   "LightTickReadingArticle",
   "LightTickReadingArticleEnvelope",
@@ -191465,6 +201174,7 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingImport",
   "LightTickReadingLifecycleWrite",
   "LightTickReadingMaterial",
+  "LightTickReadingModelUsage",
   "LightTickReadingPage",
   "LightTickReadingPageEnvelope",
   "LightTickReadingPositionWrite",
@@ -191497,6 +201207,7 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingSourceOption",
   "LightTickReadingSourcePage",
   "LightTickReadingSourcePageEnvelope",
+  "LightTickReadingSourceRange",
   "LightTickReadingSourceWrite",
   "LightTickReadingVocabularyAdd",
   "LightTickReadingVocabularyDelete",

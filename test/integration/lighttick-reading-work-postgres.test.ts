@@ -1,3 +1,4 @@
+import {exerciseReadingAIParity,readingAIParityOwner} from "../support/reading-ai-parity-acceptance.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Pool } from "pg";
@@ -187,4 +188,12 @@ test("reading source/work original receipts, AI drafts, atomic import, rollback 
     await repo.deleteOwnerData(o);
     await pool.end();
   }
+});
+
+test("PostgreSQL reading AI snapshots/Unicode ranges/evidence/usage and independent adopted histories survive rollback and reconnect",async()=>{
+ await runPostgresMigrations({connectionString:dsn,log:()=>{}});const pool=new Pool({connectionString:dsn}),repo=new PostgresLightTickRepository(pool);
+ try{await repo.deleteOwnerData(readingAIParityOwner);const result=await exerciseReadingAIParity(repo),next=new PostgresLightTickRepository(pool);const saved=(await next.reading.get(readingAIParityOwner,result.article.id))!;assert.equal(saved.materials!.filter(m=>m.kind==="summary").length,2);assert.equal(saved.materials!.find(m=>m.kind==="summary"&&m.source_range?.start===0)!.adopted!.version,2);
+ const original=(await next.readingWork.list(readingAIParityOwner,"",20))[0];assert.equal(original.input.ai_context!.prompt_version,"1.1.0");assert.equal(original.model_usage!.estimated,true);
+ const service=new ReadingService(next);await assert.rejects(next.transaction(readingAIParityOwner,async()=>{await service.write(readingAIParityOwner,saved.id,"draft",{base_revision:saved.revision,content_version:saved.content_version,kind:"summary",paragraph_id:null,source_range:{start:300,end:500},text:"rolled-back input"},"reading-ai-pg-rollback");throw Error("rollback AI material");}),/rollback AI material/);assert.deepEqual((await next.reading.get(readingAIParityOwner,saved.id))!.materials,saved.materials);
+ }finally{await repo.deleteOwnerData(readingAIParityOwner);await pool.end();}
 });

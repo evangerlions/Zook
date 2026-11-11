@@ -1,3 +1,4 @@
+import type { ReadingAIEvidence } from "./reading-ai.types.ts";
 import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import { assertReadingJSON } from "./reading-json-safe.ts";
 import { writeReadingFeedback } from "./reading-feedback.ts";
@@ -266,6 +267,7 @@ export class ReadingService {
     key: string,
     materialOrigin: "manual" | "ai" = "manual",
     provenance?: ReadingProvenance,
+    materialEvidence?: ReadingAIEvidence,
   ) {
     articleId(id);
     this.key(key);
@@ -283,7 +285,11 @@ export class ReadingService {
     )
       fail(422, "阅读操作无效。");
     // Freeze before waiting for the owner lock: the receipt fingerprints the actual intent.
-    const body = structuredClone(object(raw));
+    const body = structuredClone(object(raw)),
+      frozenEvidence = materialEvidence
+        ? structuredClone(materialEvidence)
+        : undefined,
+      frozenProvenance = provenance ? structuredClone(provenance) : undefined;
     assertReadingJSON(body);
     const base = integer(body.base_revision, 0, 2147483646);
     const hash = digest({
@@ -291,7 +297,8 @@ export class ReadingService {
       action,
       body,
       ...(materialOrigin === "ai" ? { materialOrigin } : {}),
-      ...(provenance ? { provenance } : {}),
+      ...(frozenProvenance ? { provenance: frozenProvenance } : {}),
+      ...(frozenEvidence ? { materialEvidence: frozenEvidence } : {}),
     });
     return this.repo.transaction(o, async () => {
       await this.authorize();
@@ -336,7 +343,7 @@ export class ReadingService {
             read_at: null,
             positions: {},
           },
-          provenance: provenance ?? {
+          provenance: frozenProvenance ?? {
             kind: "manual_import",
             work_id: null,
             source_id: null,
@@ -391,6 +398,7 @@ export class ReadingService {
             action === "adopt",
             now,
             materialOrigin,
+            frozenEvidence,
           );
         } else {
           keys(body, ["base_revision"]);

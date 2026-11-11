@@ -1,3 +1,12 @@
+import { assertReadingJSON } from "./reading-json-safe.ts";
+import type { ReadingModelUsage } from "./reading-ai.types.ts";
+import {
+  freezeReadingAI,
+  readingTextSHA,
+  readingModelUsage,
+  validateReadingGuide,
+} from "./reading-ai-snapshot.ts";
+import { digest } from "../learning/native-learning.validation.ts";
 import { pruneExpiredReadingBackups } from "./reading-backup-retention.ts";
 import { ReadingScheduleService } from "./reading-schedule.service.ts";
 import { validateReadingRecommendation } from "./reading-recommendation-context.ts";
@@ -126,7 +135,10 @@ export class ReadingWorkRunner {
         throw Error("READING_CONTEXT_STALE");
     }
     if (row.input.article_id) {
-      const article = await this.repo.reading.get(row, row.input.article_id);
+      const article = await this.repo.reading.reference(
+        row,
+        row.input.article_id,
+      );
       if (
         !article ||
         article.archived ||
@@ -165,6 +177,9 @@ export class ReadingWorkRunner {
         ...old,
         revision: old.revision + 1,
         status: "running",
+        started_at: now,
+        finished_at: null,
+        model_usage: null,
         attempt: old.attempt + 1,
         fence: randomUUID(),
         lease_until: new Date(
@@ -203,11 +218,14 @@ export class ReadingWorkRunner {
           checking = false;
         });
     }, 1000);
+    let modelUsage: ReadingModelUsage | null = null;
     let output: ReadingWork["output"] = null,
       error_code: string | null = null;
     try {
       await this.valid(row);
-      const operation = this.perform(row, controller.signal);
+      const operation = this.perform(row, controller.signal, (value) => {
+        modelUsage = value;
+      });
       output = await Promise.race([
         operation,
         new Promise<never>((_, reject) => {
@@ -264,6 +282,8 @@ export class ReadingWorkRunner {
         revision: current.revision + 1,
         status: error_code ? "failed" : "succeeded",
         output: error_code ? null : output,
+        finished_at: this.service.clock().toISOString(),
+        model_usage: modelUsage,
         error_code,
         fence: null,
         lease_until: null,
@@ -276,6 +296,7 @@ export class ReadingWorkRunner {
   async perform(
     row: ReadingWork,
     signal: AbortSignal,
+    onUsage: (value: ReadingModelUsage | null) => void = () => {},
   ): Promise<NonNullable<ReadingWork["output"]>> {
     if (row.kind === "recommend")
       return performReadingRecommendation(this, row, signal);
@@ -289,6 +310,22 @@ export class ReadingWorkRunner {
         await this.fetchDocument(row.input.url!, signal),
         signal,
       );
+    if (row.input.ai_context) {
+      const original = await this.repo.reading.get(row, row.input.article_id!);
+      if (!original) throw Error("READING_CONTEXT_STALE");
+      const frozen = freezeReadingAI(
+        original,
+        row.kind,
+        row.input.paragraph_id,
+        row.input.source_range,
+        row.input.ai_context.guide_format ?? undefined,
+      );
+      if (
+        frozen.text !== row.input.text ||
+        digest(frozen.snapshot) !== digest(row.input.ai_context)
+      )
+        throw Error("READING_CONTEXT_STALE");
+    }
     const sceneName = ("reading_" + row.kind) as LightTickAiSceneName,
       scene = await this.resolveScene(sceneName),
       hard = LIGHTTICK_AI_SCENES[sceneName];
@@ -298,8 +335,20 @@ export class ReadingWorkRunner {
         prompts[row.kind] +
         "\n选定原文（JSON字符串）=" +
         JSON.stringify(row.input.text);
+    const snapshot = row.input.ai_context,
+      messages = snapshot?.messages ?? [
+        { role: "system" as const, content: system },
+        { role: "user" as const, content: prompt },
+      ];
     if (
-      Buffer.byteLength(system + prompt) >
+      snapshot &&
+      (snapshot.prompt_version !== "1.1.0" ||
+        digest(messages) !== snapshot.prompt_sha256 ||
+        readingTextSHA(row.input.text ?? "") !== snapshot.input_sha256)
+    )
+      throw Error("READING_CONTEXT_STALE");
+    if (
+      messages.reduce((n, m) => n + Buffer.byteLength(m.content), 0) >
       Math.min(scene.maxContextTokens, hard.maxContextTokens)
     )
       fail(413, "选定原文超过当前模型场景范围，请缩小范围。");
@@ -309,10 +358,7 @@ export class ReadingWorkRunner {
     ]);
     const complete = this.llm.complete({
       modelKey: scene.modelAlias,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: prompt },
-      ],
+      messages,
       temperature: 0.2,
       maxTokens: Math.min(scene.maxOutputTokens, hard.maxOutputTokens),
       signal: scoped,
@@ -335,11 +381,31 @@ export class ReadingWorkRunner {
       scoped.removeEventListener("abort", abort);
     }
     signal.throwIfAborted();
+    onUsage(readingModelUsage(result.usage));
+    const output = text(result.text, 100000, true);
+    assertReadingJSON({ text: output });
+    if (snapshot?.guide_format === "reading-v2") validateReadingGuide(output);
     return {
-      text: text(result.text, 100000, true),
+      text: output,
       provider: result.provider,
       model: result.providerModel,
-      prompt_version: hard.promptVersion,
+      prompt_version: snapshot?.prompt_version ?? "1.0.0",
+      ...(snapshot
+        ? {
+            evidence: {
+              guide_format: snapshot.guide_format,
+              work_id: row.id,
+              prompt_version: snapshot.prompt_version,
+              prompt_sha256: snapshot.prompt_sha256,
+              input_sha256: snapshot.input_sha256,
+              output_sha256: readingTextSHA(output),
+              source_basis: snapshot.source_basis,
+              source_range: snapshot.source_range,
+              provider: result.provider,
+              model: result.providerModel,
+            },
+          }
+        : {}),
     };
   }
 }

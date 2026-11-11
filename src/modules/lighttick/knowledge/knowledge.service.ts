@@ -29,7 +29,7 @@ export async function sourceAvailable(
     );
   }
   if (s.kind === "article") {
-    const article = await repo.reading.get(o, s.id);
+    const article = await repo.reading.reference(o, s.id);
     return !!article && article.content_version === s.version;
   }
   const a = await repo.getLearningAuthority(o);

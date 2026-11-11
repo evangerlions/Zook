@@ -1,3 +1,7 @@
+import type {
+  ReadingSourceRange,
+  ReadingAIEvidence,
+} from "./reading-ai.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 export interface ArticleContent {
   title: string;
@@ -64,9 +68,16 @@ export interface ReadingProvenance {
   raw_sha256: string | null;
 }
 export interface ReadingMaterial {
+  source_range?: ReadingSourceRange;
   kind: "guide" | "translation" | "summary" | "english";
   paragraph_id: string | null;
   draft: {
+    evidence?: ReadingAIEvidence;
+    derived_from?: {
+      version: number;
+      origin: "manual" | "ai";
+      work_id: string | null;
+    };
     version: number;
     text: string;
     origin: "manual" | "ai";
@@ -100,6 +111,12 @@ export interface ArticleQuery {
 }
 import type { VocabularyStore } from "./vocabulary.types.ts";
 export interface ReadingRepository extends VocabularyStore {
+  reference(
+    o: LightTickOwner,
+    id: string,
+  ): Promise<
+    Pick<ReadingArticle, "id" | "content_version" | "archived"> | undefined
+  >;
   reviewProjection(
     o: LightTickOwner,
     query: string,

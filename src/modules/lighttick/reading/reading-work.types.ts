@@ -1,3 +1,9 @@
+import type {
+  ReadingSourceRange,
+  ReadingAISnapshot,
+  ReadingAIEvidence,
+  ReadingModelUsage,
+} from "./reading-ai.types.ts";
 import type { ReadingScheduleRepository } from "./reading-schedule.types.ts";
 import type { ReadingRecommendationInput } from "./reading-recommendation.types.ts";
 import type {
@@ -37,7 +43,12 @@ export interface ReadingWork extends LightTickOwner {
   revision: number;
   kind: ReadingWorkKind;
   status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  started_at?: string | null;
+  finished_at?: string | null;
+  model_usage?: ReadingModelUsage | null;
   input: {
+    source_range?: ReadingSourceRange;
+    ai_context?: ReadingAISnapshot;
     recommendation?: ReadingRecommendationInput;
     source_id?: string;
     source_revision?: number;
@@ -57,6 +68,7 @@ export interface ReadingWork extends LightTickOwner {
     candidate_output_digest?: string;
   };
   output: {
+    evidence?: ReadingAIEvidence;
     recommendation?: {
       date: string;
       requested: number;

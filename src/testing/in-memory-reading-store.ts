@@ -143,6 +143,7 @@ export class InMemoryReadingStore implements ReadingRepository {
         })),
     );
   }
+  async reference(o:LightTickOwner,id:string){const r=this.rows.get(key(o,id))?.versions.at(-1);return r?{id:r.id,content_version:r.content_version,archived:r.archived}:undefined;}
   async get(o: LightTickOwner, id: string) {
     return structuredClone(this.rows.get(key(o, id))?.versions.at(-1));
   }

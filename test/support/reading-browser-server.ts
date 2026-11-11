@@ -1,3 +1,4 @@
+import { syntheticReadingGuide } from "./reading-guide-fixture.ts";
 import { ReadingScheduleService } from "../../src/modules/lighttick/reading/reading-schedule.service.ts";
 import { readingShanghaiDate } from "../../src/modules/lighttick/reading/reading-recommendation.ts";
 import { readingPdfFixture } from "./reading-pdf-fixture.ts";
@@ -86,8 +87,18 @@ if (process.argv.includes("--synthetic-actions")) {
 const syntheticRunner = new ReadingWorkRunner(
   runtime.services.lighttickRuntime!.readingWork!,
   {
-    complete: async () => ({
-      text: "合成模型验收输出：这是用于核对任务、草稿与显式采用的替身结果，不是真实模型验证。",
+    complete: async (request: any) => ({
+      text: request.messages?.some((m: any) =>
+        m.content.includes("## 中文导读"),
+      )
+        ? syntheticReadingGuide
+        : "合成模型验收输出：这是用于核对任务、草稿与显式采用的替身结果，不是真实模型验证。",
+      usage: {
+        promptTokens: 211,
+        completionTokens: 83,
+        totalTokens: 294,
+        estimated: true,
+      },
       provider: "synthetic-acceptance",
       providerModel: "fixture",
     }),

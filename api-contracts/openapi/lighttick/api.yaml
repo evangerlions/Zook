@@ -7911,7 +7911,16 @@ paths:
         p-1 onward identifies paragraphs split by blank lines in this exact source. New drafts preserve
         adopted text; adoption freezes the reviewed draft version. Journal and export retain both. Article
         plus materials limited to 2 MiB; rejected writes preserve old state. Core is read-only. This command
-        does not invoke a model, publish externally or complete reading/tasks.
+        does not invoke a model, publish externally or complete reading/tasks. New reading AI jobs freeze
+        prompt1.1/messages/digests and explicit source basis/range; historical jobs without the snapshot
+        execute legacy1.0. source_range uses Unicode-code-point [start,end), is exclusive with a non-null
+        legacy translation paragraph_id, and participates in independent material identity/history. Selected
+        text is never silently truncated; source20000UTF-8-byte and complete prompt24000-byte limits reject
+        before work admission. guide_format reading-v2 validates Chinese title/five ordered sections;
+        absent guide format retains detailed guide compatibility. Model usage/start/finish are additive
+        actual facts; unknown cost stays null. AI draft evidence and manual derived-from links remain
+        separate from explicit adoption and all completion facts. Private reading notes/feedback never
+        enter model messages.
       security:
       - bearerAuth: []
       responses:
@@ -7968,7 +7977,16 @@ paths:
         p-1 onward identifies paragraphs split by blank lines in this exact source. New drafts preserve
         adopted text; adoption freezes the reviewed draft version. Journal and export retain both. Article
         plus materials limited to 2 MiB; rejected writes preserve old state. Core is read-only. This command
-        does not invoke a model, publish externally or complete reading/tasks.
+        does not invoke a model, publish externally or complete reading/tasks. New reading AI jobs freeze
+        prompt1.1/messages/digests and explicit source basis/range; historical jobs without the snapshot
+        execute legacy1.0. source_range uses Unicode-code-point [start,end), is exclusive with a non-null
+        legacy translation paragraph_id, and participates in independent material identity/history. Selected
+        text is never silently truncated; source20000UTF-8-byte and complete prompt24000-byte limits reject
+        before work admission. guide_format reading-v2 validates Chinese title/five ordered sections;
+        absent guide format retains detailed guide compatibility. Model usage/start/finish are additive
+        actual facts; unknown cost stays null. AI draft evidence and manual derived-from links remain
+        separate from explicit adoption and all completion facts. Private reading notes/feedback never
+        enter model messages.
       security:
       - bearerAuth: []
       responses:
@@ -8269,7 +8287,15 @@ paths:
       description: Owner-only reading sources and durable work. New work requires full scope; core allows
         history, receipts and cancellation. Frozen input, CAS and original-key replay apply. Collection
         and model output require explicit saving; feed entries may be excerpts. No automatic provider
-        fallback or model rerun after interrupted outcome.
+        fallback or model rerun after interrupted outcome. New reading AI jobs freeze prompt1.1/messages/digests
+        and explicit source basis/range; historical jobs without the snapshot execute legacy1.0. source_range
+        uses Unicode-code-point [start,end), is exclusive with a non-null legacy translation paragraph_id,
+        and participates in independent material identity/history. Selected text is never silently truncated;
+        source20000UTF-8-byte and complete prompt24000-byte limits reject before work admission. guide_format
+        reading-v2 validates Chinese title/five ordered sections; absent guide format retains detailed
+        guide compatibility. Model usage/start/finish are additive actual facts; unknown cost stays null.
+        AI draft evidence and manual derived-from links remain separate from explicit adoption and all
+        completion facts. Private reading notes/feedback never enter model messages.
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
       responses:
@@ -8976,7 +9002,7 @@ paths:
       - name: assetId
         in: path
         required: true
-        schema: &id023
+        schema: &id025
           type: string
           pattern: ^readasset-[a-f0-9]{40}$
           maxLength: 50
@@ -22955,6 +22981,30 @@ components:
             created_at:
               type: string
               format: date-time
+            evidence:
+              $ref: '#/components/schemas/LightTickReadingAIEvidence'
+            derived_from:
+              type: object
+              additionalProperties: false
+              required:
+              - version
+              - origin
+              - work_id
+              properties:
+                version:
+                  type: integer
+                  minimum: 1
+                  maximum: 2147483647
+                origin:
+                  type: string
+                  enum:
+                  - manual
+                  - ai
+                work_id:
+                  anyOf:
+                  - type: string
+                    pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+                  - type: 'null'
         adopted:
           anyOf:
           - type: object
@@ -22984,7 +23034,33 @@ components:
               adopted_at:
                 type: string
                 format: date-time
+              evidence:
+                $ref: '#/components/schemas/LightTickReadingAIEvidence'
+              derived_from:
+                type: object
+                additionalProperties: false
+                required:
+                - version
+                - origin
+                - work_id
+                properties:
+                  version:
+                    type: integer
+                    minimum: 1
+                    maximum: 2147483647
+                  origin:
+                    type: string
+                    enum:
+                    - manual
+                    - ai
+                  work_id:
+                    anyOf:
+                    - type: string
+                      pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+                    - type: 'null'
           - type: 'null'
+        source_range:
+          $ref: '#/components/schemas/LightTickReadingSourceRange'
     LightTickReadingDraftWrite:
       type: object
       additionalProperties: false
@@ -23017,6 +23093,44 @@ components:
         text:
           type: string
           maxLength: 100000
+        source_range:
+          $ref: '#/components/schemas/LightTickReadingSourceRange'
+      allOf:
+      - if:
+          required:
+          - source_range
+          properties:
+            source_range: &id023
+              $ref: '#/components/schemas/LightTickReadingSourceRange'
+        then:
+          properties:
+            paragraph_id:
+              type: 'null'
+      - if:
+          properties:
+            kind:
+              const: translation
+            paragraph_id:
+              type: 'null'
+          required:
+          - kind
+          - paragraph_id
+        then:
+          required:
+          - source_range
+          properties:
+            source_range: *id023
+      - if:
+          properties:
+            kind:
+              not:
+                const: translation
+          required:
+          - kind
+        then:
+          properties:
+            paragraph_id:
+              type: 'null'
     LightTickReadingAdoptWrite:
       type: object
       additionalProperties: false
@@ -23050,6 +23164,43 @@ components:
           type: integer
           minimum: 1
           maximum: 2147483647
+        source_range:
+          $ref: '#/components/schemas/LightTickReadingSourceRange'
+      allOf:
+      - if:
+          required:
+          - source_range
+          properties:
+            source_range: *id023
+        then:
+          properties:
+            paragraph_id:
+              type: 'null'
+      - if:
+          properties:
+            kind:
+              const: translation
+            paragraph_id:
+              type: 'null'
+          required:
+          - kind
+          - paragraph_id
+        then:
+          required:
+          - source_range
+          properties:
+            source_range: *id023
+      - if:
+          properties:
+            kind:
+              not:
+                const: translation
+          required:
+          - kind
+        then:
+          properties:
+            paragraph_id:
+              type: 'null'
     LightTickReadingSource:
       type: object
       additionalProperties: false
@@ -23295,6 +23446,33 @@ components:
               type: integer
               minimum: 1
               maximum: 8
+        source_range:
+          $ref: '#/components/schemas/LightTickReadingSourceRange'
+        source_basis: &id036
+          type: string
+          enum:
+          - saved_text
+          - feed_excerpt
+          - legacy_unknown
+        source_units:
+          const: unicode_code_points
+        selected_bytes:
+          type: integer
+          minimum: 0
+          maximum: 20000
+        input_sha256: &id024
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        prompt_version:
+          const: 1.1.0
+        prompt_sha256: *id024
+        guide_format:
+          anyOf:
+          - type: string
+            enum:
+            - reading-v2
+            - detailed-v1
+          - type: 'null'
     LightTickReadingWorkDocument:
       type: object
       additionalProperties: false
@@ -23398,11 +23576,11 @@ components:
             - url
             - sha256
             properties:
-              asset_id: *id023
+              asset_id: *id025
               url:
                 type: string
                 maxLength: 1500
-              sha256: &id024
+              sha256: &id026
                 type: string
                 pattern: ^[a-f0-9]{64}$
                 maxLength: 64
@@ -23436,7 +23614,9 @@ components:
             ranking_version:
               type: string
               maxLength: 100
-            scope_digest: *id024
+            scope_digest: *id026
+        evidence:
+          $ref: '#/components/schemas/LightTickReadingAIEvidence'
     LightTickReadingWork:
       type: object
       additionalProperties: false
@@ -23528,6 +23708,20 @@ components:
             maxLength: 64
             pattern: ^[a-f0-9]{64}$
           - type: 'null'
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        model_usage:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingModelUsage'
+          - type: 'null'
     LightTickReadingWorkPage:
       type: object
       additionalProperties: false
@@ -23613,6 +23807,59 @@ components:
               maxLength: 10
               pattern: ^p-[1-9][0-9]{0,5}$
             - type: 'null'
+          source_range:
+            $ref: '#/components/schemas/LightTickReadingSourceRange'
+          guide_format:
+            type: string
+            enum:
+            - reading-v2
+            - detailed-v1
+        allOf:
+        - if:
+            required:
+            - source_range
+            properties:
+              source_range: *id023
+          then:
+            properties:
+              paragraph_id:
+                type: 'null'
+        - if:
+            properties:
+              kind:
+                const: translation
+              paragraph_id:
+                type: 'null'
+            required:
+            - kind
+            - paragraph_id
+          then:
+            required:
+            - source_range
+            properties:
+              source_range: *id023
+        - if:
+            properties:
+              kind:
+                not:
+                  const: translation
+            required:
+            - kind
+          then:
+            properties:
+              paragraph_id:
+                type: 'null'
+        - if:
+            properties:
+              kind:
+                not:
+                  const: guide
+          then:
+            not:
+              required:
+              - guide_format
+              properties:
+                guide_format: {}
       - type: object
         additionalProperties: false
         required:
@@ -23951,6 +24198,24 @@ components:
                   type: integer
                   minimum: 1
                   maximum: 8
+            source_range:
+              $ref: '#/components/schemas/LightTickReadingSourceRange'
+            ai_context:
+              $ref: '#/components/schemas/LightTickReadingAISnapshot'
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        model_usage:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingModelUsage'
+          - type: 'null'
     LightTickReadingSourceEnvelope:
       type: object
       additionalProperties: false
@@ -24142,6 +24407,20 @@ components:
           - type: 'null'
         has_output:
           type: boolean
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        model_usage:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingModelUsage'
+          - type: 'null'
     LightTickReadingSourceMetadata:
       type: object
       additionalProperties: false
@@ -24994,7 +25273,7 @@ components:
           type: integer
           minimum: 0
           maximum: 10000
-        digest: *id024
+        digest: *id026
         extraction_version:
           type: string
           maxLength: 140
@@ -25009,7 +25288,7 @@ components:
       required:
       - scope_digest
       properties:
-        scope_digest: *id024
+        scope_digest: *id026
     LightTickReadingEntryReference:
       type: object
       additionalProperties: false
@@ -25021,11 +25300,11 @@ components:
       - source_id
       - extraction_version
       properties:
-        asset_id: *id023
+        asset_id: *id025
         content:
           $ref: '#/components/schemas/LightTickReadingSourceMetadata'
-        content_digest: *id024
-        document_id: *id023
+        content_digest: *id026
+        document_id: *id025
         source_id:
           anyOf:
           - type: string
@@ -25071,9 +25350,9 @@ components:
       - kind
       - value
       properties:
-        id: *id023
+        id: *id025
         work_id: *id001
-        sha256: *id024
+        sha256: *id026
         kind:
           type: string
           enum:
@@ -25265,14 +25544,14 @@ components:
           - stopped
         work_id:
           anyOf:
-          - &id025
+          - &id027
             type: string
             maxLength: 128
             pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
           - type: 'null'
         work_ids:
           type: array
-          items: *id025
+          items: *id027
           maxItems: 3
         adopted:
           type: array
@@ -25293,7 +25572,7 @@ components:
                 type: integer
                 minimum: 1
                 maximum: 2147483647
-              work_id: *id025
+              work_id: *id027
               index:
                 type: integer
                 minimum: 0
@@ -25310,7 +25589,7 @@ components:
             - url
             - reason
             properties:
-              work_id: *id025
+              work_id: *id027
               index:
                 type: integer
                 minimum: 0
@@ -25385,14 +25664,14 @@ components:
           - stopped
         work_id:
           anyOf:
-          - &id026
+          - &id028
             type: string
             maxLength: 128
             pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
           - type: 'null'
         work_ids:
           type: array
-          items: *id026
+          items: *id028
           maxItems: 3
         adopted:
           type: array
@@ -25413,7 +25692,7 @@ components:
                 type: integer
                 minimum: 1
                 maximum: 2147483647
-              work_id: *id026
+              work_id: *id028
               index:
                 type: integer
                 minimum: 0
@@ -25430,7 +25709,7 @@ components:
             - url
             - reason
             properties:
-              work_id: *id026
+              work_id: *id028
               index:
                 type: integer
                 minimum: 0
@@ -25663,15 +25942,15 @@ components:
       - byte_length
       - sha256
       properties:
-        index: &id027
+        index: &id029
           type: integer
           minimum: 0
           maximum: 255
-        byte_length: &id028
+        byte_length: &id030
           type: integer
           minimum: 1
           maximum: 262144
-        sha256: &id029
+        sha256: &id031
           type: string
           pattern: ^[a-f0-9]{64}$
     LightTickReadingBackupPart:
@@ -25683,9 +25962,9 @@ components:
       - sha256
       - data_base64
       properties:
-        index: *id027
-        byte_length: *id028
-        sha256: *id029
+        index: *id029
+        byte_length: *id030
+        sha256: *id031
         data_base64:
           type: string
           maxLength: 349528
@@ -25707,7 +25986,7 @@ components:
       - content_sha256
       - manifest_sha256
       properties:
-        id: &id030
+        id: &id032
           type: string
           pattern: ^readbackup-[a-f0-9]{40}$
         revision:
@@ -25814,8 +26093,8 @@ components:
           maxItems: 256
           items:
             $ref: '#/components/schemas/LightTickReadingBackupPartMetadata'
-        content_sha256: *id029
-        manifest_sha256: *id029
+        content_sha256: *id031
+        manifest_sha256: *id031
     LightTickReadingBackupCreate:
       type: object
       additionalProperties: false
@@ -25841,7 +26120,7 @@ components:
       - id
       - deleted
       properties:
-        id: *id030
+        id: *id032
         deleted:
           type: boolean
           const: true
@@ -26036,17 +26315,17 @@ components:
       - scope_digest
       - preserved
       properties:
-        article_id: &id031
+        article_id: &id033
           type: string
           maxLength: 128
         base_revision:
           type: integer
           minimum: 1
           maximum: 2147483647
-        content_version: &id032
+        content_version: &id034
           type: string
           pattern: ^[a-f0-9]{64}$
-        article_versions: &id033
+        article_versions: &id035
           type: integer
           minimum: 0
           maximum: 2147483647
@@ -26062,7 +26341,7 @@ components:
             - assets
             - other_article_ids
             properties:
-              id: *id031
+              id: *id033
               revision:
                 type: integer
                 minimum: 1
@@ -26084,12 +26363,12 @@ components:
                   - id
                   - sha256
                   properties:
-                    id: *id031
-                    sha256: *id032
+                    id: *id033
+                    sha256: *id034
                 maxItems: 100
               other_article_ids:
                 type: array
-                items: *id031
+                items: *id033
                 maxItems: 100
           maxItems: 100
         vocabulary:
@@ -26101,7 +26380,7 @@ components:
             - id
             - revision
             properties:
-              id: *id031
+              id: *id033
               revision:
                 type: integer
                 minimum: 1
@@ -26116,8 +26395,8 @@ components:
             - operation_id
             - payload_hash
             properties:
-              operation_id: *id031
-              payload_hash: *id032
+              operation_id: *id033
+              payload_hash: *id034
           maxItems: 10000
         backups:
           type: array
@@ -26128,10 +26407,10 @@ components:
             - id
             - manifest_sha256
             properties:
-              id: *id031
-              manifest_sha256: *id032
+              id: *id033
+              manifest_sha256: *id034
           maxItems: 2
-        scope_digest: *id032
+        scope_digest: *id034
         preserved:
           type: array
           items:
@@ -26154,8 +26433,8 @@ components:
           type: integer
           minimum: 1
           maximum: 2147483647
-        content_version: *id032
-        scope_digest: *id032
+        content_version: *id034
+        scope_digest: *id034
     LightTickReadingDeleted:
       type: object
       additionalProperties: false
@@ -26183,7 +26462,7 @@ components:
         deleted_at:
           type: string
           format: date-time
-        scope_digest: *id032
+        scope_digest: *id034
         removed:
           type: object
           additionalProperties: false
@@ -26195,12 +26474,12 @@ components:
           - receipts
           - backups
           properties:
-            article_versions: *id033
-            work: *id033
-            assets: *id033
-            vocabulary: *id033
-            receipts: *id033
-            backups: *id033
+            article_versions: *id035
+            work: *id035
+            assets: *id035
+            vocabulary: *id035
+            receipts: *id035
+            backups: *id035
     LightTickReadingErasureReceipt:
       type: object
       additionalProperties: false
@@ -26209,8 +26488,8 @@ components:
       - payload_hash
       - result
       properties:
-        operation_id: *id031
-        payload_hash: *id032
+        operation_id: *id033
+        payload_hash: *id034
         result:
           $ref: '#/components/schemas/LightTickReadingDeleted'
     LightTickReadingDeletionPreviewEnvelope:
@@ -26276,3 +26555,149 @@ components:
         requestId:
           type: string
           maxLength: 128
+    LightTickReadingSourceRange:
+      type: object
+      additionalProperties: false
+      required:
+      - start
+      - end
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          maximum: 500000
+        end:
+          type: integer
+          minimum: 1
+          maximum: 500000
+      description: Absolute Unicode-code-point [start,end) source range. End must exceed start and fit
+        the exact immutable body; exclusive with non-null paragraph_id. Never silently truncated.
+    LightTickReadingAISnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - prompt_version
+      - guide_format
+      - source_basis
+      - source_range
+      - input_sha256
+      - selected_bytes
+      - prompt_sha256
+      - messages
+      properties:
+        prompt_version:
+          const: 1.1.0
+        guide_format:
+          anyOf:
+          - type: string
+            enum:
+            - reading-v2
+            - detailed-v1
+          - type: 'null'
+        source_basis: *id036
+        source_range:
+          $ref: '#/components/schemas/LightTickReadingSourceRange'
+        input_sha256: *id024
+        selected_bytes:
+          type: integer
+          minimum: 0
+          maximum: 20000
+        prompt_sha256: *id024
+        messages:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - role
+            - content
+            properties:
+              role:
+                type: string
+                enum:
+                - system
+                - user
+              content:
+                type: string
+                maxLength: 24000
+    LightTickReadingAIEvidence:
+      type: object
+      additionalProperties: false
+      required:
+      - work_id
+      - prompt_version
+      - prompt_sha256
+      - input_sha256
+      - output_sha256
+      - source_basis
+      - source_range
+      - provider
+      - model
+      - guide_format
+      properties:
+        work_id:
+          type: string
+          pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+        prompt_version:
+          type: string
+          maxLength: 30
+        prompt_sha256: *id024
+        input_sha256: *id024
+        output_sha256: *id024
+        source_basis: *id036
+        source_range:
+          $ref: '#/components/schemas/LightTickReadingSourceRange'
+        provider:
+          type: string
+          maxLength: 120
+        model:
+          type: string
+          maxLength: 200
+        guide_format:
+          anyOf:
+          - type: string
+            enum:
+            - reading-v2
+            - detailed-v1
+          - type: 'null'
+    LightTickReadingModelUsage:
+      type: object
+      additionalProperties: false
+      required:
+      - input_tokens
+      - output_tokens
+      - total_tokens
+      - cached_input_tokens
+      - reasoning_tokens
+      - estimated
+      - cost_amount
+      - cost_currency
+      - cost_basis
+      properties:
+        input_tokens: &id037
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        output_tokens: *id037
+        total_tokens: *id037
+        cached_input_tokens:
+          anyOf:
+          - *id037
+          - type: 'null'
+        reasoning_tokens:
+          anyOf:
+          - *id037
+          - type: 'null'
+        estimated:
+          type: boolean
+        cost_amount:
+          type: 'null'
+        cost_currency:
+          type: 'null'
+        cost_basis:
+          const: unknown
+      description: Normalized provider/estimated token facts, not a bill. Missing historical facts stay
+        absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency
+        remain null; platform caps are not charges.
