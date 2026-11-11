@@ -1,3 +1,4 @@
+import { candidateReadingInput } from "./reading-candidate-input.ts";
 import { readingSourceFields } from "./reading-source-fields.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
@@ -51,6 +52,13 @@ export class ReadingWorkService {
         content_version: input.content_version ?? null,
         paragraph_id: input.paragraph_id ?? null,
         selected_characters: input.text?.length ?? 0,
+        ...(input.candidate_work_id
+          ? {
+              candidate_work_id: input.candidate_work_id,
+              candidate_id: input.candidate_id,
+              candidate_output_digest: input.candidate_output_digest,
+            }
+          : {}),
       },
       output_digest: row.output ? digest(row.output) : null,
     };
@@ -233,7 +241,7 @@ export class ReadingWorkService {
     keys(
       b,
       kind === "collect_url"
-        ? ["kind", "url", "title"]
+        ? ["kind", "url", "title", "candidate"]
         : kind === "collect_source"
           ? ["kind", "source_id", "base_revision"]
           : kind === "fetch_full"
@@ -268,13 +276,24 @@ export class ReadingWorkService {
         )
           fail(429, "请先完成或取消未决阅读任务。");
         let input: ReadingWork["input"];
-        if (kind === "collect_url")
-          input = {
+        if (kind === "collect_url") {
+          const selected = {
             url: readingURL(b.url),
             title: text(b.title, 500, true),
-            format: "article",
           };
-        else if (kind === "collect_source") {
+          input = {
+            ...selected,
+            format: "article",
+            ...(b.candidate === undefined
+              ? {}
+              : await candidateReadingInput(
+                  this.repo,
+                  o,
+                  b.candidate,
+                  selected,
+                )),
+          };
+        } else if (kind === "collect_source") {
           const source = await this.source(o, identity(b.source_id, "source-"));
           if (
             source.revision !== integer(b.base_revision, 1, 2147483647) ||
@@ -287,6 +306,17 @@ export class ReadingWorkService {
             url: source.url,
             title: source.title,
             format: source.format,
+            source_domains: source.domains ?? [
+              new URL(source.url).hostname.toLowerCase().replace(/\.$/, ""),
+            ],
+            source_metadata: {
+              title: source.title,
+              source_url: source.url,
+              language: source.language ?? "unknown",
+              published_at: null,
+              publisher: source.title,
+              topics: source.topics ?? [],
+            },
           };
         } else {
           const article = await new ReadingService(

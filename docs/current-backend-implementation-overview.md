@@ -965,3 +965,5 @@ XML解析使用固定 fast-xml-parser 5.12.0，拒绝DTD/实体、禁用实体�
 新增反馈全部旧字段及独立修订、未知/仅日期精度、译名/出版来源/推荐语义和全文补取关联版本。写入继续CAS+原请求回执，补取不覆盖旧私人事实，不触发模型。迁移110仅索引根版本；原文摘要含义及旧回执不改写。新增HTTP合同/内存及隔离PG验证。采集HTML/XML解析移入有资源上限的可终止线程，原始下载仍精确保留。偏好/定时与其余迁移父项尚未关闭；真实来源、供应商及联合负载结论单独验收。
 
 阅读来源方式新增pdf_text；页面明确PDF可见区域提取与旧pypdf可能不同，历史正文不重算、原始文件仍可核对。合成PDF已改用页内换行排版，并验证全部预期正文而非仅检查开头。
+
+2026-11-12 LightTick reading candidates: RSS/Atom retains metadata-only candidates, exact domain filtering warnings and canonical identity. Explicit child work validates owner, frozen output digest and source revision. Unit/HTTP and isolated PostgreSQL coverage pass. Versioned ranking remains a pure function; recommendation/scheduling workflow remains open. A caller-owned shared-worker reading session lets other product deliveries proceed while reading executes; actual mixed-load acceptance remains separate.

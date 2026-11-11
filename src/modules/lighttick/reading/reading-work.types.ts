@@ -1,3 +1,4 @@
+import type { ReadingCandidate } from "./reading-candidate.types.ts";
 import type { ReadingPreferencesRepository } from "./reading-preferences.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ArticleContent, ReadingMaterial } from "./reading.types.ts";
@@ -31,6 +32,7 @@ export interface ReadingWork extends LightTickOwner {
   input: {
     source_id?: string;
     source_revision?: number;
+    source_domains?: string[];
     url?: string;
     format?: ReadingSource["format"];
     title?: string;
@@ -41,9 +43,14 @@ export interface ReadingWork extends LightTickOwner {
     model_selection?: ModelSelection;
     source_metadata?: Omit<ArticleContent, "body">;
     parent_root_id?: string;
+    candidate_work_id?: string;
+    candidate_id?: string;
+    candidate_output_digest?: string;
   };
   output: {
     entries?: ArticleContent[];
+    candidates?: ReadingCandidate[];
+    warnings?: string[];
     text?: string;
     provider?: string;
     model?: string;

@@ -2105,3 +2105,11 @@ HTML用固定版本htmlparser2解析，保留原始下载文本与SHA，展示�
 全文任务明确区分 `READING_SOURCE_SIZE`、`READING_TEXT_LIMIT`、`READING_SOURCE_UNREADABLE`、`READING_SOURCE_RESTRICTED`、`READING_PDF_ENCRYPTED`、`READING_PDF_RESTRICTED`、`READING_PDF_PAGE_LIMIT`，作为本人任务的error_code返回；不会把失败内容导入、自动换源或自动改用模型。
 
 PDF直接采集的来源方式为`pdf_text`（全文补取仍为`full_fetch`）。PDF.js按页面可见区域提取；与旧pypdf对页面外文字的提取可能不同，Web明确展示该差异，原文件单独可下载。迁移既有正文保留冻结文本，不使用新提取器重算旧报告或文章版本。
+
+### LightTick reading candidates
+
+Feed collection adds optional `candidates:[{id,content,excerpt,source_id,source_revision}]` and `warnings`. Candidate content is metadata without body; valid metadata-only entries remain reviewable but cannot be saved as empty articles. `entries` includes only actually supplied feed text. Canonical IDs ignore fragments/tracking parameters and normalize HTTP/HTTPS for identity only; actual collection keeps the selected literal URL. Source domains are exact host allowlists. Excluded, invalid and duplicate counts are disclosed; the original feed remains intact.
+
+`POST /api/v1/lighttick/reading/work` collect_url accepts optional `candidate:{work_id,output_digest,candidate_id}`. It validates the owner's succeeded parent, exact result digest, title/URL and current source revision; a changed/revoked source fails409. Scope returns candidate_work_id/candidate_id/candidate_output_digest. Metadata and source provenance are frozen. Collection still requires explicit confirmation, with separate result adoption; existing requests and receipts remain compatible.
+
+Ranking version grow-reading-rank-v2 is a separately tested pure function preserving recent30-day inclusive boundaries, unknown/future-date exclusion, bilingual topic/query matching, stable seed, canonical seen URLs, diversity and bounded explicit feedback. This alone does not provide a recommendation API or daily scheduling.

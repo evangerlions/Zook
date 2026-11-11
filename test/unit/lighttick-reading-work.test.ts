@@ -189,7 +189,7 @@ test("collection survives queue loss, freezes original document and deduplicates
     { statusCode: 409 },
   );
 });
-test("RSS and Atom retain supplied dates, author, tags and exact download while rejecting DTD, too many items and empty bodies", async () => {
+test("RSS and Atom retain supplied dates, author, tags and exact download while rejecting DTD/over-capacity and retaining metadata-only candidates", async () => {
   const f = setup();
   await f.work.saveSource(o, "source-rss", source, "rss-source-key");
   const created = await f.work.create(
@@ -216,9 +216,16 @@ test("RSS and Atom retain supplied dates, author, tags and exact download while 
   });
   assert.equal(a.entries[0].published_at, null);
   assert.equal(a.entries[0].author, "Owner");
+  const metadataOnly = collectReadingDocument(row, {
+    body: xml.replace("Retained feed excerpt", ""),
+    content_type: "application/rss+xml",
+  });
+  assert.equal(metadataOnly.entries.length, 0);
+  assert.equal(metadataOnly.candidates![0].excerpt, "");
+  assert.equal(metadataOnly.candidates![0].content.title, "A & B");
+  assert.ok(metadataOnly.warnings![0].includes("未提供摘要"));
   for (const bad of [
     '<!DOCTYPE rss [<!ENTITY x SYSTEM "file:///etc/passwd">]>' + xml,
-    xml.replace("Retained feed excerpt", ""),
     "<rss><channel>" +
       Array.from({ length: 81 }, () => "<item/>").join("") +
       "</channel></rss>",
@@ -394,15 +401,131 @@ test("source/work/receipt failure rolls back all changes; exported account inclu
   assert.equal(typeof result.sha256, "string");
 });
 
-test("personal model revision is frozen and late credential changes reject output even when a provider ignores cancellation",async()=>{
- let release!:(v:any)=>void,start!:()=>void;const started=new Promise<void>(r=>start=r),waiting=new Promise<any>(r=>release=r);const f=setup(async request=>{assert.equal(request.providerOptions.zookLightTickModelSelection.mode,"personal");start();return waiting;});
- const state={mode:"personal" as const,revision:1,base_url:null,model_name:null,secret:null,updated_at:new Date().toISOString()};await f.repo.personalModels.save(o,state,0);
- const article=await new ReadingService(f.repo).write(o,"article-model-rev","import",{base_revision:0,content:{title:"Original",body:"Owner selected text",source_url:null,language:"en",published_at:null}},"model-revision-import");
- const job=await f.work.create(o,{kind:"guide",article_id:article.id,content_version:article.content_version,paragraph_id:null},"model-revision-create"),run=f.runner.execute(o,job.id);await started;await f.repo.personalModels.save(o,{...state,revision:2},1);release({text:"Late result",provider:"synthetic",providerModel:"fixture"});await run;const result=await f.work.read(o,job.id);assert.equal(result.output,null);assert.equal(result.error_code,"PERSONAL_MODEL_SETTINGS_CHANGED");
+test("personal model revision is frozen and late credential changes reject output even when a provider ignores cancellation", async () => {
+  let release!: (v: any) => void, start!: () => void;
+  const started = new Promise<void>((r) => (start = r)),
+    waiting = new Promise<any>((r) => (release = r));
+  const f = setup(async (request) => {
+    assert.equal(
+      request.providerOptions.zookLightTickModelSelection.mode,
+      "personal",
+    );
+    start();
+    return waiting;
+  });
+  const state = {
+    mode: "personal" as const,
+    revision: 1,
+    base_url: null,
+    model_name: null,
+    secret: null,
+    updated_at: new Date().toISOString(),
+  };
+  await f.repo.personalModels.save(o, state, 0);
+  const article = await new ReadingService(f.repo).write(
+    o,
+    "article-model-rev",
+    "import",
+    {
+      base_revision: 0,
+      content: {
+        title: "Original",
+        body: "Owner selected text",
+        source_url: null,
+        language: "en",
+        published_at: null,
+      },
+    },
+    "model-revision-import",
+  );
+  const job = await f.work.create(
+      o,
+      {
+        kind: "guide",
+        article_id: article.id,
+        content_version: article.content_version,
+        paragraph_id: null,
+      },
+      "model-revision-create",
+    ),
+    run = f.runner.execute(o, job.id);
+  await started;
+  await f.repo.personalModels.save(o, { ...state, revision: 2 }, 1);
+  release({
+    text: "Late result",
+    provider: "synthetic",
+    providerModel: "fixture",
+  });
+  await run;
+  const result = await f.work.read(o, job.id);
+  assert.equal(result.output, null);
+  assert.equal(result.error_code, "PERSONAL_MODEL_SETTINGS_CHANGED");
 });
-test("model and collection daily budgets are independent, bounded and never block historical original receipts",async()=>{
- const f=setup();for(let i=0;i<20;i++){const job=await f.work.create(o,request,"budget-collect-"+i);await f.work.cancel(o,job.id,{base_revision:job.revision},"budget-cancel-"+i);}await assert.rejects(f.work.create(o,request,"budget-overflow"),{statusCode:429});assert.equal((await f.work.create(o,request,"budget-collect-0")).revision,1);
- const g=setup(),article=await new ReadingService(g.repo).write(o,"article-budget-ai","import",{base_revision:0,content:{title:"Original",body:"Original",source_url:null,language:"unknown",published_at:null}},"budget-ai-import");
- for(let i=0;i<12;i++){const job=await g.work.create(o,{kind:"summary",article_id:article.id,content_version:article.content_version,paragraph_id:null},"budget-ai-"+i);await g.work.cancel(o,job.id,{base_revision:job.revision},"budget-ai-cancel-"+i);}await assert.rejects(g.work.create(o,{kind:"summary",article_id:article.id,content_version:article.content_version,paragraph_id:null},"budget-ai-overflow"),{statusCode:429});
- assert.ok(await g.work.create(o,request,"budget-url-after-ai"));
+test("model and collection daily budgets are independent, bounded and never block historical original receipts", async () => {
+  const f = setup();
+  for (let i = 0; i < 20; i++) {
+    const job = await f.work.create(o, request, "budget-collect-" + i);
+    await f.work.cancel(
+      o,
+      job.id,
+      { base_revision: job.revision },
+      "budget-cancel-" + i,
+    );
+  }
+  await assert.rejects(f.work.create(o, request, "budget-overflow"), {
+    statusCode: 429,
+  });
+  assert.equal(
+    (await f.work.create(o, request, "budget-collect-0")).revision,
+    1,
+  );
+  const g = setup(),
+    article = await new ReadingService(g.repo).write(
+      o,
+      "article-budget-ai",
+      "import",
+      {
+        base_revision: 0,
+        content: {
+          title: "Original",
+          body: "Original",
+          source_url: null,
+          language: "unknown",
+          published_at: null,
+        },
+      },
+      "budget-ai-import",
+    );
+  for (let i = 0; i < 12; i++) {
+    const job = await g.work.create(
+      o,
+      {
+        kind: "summary",
+        article_id: article.id,
+        content_version: article.content_version,
+        paragraph_id: null,
+      },
+      "budget-ai-" + i,
+    );
+    await g.work.cancel(
+      o,
+      job.id,
+      { base_revision: job.revision },
+      "budget-ai-cancel-" + i,
+    );
+  }
+  await assert.rejects(
+    g.work.create(
+      o,
+      {
+        kind: "summary",
+        article_id: article.id,
+        content_version: article.content_version,
+        paragraph_id: null,
+      },
+      "budget-ai-overflow",
+    ),
+    { statusCode: 429 },
+  );
+  assert.ok(await g.work.create(o, request, "budget-url-after-ai"));
 });
