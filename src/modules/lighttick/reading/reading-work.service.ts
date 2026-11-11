@@ -19,23 +19,8 @@ import {
   identity,
 } from "../learning/native-learning.validation.ts";
 export const READING_WORK_JOB = "lighttick.reading.work";
-export const readingURL = (raw: unknown) => {
-  let u: URL;
-  try {
-    u = new URL(text(raw, 1500, true));
-  } catch {
-    fail(422, "请输入可核对的HTTPS来源链接。");
-  }
-  if (
-    u.protocol !== "https:" ||
-    u.username ||
-    u.password ||
-    (u.port && u.port !== "443")
-  )
-    fail(422, "仅支持无凭据、443端口的HTTPS来源。");
-  u.hash = "";
-  return u.toString();
-};
+export { readingURL } from "./reading-url.ts";
+import { readingURL } from "./reading-url.ts";
 export class ReadingWorkService {
   constructor(
     readonly repo: LightTickRepository,
@@ -203,6 +188,7 @@ export class ReadingWorkService {
       ![
         "collect_url",
         "collect_source",
+        "fetch_full",
         "guide",
         "translation",
         "summary",
@@ -216,7 +202,9 @@ export class ReadingWorkService {
         ? ["kind", "url", "title"]
         : kind === "collect_source"
           ? ["kind", "source_id", "base_revision"]
-          : ["kind", "article_id", "content_version", "paragraph_id"],
+          : kind === "fetch_full"
+            ? ["kind", "article_id", "content_version"]
+            : ["kind", "article_id", "content_version", "paragraph_id"],
     );
     const result = await this.command(
       o,
@@ -232,9 +220,10 @@ export class ReadingWorkService {
           );
         if (
           recent.filter(
-            (r) => !["collect_url", "collect_source"].includes(r.kind),
+            (r) =>
+              !["collect_url", "collect_source", "fetch_full"].includes(r.kind),
           ).length >= 12 &&
-          !["collect_url", "collect_source"].includes(kind)
+          !["collect_url", "collect_source", "fetch_full"].includes(kind)
         )
           fail(429, "今日阅读模型预算已达上限。");
         if (recent.length >= 20)
@@ -248,7 +237,7 @@ export class ReadingWorkService {
         if (kind === "collect_url")
           input = {
             url: readingURL(b.url),
-            title: text(b.title, 200, true),
+            title: text(b.title, 500, true),
             format: "article",
           };
         else if (kind === "collect_source") {
@@ -271,34 +260,54 @@ export class ReadingWorkService {
             this.authorize,
             this.clock,
           ).read(o, identity(b.article_id, "article-"));
-          const check = structuredClone(article);
-          writeReadingMaterial(
-            check,
-            {
-              base_revision: article.revision,
-              content_version: b.content_version,
-              kind,
-              paragraph_id: b.paragraph_id,
-              text: "",
-            },
-            false,
-            now,
-          );
-          const selected =
-            kind === "translation"
-              ? article.content.body.split(/\n\s*\n/)[
-                  Number(String(b.paragraph_id).slice(2)) - 1
-                ]
-              : article.content.body;
-          if (Buffer.byteLength(selected) > 20000)
-            fail(413, "本次模型范围超过20000字节，请先按段落整理。");
-          input = {
-            article_id: article.id,
-            content_version: article.content_version,
-            paragraph_id: b.paragraph_id as string | null,
-            text: selected,
-            model_selection: await captureModel(this.repo, o),
-          };
+          if (kind === "fetch_full") {
+            if (
+              article.archived ||
+              article.content_version !== b.content_version
+            )
+              fail(409, "原文版本已变化或已归档，请核对后补取全文。");
+            if (!article.content.source_url)
+              fail(422, "此文章没有可补取的原文链接。");
+            const { body: _, ...source_metadata } = article.content;
+            input = {
+              article_id: article.id,
+              content_version: article.content_version,
+              url: readingURL(article.content.source_url),
+              title: article.content.title,
+              format: "article",
+              source_metadata,
+              parent_root_id: article.provenance?.root_article_id ?? article.id,
+            };
+          } else {
+            const check = structuredClone(article);
+            writeReadingMaterial(
+              check,
+              {
+                base_revision: article.revision,
+                content_version: b.content_version,
+                kind,
+                paragraph_id: b.paragraph_id,
+                text: "",
+              },
+              false,
+              now,
+            );
+            const selected =
+              kind === "translation"
+                ? article.content.body.split(/\n\s*\n/)[
+                    Number(String(b.paragraph_id).slice(2)) - 1
+                  ]
+                : article.content.body;
+            if (Buffer.byteLength(selected) > 20000)
+              fail(413, "本次模型范围超过20000字节，请先按段落整理。");
+            input = {
+              article_id: article.id,
+              content_version: article.content_version,
+              paragraph_id: b.paragraph_id as string | null,
+              text: selected,
+              model_selection: await captureModel(this.repo, o),
+            };
+          }
         }
         const row: ReadingWork = {
           ...o,
@@ -399,6 +408,14 @@ export class ReadingWorkService {
       )
         fail(409, "请核对已完成任务的精确结果。");
       const reading = new ReadingService(this.repo, this.authorize, this.clock);
+      if (row.kind === "fetch_full") {
+        const parent = await reading.read(o, row.input.article_id!);
+        if (
+          parent.archived ||
+          parent.content_version !== row.input.content_version
+        )
+          fail(409, "补取来源已变化或已归档，请保留结果核对。");
+      }
       let result: { article_id: string; revision: number };
       let target: string;
       if (row.output.entries) {
@@ -418,6 +435,24 @@ export class ReadingWorkService {
             "import",
             { base_revision: 0, content },
             "reading-import-" + digest([id, index]).slice(0, 40),
+            "manual",
+            {
+              kind:
+                row.kind === "fetch_full"
+                  ? "full_fetch"
+                  : row.output.document?.capture_kind === "feed_entry"
+                    ? "feed_entry"
+                    : row.output.document
+                      ? "web_text"
+                      : "legacy_import",
+              work_id: row.id,
+              source_id: row.input.source_id ?? null,
+              parent_article_id:
+                row.kind === "fetch_full" ? row.input.article_id! : null,
+              root_article_id: row.input.parent_root_id ?? articleId,
+              fetched_at: row.output.document ? row.updated_at : null,
+              raw_sha256: row.output.document?.sha256 ?? null,
+            },
           ));
         if (old && old.content_version !== digest(content))
           fail(409, "导入对象已变化，不能覆盖。");

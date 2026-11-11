@@ -8479,6 +8479,98 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles/{articleId}/feedback:
+    post:
+      operationId: saveStructuredReadingFeedback
+      summary: saveStructuredReadingFeedback
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingFeedbackWrite'
+  /api/v1/lighttick/reading/articles/{articleId}/editions:
+    get:
+      operationId: listRelatedReadingEditions
+      summary: listRelatedReadingEditions
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingEditionsEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -20803,7 +20895,7 @@ components:
       properties:
         title:
           type: string
-          maxLength: 200
+          maxLength: 500
           minLength: 1
         body:
           type: string
@@ -20835,6 +20927,52 @@ components:
             type: string
             minLength: 1
             maxLength: 200
+        translated_title:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        publisher:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        description:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+        access:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        recommendation_reason:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        topics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 200
+            minLength: 1
+        category:
+          anyOf:
+          - type: string
+            enum:
+            - recent
+            - classic
+            - manual
+          - type: 'null'
+        published_date:
+          anyOf:
+          - type: string
+            maxLength: 10
+            format: date
+          - type: 'null'
     LightTickReadingPrivate:
       type: object
       additionalProperties: false
@@ -20871,6 +21009,8 @@ components:
             type: integer
             minimum: 0
             maximum: 100000
+        structured_feedback:
+          $ref: '#/components/schemas/LightTickReadingFeedback'
     LightTickReadingArticle:
       type: object
       additionalProperties: false
@@ -20912,6 +21052,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LightTickReadingMaterial'
+        provenance:
+          $ref: '#/components/schemas/LightTickReadingProvenance'
     LightTickReadingImport:
       type: object
       additionalProperties: false
@@ -21818,6 +21960,7 @@ components:
           enum:
           - web_text
           - feed_entry
+          - full_fetch
     LightTickReadingWorkOutput:
       type: object
       additionalProperties: false
@@ -21876,6 +22019,7 @@ components:
           - translation
           - summary
           - english
+          - fetch_full
         status:
           type: string
           enum:
@@ -21966,7 +22110,7 @@ components:
             format: uri
           title:
             type: string
-            maxLength: 200
+            maxLength: 500
             minLength: 1
       - type: object
         additionalProperties: false
@@ -22014,6 +22158,23 @@ components:
               maxLength: 10
               pattern: ^p-[1-9][0-9]{0,5}$
             - type: 'null'
+      - type: object
+        additionalProperties: false
+        required:
+        - kind
+        - article_id
+        - content_version
+        properties:
+          kind:
+            const: fetch_full
+          article_id:
+            type: string
+            maxLength: 128
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          content_version:
+            type: string
+            maxLength: 64
+            pattern: ^[a-f0-9]{64}$
     LightTickReadingWorkCancel:
       type: object
       additionalProperties: false
@@ -22140,6 +22301,7 @@ components:
           - translation
           - summary
           - english
+          - fetch_full
         status:
           type: string
           enum:
@@ -22211,7 +22373,7 @@ components:
               - atom
             title:
               type: string
-              maxLength: 200
+              maxLength: 500
             article_id:
               type: string
               maxLength: 128
@@ -22243,6 +22405,12 @@ components:
                   type: integer
                   minimum: 0
                   maximum: 2147483647
+            source_metadata:
+              $ref: '#/components/schemas/LightTickReadingSourceMetadata'
+            parent_root_id:
+              type: string
+              maxLength: 128
+              pattern: ^article-[a-zA-Z0-9_-]{1,120}$
     LightTickReadingSourceEnvelope:
       type: object
       additionalProperties: false
@@ -22380,6 +22548,7 @@ components:
           - translation
           - summary
           - english
+          - fetch_full
         status:
           type: string
           enum:
@@ -22433,3 +22602,333 @@ components:
           - type: 'null'
         has_output:
           type: boolean
+
+    LightTickReadingSourceMetadata:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - source_url
+      - language
+      - published_at
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          minLength: 1
+        source_url:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+        language:
+          type: string
+          maxLength: 35
+          pattern: ^[a-zA-Z][a-zA-Z0-9-]*$
+        published_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        author:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        tags:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
+        translated_title:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        publisher:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        description:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+        access:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        recommendation_reason:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        topics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 200
+            minLength: 1
+        category:
+          anyOf:
+          - type: string
+            enum:
+            - recent
+            - classic
+            - manual
+          - type: 'null'
+        published_date:
+          anyOf:
+          - type: string
+            maxLength: 10
+            format: date
+          - type: 'null'
+    LightTickReadingFeedback:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - value
+      - difficulty
+      - takeaway
+      - question
+      - action
+      - tags
+      - updated_at
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        value:
+          type: string
+          enum:
+          - ''
+          - insightful
+          - neutral
+          - not_for_me
+        difficulty:
+          type: string
+          enum:
+          - ''
+          - easy
+          - right
+          - hard
+        takeaway:
+          type: string
+          maxLength: 4000
+        question:
+          type: string
+          maxLength: 2000
+        action:
+          type: string
+          maxLength: 2000
+        tags:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            maxLength: 32
+            minLength: 1
+        updated_at:
+          anyOf:
+          - type: string
+            maxLength: 40
+            format: date-time
+          - type: 'null'
+    LightTickReadingFeedbackWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - base_feedback_revision
+      - feedback
+      - mark_read
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        content_version:
+          type: string
+          maxLength: 64
+          pattern: ^[a-f0-9]{64}$
+        base_feedback_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        feedback:
+          type: object
+          additionalProperties: false
+          required:
+          - value
+          - difficulty
+          - takeaway
+          - question
+          - action
+          - tags
+          properties:
+            value:
+              type: string
+              enum:
+              - ''
+              - insightful
+              - neutral
+              - not_for_me
+            difficulty:
+              type: string
+              enum:
+              - ''
+              - easy
+              - right
+              - hard
+            takeaway:
+              type: string
+              maxLength: 4000
+            question:
+              type: string
+              maxLength: 2000
+            action:
+              type: string
+              maxLength: 2000
+            tags:
+              type: array
+              maxItems: 8
+              items:
+                type: string
+                maxLength: 32
+                minLength: 1
+        mark_read:
+          type: boolean
+    LightTickReadingProvenance:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - work_id
+      - source_id
+      - parent_article_id
+      - root_article_id
+      - fetched_at
+      - raw_sha256
+      properties:
+        kind:
+          type: string
+          enum:
+          - manual_import
+          - web_text
+          - feed_entry
+          - full_fetch
+          - legacy_import
+        work_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+          - type: 'null'
+        source_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+        parent_article_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+        root_article_id:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+        fetched_at:
+          anyOf:
+          - type: string
+            maxLength: 40
+            format: date-time
+          - type: 'null'
+        raw_sha256:
+          anyOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[a-f0-9]{64}$
+          - type: 'null'
+    LightTickReadingEditions:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - title
+            - content_version
+            - revision
+            - archived
+            - created_at
+            - provenance
+            properties:
+              id:
+                type: string
+                maxLength: 128
+                pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+              title:
+                type: string
+                maxLength: 500
+              content_version:
+                type: string
+                maxLength: 64
+                pattern: ^[a-f0-9]{64}$
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              archived:
+                type: boolean
+              created_at:
+                type: string
+                maxLength: 40
+                format: date-time
+              provenance:
+                anyOf:
+                - $ref: '#/components/schemas/LightTickReadingProvenance'
+                - type: 'null'
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+    LightTickReadingEditionsEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          const: OK
+        message:
+          type: string
+          maxLength: 1000
+        requestId:
+          type: string
+          maxLength: 200
+        data:
+          $ref: '#/components/schemas/LightTickReadingEditions'

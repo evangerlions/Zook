@@ -1,3 +1,4 @@
+import { parseReadingDocument } from "./reading-parser.ts";
 import { captureModel } from "../personal-model/personal-model.service.ts";
 import { randomUUID } from "node:crypto";
 import type { LLMManager } from "../../../services/llm-manager.ts";
@@ -237,10 +238,15 @@ export class ReadingWorkRunner {
     row: ReadingWork,
     signal: AbortSignal,
   ): Promise<NonNullable<ReadingWork["output"]>> {
-    if (row.kind === "collect_url" || row.kind === "collect_source")
-      return collectReadingDocument(
-        row,
+    if (
+      row.kind === "collect_url" ||
+      row.kind === "collect_source" ||
+      row.kind === "fetch_full"
+    )
+      return parseReadingDocument(
+        { kind: row.kind, input: row.input },
         await this.fetchDocument(row.input.url!, signal),
+        signal,
       );
     const sceneName = ("reading_" + row.kind) as LightTickAiSceneName,
       scene = await this.resolveScene(sceneName),

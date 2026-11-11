@@ -13,7 +13,7 @@ export function writeReadingMaterial(
   raw: unknown,
   adopt: boolean,
   now: string,
-  origin:"manual"|"ai"="manual",
+  origin: "manual" | "ai" = "manual",
 ) {
   const b = object(raw);
   keys(b, [

@@ -14,6 +14,7 @@ export interface ReadingSource {
 export type ReadingWorkKind =
   | "collect_url"
   | "collect_source"
+  | "fetch_full"
   | ReadingMaterial["kind"];
 export interface ReadingWork extends LightTickOwner {
   id: string;
@@ -31,6 +32,8 @@ export interface ReadingWork extends LightTickOwner {
     paragraph_id?: string | null;
     text?: string;
     model_selection?: ModelSelection;
+    source_metadata?: Omit<ArticleContent, "body">;
+    parent_root_id?: string;
   };
   output: {
     entries?: ArticleContent[];

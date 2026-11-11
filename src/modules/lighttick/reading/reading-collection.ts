@@ -1,9 +1,10 @@
+import { visibleHtmlText } from "../../../shared/visible-html-text.ts";
 import { createHash } from "node:crypto";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import type { ArticleContent } from "./reading.types.ts";
 import type { ReadingWork } from "./reading-work.types.ts";
 import { articleContent } from "./reading.validation.ts";
-import { readingURL } from "./reading-work.service.ts";
+import { readingURL } from "./reading-url.ts";
 import { fail } from "../learning/native-learning.validation.ts";
 export interface ReadingDocument {
   body: string;
@@ -48,27 +49,21 @@ function entities(v: string) {
   );
 }
 /** Visible text is a preview; exact downloaded bytes remain in the work document. No HTML is rendered. */
-export function readingVisibleText(raw: string) {
-  return entities(
-    raw
-      .replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
-      .replace(/<!--[^]*?-->/g, "")
-      .replace(
-        /<(?:\/p|\/div|\/section|\/article|\/h[1-6]|br|\/li)\b[^>]*>/gi,
-        "\n\n",
-      )
-      .replace(/<[^>]*>/g, " "),
-  )
-    .replace(/[\t ]+/g, " ")
-    .replace(/ *\n */g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
+export const readingVisibleText = (raw: string) => visibleHtmlText(raw);
 function published(v: any) {
   const raw = scalar(v);
   if (!raw || !/(?:Z|[+-]\d\d:?\d\d|GMT|UTC)$/i.test(raw.trim())) return null;
   const stamp = Date.parse(raw);
   return Number.isFinite(stamp) ? new Date(stamp).toISOString() : null;
+}
+function publishedDate(v: any) {
+  const raw = scalar(v).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const stamp = Date.parse(raw + "T00:00:00Z");
+  return Number.isFinite(stamp) &&
+    new Date(stamp).toISOString().slice(0, 10) === raw
+    ? raw
+    : null;
 }
 function link(raw: any, base: string) {
   const value = scalar(raw);
@@ -80,7 +75,7 @@ function link(raw: any, base: string) {
   }
 }
 export function collectReadingDocument(
-  work: ReadingWork,
+  work: Pick<ReadingWork, "kind" | "input">,
   document: ReadingDocument,
 ) {
   const { body, content_type } = document;
@@ -93,20 +88,23 @@ export function collectReadingDocument(
       fail(422, "此来源不是文本文章，请选择订阅格式。");
     entries = [
       articleContent({
+        ...work.input.source_metadata,
         title: work.input.title,
         body: content_type.startsWith("text/html")
           ? readingVisibleText(body)
           : body,
         source_url: work.input.url,
-        language: "unknown",
-        published_at: null,
-        author: null,
-        tags: [],
+        language: work.input.source_metadata?.language ?? "unknown",
+        published_at: work.input.source_metadata?.published_at ?? null,
+        author: work.input.source_metadata?.author ?? null,
+        tags: work.input.source_metadata?.tags ?? [],
       }),
     ];
   } else {
     if (/<!DOCTYPE|<!ENTITY/i.test(body))
       fail(422, "不接受含DTD或外部实体的订阅内容。");
+    if ((body.match(/</g)?.length ?? 0) > 40000)
+      fail(413, "订阅标记超过容量，未截断导入。");
     if (XMLValidator.validate(body) !== true)
       fail(422, "订阅XML无法解析，未导入部分结果。");
     const parsed = new XMLParser({
@@ -150,6 +148,10 @@ export function collectReadingDocument(
           ? scalar(feed.language ?? feed["@_lang"] ?? feed["@_xml:lang"])
           : "unknown",
         published_at: published(item.pubDate ?? item.published ?? item.updated),
+        published_date: publishedDate(
+          item.pubDate ?? item.published ?? item.updated,
+        ),
+        publisher: entities(scalar(feed.title)) || null,
         author:
           entities(
             scalar(
@@ -169,7 +171,12 @@ export function collectReadingDocument(
       ...document,
       url: work.input.url!,
       sha256: createHash("sha256").update(body, "utf8").digest("hex"),
-      capture_kind: format === "article" ? "web_text" : "feed_entry",
+      capture_kind:
+        work.kind === "fetch_full"
+          ? "full_fetch"
+          : format === "article"
+            ? "web_text"
+            : "feed_entry",
     },
   };
 }

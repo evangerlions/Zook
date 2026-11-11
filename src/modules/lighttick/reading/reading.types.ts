@@ -7,6 +7,24 @@ export interface ArticleContent {
   published_at: string | null;
   author?: string | null;
   tags?: string[];
+  translated_title?: string | null;
+  publisher?: string | null;
+  description?: string | null;
+  topics?: string[];
+  category?: "recent" | "classic" | "manual" | null;
+  access?: string | null;
+  recommendation_reason?: string | null;
+  published_date?: string | null;
+}
+export interface ReadingFeedback {
+  version: number;
+  value: "" | "insightful" | "neutral" | "not_for_me";
+  difficulty: "" | "easy" | "right" | "hard";
+  takeaway: string;
+  question: string;
+  action: string;
+  tags: string[];
+  updated_at: string | null;
 }
 export interface ArticlePrivate {
   notes: string;
@@ -15,6 +33,7 @@ export interface ArticlePrivate {
   read: boolean;
   read_at: string | null;
   feedback: string;
+  structured_feedback?: ReadingFeedback;
   positions: Record<string, number>;
 }
 export interface ReadingArticle {
@@ -27,6 +46,21 @@ export interface ReadingArticle {
   created_at: string;
   updated_at: string;
   materials?: ReadingMaterial[];
+  provenance?: ReadingProvenance;
+}
+export interface ReadingProvenance {
+  kind:
+    | "manual_import"
+    | "web_text"
+    | "feed_entry"
+    | "full_fetch"
+    | "legacy_import";
+  work_id: string | null;
+  source_id: string | null;
+  parent_article_id: string | null;
+  root_article_id: string;
+  fetched_at: string | null;
+  raw_sha256: string | null;
 }
 export interface ReadingMaterial {
   kind: "guide" | "translation" | "summary" | "english";
@@ -56,4 +90,10 @@ export interface ReadingRepository extends VocabularyStore {
     limit: number,
   ): Promise<ReadingArticle[]>;
   save(o: LightTickOwner, row: ReadingArticle, base: number): Promise<void>;
+  editions(
+    o: LightTickOwner,
+    rootId: string,
+    after: string,
+    limit: number,
+  ): Promise<ReadingArticle[]>;
 }

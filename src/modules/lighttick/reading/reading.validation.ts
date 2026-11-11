@@ -22,6 +22,14 @@ export function articleContent(raw: unknown): ArticleContent {
     "published_at",
     "author",
     "tags",
+    "translated_title",
+    "publisher",
+    "description",
+    "topics",
+    "category",
+    "access",
+    "recommendation_reason",
+    "published_date",
   ]);
   const url = b.source_url == null ? null : text(b.source_url, 2048, true);
   if (url) {
@@ -49,14 +57,50 @@ export function articleContent(raw: unknown): ArticleContent {
   if (!Array.isArray(tags) || tags.length > 100)
     fail(422, "文章标签最多100项。");
   const validatedTags = tags.map((value) => text(value, 200, true));
+  const metadata: Partial<ArticleContent> = {};
+  for (const [key, limit] of [
+    ["translated_title", 500],
+    ["publisher", 500],
+    ["description", 10000],
+    ["access", 2000],
+    ["recommendation_reason", 2000],
+  ] as const)
+    if (Object.hasOwn(b, key))
+      metadata[key] = b[key] === null ? null : text(b[key], limit);
+  if (Object.hasOwn(b, "topics")) {
+    if (!Array.isArray(b.topics) || b.topics.length > 100)
+      fail(422, "文章主题最多100项。");
+    metadata.topics = b.topics.map((t) => text(t, 200, true));
+  }
+  if (Object.hasOwn(b, "category")) {
+    if (
+      b.category !== null &&
+      !["recent", "classic", "manual"].includes(String(b.category))
+    )
+      fail(422, "文章类别无效。");
+    metadata.category = b.category as ArticleContent["category"];
+  }
+  if (Object.hasOwn(b, "published_date")) {
+    const date =
+      b.published_date === null ? null : text(b.published_date, 10, true);
+    if (
+      date &&
+      (!/^\d{4}-\d\d-\d\d$/.test(date) ||
+        !Number.isFinite(Date.parse(date + "T00:00:00Z")) ||
+        new Date(date + "T00:00:00Z").toISOString().slice(0, 10) !== date)
+    )
+      fail(422, "发布日期须为有效日期，未知请保留为空。");
+    metadata.published_date = date;
+  }
   return {
-    title: text(b.title, 200, true),
+    title: text(b.title, 500, true),
     body: text(b.body, 100000, true),
     source_url: url,
     language,
     published_at: published,
     author,
     tags: validatedTags,
+    ...metadata,
   };
 }
 export function articleQuery(

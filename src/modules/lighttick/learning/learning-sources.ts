@@ -1,3 +1,4 @@
+import {visibleHtmlText} from "../../../shared/visible-html-text.ts";
 import { lookup } from "node:dns/promises";
 import { request } from "node:https";
 import { isIP } from "node:net";
@@ -52,7 +53,7 @@ export async function fetchPublicSource(raw: string, signal: AbortSignal, io = {
 export async function fetchLearningSource(raw:string,signal:AbortSignal,io={lookup,request}):Promise<string>{
  const document=await fetchPublicSource(raw,signal,io);
  if(!/^text\/(plain|markdown|html)(?:;|$)/.test(document.content_type))throw Error("SOURCE_RESPONSE_UNSUPPORTED");
- return document.content_type.startsWith("text/html")?document.body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,"").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,"").replace(/<[^>]*>/g," ").replace(/\s+/g," "):document.body;
+ return document.content_type.startsWith("text/html")?visibleHtmlText(document.body,100000,"legacy"):document.body;
 }
 export async function collectLearningSources(owner: LightTickOwner, inputs: LearningSourceInput[], adapters: LearningSourceAdapters, signal: AbortSignal): Promise<LearningSource[]> {
   const values=await Promise.all(inputs.map(async input=>{

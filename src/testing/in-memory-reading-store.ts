@@ -1,3 +1,4 @@
+import {hasReadingFeedback,readingSearchText} from "../modules/lighttick/reading/reading-feedback.ts";
 import type { LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
 import type {
   ReadingRepository,
@@ -126,26 +127,16 @@ export class InMemoryReadingStore implements ReadingRepository {
         (r) =>
           r.id > q.after &&
           r.archived === (q.filter === "archived") &&
-          (
-            r.content.title +
-            "\n" +
-            r.content.body +
-            "\n" +
-            (r.content.author ?? "") +
-            "\n" +
-            (r.content.tags ?? []).join("\n")
-          )
+          readingSearchText(r)
             .toLowerCase()
             .includes(q.search.toLowerCase()) &&
-          (!["bookmark", "later", "read", "feedback"].includes(q.filter) ||
-            !!r.personal[
-              q.filter as "bookmark" | "later" | "read" | "feedback"
-            ]),
+          (q.filter==="feedback"?hasReadingFeedback(r):!["bookmark","later","read"].includes(q.filter)||!!r.personal[q.filter as "bookmark"|"later"|"read"]),
       );
     return structuredClone(
       rows.sort((a, b) => (a.id < b.id ? -1 : 1)).slice(0, q.limit),
     );
   }
+  async editions(o:LightTickOwner,rootId:string,after:string,limit:number){return structuredClone([...this.rows.values()].filter(r=>r.owner.appId===o.appId&&r.owner.userId===o.userId).map(r=>r.versions.at(-1)!).filter(r=>r.id>after&&(r.id===rootId||r.provenance?.root_article_id===rootId)).sort((a,b)=>a.id<b.id?-1:1).slice(0,limit));}
   async history(o: LightTickOwner, id: string, before: number, limit: number) {
     return structuredClone(
       (this.rows.get(key(o, id))?.versions ?? [])

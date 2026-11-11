@@ -57,12 +57,13 @@ export async function handleReadingRequest(
   const receipt = /^\/receipts\/([a-zA-Z0-9_-]+)$/.exec(part);
   if (r.method === "GET" && receipt) return service.receipt(owner, receipt[1]);
   const match =
-    /^\/articles\/(article-[a-zA-Z0-9_-]+)(?:\/(history|personal|position|archive|restore|draft|adopt))?$/.exec(
+    /^\/articles\/(article-[a-zA-Z0-9_-]+)(?:\/(history|editions|personal|position|archive|restore|draft|adopt|feedback))?$/.exec(
       part,
     );
   if (match) {
     const [, id, action] = match;
     if (r.method === "GET" && !action) return service.read(owner, id);
+    if (r.method==="GET"&&action==="editions")return service.editions(owner,id,r.query?.cursor??"");
     if (r.method === "GET" && action === "history")
       return service.history(
         owner,
