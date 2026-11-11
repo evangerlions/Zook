@@ -286,6 +286,10 @@ export class ReadingScheduleService {
               });
               continue;
             }
+            if(await this.work.repo.readingErasure.contentTombstone(o,reference.content_digest)){
+              day.skipped.push({work_id:row.id,index,url:reference.content.source_url??"",reason:"previously_deleted"});
+              continue;
+            }
             await this.authorizeOwner(o);
             if (readingShanghaiDate(this.work.clock()) !== date)
               throw Error("READING_DAILY_DATE_EXPIRED");

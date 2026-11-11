@@ -7118,6 +7118,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
       parameters:
       - name: operationId
         in: path
@@ -7165,6 +7167,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
         in: path
@@ -7210,6 +7214,8 @@ paths:
         '422':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
           $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
@@ -7265,6 +7271,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
         in: path
@@ -7317,6 +7325,8 @@ paths:
         '422':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
           $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
@@ -7372,6 +7382,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
         in: path
@@ -7426,6 +7438,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
         in: path
@@ -7479,6 +7493,8 @@ paths:
         '422':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
           $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
@@ -7923,6 +7939,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
         in: path
@@ -7977,6 +7995,8 @@ paths:
         '422':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
           $ref: '#/components/responses/LightTickError'
       parameters:
       - name: articleId
@@ -8488,6 +8508,8 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/reading/articles/{articleId}/feedback:
     post:
       operationId: saveStructuredReadingFeedback
@@ -8527,6 +8549,8 @@ paths:
         '422':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
           $ref: '#/components/responses/LightTickError'
       requestBody:
         required: true
@@ -8579,6 +8603,8 @@ paths:
         '422':
           $ref: '#/components/responses/LightTickError'
         '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
           $ref: '#/components/responses/LightTickError'
   /api/v1/lighttick/reading/setup:
     get:
@@ -9564,6 +9590,181 @@ paths:
           minLength: 8
           maxLength: 128
           pattern: ^[a-zA-Z0-9_-]+$
+  /api/v1/lighttick/reading/articles/{articleId}/deletion-preview:
+    get:
+      operationId: previewReadingArticleDeletion
+      summary: previewReadingArticleDeletion
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only article erasure. Preview freezes article CAS/content SHA, related work/assets
+        (including shared captures), linked vocabulary, affected receipts and retained server backups.
+        POST verifies the exact scope_digest under the owner lock; changes reject without partial erasure.
+        Removes article/private/material history, linked vocabulary/reviews and shared capture bytes;
+        fences pending jobs, redacts original reading receipts, invalidates all retained server reading
+        backups. Independent articles/actions/feedback/knowledge and previously downloaded user copies
+        remain. Minimal owner tombstones prevent old-key/old-job resurrection. Old erased receipt reads/replays
+        return 410 LIGHTTICK_READING_ERASED. Explicitly imported later copies get new identity/private
+        facts; automatic daily work skips erased content. Result digest serialization is explicitly labeled.
+        Deletion requires full mode; preview and original deletion receipt remain readable in core. Portable
+        v2 backup articles include tombstones; no restore/cutover occurs.
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      responses:
+        '200':
+          description: Exact owner erasure result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingDeletionPreviewEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/articles/{articleId}/delete:
+    post:
+      operationId: deleteReadingArticle
+      summary: deleteReadingArticle
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only article erasure. Preview freezes article CAS/content SHA, related work/assets
+        (including shared captures), linked vocabulary, affected receipts and retained server backups.
+        POST verifies the exact scope_digest under the owner lock; changes reject without partial erasure.
+        Removes article/private/material history, linked vocabulary/reviews and shared capture bytes;
+        fences pending jobs, redacts original reading receipts, invalidates all retained server reading
+        backups. Independent articles/actions/feedback/knowledge and previously downloaded user copies
+        remain. Minimal owner tombstones prevent old-key/old-job resurrection. Old erased receipt reads/replays
+        return 410 LIGHTTICK_READING_ERASED. Explicitly imported later copies get new identity/private
+        facts; automatic daily work skips erased content. Result digest serialization is explicitly labeled.
+        Deletion requires full mode; preview and original deletion receipt remain readable in core. Portable
+        v2 backup articles include tombstones; no restore/cutover occurs.
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Exact owner erasure result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingDeletedEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingDeleteRequest'
+  /api/v1/lighttick/reading/erasure-receipts/{operationId}:
+    get:
+      operationId: getReadingArticleDeletionReceipt
+      summary: getReadingArticleDeletionReceipt
+      tags:
+      - lighttick-reading
+      security:
+      - bearerAuth: []
+      description: Owner-only article erasure. Preview freezes article CAS/content SHA, related work/assets
+        (including shared captures), linked vocabulary, affected receipts and retained server backups.
+        POST verifies the exact scope_digest under the owner lock; changes reject without partial erasure.
+        Removes article/private/material history, linked vocabulary/reviews and shared capture bytes;
+        fences pending jobs, redacts original reading receipts, invalidates all retained server reading
+        backups. Independent articles/actions/feedback/knowledge and previously downloaded user copies
+        remain. Minimal owner tombstones prevent old-key/old-job resurrection. Old erased receipt reads/replays
+        return 410 LIGHTTICK_READING_ERASED. Explicitly imported later copies get new identity/private
+        facts; automatic daily work skips erased content. Result digest serialization is explicitly labeled.
+        Deletion requires full mode; preview and original deletion receipt remain readable in core. Portable
+        v2 backup articles include tombstones; no restore/cutover occurs.
+      parameters:
+      - name: operationId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]{8,128}$
+      responses:
+        '200':
+          description: Exact owner erasure result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingErasureReceiptEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
 components:
   securitySchemes:
     bearerAuth:
@@ -12766,6 +12967,10 @@ components:
       - SOURCE_EVENT_CONFLICT
       - SOURCE_PROOF_INVALID
       - SOURCE_DELIVERY_UNAVAILABLE
+      - LIGHTTICK_READING_ERASED
+      - LIGHTTICK_READING_BACKUP_EXPIRED
+      - LIGHTTICK_READING_BACKUP_CAPACITY
+      - LIGHTTICK_READING_BACKUP_TOO_LARGE
     LightTickErrorData:
       type: object
       required:
@@ -25114,8 +25319,10 @@ components:
                 type: string
                 maxLength: 1500
               reason:
-                const: already_saved
                 type: string
+                enum:
+                - already_saved
+                - previously_deleted
           maxItems: 24
         next_at:
           type: string
@@ -25232,8 +25439,10 @@ components:
                 type: string
                 maxLength: 1500
               reason:
-                const: already_saved
                 type: string
+                enum:
+                - already_saved
+                - previously_deleted
           maxItems: 24
         next_at:
           type: string
@@ -25809,6 +26018,261 @@ components:
           maxLength: 1000
         data:
           $ref: '#/components/schemas/LightTickActionRequestReceipt'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingDeletionPreview:
+      type: object
+      additionalProperties: false
+      required:
+      - article_id
+      - base_revision
+      - content_version
+      - article_versions
+      - work
+      - vocabulary
+      - receipts
+      - backups
+      - scope_digest
+      - preserved
+      properties:
+        article_id: &id031
+          type: string
+          maxLength: 128
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        content_version: &id032
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        article_versions: &id033
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        work:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - revision
+            - status
+            - assets
+            - other_article_ids
+            properties:
+              id: *id031
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              status:
+                type: string
+                enum:
+                - queued
+                - running
+                - succeeded
+                - failed
+                - cancelled
+              assets:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  required:
+                  - id
+                  - sha256
+                  properties:
+                    id: *id031
+                    sha256: *id032
+                maxItems: 100
+              other_article_ids:
+                type: array
+                items: *id031
+                maxItems: 100
+          maxItems: 100
+        vocabulary:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - revision
+            properties:
+              id: *id031
+              revision:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+          maxItems: 10000
+        receipts:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - operation_id
+            - payload_hash
+            properties:
+              operation_id: *id031
+              payload_hash: *id032
+          maxItems: 10000
+        backups:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - manifest_sha256
+            properties:
+              id: *id031
+              manifest_sha256: *id032
+          maxItems: 2
+        scope_digest: *id032
+        preserved:
+          type: array
+          items:
+            type: string
+            enum:
+            - independent_articles
+            - actions_and_feedback
+            - knowledge_notes
+            - previously_downloaded_user_copies
+          maxItems: 4
+    LightTickReadingDeleteRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - scope_digest
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        content_version: *id032
+        scope_digest: *id032
+    LightTickReadingDeleted:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - content_version
+      - deleted
+      - deleted_at
+      - scope_digest
+      - removed
+      properties:
+        id:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        deleted:
+          const: true
+        deleted_at:
+          type: string
+          format: date-time
+        scope_digest: *id032
+        removed:
+          type: object
+          additionalProperties: false
+          required:
+          - article_versions
+          - work
+          - assets
+          - vocabulary
+          - receipts
+          - backups
+          properties:
+            article_versions: *id033
+            work: *id033
+            assets: *id033
+            vocabulary: *id033
+            receipts: *id033
+            backups: *id033
+    LightTickReadingErasureReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - operation_id
+      - payload_hash
+      - result
+      properties:
+        operation_id: *id031
+        payload_hash: *id032
+        result:
+          $ref: '#/components/schemas/LightTickReadingDeleted'
+    LightTickReadingDeletionPreviewEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingDeletionPreview'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingDeletedEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingDeleted'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingErasureReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingErasureReceipt'
         requestId:
           type: string
           maxLength: 128

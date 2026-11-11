@@ -1,3 +1,4 @@
+import {assertReadingNotErased} from "./reading-erasure.service.ts";
 import { adoptReadingWork } from "./reading-work-adoption.ts";
 import { assertReadingJSON } from "./reading-json-safe.ts";
 import { candidateReadingInput } from "./reading-candidate-input.ts";
@@ -125,6 +126,7 @@ export class ReadingWorkService {
           old.payloadHash !== hash
         )
           fail(409, "原请求编号已用于其他操作。");
+        assertReadingNotErased(old.resultPayload);
         return structuredClone(old.resultPayload) as T;
       }
       const result = await perform(),

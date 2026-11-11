@@ -205,7 +205,7 @@ const server = createServer(async (req, res) => {
       if (
         u.pathname === "/__synthetic/drop-next" &&
         typeof body.path === "string" &&
-        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources|preferences|recommendations|schedule|backups)(?:\/|$)|learning\/modules\/|action-plans\/practices(?:\/|$))/.test(
+        /^\/api\/v1\/lighttick\/(?:reading\/(?:work|sources|preferences|recommendations|schedule|backups|articles)(?:\/|$)|learning\/modules\/|action-plans\/practices(?:\/|$))/.test(
           body.path,
         )
       ) {

@@ -18,7 +18,7 @@ export interface ReadingScheduleDay {
     work_id: string;
     index: number;
     url: string;
-    reason: "already_saved";
+    reason: "already_saved" | "previously_deleted";
   }[];
   next_at: string;
   error_code: string | null;

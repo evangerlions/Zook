@@ -1,3 +1,4 @@
+import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import { assertReadingJSON } from "./reading-json-safe.ts";
 import { writeReadingFeedback } from "./reading-feedback.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
@@ -65,7 +66,11 @@ export class ReadingService {
     return this.repo.transaction(o, async () => {
       await this.authorize();
       const row = await this.repo.reading.get(o, id);
-      if (!row) fail(404, "未找到本人的文章。");
+      if (!row) {
+        if (await this.repo.readingErasure.tombstone(o, id))
+          assertReadingNotErased({ erased: true });
+        fail(404, "未找到本人的文章。");
+      }
       return row;
     });
   }
@@ -112,12 +117,22 @@ export class ReadingService {
       const row = await this.repo.getOperation(o, key);
       if (!row || row.entityType !== "reading_article")
         fail(404, "未找到本人的阅读请求回执。");
+      assertReadingNotErased(row.resultPayload);
       return structuredClone(row.resultPayload) as unknown as ReadingArticle;
     });
   }
   async export(o: LightTickOwner) {
     return this.repo.transaction(o, async () => {
       await this.authorize();
+      const first = await this.repo.readingBackups.entries(
+        o,
+        "articles",
+        "",
+        1001,
+      );
+      if (first.length > 1000) fail(413, "请使用完整分片阅读副本。");
+      if (first.some((r) => (r.value as { deleted?: boolean })?.deleted))
+        fail(413, "存在已删除身份，请使用完整分片阅读副本，旧导出不省略墓碑。");
       const items: ReadingArticle[] = [];
       const history: ReadingArticle[] = [];
       for (const archived of [false, true]) {
@@ -288,10 +303,13 @@ export class ReadingService {
           receipt.payloadHash !== hash
         )
           fail(409, "原请求编号已用于不同操作。");
+        assertReadingNotErased(receipt.resultPayload);
         return structuredClone(
           receipt.resultPayload,
         ) as unknown as ReadingArticle;
       }
+      if (await this.repo.readingErasure.tombstone(o, id))
+        assertReadingNotErased({ erased: true });
       const old = await this.repo.reading.get(o, id);
       if (
         (old?.revision ?? 0) !== base ||

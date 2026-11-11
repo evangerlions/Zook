@@ -1,3 +1,4 @@
+import {InMemoryReadingErasureStore} from "./in-memory-reading-erasure-store.ts";
 import {InMemoryReadingBackupStore} from "./in-memory-reading-backup-store.ts";
 import {memoryReadingBackupEntries} from "./in-memory-reading-backup-entries.ts";
 import {InMemoryReadingWorkStore} from "./in-memory-reading-work-store.ts";
@@ -8,7 +9,7 @@ import {InMemoryResearchAIStore} from "./in-memory-research-ai-store.ts";
 import { InMemoryGitHubStore } from "./in-memory-github-store.ts";
 import {InMemoryPersonalModelStore} from "./in-memory-personal-model-store.ts";
 import {InMemoryInvestmentStore} from "./in-memory-investment-store.ts";
-import {sourceAvailable} from "../modules/lighttick/knowledge/knowledge.service.ts";
+import {sourceGranted} from "../modules/lighttick/knowledge/knowledge.service.ts";
 import {InMemoryKnowledgeStore} from "./in-memory-knowledge-store.ts";
 import {InMemoryNativeLearningStore} from "./in-memory-native-learning-store.ts";
 import {InMemoryLearningRouteStore} from "./in-memory-learning-route-store.ts";
@@ -35,6 +36,7 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  readonly readingErasure=new InMemoryReadingErasureStore(()=>this.reading,()=>this.readingWork,()=>[...this.operations.values()]);
   readonly readingBackups=new InMemoryReadingBackupStore((o,section,after,limit)=>memoryReadingBackupEntries(this.reading,this.readingWork,[...this.operations.values()],o,section,after,limit));
   readonly readingWork=new InMemoryReadingWorkStore();
   readonly learningModules=new InMemoryLearningModuleStore();
@@ -49,7 +51,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       if(lesson.archived||!lesson.publishedVersion||(await this.getLearningCollection(o,lesson.collectionId))?.archived)continue;
       const publication=await this.getLessonPublication(o,lesson.id,lesson.publishedVersion);if(publication){const state=await this.getNativePrivateState(o,lesson.id,lesson.publishedVersion)??null;const h=(await this.listLearningHistory(o,lesson.id,lesson.publishedVersion,'',1000)).find(h=>['initial','notes','import'].includes(h.component)&&h.state.notesRevision===state?.notesRevision);facts.push({lesson,publication,state,notesUpdatedAt:h?.createdAt??null});}
     }return facts;
-  },(o,s)=>sourceAvailable(this,o,s));
+  },(o,s)=>sourceGranted(this,o,s));
   readonly learningRoutes=new InMemoryLearningRouteStore(async(o,id)=>{
     const result=[];
     for(const link of await this.learningRoutes.listRouteLessonLinks(o,id)){

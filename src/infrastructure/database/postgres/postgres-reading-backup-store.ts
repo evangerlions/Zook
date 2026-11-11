@@ -56,12 +56,19 @@ export class PostgresReadingBackupStore implements ReadingBackupRepository {
     if (section === "receipts")
       return (
         await this.query(
-          `SELECT * FROM zook_lighttick_operations WHERE app_id=$1 AND user_id=$2 AND operation_id COLLATE "C">$3 AND entity_type IN ('reading_article','reading_work','reading_vocabulary') ORDER BY operation_id COLLATE "C" LIMIT $4`,
+          `SELECT * FROM zook_lighttick_operations WHERE app_id=$1 AND user_id=$2 AND operation_id COLLATE "C">$3 AND entity_type IN ('reading_article','reading_work','reading_vocabulary','reading_erasure') ORDER BY operation_id COLLATE "C" LIMIT $4`,
           [o.appId, o.userId, after, limit],
         )
       ).rows.map((row) =>
         portableReadingRecord(section, row.operation_id, mapRow(row)),
       );
+    if (section === "articles")
+      return (
+        await this.query(
+          `SELECT id AS key,payload FROM (SELECT id,payload FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 UNION ALL SELECT id,payload FROM zook_lighttick_reading_tombstones WHERE app_id=$1 AND user_id=$2) AS records WHERE id COLLATE "C">$3 ORDER BY id COLLATE "C" LIMIT $4`,
+          [o.appId, o.userId, after, limit],
+        )
+      ).rows.map((row) => portableReadingRecord(section, row.key, row.payload));
     const [table, key] = tables[section];
     return (
       await this.query(

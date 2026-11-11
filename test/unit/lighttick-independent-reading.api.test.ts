@@ -145,3 +145,25 @@ test("independent reading HTTP auth, generated contracts, receipts, history, exp
   assert.equal(blocked.statusCode, 503);
   assert.equal(blocked.body.code, "LIGHTTICK_CAPABILITY_UNAVAILABLE");
 });
+
+test("article deletion HTTP contract requires a frozen preview, rejects new core writes and recovers the original deletion without private receipt resurrection",async()=>{
+ const seed=buildDefaultSeed(undefined,{includeLightTick:true});seed.appUsers.push({id:"erasure-http-member",appId:"lighttick",userId:"user_alice",status:"ACTIVE",accountRegion:"UNKNOWN",joinedAt:new Date().toISOString()});
+ const app=await createApplication({seed,lighttickEnabled:true}),headers={authorization:"Bearer "+app.services.tokenService.issueAccessToken("user_alice","lighttick"),"x-app-id":"lighttick","idempotency-key":"erasure-http-import"};
+ const call=(path:string,method="GET",body?:unknown,key=headers["idempotency-key"])=>app.app.handle({path:"/api/v1/lighttick/reading"+path,method,body,headers:{...headers,"idempotency-key":key}});
+ const ajv=new Ajv2020({strict:false});addFormats(ajv);
+ const validate=(name:string,r:any)=>{assert.equal(r.statusCode,200,JSON.stringify(r.body));const check=ajv.compile((schemas as any)["LightTickReading"+name+"EnvelopeSchema"]);assert.equal(check(r.body),true,JSON.stringify(check.errors));};
+ const input={base_revision:0,content:{title:"HTTP synthetic erasure",body:"Private original",source_url:null,language:"en",published_at:null}};
+ validate("Article",await call("/articles/article-http-erasure","PUT",input));
+ const preview=await call("/articles/article-http-erasure/deletion-preview");validate("DeletionPreview",preview);
+ const p=preview.body.data as any,body={base_revision:p.base_revision,content_version:p.content_version,scope_digest:p.scope_digest};
+ await app.services.appConfigService.setValue("lighttick","admin.delivery_config",JSON.stringify({enabled:true,settings:{runtimeScope:"core"}}));
+ assert.equal((await call("/articles/article-http-erasure/delete","POST",body,"erasure-http-delete")).statusCode,503);
+ validate("DeletionPreview",await call("/articles/article-http-erasure/deletion-preview"));
+ await app.services.appConfigService.setValue("lighttick","admin.delivery_config",JSON.stringify({enabled:true,settings:{runtimeScope:"full"}}));
+ const deleted=await call("/articles/article-http-erasure/delete","POST",body,"erasure-http-delete");validate("Deleted",deleted);
+ const replay=await call("/articles/article-http-erasure/delete","POST",body,"erasure-http-delete");validate("Deleted",replay);assert.deepEqual(replay.body.data,deleted.body.data);
+ await app.services.appConfigService.setValue("lighttick","admin.delivery_config",JSON.stringify({enabled:true,settings:{runtimeScope:"core"}}));
+ validate("ErasureReceipt",await call("/erasure-receipts/erasure-http-delete"));
+ for(const path of ["/articles/article-http-erasure","/receipts/erasure-http-import"]){const r=await call(path);assert.equal(r.statusCode,410);assert.equal(r.body.code,"LIGHTTICK_READING_ERASED");}
+ assert.equal((await call("/erasure-receipts/erasure-other-original")).statusCode,404);
+});

@@ -20,6 +20,7 @@ export class InMemoryReadingAssetsStore implements ReadingAssetsRepository {
     for (const k of this.rows.keys())
       if (k.startsWith(prefix(o))) this.rows.delete(k);
   }
+  async eraseWork(o:LightTickOwner,id:string){for(const k of this.rows.keys()) if(k.startsWith(prefix(o)+id+":")) this.rows.delete(k);}
   async get(o: LightTickOwner, workId: string, id: string) {
     return structuredClone(this.rows.get(prefix(o) + workId + ":" + id));
   }

@@ -1,3 +1,5 @@
+import { articleContent } from "./reading.validation.ts";
+import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import type { ReadingWorkService } from "./reading-work.service.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import { ReadingService } from "./reading.service.ts";
@@ -54,7 +56,20 @@ export async function adoptReadingWork(
     const content =
         row.output.entries?.[index] ??
         (asset!.value as import("./reading.types.ts").ArticleContent),
-      articleId = "article-" + digest(content).slice(0, 40);
+      defaultId = "article-" + digest(content).slice(0, 40),
+      tombstone = await service.repo.readingErasure.contentTombstone(
+        o,
+        digest(articleContent(content)),
+      );
+    if (
+      tombstone &&
+      (row.created_at <= tombstone.deleted_at ||
+        row.input.recommendation?.automatic)
+    )
+      assertReadingNotErased({ erased: true });
+    const articleId = tombstone
+      ? "article-" + digest([digest(content), row.id, index]).slice(0, 40)
+      : defaultId;
     const documentAsset = reference
       ? await service.store.assets.get(o, id, reference.document_id)
       : undefined;
@@ -100,7 +115,7 @@ export async function adoptReadingWork(
           raw_sha256: capture?.sha256 ?? null,
         },
       ));
-    if (old && old.content_version !== digest(content))
+    if (old && old.content_version !== digest(articleContent(content)))
       fail(409, "导入对象已变化，不能覆盖。");
     result = { article_id: article.id, revision: article.revision };
   } else {

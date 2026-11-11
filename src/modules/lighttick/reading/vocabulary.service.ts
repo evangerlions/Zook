@@ -1,3 +1,4 @@
+import {assertReadingNotErased} from "./reading-erasure.service.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import {
@@ -112,6 +113,7 @@ export class VocabularyService {
           receipt.payloadHash !== hash
         )
           fail(409, "原请求编号已用于不同操作。");
+        assertReadingNotErased(receipt.resultPayload);
         return receipt.resultPayload;
       }
       const previous = await this.repo.reading.getVocabulary(owner, id);

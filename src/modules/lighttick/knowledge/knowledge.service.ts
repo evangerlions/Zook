@@ -42,6 +42,18 @@ export async function sourceAvailable(
     !!(await repo.getLessonPublication(o, s.id, s.version))
   );
 }
+/** Owner-authored notes remain owned when their private article source is erased. */
+export async function sourceGranted(
+  repo: LightTickRepository,
+  o: LightTickOwner,
+  s: KnowledgeSource,
+) {
+  if (s.kind === "article") {
+    const t = await repo.readingErasure.tombstone(o, s.id);
+    if (t?.content_version === s.version) return true;
+  }
+  return sourceAvailable(repo, o, s);
+}
 export function knowledgeFields(b: Record<string, unknown>) {
   keys(b, ["base_revision", "kind", "title", "body", "tags", "sources"]);
   if (!["knowledge", "cognition"].includes(String(b.kind)))
@@ -94,7 +106,7 @@ export class KnowledgeService {
   ) {}
   async allowed(o: LightTickOwner, e: KnowledgeEntry) {
     for (const s of e.sources)
-      if (!(await sourceAvailable(this.repo, o, s))) return false;
+      if (!(await sourceGranted(this.repo, o, s))) return false;
     return true;
   }
   async read(o: LightTickOwner, id: string) {
@@ -148,7 +160,13 @@ export class KnowledgeService {
         fail(403, "The source is unavailable; retain the local copy.");
       if (fields)
         for (const source of fields.sources)
-          if (!(await sourceAvailable(this.repo, o, source)))
+          if (
+            !(await sourceAvailable(this.repo, o, source)) &&
+            !(
+              old?.sources.some((s) => digest(s) === digest(source)) &&
+              (await sourceGranted(this.repo, o, source))
+            )
+          )
             fail(403, "The exact source is unavailable.");
       const receipt = await this.repo.getOperation(o, key);
       if (receipt) {

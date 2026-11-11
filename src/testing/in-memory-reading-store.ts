@@ -123,6 +123,9 @@ export class InMemoryReadingStore implements ReadingRepository {
       reviewRevisions: [],
     });
   }
+  private tombstones = new Map<string, import("../modules/lighttick/reading/reading-erasure.types.ts").ReadingTombstone>();
+  async tombstone(o:LightTickOwner,id:string){ return structuredClone(this.tombstones.get(key(o,id))); }
+  async eraseArticle(o:LightTickOwner,t:import("../modules/lighttick/reading/reading-erasure.types.ts").ReadingTombstone){ this.rows.delete(key(o,t.id)); this.tombstones.set(key(o,t.id),structuredClone(t)); }
   private rows = new Map<
     string,
     { owner: LightTickOwner; versions: ReadingArticle[] }
@@ -220,15 +223,18 @@ export class InMemoryReadingStore implements ReadingRepository {
   }
   snapshot() {
     return structuredClone({
+      tombstones: [...this.tombstones],
       articles: [...this.rows],
       vocabulary: [...this.vocabulary],
     });
   }
   restore(rows: ReturnType<InMemoryReadingStore["snapshot"]>) {
+    this.tombstones = new Map(rows.tombstones);
     this.rows = new Map(rows.articles);
     this.vocabulary = new Map(rows.vocabulary);
   }
   deleteOwner(o: LightTickOwner) {
+    for (const k of this.tombstones.keys()) if(k.startsWith(JSON.stringify([o.appId,o.userId]).slice(0,-1)+",")) this.tombstones.delete(k);
     for (const [k, r] of this.vocabulary)
       if (r.owner.appId === o.appId && r.owner.userId === o.userId)
         this.vocabulary.delete(k);

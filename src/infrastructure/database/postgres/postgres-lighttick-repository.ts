@@ -1,3 +1,4 @@
+import {PostgresReadingErasureStore} from "./postgres-reading-erasure-store.ts";
 import {PostgresReadingBackupStore} from "./postgres-reading-backup-store.ts";
 import {PostgresReadingWorkStore} from "./postgres-reading-work-store.ts";
 import {PostgresLearningModuleStore} from "./postgres-learning-module-store.ts";
@@ -32,8 +33,8 @@ import type {
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
-
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly readingErasure=new PostgresReadingErasureStore((sql,args)=>this.query(sql,args));
   readonly readingBackups=new PostgresReadingBackupStore((sql,args)=>this.query(sql,args));
   readonly readingWork=new PostgresReadingWorkStore((sql,args)=>this.query(sql,args));
   readonly learningModules=new PostgresLearningModuleStore((sql,args)=>this.query(sql,args));
@@ -589,7 +590,6 @@ export class PostgresLightTickRepository implements LightTickRepository {
       AND sequence>$3 ORDER BY sequence ASC LIMIT $4`, [owner.appId,owner.userId,afterSequence,limit]);
     return result.rows.map(mapRow<LightTickChangeRow>);
   }
-
   private readonly devices=new PostgresLightTickDeviceStore((sql,args)=>this.query(sql,args));
   upsertDevice=(row:LightTickDeviceRow)=>this.transaction(row,()=>this.devices.upsertDevice(row));
   listDevices=(owner:LightTickOwner)=>this.devices.listDevices(owner);

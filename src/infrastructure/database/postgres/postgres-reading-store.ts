@@ -21,12 +21,11 @@ type Query = (
 export class PostgresReadingStore implements ReadingRepository {
   constructor(readonly query: Query) {}
   async getVocabulary(o: LightTickOwner, id: string) {
-    return (
-      await this.query(
-        "SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
-        [o.appId, o.userId, id],
-      )
-    ).rows[0]?.payload as VocabularyEntry | undefined;
+    const row = (await this.query(
+      "SELECT payload FROM zook_lighttick_reading_vocabulary WHERE app_id=$1 AND user_id=$2 AND id=$3",
+      [o.appId,o.userId,id],
+    )).rows[0];
+    return (row?.payload ?? undefined) as VocabularyEntry | undefined;
   }
   async duplicateVocabulary(
     o: LightTickOwner,

@@ -1,3 +1,7 @@
+import {
+  ReadingErasureService,
+  assertReadingNotErased,
+} from "../modules/lighttick/reading/reading-erasure.service.ts";
 import { handleReadingBackupRequest } from "./lighttick-reading-backup-routes.ts";
 import { ReadingScheduleService } from "../modules/lighttick/reading/reading-schedule.service.ts";
 import { ReadingRecommendationService } from "../modules/lighttick/reading/reading-recommendation.service.ts";
@@ -23,6 +27,26 @@ export async function handleReadingRequest(
   if (r.path !== root && !r.path.startsWith(root + "/")) return;
   const service = new ReadingService(repo, authorize),
     part = r.path.slice(root.length);
+  const erasure = new ReadingErasureService(repo, authorize),
+    erasureReceipt = /^\/erasure-receipts\/([a-zA-Z0-9_-]+)$/.exec(part),
+    eraseArticle =
+      /^\/articles\/(article-[a-zA-Z0-9_-]+)\/(deletion-preview|delete)$/.exec(
+        part,
+      );
+  if (erasureReceipt && r.method === "GET")
+    return erasure.receipt(owner, erasureReceipt[1]);
+  if (eraseArticle) {
+    if (eraseArticle[2] === "deletion-preview" && r.method === "GET")
+      return erasure.preview(owner, eraseArticle[1]);
+    if (eraseArticle[2] === "delete" && r.method === "POST")
+      return erasure.erase(
+        owner,
+        eraseArticle[1],
+        r.body,
+        r.headers["idempotency-key"] ?? r.headers["Idempotency-Key"] ?? "",
+      );
+    fail(405, "请核对文章删除方法。");
+  }
   if (
     part === "/backups" ||
     part.startsWith("/backups/") ||
@@ -87,6 +111,7 @@ export async function handleReadingRequest(
         const row = await repo.getOperation(owner, receipt[1]);
         if (!row || row.entityType !== "reading_work")
           fail(404, "未找到本人的阅读任务原回执。");
+        assertReadingNotErased(row.resultPayload);
         return {
           operation_id: row.operationId,
           entity_id: row.entityId,

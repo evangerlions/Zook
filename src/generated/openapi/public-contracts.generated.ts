@@ -72027,6 +72027,1040 @@ export type LightTickReadingBackupReceiptEnvelope = {
   "requestId": string;
 };
 
+export const LightTickReadingDeletionPreviewSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "article_id",
+    "base_revision",
+    "content_version",
+    "article_versions",
+    "work",
+    "vocabulary",
+    "receipts",
+    "backups",
+    "scope_digest",
+    "preserved"
+  ],
+  "properties": {
+    "article_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "article_versions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "work": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "status",
+          "assets",
+          "other_article_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "sha256"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            "maxItems": 100
+          },
+          "other_article_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "maxItems": 100
+          }
+        }
+      },
+      "maxItems": 100
+    },
+    "vocabulary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        }
+      },
+      "maxItems": 10000
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "payload_hash"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "payload_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "maxItems": 10000
+    },
+    "backups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "manifest_sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "manifest_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "maxItems": 2
+    },
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "preserved": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "independent_articles",
+          "actions_and_feedback",
+          "knowledge_notes",
+          "previously_downloaded_user_copies"
+        ]
+      },
+      "maxItems": 4
+    }
+  }
+} as const;
+
+export type LightTickReadingDeletionPreview = {
+  "article_id": string;
+  "base_revision": number;
+  "content_version": string;
+  "article_versions": number;
+  "work": (
+{
+  "id": string;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "assets": (
+{
+  "id": string;
+  "sha256": string;
+}
+)[];
+  "other_article_ids": string[];
+}
+)[];
+  "vocabulary": (
+{
+  "id": string;
+  "revision": number;
+}
+)[];
+  "receipts": (
+{
+  "operation_id": string;
+  "payload_hash": string;
+}
+)[];
+  "backups": (
+{
+  "id": string;
+  "manifest_sha256": string;
+}
+)[];
+  "scope_digest": string;
+  "preserved": (
+"independent_articles" | "actions_and_feedback" | "knowledge_notes" | "previously_downloaded_user_copies"
+)[];
+};
+
+export const LightTickReadingDeleteRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision",
+    "content_version",
+    "scope_digest"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickReadingDeleteRequest = {
+  "base_revision": number;
+  "content_version": string;
+  "scope_digest": string;
+};
+
+export const LightTickReadingDeletedSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "content_version",
+    "deleted",
+    "deleted_at",
+    "scope_digest",
+    "removed"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "content_version": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "deleted": {
+      "const": true
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "removed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "article_versions",
+        "work",
+        "assets",
+        "vocabulary",
+        "receipts",
+        "backups"
+      ],
+      "properties": {
+        "article_versions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "work": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "assets": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "vocabulary": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "receipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "backups": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingDeleted = {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "deleted": unknown;
+  "deleted_at": string;
+  "scope_digest": string;
+  "removed": {
+  "article_versions": number;
+  "work": number;
+  "assets": number;
+  "vocabulary": number;
+  "receipts": number;
+  "backups": number;
+};
+};
+
+export const LightTickReadingErasureReceiptSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "payload_hash",
+    "result"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "payload_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "content_version",
+        "deleted",
+        "deleted_at",
+        "scope_digest",
+        "removed"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "deleted": {
+          "const": true
+        },
+        "deleted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "removed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "article_versions",
+            "work",
+            "assets",
+            "vocabulary",
+            "receipts",
+            "backups"
+          ],
+          "properties": {
+            "article_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "work": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "assets": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "vocabulary": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "receipts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "backups": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingErasureReceipt = {
+  "operation_id": string;
+  "payload_hash": string;
+  "result": {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "deleted": unknown;
+  "deleted_at": string;
+  "scope_digest": string;
+  "removed": {
+  "article_versions": number;
+  "work": number;
+  "assets": number;
+  "vocabulary": number;
+  "receipts": number;
+  "backups": number;
+};
+};
+};
+
+export const LightTickReadingDeletionPreviewEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "article_id",
+        "base_revision",
+        "content_version",
+        "article_versions",
+        "work",
+        "vocabulary",
+        "receipts",
+        "backups",
+        "scope_digest",
+        "preserved"
+      ],
+      "properties": {
+        "article_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "base_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "article_versions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "work": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "status",
+              "assets",
+              "other_article_ids"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "cancelled"
+                ]
+              },
+              "assets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                "maxItems": 100
+              },
+              "other_article_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                "maxItems": 100
+              }
+            }
+          },
+          "maxItems": 100
+        },
+        "vocabulary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              }
+            }
+          },
+          "maxItems": 10000
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operation_id",
+              "payload_hash"
+            ],
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "payload_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "maxItems": 10000
+        },
+        "backups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "manifest_sha256"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "manifest_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "maxItems": 2
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "preserved": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "independent_articles",
+              "actions_and_feedback",
+              "knowledge_notes",
+              "previously_downloaded_user_copies"
+            ]
+          },
+          "maxItems": 4
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingDeletionPreviewEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "article_id": string;
+  "base_revision": number;
+  "content_version": string;
+  "article_versions": number;
+  "work": (
+{
+  "id": string;
+  "revision": number;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "assets": (
+{
+  "id": string;
+  "sha256": string;
+}
+)[];
+  "other_article_ids": string[];
+}
+)[];
+  "vocabulary": (
+{
+  "id": string;
+  "revision": number;
+}
+)[];
+  "receipts": (
+{
+  "operation_id": string;
+  "payload_hash": string;
+}
+)[];
+  "backups": (
+{
+  "id": string;
+  "manifest_sha256": string;
+}
+)[];
+  "scope_digest": string;
+  "preserved": (
+"independent_articles" | "actions_and_feedback" | "knowledge_notes" | "previously_downloaded_user_copies"
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickReadingDeletedEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "content_version",
+        "deleted",
+        "deleted_at",
+        "scope_digest",
+        "removed"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "content_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "deleted": {
+          "const": true
+        },
+        "deleted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "removed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "article_versions",
+            "work",
+            "assets",
+            "vocabulary",
+            "receipts",
+            "backups"
+          ],
+          "properties": {
+            "article_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "work": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "assets": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "vocabulary": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "receipts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "backups": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingDeletedEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "deleted": unknown;
+  "deleted_at": string;
+  "scope_digest": string;
+  "removed": {
+  "article_versions": number;
+  "work": number;
+  "assets": number;
+  "vocabulary": number;
+  "receipts": number;
+  "backups": number;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickReadingErasureReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "payload_hash",
+        "result"
+      ],
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "payload_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "content_version",
+            "deleted",
+            "deleted_at",
+            "scope_digest",
+            "removed"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            },
+            "content_version": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "deleted": {
+              "const": true
+            },
+            "deleted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "scope_digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "removed": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "article_versions",
+                "work",
+                "assets",
+                "vocabulary",
+                "receipts",
+                "backups"
+              ],
+              "properties": {
+                "article_versions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "work": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "assets": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "vocabulary": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "receipts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                },
+                "backups": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingErasureReceiptEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "operation_id": string;
+  "payload_hash": string;
+  "result": {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "deleted": unknown;
+  "deleted_at": string;
+  "scope_digest": string;
+  "removed": {
+  "article_versions": number;
+  "work": number;
+  "assets": number;
+  "vocabulary": number;
+  "receipts": number;
+  "backups": number;
+};
+};
+};
+  "requestId": string;
+};
+
 export const LightTickReadingCatalogEntrySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -75808,8 +76842,11 @@ export const LightTickReadingScheduleStateSchema = {
             "maxLength": 1500
           },
           "reason": {
-            "const": "already_saved",
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "already_saved",
+              "previously_deleted"
+            ]
           }
         }
       },
@@ -75863,7 +76900,7 @@ export type LightTickReadingScheduleState = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -76009,8 +77046,11 @@ export const LightTickReadingScheduleDaySchema = {
             "maxLength": 1500
           },
           "reason": {
-            "const": "already_saved",
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "already_saved",
+              "previously_deleted"
+            ]
           }
         }
       },
@@ -76067,7 +77107,7 @@ export type LightTickReadingScheduleDay = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -76228,8 +77268,11 @@ export const LightTickReadingScheduleSchema = {
                     "maxLength": 1500
                   },
                   "reason": {
-                    "const": "already_saved",
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "already_saved",
+                      "previously_deleted"
+                    ]
                   }
                 }
               },
@@ -76296,7 +77339,7 @@ export type LightTickReadingSchedule = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -76455,8 +77498,11 @@ export const LightTickReadingSchedulePageSchema = {
                   "maxLength": 1500
                 },
                 "reason": {
-                  "const": "already_saved",
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "already_saved",
+                    "previously_deleted"
+                  ]
                 }
               }
             },
@@ -76530,7 +77576,7 @@ export type LightTickReadingSchedulePage = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -76713,8 +77759,11 @@ export const LightTickReadingScheduleEnvelopeSchema = {
                         "maxLength": 1500
                       },
                       "reason": {
-                        "const": "already_saved",
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                          "already_saved",
+                          "previously_deleted"
+                        ]
                       }
                     }
                   },
@@ -76787,7 +77836,7 @@ export type LightTickReadingScheduleEnvelope = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -76956,8 +78005,11 @@ export const LightTickReadingScheduleDayEnvelopeSchema = {
                 "maxLength": 1500
               },
               "reason": {
-                "const": "already_saved",
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "already_saved",
+                  "previously_deleted"
+                ]
               }
             }
           },
@@ -77020,7 +78072,7 @@ export type LightTickReadingScheduleDayEnvelope = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -77197,8 +78249,11 @@ export const LightTickReadingSchedulePageEnvelopeSchema = {
                       "maxLength": 1500
                     },
                     "reason": {
-                      "const": "already_saved",
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "already_saved",
+                        "previously_deleted"
+                      ]
                     }
                   }
                 },
@@ -77278,7 +78333,7 @@ export type LightTickReadingSchedulePageEnvelope = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -88927,8 +89982,11 @@ export const LightTickReadingWorkReceiptSchema = {
                     "maxLength": 1500
                   },
                   "reason": {
-                    "const": "already_saved",
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "already_saved",
+                      "previously_deleted"
+                    ]
                   }
                 }
               },
@@ -89651,7 +90709,7 @@ export type LightTickReadingWorkReceipt = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -101202,8 +102260,11 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                         "maxLength": 1500
                       },
                       "reason": {
-                        "const": "already_saved",
-                        "type": "string"
+                        "type": "string",
+                        "enum": [
+                          "already_saved",
+                          "previously_deleted"
+                        ]
                       }
                     }
                   },
@@ -101932,7 +102993,7 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -108548,8 +109609,11 @@ export const LightTickReadingExportSchema = {
                   "maxLength": 1500
                 },
                 "reason": {
-                  "const": "already_saved",
-                  "type": "string"
+                  "type": "string",
+                  "enum": [
+                    "already_saved",
+                    "previously_deleted"
+                  ]
                 }
               }
             },
@@ -109203,7 +110267,7 @@ export type LightTickReadingExport = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -115040,8 +116104,11 @@ export const LightTickReadingExportEnvelopeSchema = {
                       "maxLength": 1500
                     },
                     "reason": {
-                      "const": "already_saved",
-                      "type": "string"
+                      "type": "string",
+                      "enum": [
+                        "already_saved",
+                        "previously_deleted"
+                      ]
                     }
                   }
                 },
@@ -115704,7 +116771,7 @@ export type LightTickReadingExportEnvelope = {
   "work_id": string;
   "index": number;
   "url": string;
-  "reason": string;
+  "reason": "already_saved" | "previously_deleted";
 }
 )[];
   "next_at": string;
@@ -176766,7 +177833,11 @@ export const LightTickRunEnvelopeSchema = {
             "CONTRACT_UPGRADE_REQUIRED",
             "SOURCE_EVENT_CONFLICT",
             "SOURCE_PROOF_INVALID",
-            "SOURCE_DELIVERY_UNAVAILABLE"
+            "SOURCE_DELIVERY_UNAVAILABLE",
+            "LIGHTTICK_READING_ERASED",
+            "LIGHTTICK_READING_BACKUP_EXPIRED",
+            "LIGHTTICK_READING_BACKUP_CAPACITY",
+            "LIGHTTICK_READING_BACKUP_TOO_LARGE"
           ]
         },
         "result": {
@@ -176803,7 +177874,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_READING_ERASED" | "LIGHTTICK_READING_BACKUP_EXPIRED" | "LIGHTTICK_READING_BACKUP_CAPACITY" | "LIGHTTICK_READING_BACKUP_TOO_LARGE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -176880,7 +177951,11 @@ export const LightTickErrorEnvelopeSchema = {
         "CONTRACT_UPGRADE_REQUIRED",
         "SOURCE_EVENT_CONFLICT",
         "SOURCE_PROOF_INVALID",
-        "SOURCE_DELIVERY_UNAVAILABLE"
+        "SOURCE_DELIVERY_UNAVAILABLE",
+        "LIGHTTICK_READING_ERASED",
+        "LIGHTTICK_READING_BACKUP_EXPIRED",
+        "LIGHTTICK_READING_BACKUP_CAPACITY",
+        "LIGHTTICK_READING_BACKUP_TOO_LARGE"
       ]
     },
     "message": {
@@ -176980,7 +178055,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_READING_ERASED" | "LIGHTTICK_READING_BACKUP_EXPIRED" | "LIGHTTICK_READING_BACKUP_CAPACITY" | "LIGHTTICK_READING_BACKUP_TOO_LARGE";
   "message": string;
   "data": (
 {
@@ -177067,11 +178142,15 @@ export const LightTickErrorCodeSchema = {
     "CONTRACT_UPGRADE_REQUIRED",
     "SOURCE_EVENT_CONFLICT",
     "SOURCE_PROOF_INVALID",
-    "SOURCE_DELIVERY_UNAVAILABLE"
+    "SOURCE_DELIVERY_UNAVAILABLE",
+    "LIGHTTICK_READING_ERASED",
+    "LIGHTTICK_READING_BACKUP_EXPIRED",
+    "LIGHTTICK_READING_BACKUP_CAPACITY",
+    "LIGHTTICK_READING_BACKUP_TOO_LARGE"
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_READING_ERASED" | "LIGHTTICK_READING_BACKUP_EXPIRED" | "LIGHTTICK_READING_BACKUP_CAPACITY" | "LIGHTTICK_READING_BACKUP_TOO_LARGE";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -181818,7 +182897,11 @@ export const LightTickRunDataSchema = {
         "CONTRACT_UPGRADE_REQUIRED",
         "SOURCE_EVENT_CONFLICT",
         "SOURCE_PROOF_INVALID",
-        "SOURCE_DELIVERY_UNAVAILABLE"
+        "SOURCE_DELIVERY_UNAVAILABLE",
+        "LIGHTTICK_READING_ERASED",
+        "LIGHTTICK_READING_BACKUP_EXPIRED",
+        "LIGHTTICK_READING_BACKUP_CAPACITY",
+        "LIGHTTICK_READING_BACKUP_TOO_LARGE"
       ]
     },
     "result": {
@@ -181847,7 +182930,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: string;
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_READING_ERASED" | "LIGHTTICK_READING_BACKUP_EXPIRED" | "LIGHTTICK_READING_BACKUP_CAPACITY" | "LIGHTTICK_READING_BACKUP_TOO_LARGE";
   "result"?: {
   [key: string]: unknown;
 };
@@ -182218,7 +183301,11 @@ export const LightTickSyncOperationResultSchema = {
         "CONTRACT_UPGRADE_REQUIRED",
         "SOURCE_EVENT_CONFLICT",
         "SOURCE_PROOF_INVALID",
-        "SOURCE_DELIVERY_UNAVAILABLE"
+        "SOURCE_DELIVERY_UNAVAILABLE",
+        "LIGHTTICK_READING_ERASED",
+        "LIGHTTICK_READING_BACKUP_EXPIRED",
+        "LIGHTTICK_READING_BACKUP_CAPACITY",
+        "LIGHTTICK_READING_BACKUP_TOO_LARGE"
       ]
     }
   }
@@ -182235,7 +183322,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_READING_ERASED" | "LIGHTTICK_READING_BACKUP_EXPIRED" | "LIGHTTICK_READING_BACKUP_CAPACITY" | "LIGHTTICK_READING_BACKUP_TOO_LARGE";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -182367,7 +183454,11 @@ export const LightTickSyncPushDataSchema = {
               "CONTRACT_UPGRADE_REQUIRED",
               "SOURCE_EVENT_CONFLICT",
               "SOURCE_PROOF_INVALID",
-              "SOURCE_DELIVERY_UNAVAILABLE"
+              "SOURCE_DELIVERY_UNAVAILABLE",
+              "LIGHTTICK_READING_ERASED",
+              "LIGHTTICK_READING_BACKUP_EXPIRED",
+              "LIGHTTICK_READING_BACKUP_CAPACITY",
+              "LIGHTTICK_READING_BACKUP_TOO_LARGE"
             ]
           }
         }
@@ -182393,7 +183484,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_PLANNING_BUSY" | "LIGHTTICK_PLANNING_NOT_READY" | "LIGHTTICK_PLANNING_STALE" | "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_REVIEW_CURSOR_EXPIRED" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR" | "VALIDATION_ERROR" | "REVISION_CONFLICT" | "STATE_CONFLICT" | "RUNNING_CONFLICT" | "DUPLICATE_SCHEDULE" | "FUTURE_ACTION" | "UNSCHEDULED_ACTION" | "COMPLETION_EVIDENCE_MISSING" | "CONTRACT_UPGRADE_REQUIRED" | "SOURCE_EVENT_CONFLICT" | "SOURCE_PROOF_INVALID" | "SOURCE_DELIVERY_UNAVAILABLE" | "LIGHTTICK_READING_ERASED" | "LIGHTTICK_READING_BACKUP_EXPIRED" | "LIGHTTICK_READING_BACKUP_CAPACITY" | "LIGHTTICK_READING_BACKUP_TOO_LARGE";
 }
 )[];
   "server_time": string;
@@ -190354,10 +191445,17 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingCatalogPageEnvelope",
   "LightTickReadingCatalogSource",
   "LightTickReadingContent",
+  "LightTickReadingDeleteRequest",
+  "LightTickReadingDeleted",
+  "LightTickReadingDeletedEnvelope",
+  "LightTickReadingDeletionPreview",
+  "LightTickReadingDeletionPreviewEnvelope",
   "LightTickReadingDraftWrite",
   "LightTickReadingEditions",
   "LightTickReadingEditionsEnvelope",
   "LightTickReadingEntryReference",
+  "LightTickReadingErasureReceipt",
+  "LightTickReadingErasureReceiptEnvelope",
   "LightTickReadingExport",
   "LightTickReadingExportEnvelope",
   "LightTickReadingFeedback",

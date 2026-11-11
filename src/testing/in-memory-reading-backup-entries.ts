@@ -30,6 +30,7 @@ export async function memoryReadingBackupEntries(
     section === "vocabulary_reviews"
   ) {
     const snapshot = reading.snapshot();
+    if(section==="articles") for(const [k,t] of snapshot.tombstones) if(k.startsWith(JSON.stringify([o.appId,o.userId]).slice(0,-1)+",")) add(t.id,t);
     if (section === "articles" || section === "article_versions")
       for (const [, r] of snapshot.articles) {
         if (r.owner.appId !== o.appId || r.owner.userId !== o.userId) continue;
@@ -54,7 +55,7 @@ export async function memoryReadingBackupEntries(
       if (
         row.appId === o.appId &&
         row.userId === o.userId &&
-        ["reading_article", "reading_work", "reading_vocabulary"].includes(
+        ["reading_article", "reading_work", "reading_vocabulary", "reading_erasure"].includes(
           row.entityType,
         )
       )
