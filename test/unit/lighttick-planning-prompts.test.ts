@@ -1,3 +1,4 @@
+import {READING_AI_PROMPT_VERSION} from "../../src/modules/lighttick/reading/reading-ai-snapshot.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
@@ -36,7 +37,7 @@ test("actual scene policy and version reach the provider and completed run is im
   await runner.execute(owner, run.id, "week_plan");
   assert.equal(requests.length, 1);
   // Reading owns a separate frozen prompt lineage; adding it must not relabel old planning or reading output.
-  for (const scene of Object.values(LIGHTTICK_AI_SCENES)) assert.equal(scene.promptVersion, scene.key.startsWith("lighttick.reading_") ? "1.0.0" : LIGHTTICK_PROMPT_VERSION);
+  for (const scene of Object.values(LIGHTTICK_AI_SCENES)) assert.equal(scene.promptVersion, scene.key.startsWith("lighttick.reading_") ? READING_AI_PROMPT_VERSION : LIGHTTICK_PROMPT_VERSION);
 });
 
 test("weekly-only budget rejects AI overrun and bounds the fallback", async () => {
