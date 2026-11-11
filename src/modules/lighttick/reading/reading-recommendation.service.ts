@@ -1,8 +1,8 @@
+import {readingSourceOptions} from "./reading-source-selection.ts";
 import {READING_EXTRACTION_VERSION} from "./reading-recommendation-context.ts";
 import { ReadingWorkService } from "./reading-work.service.ts";
 import { defaultReadingPreferences } from "./reading-preferences.service.ts";
 import {
-  READING_DEFAULT_SOURCES,
   READING_CATALOG_REVISION,
 } from "./reading-catalog.ts";
 import { canonicalReadingURL } from "./reading-identity.ts";
@@ -32,26 +32,7 @@ export class ReadingRecommendationService {
       all = await this.work.store.sources(o, "", 1001, true);
     if (all.length > 1000)
       fail(413, "Too many reading sources to freeze without pagination");
-    const suppressed = new Set(
-      all.flatMap((s) => [
-        s.id,
-        ...(s.catalog_origin_id
-          ? ["source-catalog-" + s.catalog_origin_id]
-          : []),
-        ...(s.catalog_id ? ["source-catalog-" + s.catalog_id] : []),
-      ]),
-    );
-    const effective: ReadingSelectedSource[] = [
-      ...READING_DEFAULT_SOURCES.filter((s) => !suppressed.has(s.id)).map(
-        (s) => ({
-          ...s,
-          topics: [...s.topics],
-          domains: [...s.domains],
-          revision: 0,
-        }),
-      ),
-      ...all.filter((s) => !s.archived && !s.deleted_at),
-    ];
+    const effective:ReadingSelectedSource[]=readingSourceOptions(all).filter(s=>s.available).map(({available,reason,...source})=>source);
     const ids = preferences.value.source_ids,
       selected =
         ids == null

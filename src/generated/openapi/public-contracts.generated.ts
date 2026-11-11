@@ -68622,7 +68622,8 @@ export const LightTickReadingSetupSchema = {
     "classics",
     "catalog_revision",
     "timezone",
-    "catalogue_verification"
+    "catalogue_verification",
+    "source_options"
   ],
   "properties": {
     "preferences": {
@@ -69020,6 +69021,116 @@ export const LightTickReadingSetupSchema = {
     },
     "catalogue_verification": {
       "const": "legacy_reference_not_live_verified"
+    },
+    "source_options": {
+      "type": "array",
+      "maxItems": 1010,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "title",
+          "url",
+          "format",
+          "available",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1500,
+            "format": "uri"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "article",
+              "rss",
+              "atom"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "zh",
+              "en",
+              "unknown"
+            ]
+          },
+          "topics": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "maxLength": 20,
+              "enum": [
+                "认知",
+                "科技",
+                "经济学",
+                "社会学",
+                "心理",
+                "成长"
+              ]
+            }
+          },
+          "domains": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "maxLength": 253,
+              "minLength": 1
+            }
+          },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "archived",
+                  "deleted",
+                  "overridden"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
     }
   }
 } as const;
@@ -69087,6 +69198,25 @@ export type LightTickReadingSetup = {
   "catalog_revision": string;
   "timezone": unknown;
   "catalogue_verification": unknown;
+  "source_options": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+  "available": boolean;
+  "reason": (
+"archived" | "deleted" | "overridden"
+) | unknown;
+}
+)[];
 };
 
 export const LightTickReadingSourceDeleteSchema = {
@@ -69516,7 +69646,8 @@ export const LightTickReadingSetupEnvelopeSchema = {
         "classics",
         "catalog_revision",
         "timezone",
-        "catalogue_verification"
+        "catalogue_verification",
+        "source_options"
       ],
       "properties": {
         "preferences": {
@@ -69914,6 +70045,116 @@ export const LightTickReadingSetupEnvelopeSchema = {
         },
         "catalogue_verification": {
           "const": "legacy_reference_not_live_verified"
+        },
+        "source_options": {
+          "type": "array",
+          "maxItems": 1010,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "title",
+              "url",
+              "format",
+              "available",
+              "reason"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 1500,
+                "format": "uri"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "article",
+                  "rss",
+                  "atom"
+                ]
+              },
+              "language": {
+                "type": "string",
+                "enum": [
+                  "zh",
+                  "en",
+                  "unknown"
+                ]
+              },
+              "topics": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "string",
+                  "maxLength": 20,
+                  "enum": [
+                    "认知",
+                    "科技",
+                    "经济学",
+                    "社会学",
+                    "心理",
+                    "成长"
+                  ]
+                }
+              },
+              "domains": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "items": {
+                  "type": "string",
+                  "maxLength": 253,
+                  "minLength": 1
+                }
+              },
+              "catalog_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "available": {
+                "type": "boolean"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "archived",
+                      "deleted",
+                      "overridden"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }
@@ -69987,6 +70228,25 @@ export type LightTickReadingSetupEnvelope = {
   "catalog_revision": string;
   "timezone": unknown;
   "catalogue_verification": unknown;
+  "source_options": (
+{
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+  "available": boolean;
+  "reason": (
+"archived" | "deleted" | "overridden"
+) | unknown;
+}
+)[];
 };
 };
 
@@ -72619,6 +72879,131 @@ export type LightTickReadingWorkOutput = {
   "ranking_version": string;
   "scope_digest": string;
 };
+};
+
+export const LightTickReadingSourceOptionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "title",
+    "url",
+    "format",
+    "available",
+    "reason"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^source-[a-zA-Z0-9_-]{1,120}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 1500,
+      "format": "uri"
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "article",
+        "rss",
+        "atom"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "zh",
+        "en",
+        "unknown"
+      ]
+    },
+    "topics": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "maxLength": 20,
+        "enum": [
+          "认知",
+          "科技",
+          "经济学",
+          "社会学",
+          "心理",
+          "成长"
+        ]
+      }
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "maxLength": 253,
+        "minLength": 1
+      }
+    },
+    "catalog_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 80
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "archived",
+            "deleted",
+            "overridden"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingSourceOption = {
+  "id": string;
+  "revision": number;
+  "title": string;
+  "url": string;
+  "format": "article" | "rss" | "atom";
+  "language"?: "zh" | "en" | "unknown";
+  "topics"?: (
+"\u8ba4\u77e5" | "\u79d1\u6280" | "\u7ecf\u6d4e\u5b66" | "\u793e\u4f1a\u5b66" | "\u5fc3\u7406" | "\u6210\u957f"
+)[];
+  "domains"?: string[];
+  "catalog_id"?: string | unknown;
+  "available": boolean;
+  "reason": (
+"archived" | "deleted" | "overridden"
+) | unknown;
 };
 
 export const LightTickReadingSelectedSourceSchema = {
@@ -180889,6 +181274,7 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingSourceDelete",
   "LightTickReadingSourceEnvelope",
   "LightTickReadingSourceMetadata",
+  "LightTickReadingSourceOption",
   "LightTickReadingSourcePage",
   "LightTickReadingSourcePageEnvelope",
   "LightTickReadingSourceWrite",

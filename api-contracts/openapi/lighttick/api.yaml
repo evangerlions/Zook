@@ -23912,6 +23912,7 @@ components:
       - catalog_revision
       - timezone
       - catalogue_verification
+      - source_options
       properties:
         preferences:
           $ref: '#/components/schemas/LightTickReadingPreferences'
@@ -23945,6 +23946,11 @@ components:
           const: Asia/Shanghai
         catalogue_verification:
           const: legacy_reference_not_live_verified
+        source_options:
+          type: array
+          maxItems: 1010
+          items:
+            $ref: '#/components/schemas/LightTickReadingSourceOption'
     LightTickReadingSourceDelete:
       type: object
       additionalProperties: false
@@ -24306,3 +24312,79 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/LightTickReadingAssetPage'
+    LightTickReadingSourceOption:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - title
+      - url
+      - format
+      - available
+      - reason
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+        url:
+          type: string
+          maxLength: 1500
+          format: uri
+        format:
+          type: string
+          enum:
+          - article
+          - rss
+          - atom
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+          - unknown
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+        domains:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 253
+            minLength: 1
+        catalog_id:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+        available:
+          type: boolean
+        reason:
+          anyOf:
+          - type: string
+            enum:
+            - archived
+            - deleted
+            - overridden
+          - type: 'null'

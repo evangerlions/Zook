@@ -1,3 +1,4 @@
+import {readingSourceOptions} from "./reading-source-selection.ts";
 import { ReadingWorkService } from "./reading-work.service.ts";
 import {
   READING_CATALOG_REVISION,
@@ -112,15 +113,7 @@ export class ReadingPreferencesService {
     });
   }
   async setup(o: LightTickOwner) {
-    return {
-      preferences: await this.read(o),
-      topics: Object.keys(READING_TOPICS),
-      default_sources: READING_DEFAULT_SOURCES,
-      classics: READING_CLASSICS,
-      catalog_revision: READING_CATALOG_REVISION,
-      timezone: "Asia/Shanghai",
-      catalogue_verification: "legacy_reference_not_live_verified",
-    };
+    return this.repo.transaction(o,async()=>{const preferences=await this.read(o),all=await this.work.store.sources(o,"",1001,true);if(all.length>1000)fail(413,"Reading sources exceed setup capacity; no truncated selection returned");return {preferences,source_options:readingSourceOptions(all),topics:Object.keys(READING_TOPICS),default_sources:READING_DEFAULT_SOURCES,classics:READING_CLASSICS,catalog_revision:READING_CATALOG_REVISION,timezone:"Asia/Shanghai",catalogue_verification:"legacy_reference_not_live_verified"};});
   }
   async history(o: LightTickOwner, before = 2147483648) {
     integer(before, 1, 2147483648);
