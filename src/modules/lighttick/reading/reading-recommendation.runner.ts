@@ -110,13 +110,13 @@ export async function performReadingRecommendation(
         } catch (error) {
           if (signal.aborted) signal.throwIfAborted();
           warnings.push(
-            source.id +
+            source.title + " (" + source.url + ")" +
               ": source acquisition failed; no replacement provider selected.",
           );
           return;
         }
         if (stage.aborted) {
-          warnings.push(source.id + ": source discovery timed out.");
+          warnings.push(source.title + " (" + source.url + ")" + ": source discovery timed out.");
           return;
         }
         await archive(
@@ -126,7 +126,7 @@ export async function performReadingRecommendation(
         );
         if (source.format === "article") {
           warnings.push(
-            source.id +
+            source.title + " (" + source.url + ")" +
               ": direct article source has no dated recommendation feed; collect its URL explicitly.",
           );
           return;
@@ -156,11 +156,11 @@ export async function performReadingRecommendation(
           );
           candidates.push(...(result.candidates ?? []));
           if (result.warnings?.length)
-            warnings.push(source.id + ": " + result.warnings.join(" "));
+            warnings.push(source.title + " (" + source.url + ")" + ": " + result.warnings.join(" "));
         } catch (error) {
           if (signal.aborted) signal.throwIfAborted();
           warnings.push(
-            source.id +
+            source.title + " (" + source.url + ")" +
               ": " +
               (readingFailureCode(error) ?? "feed parsing unavailable"),
           );
@@ -213,14 +213,14 @@ export async function performReadingRecommendation(
         } catch (error) {
           if (signal.aborted) throw signal.reason;
           warnings.push(
-            candidate.id +
+            candidate.content.title + " (" + candidate.content.source_url + ")" +
               ": full-text acquisition failed; no replacement provider selected.",
           );
           return;
         }
         if (one.aborted) {
           if (signal.aborted) throw signal.reason;
-          warnings.push(candidate.id + ": full-text acquisition timed out.");
+          warnings.push(candidate.content.title + " (" + candidate.content.source_url + ")" + ": full-text acquisition timed out.");
           return;
         }
         const document_id = await archive(url, doc, "full_fetch");
@@ -242,7 +242,7 @@ export async function performReadingRecommendation(
         } catch (error) {
           if (signal.aborted) throw signal.reason;
           warnings.push(
-            candidate.id +
+            candidate.content.title + " (" + candidate.content.source_url + ")" +
               ": " +
               (readingFailureCode(error) ?? "full text unreadable"),
           );
@@ -251,7 +251,7 @@ export async function performReadingRecommendation(
         const content = result.entries?.[0];
         if (!content) {
           warnings.push(
-            candidate.id +
+            candidate.content.title + " (" + candidate.content.source_url + ")" +
               ": no readable full text; metadata was not saved as an article.",
           );
           return;

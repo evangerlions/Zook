@@ -971,3 +971,5 @@ XML解析使用固定 fast-xml-parser 5.12.0，拒绝DTD/实体、禁用实体�
 2026-11-12 LightTick manual recommendation workflow: migration112 immutable owner/work assets, reviewed scope digest, durable recommend work, bounded full-text-only selection, original-byte retrieval and compact opt-in adoption receipts. No model or implicit article import. Cancellation, preference/source changes and core prevent late writes. Unit/HTTP contract and real isolated PostgreSQL reconnect/rollback/cleanup pass; scheduling, Web/browser and joint load acceptance remain pending. Public details are in README_API.md.
 
 Reading setup source_options now exposes availability and deletion/override reasons from the same selection policy as recommendation scopes; this prevents Web preference selectors from silently restoring removed catalogue feeds.
+
+Reading recommendation diagnostics now name the frozen source/title and URL; warning capacity4096 preserves full URLs with bounded explanation.

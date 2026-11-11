@@ -72480,7 +72480,7 @@ export const LightTickReadingWorkOutputSchema = {
       "maxItems": 100,
       "items": {
         "type": "string",
-        "maxLength": 2000
+        "maxLength": 4096
       }
     },
     "entry_refs": {
@@ -75374,7 +75374,7 @@ export const LightTickReadingWorkSchema = {
               "maxItems": 100,
               "items": {
                 "type": "string",
-                "maxLength": 2000
+                "maxLength": 4096
               }
             },
             "entry_refs": {
@@ -77647,7 +77647,7 @@ export const LightTickReadingWorkAdoptResultSchema = {
                       "maxItems": 100,
                       "items": {
                         "type": "string",
-                        "maxLength": 2000
+                        "maxLength": 4096
                       }
                     },
                     "entry_refs": {
@@ -80229,7 +80229,7 @@ export const LightTickReadingWorkReceiptSchema = {
                       "maxItems": 100,
                       "items": {
                         "type": "string",
-                        "maxLength": 2000
+                        "maxLength": 4096
                       }
                     },
                     "entry_refs": {
@@ -81475,7 +81475,7 @@ export const LightTickReadingWorkReceiptSchema = {
                               "maxItems": 100,
                               "items": {
                                 "type": "string",
-                                "maxLength": 2000
+                                "maxLength": 4096
                               }
                             },
                             "entry_refs": {
@@ -83925,7 +83925,7 @@ export const LightTickReadingWorkExportSchema = {
               "maxItems": 100,
               "items": {
                 "type": "string",
-                "maxLength": 2000
+                "maxLength": 4096
               }
             },
             "entry_refs": {
@@ -86016,7 +86016,7 @@ export const LightTickReadingWorkEnvelopeSchema = {
                   "maxItems": 100,
                   "items": {
                     "type": "string",
-                    "maxLength": 2000
+                    "maxLength": 4096
                   }
                 },
                 "entry_refs": {
@@ -88093,7 +88093,7 @@ export const LightTickReadingWorkAdoptResultEnvelopeSchema = {
                           "maxItems": 100,
                           "items": {
                             "type": "string",
-                            "maxLength": 2000
+                            "maxLength": 4096
                           }
                         },
                         "entry_refs": {
@@ -90701,7 +90701,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                           "maxItems": 100,
                           "items": {
                             "type": "string",
-                            "maxLength": 2000
+                            "maxLength": 4096
                           }
                         },
                         "entry_refs": {
@@ -91947,7 +91947,7 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                                   "maxItems": 100,
                                   "items": {
                                     "type": "string",
-                                    "maxLength": 2000
+                                    "maxLength": 4096
                                   }
                                 },
                                 "entry_refs": {
@@ -97481,7 +97481,7 @@ export const LightTickReadingExportSchema = {
                     "maxItems": 100,
                     "items": {
                       "type": "string",
-                      "maxLength": 2000
+                      "maxLength": 4096
                     }
                   },
                   "entry_refs": {
@@ -103584,7 +103584,7 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "maxItems": 100,
                         "items": {
                           "type": "string",
-                          "maxLength": 2000
+                          "maxLength": 4096
                         }
                       },
                       "entry_refs": {

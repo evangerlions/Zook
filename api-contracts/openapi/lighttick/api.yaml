@@ -22559,7 +22559,7 @@ components:
           maxItems: 100
           items:
             type: string
-            maxLength: 2000
+            maxLength: 4096
         entry_refs:
           type: array
           items:
