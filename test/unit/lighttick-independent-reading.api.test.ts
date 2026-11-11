@@ -92,6 +92,37 @@ test("independent reading HTTP auth, generated contracts, receipts, history, exp
     ).statusCode,
     401,
   );
+  validate(
+    "Article",
+    await call(
+      "/articles/article-http-original/draft",
+      "POST",
+      {
+        base_revision: 1,
+        content_version: version,
+        kind: "summary",
+        paragraph_id: null,
+        text: "草稿摘要",
+      },
+      { ...headers, "idempotency-key": "material-http-draft" },
+    ),
+  );
+  validate(
+    "Article",
+    await call(
+      "/articles/article-http-original/adopt",
+      "POST",
+      {
+        base_revision: 2,
+        content_version: version,
+        kind: "summary",
+        paragraph_id: null,
+        draft_version: 1,
+      },
+      { ...headers, "idempotency-key": "material-http-adopt" },
+    ),
+  );
+  validate("Export", await call("/export"));
   await app.services.appConfigService.setValue(
     "lighttick",
     "admin.delivery_config",

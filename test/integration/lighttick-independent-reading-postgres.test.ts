@@ -189,6 +189,34 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
       word,
       "vocabulary-pg-second-word",
     );
+    const current = await s.read(owner, id);
+    const material = {
+      content_version: current.content_version,
+      kind: "summary",
+      paragraph_id: null,
+    };
+    await s.write(
+      owner,
+      id,
+      "draft",
+      { ...material, base_revision: current.revision, text: "PG review draft" },
+      "material-pg-draft",
+    );
+    await s.write(
+      owner,
+      id,
+      "adopt",
+      { ...material, base_revision: current.revision + 1, draft_version: 1 },
+      "material-pg-adopt",
+    );
+    assert.equal(
+      (await restarted.read(owner, id)).materials![0].adopted!.text,
+      "PG review draft",
+    );
+    assert.equal(
+      (await restarted.history(owner, id)).items[1].materials![0].adopted,
+      null,
+    );
     await repo.deleteOwnerData(owner);
     assert.equal((await durable.list(owner)).stats.total, 0);
     assert.equal(

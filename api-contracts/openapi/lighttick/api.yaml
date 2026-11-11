@@ -7601,6 +7601,116 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickReadingVocabularyDelete'
+  /api/v1/lighttick/reading/articles/{articleId}/draft:
+    post:
+      operationId: draftReadingMaterial
+      summary: draftReadingMaterial
+      tags:
+      - lighttick-reading
+      description: Owner-only manual reading material draft or explicit adoption. Whole-article CAS, immutable
+        source digest and original-key replay. Kinds guide/summary/english use null paragraph_id; translation
+        p-1 onward identifies paragraphs split by blank lines in this exact source. New drafts preserve
+        adopted text; adoption freezes the reviewed draft version. Journal and export retain both. Article
+        plus materials limited to 2 MiB; rejected writes preserve old state. Core is read-only. This command
+        does not invoke a model, publish externally or complete reading/tasks.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingDraftWrite'
+  /api/v1/lighttick/reading/articles/{articleId}/adopt:
+    post:
+      operationId: adoptReadingMaterial
+      summary: adoptReadingMaterial
+      tags:
+      - lighttick-reading
+      description: Owner-only manual reading material draft or explicit adoption. Whole-article CAS, immutable
+        source digest and original-key replay. Kinds guide/summary/english use null paragraph_id; translation
+        p-1 onward identifies paragraphs split by blank lines in this exact source. New drafts preserve
+        adopted text; adoption freezes the reviewed draft version. Journal and export retain both. Article
+        plus materials limited to 2 MiB; rejected writes preserve old state. Core is read-only. This command
+        does not invoke a model, publish externally or complete reading/tasks.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingArticleEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+          maxLength: 128
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingAdoptWrite'
 components:
   securitySchemes:
     bearerAuth:
@@ -19802,6 +19912,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightTickReadingMaterial'
     LightTickReadingImport:
       type: object
       additionalProperties: false
@@ -20371,3 +20485,144 @@ components:
         requestId:
           type: string
           maxLength: 128
+
+    LightTickReadingMaterial:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - paragraph_id
+      - draft
+      - adopted
+      properties:
+        kind:
+          type: string
+          enum:
+          - guide
+          - translation
+          - summary
+          - english
+        paragraph_id:
+          anyOf:
+          - type: string
+            pattern: ^p-[1-9][0-9]{0,5}$
+          - type: 'null'
+        draft:
+          type: object
+          additionalProperties: false
+          required:
+          - version
+          - text
+          - origin
+          - created_at
+          properties:
+            version:
+              type: integer
+              minimum: 1
+              maximum: 2147483647
+            text:
+              type: string
+              maxLength: 100000
+            origin:
+              type: string
+              enum:
+              - manual
+              - ai
+            created_at:
+              type: string
+              format: date-time
+        adopted:
+          anyOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - version
+            - text
+            - origin
+            - created_at
+            - adopted_at
+            properties:
+              version:
+                type: integer
+                minimum: 1
+                maximum: 2147483647
+              text:
+                type: string
+                maxLength: 100000
+              origin:
+                type: string
+                enum:
+                - manual
+                - ai
+              created_at:
+                type: string
+                format: date-time
+              adopted_at:
+                type: string
+                format: date-time
+          - type: 'null'
+    LightTickReadingDraftWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - kind
+      - paragraph_id
+      - text
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        kind:
+          type: string
+          enum:
+          - guide
+          - translation
+          - summary
+          - english
+        paragraph_id:
+          anyOf:
+          - type: string
+            pattern: ^p-[1-9][0-9]{0,5}$
+          - type: 'null'
+        text:
+          type: string
+          maxLength: 100000
+    LightTickReadingAdoptWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - content_version
+      - kind
+      - paragraph_id
+      - draft_version
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+        content_version:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        kind:
+          type: string
+          enum:
+          - guide
+          - translation
+          - summary
+          - english
+        paragraph_id:
+          anyOf:
+          - type: string
+            pattern: ^p-[1-9][0-9]{0,5}$
+          - type: 'null'
+        draft_version:
+          type: integer
+          minimum: 1
+          maximum: 2147483647

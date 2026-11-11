@@ -24,6 +24,18 @@ export interface ReadingArticle {
   archived: boolean;
   created_at: string;
   updated_at: string;
+  materials?: ReadingMaterial[];
+}
+export interface ReadingMaterial {
+  kind: "guide" | "translation" | "summary" | "english";
+  paragraph_id: string | null;
+  draft: {
+    version: number;
+    text: string;
+    origin: "manual" | "ai";
+    created_at: string;
+  };
+  adopted: (ReadingMaterial["draft"] & { adopted_at: string }) | null;
 }
 export interface ArticleQuery {
   search: string;

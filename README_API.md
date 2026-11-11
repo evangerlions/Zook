@@ -2039,3 +2039,12 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 - `POST /vocabulary/{vocabularyId}/pause|archive`：`{base_revision,value:boolean}`，暂停与归档互不代替，可分别恢复。
 - `POST /vocabulary/{vocabularyId}/delete`：`{base_revision}`，删除词条与复习历史，保留ID墓碑防止复用；历史请求回执仅用于核对，不重新创建词条。账号删除统一清除词条、复习、墓碑及回执。
 - `GET /export` 及本人综合导出增加 `vocabulary`、`vocabulary_reviews`，保持完整摘要及8MiB拒绝截断规则。此功能不预置任何人的学习项目。
+
+
+### LightTick 阅读资料草稿与采用
+
+`POST /api/v1/lighttick/reading/articles/{articleId}/draft` 接收 `{base_revision,content_version,kind,paragraph_id,text}`，`kind=guide|translation|summary|english`，正文最多100000字符，保留空白；属于本人编辑草稿，不触发模型。`translation` 的 `paragraph_id=p-1` 起，对应此原文按空行拆分的段落，其余类型必须为null。旧段落编号在历史迁移时须显式映射。文章与资料合计最多2MiB，超限413且不写入；导出继续使用既有完整导出上限，不返回截断副本。
+
+`POST .../adopt` 接收 `{base_revision,content_version,kind,paragraph_id,draft_version}`。确认精确的已保存非空草稿版本后，冻结 adopted 文本/版本/来源/时间；不会采用尚未保存的本机文字。再次编辑草稿时保留之前 adopted 副本。已有文档未包含 materials 时等同空列表；此字段为向后兼容的可选响应属性。
+
+两条接口均复用文章CAS、原key/body回执、归档拒写、core只读和当前权限核对。文章响应、历史与导出包含 `materials:[{kind,paragraph_id,draft:{version,text,origin,created_at},adopted:null|{...draft,adopted_at}}]`；当前人工编辑写 origin=manual。AI生成/来源采集仍需独立持久任务，此批接口不表示这些调用点已经完成。采用不外发、不公开发布，不产生阅读/行动完成或时长事实。

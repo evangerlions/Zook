@@ -1,6 +1,7 @@
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ReadingArticle } from "./reading.types.ts";
+import { writeReadingMaterial } from "./reading-materials.ts";
 import {
   articleContent,
   articleId,
@@ -143,7 +144,15 @@ export class ReadingService {
     articleId(id);
     this.key(key);
     if (
-      !["import", "personal", "position", "archive", "restore"].includes(action)
+      ![
+        "import",
+        "personal",
+        "position",
+        "archive",
+        "restore",
+        "draft",
+        "adopt",
+      ].includes(action)
     )
       fail(422, "阅读操作无效。");
     // Freeze before waiting for the owner lock: the receipt fingerprints the actual intent.
@@ -227,6 +236,8 @@ export class ReadingService {
               row.content.body.length,
             );
           }
+        } else if (action === "draft" || action === "adopt") {
+          writeReadingMaterial(row, body, action === "adopt", now);
         } else {
           keys(body, ["base_revision"]);
           if (row.archived === (action === "archive"))

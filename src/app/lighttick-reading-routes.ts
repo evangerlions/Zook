@@ -41,7 +41,7 @@ export async function handleReadingRequest(
   const receipt = /^\/receipts\/([a-zA-Z0-9_-]+)$/.exec(part);
   if (r.method === "GET" && receipt) return service.receipt(owner, receipt[1]);
   const match =
-    /^\/articles\/(article-[a-zA-Z0-9_-]+)(?:\/(history|personal|position|archive|restore))?$/.exec(
+    /^\/articles\/(article-[a-zA-Z0-9_-]+)(?:\/(history|personal|position|archive|restore|draft|adopt))?$/.exec(
       part,
     );
   if (match) {
