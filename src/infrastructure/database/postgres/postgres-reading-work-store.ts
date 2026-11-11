@@ -1,3 +1,4 @@
+import { PostgresReadingPreferencesStore } from "./postgres-reading-preferences-store.ts";
 import type {
   ReadingWorkRepository,
   ReadingWork,
@@ -10,7 +11,10 @@ type Query = (
   args?: unknown[],
 ) => Promise<{ rows: Record<string, any>[] }>;
 export class PostgresReadingWorkStore implements ReadingWorkRepository {
-  constructor(readonly query: Query) {}
+  readonly preferences: PostgresReadingPreferencesStore;
+  constructor(readonly query: Query) {
+    this.preferences = new PostgresReadingPreferencesStore(query);
+  }
   async source(o: LightTickOwner, id: string) {
     return (
       await this.query(
@@ -19,11 +23,16 @@ export class PostgresReadingWorkStore implements ReadingWorkRepository {
       )
     ).rows[0]?.payload as ReadingSource | undefined;
   }
-  async sources(o: LightTickOwner, after: string, limit: number) {
+  async sources(
+    o: LightTickOwner,
+    after: string,
+    limit: number,
+    includeDeleted = false,
+  ) {
     return (
       await this.query(
-        'SELECT payload FROM zook_lighttick_reading_sources WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 ORDER BY id COLLATE "C" LIMIT $4',
-        [o.appId, o.userId, after, limit],
+        `SELECT payload FROM zook_lighttick_reading_sources WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND ($5::boolean OR payload->>'deleted_at' IS NULL) ORDER BY id COLLATE "C" LIMIT $4`,
+        [o.appId, o.userId, after, limit, includeDeleted],
       )
     ).rows.map((r) => r.payload as ReadingSource);
   }

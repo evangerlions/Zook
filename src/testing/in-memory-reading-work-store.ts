@@ -1,3 +1,4 @@
+import { InMemoryReadingPreferencesStore } from "./in-memory-reading-preferences-store.ts";
 import type {
   ReadingWorkRepository,
   ReadingWork,
@@ -9,32 +10,46 @@ const prefix = (o: LightTickOwner) => JSON.stringify([o.appId, o.userId]) + ":";
 const key = (o: LightTickOwner, id: string) => prefix(o) + id;
 const copy = <T>(v: T): T => structuredClone(v);
 export class InMemoryReadingWorkStore implements ReadingWorkRepository {
+  readonly preferences = new InMemoryReadingPreferencesStore();
   private work = new Map<string, ReadingWork>();
   private rows = new Map<string, ReadingSource>();
   private versions = new Map<string, ReadingSource[]>();
   snapshot() {
     return copy({
+      preferences: this.preferences.snapshot(),
       work: [...this.work],
       rows: [...this.rows],
       versions: [...this.versions],
     });
   }
   restore(s: ReturnType<InMemoryReadingWorkStore["snapshot"]>) {
+    this.preferences.restore(s.preferences);
     this.work = new Map(s.work);
     this.rows = new Map(s.rows);
     this.versions = new Map(s.versions);
   }
   deleteOwner(o: LightTickOwner) {
+    this.preferences.deleteOwner(o);
     for (const map of [this.work, this.rows, this.versions])
       for (const k of map.keys()) if (k.startsWith(prefix(o))) map.delete(k);
   }
   async source(o: LightTickOwner, id: string) {
     return copy(this.rows.get(key(o, id)));
   }
-  async sources(o: LightTickOwner, after: string, limit: number) {
+  async sources(
+    o: LightTickOwner,
+    after: string,
+    limit: number,
+    includeDeleted = false,
+  ) {
     return copy(
       [...this.rows]
-        .filter(([k, r]) => k.startsWith(prefix(o)) && r.id > after)
+        .filter(
+          ([k, r]) =>
+            k.startsWith(prefix(o)) &&
+            r.id > after &&
+            (includeDeleted || !r.deleted_at),
+        )
         .map(([, r]) => r)
         .sort((a, b) => (a.id < b.id ? -1 : 1))
         .slice(0, limit),

@@ -73,17 +73,15 @@ export class ReadingService {
         root = row.provenance?.root_article_id ?? row.id,
         rows = await this.repo.reading.editions(o, root, after, 21);
       return {
-        items: rows
-          .slice(0, 20)
-          .map((r) => ({
-            id: r.id,
-            title: r.content.title,
-            content_version: r.content_version,
-            revision: r.revision,
-            archived: r.archived,
-            created_at: r.created_at,
-            provenance: r.provenance ?? null,
-          })),
+        items: rows.slice(0, 20).map((r) => ({
+          id: r.id,
+          title: r.content.title,
+          content_version: r.content_version,
+          revision: r.revision,
+          archived: r.archived,
+          created_at: r.created_at,
+          provenance: r.provenance ?? null,
+        })),
         next_cursor: rows.length > 20 ? rows[19].id : null,
       };
     });
@@ -137,7 +135,7 @@ export class ReadingService {
           id: entry.id,
           reviews: await this.repo.reading.listVocabularyReviews(o, entry.id),
         });
-      const sources = await this.repo.readingWork.sources(o, "", 1001),
+      const sources = await this.repo.readingWork.sources(o, "", 1001, true),
         workRows = await this.repo.readingWork.list(o, "", 1001);
       if (sources.length > 1000 || workRows.length > 1000)
         fail(413, "阅读来源或任务超过1000项，未返回截断副本。");
@@ -165,7 +163,18 @@ export class ReadingService {
           ...r
         }) => ({ ...r, input }),
       );
+      const preferences =
+          (await this.repo.readingWork.preferences.get(o)) ?? null,
+        preferences_history = await this.repo.readingWork.preferences.history(
+          o,
+          2147483648,
+          1001,
+        );
+      if (preferences_history.length > 1000)
+        fail(413, "阅读偏好历史超过容量，请使用历史分页核对。");
       const data = {
+        preferences,
+        preferences_history,
         format_version: 1,
         scope: "lighttick_reading",
         articles: items,

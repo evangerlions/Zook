@@ -1,7 +1,14 @@
+import type { ReadingPreferencesRepository } from "./reading-preferences.types.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
 import type { ArticleContent, ReadingMaterial } from "./reading.types.ts";
 import type { ModelSelection } from "../personal-model/personal-model.types.ts";
 export interface ReadingSource {
+  language?: "zh" | "en" | "unknown";
+  topics?: string[];
+  domains?: string[];
+  custom?: boolean;
+  catalog_id?: string | null;
+  deleted_at?: string | null;
   id: string;
   revision: number;
   title: string;
@@ -48,7 +55,7 @@ export interface ReadingWork extends LightTickOwner {
       sha256: string;
       capture_kind: string;
       encoding?: "base64";
-      extraction_version?:string;
+      extraction_version?: string;
       resolved_url?: string;
     };
   } | null;
@@ -61,11 +68,13 @@ export interface ReadingWork extends LightTickOwner {
   updated_at: string;
 }
 export interface ReadingWorkRepository {
+  readonly preferences: ReadingPreferencesRepository;
   source(o: LightTickOwner, id: string): Promise<ReadingSource | undefined>;
   sources(
     o: LightTickOwner,
     after: string,
     limit: number,
+    includeDeleted?: boolean,
   ): Promise<ReadingSource[]>;
   sourceHistory(
     o: LightTickOwner,

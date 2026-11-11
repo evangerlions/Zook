@@ -1,3 +1,4 @@
+import { readingSourceFields } from "./reading-source-fields.ts";
 import type { JobQueue } from "../../../infrastructure/queue/job-queue.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -131,7 +132,17 @@ export class ReadingWorkService {
   async saveSource(o: LightTickOwner, id: string, raw: unknown, key: string) {
     identity(id, "source-");
     const b = structuredClone(object(raw));
-    keys(b, ["base_revision", "title", "url", "format", "archived"]);
+    keys(b, [
+      "base_revision",
+      "title",
+      "url",
+      "format",
+      "archived",
+      "language",
+      "topics",
+      "domains",
+      "catalog_id",
+    ]);
     const base = integer(b.base_revision, 0, 2147483646),
       title = text(b.title, 200, true),
       url = readingURL(b.url);
@@ -143,7 +154,9 @@ export class ReadingWorkService {
     return this.command(o, id, "source:save", b, key, async () => {
       const old = await this.store.source(o, id),
         now = this.clock().toISOString();
+      if (old?.deleted_at) fail(409, "此来源配置已删除，请使用新的来源编号。");
       const row: ReadingSource = {
+        ...readingSourceFields(b, old, url),
         id,
         revision: base + 1,
         title,
@@ -153,6 +166,27 @@ export class ReadingWorkService {
         created_at: old?.created_at ?? now,
         updated_at: now,
       };
+      await this.store.saveSource(o, row, base);
+      return row;
+    });
+  }
+  async deleteSource(o: LightTickOwner, id: string, raw: unknown, key: string) {
+    identity(id, "source-");
+    const b = structuredClone(object(raw));
+    keys(b, ["base_revision"]);
+    const base = integer(b.base_revision, 1, 2147483646);
+    return this.command(o, id, "source:delete", b, key, async () => {
+      const old = await this.store.source(o, id);
+      if (!old) fail(404, "未找到本人的阅读来源。");
+      if (old.deleted_at) fail(409, "此来源配置已删除。");
+      const now = this.clock().toISOString(),
+        row = {
+          ...old,
+          revision: base + 1,
+          archived: true,
+          deleted_at: now,
+          updated_at: now,
+        };
       await this.store.saveSource(o, row, base);
       return row;
     });

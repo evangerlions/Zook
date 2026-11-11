@@ -8571,6 +8571,222 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/setup:
+    get:
+      operationId: getLightTickReadingSetup
+      tags:
+      - lighttick-reading
+      summary: getLightTickReadingSetup
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingSetupEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/preferences:
+    get:
+      operationId: getLightTickReadingPreferences
+      tags:
+      - lighttick-reading
+      summary: getLightTickReadingPreferences
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingPreferencesEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    put:
+      operationId: saveLightTickReadingPreferences
+      tags:
+      - lighttick-reading
+      summary: saveLightTickReadingPreferences
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingPreferencesEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingPreferencesWrite'
+  /api/v1/lighttick/reading/preferences/history:
+    get:
+      operationId: getLightTickReadingPreferencesHistory
+      tags:
+      - lighttick-reading
+      summary: getLightTickReadingPreferencesHistory
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingPreferencesHistoryEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          maxLength: 20
+          pattern: ^[0-9]+$
+  /api/v1/lighttick/reading/sources/{sourceId}/delete:
+    post:
+      operationId: deleteLightTickReadingSource
+      tags:
+      - lighttick-reading
+      summary: deleteLightTickReadingSource
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingSourceEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: sourceId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          minLength: 8
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingSourceDelete'
 components:
   securitySchemes:
     bearerAuth:
@@ -21198,7 +21414,9 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [id, versions]
+            required:
+            - id
+            - versions
             properties:
               id:
                 type: string
@@ -21254,6 +21472,15 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/LightTickReadingVocabularyReview'
+        preferences:
+          anyOf:
+          - $ref: '#/components/schemas/LightTickReadingPreferences'
+          - type: 'null'
+        preferences_history:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/LightTickReadingPreferences'
     LightTickReadingArticleEnvelope:
       type: object
       additionalProperties: false
@@ -21835,6 +22062,46 @@ components:
           type: string
           maxLength: 40
           format: date-time
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+          - unknown
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+        domains:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 253
+            minLength: 1
+        custom:
+          type: boolean
+        catalog_id:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+        deleted_at:
+          anyOf:
+          - type: string
+            format: date-time
+            maxLength: 40
+          - type: 'null'
     LightTickReadingSourceWrite:
       type: object
       additionalProperties: false
@@ -21865,6 +22132,38 @@ components:
           - atom
         archived:
           type: boolean
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+          - unknown
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+        domains:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 253
+            minLength: 1
+        catalog_id:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
     LightTickReadingSourcePage:
       type: object
       additionalProperties: false
@@ -22280,6 +22579,7 @@ components:
           - $ref: '#/components/schemas/LightTickReadingWorkCreate'
           - $ref: '#/components/schemas/LightTickReadingWorkCancel'
           - $ref: '#/components/schemas/LightTickReadingWorkAdopt'
+          - $ref: '#/components/schemas/LightTickReadingPreferencesWrite'
         operation_id:
           type: string
           maxLength: 128
@@ -22295,6 +22595,7 @@ components:
           - $ref: '#/components/schemas/LightTickReadingSource'
           - $ref: '#/components/schemas/LightTickReadingWork'
           - $ref: '#/components/schemas/LightTickReadingWorkAdoptResult'
+          - $ref: '#/components/schemas/LightTickReadingPreferences'
     LightTickReadingWorkExport:
       type: object
       additionalProperties: false
@@ -22960,3 +23261,371 @@ components:
           maxLength: 200
         data:
           $ref: '#/components/schemas/LightTickReadingEditions'
+    LightTickReadingPreferencesValue:
+      type: object
+      additionalProperties: false
+      required:
+      - enabled
+      - hour
+      - minute
+      - count
+      - mode
+      - topics
+      - languages
+      - query
+      - auto_guide
+      properties:
+        enabled:
+          type: boolean
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        minute:
+          type: integer
+          minimum: 0
+          maximum: 59
+        count:
+          type: integer
+          minimum: 1
+          maximum: 8
+        mode:
+          type: string
+          enum:
+          - recent
+          - classic
+          - mixed
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+          minItems: 1
+        languages:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            type: string
+            enum:
+            - zh
+            - en
+        query:
+          type: string
+          maxLength: 300
+        auto_guide:
+          type: boolean
+        source_ids:
+          anyOf:
+          - type: array
+            maxItems: 1000
+            items:
+              type: string
+              maxLength: 128
+              pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+          - type: 'null'
+    LightTickReadingPreferences:
+      type: object
+      additionalProperties: false
+      required:
+      - revision
+      - value
+      - updated_at
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        value:
+          $ref: '#/components/schemas/LightTickReadingPreferencesValue'
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+            maxLength: 40
+          - type: 'null'
+    LightTickReadingPreferencesWrite:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      - value
+      properties:
+        base_revision:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+        value:
+          type: object
+          additionalProperties: false
+          required:
+          - enabled
+          - hour
+          - minute
+          - count
+          - mode
+          - topics
+          - languages
+          - query
+          - auto_guide
+          properties:
+            enabled:
+              type: boolean
+            hour:
+              type: integer
+              minimum: 0
+              maximum: 23
+            minute:
+              type: integer
+              minimum: 0
+              maximum: 59
+            count:
+              type: integer
+              minimum: 1
+              maximum: 8
+            mode:
+              type: string
+              enum:
+              - recent
+              - classic
+              - mixed
+            topics:
+              type: array
+              maxItems: 1000
+              items:
+                type: string
+                maxLength: 20
+                enum:
+                - 认知
+                - 科技
+                - 经济学
+                - 社会学
+                - 心理
+                - 成长
+              minItems: 1
+            languages:
+              type: array
+              minItems: 1
+              maxItems: 1000
+              items:
+                type: string
+                enum:
+                - zh
+                - en
+            query:
+              type: string
+              maxLength: 300
+            auto_guide:
+              type: boolean
+            source_ids:
+              anyOf:
+              - type: array
+                maxItems: 1000
+                items:
+                  type: string
+                  maxLength: 128
+                  pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+              - type: 'null'
+    LightTickReadingPreferencesHistory:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - next_cursor
+      properties:
+        items:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/LightTickReadingPreferences'
+        next_cursor:
+          anyOf:
+          - type: string
+            maxLength: 20
+            pattern: ^[0-9]+$
+          - type: 'null'
+    LightTickReadingCatalogSource:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - catalog_id
+      - legacy_id
+      - title
+      - url
+      - format
+      - language
+      - topics
+      - domains
+      - custom
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          pattern: ^source-[a-zA-Z0-9_-]{1,120}$
+        catalog_id:
+          type: string
+          maxLength: 80
+        legacy_id:
+          type: string
+          maxLength: 80
+        title:
+          type: string
+          maxLength: 200
+        url:
+          type: string
+          maxLength: 1500
+          format: uri
+        format:
+          type: string
+          enum:
+          - article
+          - rss
+          - atom
+        language:
+          type: string
+          enum:
+          - zh
+          - en
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+        domains:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 253
+            minLength: 1
+        custom:
+          const: false
+    LightTickReadingSetup:
+      type: object
+      additionalProperties: false
+      required:
+      - preferences
+      - topics
+      - default_sources
+      - classics
+      - catalog_revision
+      - timezone
+      - catalogue_verification
+      properties:
+        preferences:
+          $ref: '#/components/schemas/LightTickReadingPreferences'
+        topics:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            maxLength: 20
+            enum:
+            - 认知
+            - 科技
+            - 经济学
+            - 社会学
+            - 心理
+            - 成长
+        default_sources:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/LightTickReadingCatalogSource'
+        classics:
+          type: array
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/LightTickReadingSourceMetadata'
+        catalog_revision:
+          type: string
+          maxLength: 80
+        timezone:
+          const: Asia/Shanghai
+        catalogue_verification:
+          const: legacy_reference_not_live_verified
+    LightTickReadingSourceDelete:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+    LightTickReadingPreferencesEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          const: OK
+        message:
+          type: string
+          maxLength: 1000
+        requestId:
+          type: string
+          maxLength: 200
+        data:
+          $ref: '#/components/schemas/LightTickReadingPreferences'
+    LightTickReadingPreferencesHistoryEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          const: OK
+        message:
+          type: string
+          maxLength: 1000
+        requestId:
+          type: string
+          maxLength: 200
+        data:
+          $ref: '#/components/schemas/LightTickReadingPreferencesHistory'
+    LightTickReadingSetupEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - requestId
+      - data
+      properties:
+        code:
+          const: OK
+        message:
+          type: string
+          maxLength: 1000
+        requestId:
+          type: string
+          maxLength: 200
+        data:
+          $ref: '#/components/schemas/LightTickReadingSetup'

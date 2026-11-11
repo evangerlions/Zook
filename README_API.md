@@ -2076,6 +2076,16 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 
 来源偏好推荐与定时采集仍在迁移清单；本接口批次不表示这些能力已全部完成。浏览器及PG测试使用的合成模型/网站仅验证协议，不作为真实供应商结果。
 
+### LightTick 阅读偏好与目录配置
+
+迁移111新增本人阅读偏好与不可变偏好版本，沿用阅读原请求事务与回执，不创建学习项目或采集任务。`GET /api/v1/lighttick/reading/setup` 返回本人偏好、六类主题、10个默认来源、4条经典引用、固定catalog_revision与Asia/Shanghai时区；catalogue_verification=legacy_reference_not_live_verified明确目录来自历史公开配置，不能作为当前供应商验证结果。
+
+`GET/PUT /preferences`：响应 `{revision,value,updated_at}`；未配置时revision=0、updated_at=null，读取不建库。PUT为 `{base_revision,value:{enabled,hour,minute,count,mode,topics,languages,query,auto_guide,source_ids?}}`，要求Idempotency-Key。保留旧hour 0..23、minute 0..59、count 1..8、recent/classic/mixed、六类主题、zh/en、query 300字符；主题/语言重复选择规范化去重。source_ids=null/未提供表示默认选择规则，显式空数组保留为空；本人归档/删除来源不可再选。新owner默认关闭自动采集；既有迁移值另行保留。auto_guide仅表示导读提示偏好，不构成付费模型调用授权。`GET /preferences/history?cursor=` 每页30个不可变版本。调度执行状态将独立于该编辑修订，避免后台tick使用户表单发生冲突。
+
+来源写入增加可选language、topics、domains、catalog_id；响应另含派生custom与deleted_at。域名只接受明确主机名，统一大小写/IDNA，拒绝凭据、路径、端口与私有字面IP；缺省按来源URL派生。目录身份必须与固定目录链接/格式一致；更换链接时不静默沿用旧目录身份。未提供扩展字段的旧请求仍按原key/body核对。`POST /sources/{sourceId}/delete` 使用 `{base_revision}`，删除未来选择中的配置、保留明确可见的来源与采集历史和稳定编号；不复用已删除ID，暂停与恢复仍用archived。默认来源目录本身不因本人移除配置而删除。
+
+偏好与删除的只读原回执继续用 `/work-receipts/{operationId}`，回执request/result合同包含偏好类型。core可读setup/偏好/历史/原回执，拒绝新偏好或来源写入；新设置、不可变历史及来源删除状态纳入本人导出和账号清理。此批是配置合同；推荐、来源域名筛选及每日调度完整流程仍在后续实现，不以保存开关宣称自动采集已经接通。
+
 ### LightTick 阅读全文兼容
 
 PDF.js固定6.5.438从已选字节离线提取，字体/CMap仅读取随依赖固定的本地资源，不执行文档脚本/XFA或加载文档链接；加密、权限受限、超过100页或正文不可读时明确失败。HTML由固定Readability0.6.0与惰性LinkeDOM0.18.15识别正文，拒绝出版者JSON-LD中isAccessibleForFree=false、挑战页、NUL和不足100字符的全文补取，不将摘要凑为全文。直接网页采集保持web_text语义。
