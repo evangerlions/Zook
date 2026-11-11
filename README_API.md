@@ -2016,8 +2016,8 @@ v2算法`audited-economic-date-decimal60-calendar-v2`把完整参考交易日历
 
 Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bearer认证及本人资源权限；游客不可用。`runtimeScope=core`可读历史/导出/回执，新的阅读写入返回503 `LIGHTTICK_CAPABILITY_UNAVAILABLE`。不自动采集、调用模型或导入历史。
 
-- `GET /library?search=&filter=all|bookmark|later|read|feedback|archived&limit=20&cursor=`：按文章ID分页，最多50篇；`all`不含归档。切换筛选须清除游标。
-- `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题200字符、正文100000字符，原空白保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
+- `GET /library?search=&filter=all|bookmark|later|read|feedback|archived&limit=20&cursor=`：按文章ID分页，最多50篇；`all`不含归档。切换筛选须清除游标。search按原文标题/正文/作者/标签匹配，通配符按字面处理。
+- `PUT /articles/{articleId}`：以`Idempotency-Key`和`{base_revision:0,content:{title,body,source_url,language,published_at}}`导入粘贴原文。标题200字符、正文100000字符，原空白保留；可选author为500字符以内的作者原文或null，tags为最多100个非空标签（每项200字符），两者随内容摘要/版本/历史/导出保留；来源URL仅作为元数据，不抓取，禁止内嵌凭据；未知发布日期为null。
 - `GET /articles/{articleId}`、`GET /articles/{articleId}/history?cursor=`：当前文章及每次确认变更的历史，原文`content_version`为SHA256。历史倒序30条，游标为排他的修订上界。
 - `POST /articles/{articleId}/personal`：`{base_revision,content_version,personal:{notes,feedback,bookmark,later,read}}`，笔记60000字符、反馈10000字符。明确read独立于位置/笔记/行动；撤销read保留原版本历史。
 - `POST /articles/{articleId}/position`：`{base_revision,content_version,device_id,position}`，每设备位置独立且可回退；最多100设备，字符位置不得超过当前正文长度。
@@ -2048,3 +2048,5 @@ Canonical前缀 `/api/v1/lighttick/reading`，普通LightTick注册用户、Bear
 `POST .../adopt` 接收 `{base_revision,content_version,kind,paragraph_id,draft_version}`。确认精确的已保存非空草稿版本后，冻结 adopted 文本/版本/来源/时间；不会采用尚未保存的本机文字。再次编辑草稿时保留之前 adopted 副本。已有文档未包含 materials 时等同空列表；此字段为向后兼容的可选响应属性。
 
 两条接口均复用文章CAS、原key/body回执、归档拒写、core只读和当前权限核对。文章响应、历史与导出包含 `materials:[{kind,paragraph_id,draft:{version,text,origin,created_at},adopted:null|{...draft,adopted_at}}]`；当前人工编辑写 origin=manual。AI生成/来源采集仍需独立持久任务，此批接口不表示这些调用点已经完成。采用不外发、不公开发布，不产生阅读/行动完成或时长事实。
+
+作者/标签字段对已有文章与待确认旧请求保持可选：不回填或重算旧content_version。新导入未提供作者时保存null，未提供标签时保存空数组。未知作者不推断。

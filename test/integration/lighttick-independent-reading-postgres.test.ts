@@ -25,6 +25,8 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
     base_revision: 0,
     content: {
       title: "Literal % _",
+      author: "合成作者唯一",
+      tags: ["literal % _ tag", "研究标签"],
       body: "原文\n  exact bytes ",
       source_url: null,
       language: "zh",
@@ -44,6 +46,11 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
     assert.equal((await s.list(owner, { search: "% _" })).items.length, 1);
     assert.equal((await s.list(owner, { search: "%missing" })).items.length, 0);
     assert.equal((await s.list(other)).items.length, 0);
+    assert.equal(
+      (await s.list(owner, { search: "合成作者唯一" })).items.length,
+      1,
+    );
+    assert.equal((await s.list(owner, { search: "研究标签" })).items.length, 1);
     const command = {
       base_revision: 1,
       content_version: imported.content_version,

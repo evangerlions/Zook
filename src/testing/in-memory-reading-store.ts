@@ -126,7 +126,15 @@ export class InMemoryReadingStore implements ReadingRepository {
         (r) =>
           r.id > q.after &&
           r.archived === (q.filter === "archived") &&
-          (r.content.title + "\n" + r.content.body)
+          (
+            r.content.title +
+            "\n" +
+            r.content.body +
+            "\n" +
+            (r.content.author ?? "") +
+            "\n" +
+            (r.content.tags ?? []).join("\n")
+          )
             .toLowerCase()
             .includes(q.search.toLowerCase()) &&
           (!["bookmark", "later", "read", "feedback"].includes(q.filter) ||

@@ -14,7 +14,15 @@ import type {
 export const articleId = (v: unknown) => identity(v, "article-");
 export function articleContent(raw: unknown): ArticleContent {
   const b = object(raw);
-  keys(b, ["title", "body", "source_url", "language", "published_at"]);
+  keys(b, [
+    "title",
+    "body",
+    "source_url",
+    "language",
+    "published_at",
+    "author",
+    "tags",
+  ]);
   const url = b.source_url == null ? null : text(b.source_url, 2048, true);
   if (url) {
     try {
@@ -36,12 +44,19 @@ export function articleContent(raw: unknown): ArticleContent {
     fail(422, "发布日期须为有效UTC时间；未知请保留为空。");
   const language = text(b.language ?? "unknown", 35, true);
   if (!/^[a-zA-Z][a-zA-Z0-9-]*$/.test(language)) fail(422, "语言标识无效。");
+  const author = b.author == null ? null : text(b.author, 500);
+  const tags = b.tags ?? [];
+  if (!Array.isArray(tags) || tags.length > 100)
+    fail(422, "文章标签最多100项。");
+  const validatedTags = tags.map((value) => text(value, 200, true));
   return {
     title: text(b.title, 200, true),
     body: text(b.body, 100000, true),
     source_url: url,
     language,
     published_at: published,
+    author,
+    tags: validatedTags,
   };
 }
 export function articleQuery(

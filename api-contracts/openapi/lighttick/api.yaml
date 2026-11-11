@@ -19839,6 +19839,18 @@ components:
           - type: string
             format: date-time
           - type: 'null'
+        author:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+        tags:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 200
     LightTickReadingPrivate:
       type: object
       additionalProperties: false

@@ -67361,6 +67361,26 @@ export const LightTickReadingContentSchema = {
           "type": "null"
         }
       ]
+    },
+    "author": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
     }
   }
 } as const;
@@ -67371,6 +67391,8 @@ export type LightTickReadingContent = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
 
 export const LightTickReadingPrivateSchema = {
@@ -67514,6 +67536,26 @@ export const LightTickReadingArticleSchema = {
               "type": "null"
             }
           ]
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
         }
       }
     },
@@ -67704,6 +67746,8 @@ export type LightTickReadingArticle = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -67801,6 +67845,26 @@ export const LightTickReadingImportSchema = {
               "type": "null"
             }
           ]
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 500
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
         }
       }
     }
@@ -67815,6 +67879,8 @@ export type LightTickReadingImport = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
 };
 
@@ -68027,6 +68093,26 @@ export const LightTickReadingPageSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
               }
             }
           },
@@ -68235,6 +68321,8 @@ export type LightTickReadingPage = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -68363,6 +68451,26 @@ export const LightTickReadingHistoryPageSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
               }
             }
           },
@@ -68569,6 +68677,8 @@ export type LightTickReadingHistoryPage = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -68711,6 +68821,26 @@ export const LightTickReadingExportSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
               }
             }
           },
@@ -68970,6 +69100,26 @@ export const LightTickReadingExportSchema = {
                     "type": "null"
                   }
                 ]
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
               }
             }
           },
@@ -69320,6 +69470,8 @@ export type LightTickReadingExport = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -69369,6 +69521,8 @@ export type LightTickReadingExport = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -69540,6 +69694,26 @@ export const LightTickReadingArticleEnvelopeSchema = {
                   "type": "null"
                 }
               ]
+            },
+            "author": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
             }
           }
         },
@@ -69739,6 +69913,8 @@ export type LightTickReadingArticleEnvelope = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -69886,6 +70062,26 @@ export const LightTickReadingPageEnvelopeSchema = {
                         "type": "null"
                       }
                     ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
                   }
                 }
               },
@@ -70103,6 +70299,8 @@ export type LightTickReadingPageEnvelope = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -70253,6 +70451,26 @@ export const LightTickReadingHistoryPageEnvelopeSchema = {
                         "type": "null"
                       }
                     ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
                   }
                 }
               },
@@ -70468,6 +70686,8 @@ export type LightTickReadingHistoryPageEnvelope = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -70632,6 +70852,26 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "type": "null"
                       }
                     ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
                   }
                 }
               },
@@ -70891,6 +71131,26 @@ export const LightTickReadingExportEnvelopeSchema = {
                         "type": "null"
                       }
                     ]
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
                   }
                 }
               },
@@ -71250,6 +71510,8 @@ export type LightTickReadingExportEnvelope = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;
@@ -71299,6 +71561,8 @@ export type LightTickReadingExportEnvelope = {
   "source_url": string | unknown;
   "language": string;
   "published_at": string | unknown;
+  "author"?: string | unknown;
+  "tags"?: string[];
 };
   "personal": {
   "notes": string;

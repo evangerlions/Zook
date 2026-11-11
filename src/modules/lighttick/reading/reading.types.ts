@@ -5,6 +5,8 @@ export interface ArticleContent {
   source_url: string | null;
   language: string;
   published_at: string | null;
+  author?: string | null;
+  tags?: string[];
 }
 export interface ArticlePrivate {
   notes: string;

@@ -296,3 +296,39 @@ test("core scope rejects new reading writes while read/receipt lookups remain av
     false,
   );
 });
+test("pasted import retains author and tags in source digest, history/export and literal library search", async () => {
+  const { s } = setup();
+  const content = {
+    ...body.content,
+    author: "  Synthetic author  ",
+    tags: ["专门的研究标签", "literal % _"],
+  };
+  const row = await s.write(
+    owner,
+    id,
+    "import",
+    { base_revision: 0, content },
+    "reading-with-metadata",
+  );
+  assert.equal(row.content.author, content.author);
+  assert.deepEqual(row.content.tags, content.tags);
+  assert.equal(
+    (await s.list(owner, { search: "Synthetic author" })).items.length,
+    1,
+  );
+  assert.equal(
+    (await s.list(owner, { search: "专门的研究标签" })).items.length,
+    1,
+  );
+  assert.deepEqual((await s.export(owner)).history[0].content, content);
+  await assert.rejects(
+    s.write(
+      owner,
+      "article-bad-tags",
+      "import",
+      { base_revision: 0, content: { ...content, tags: [""] } },
+      "reading-invalid-tags",
+    ),
+    { statusCode: 422 },
+  );
+});

@@ -145,7 +145,7 @@ export class PostgresReadingStore implements ReadingRepository {
     return (
       await this.query(
         `SELECT payload FROM zook_lighttick_reading_articles WHERE app_id=$1 AND user_id=$2 AND id COLLATE "C">$3 AND (payload->>'archived')::boolean=$4 AND
-      ((payload->'content'->>'title')||E'\\n'||(payload->'content'->>'body')) ILIKE $5 AND
+      ((payload->'content'->>'title')||E'\\n'||(payload->'content'->>'body')||E'\\n'||coalesce(payload->'content'->>'author','')||E'\\n'||coalesce((SELECT string_agg(tag,E'\\n') FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(payload->'content'->'tags')='array' THEN payload->'content'->'tags' ELSE '[]'::jsonb END) AS t(tag)),'')) ILIKE $5 AND
       ($6 NOT IN ('bookmark','later','read','feedback') OR CASE WHEN $6='feedback' THEN length(payload->'personal'->>'feedback')>0 ELSE (payload->'personal'->>$6)::boolean END)
       ORDER BY id COLLATE "C" LIMIT $7`,
         [
