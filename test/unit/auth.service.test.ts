@@ -110,6 +110,22 @@ test("auth service rotates refresh tokens and revokes them on logout", async () 
   );
 });
 
+test("refresh rejects a token whose user no longer exists as revoked", async () => {
+  const runtime = await createApplication();
+  const session = await runtime.services.authService.login({
+    appId: "app_a", account: "alice@example.com", password: "Password1234",
+  });
+  const database = runtime.database;
+  const originalFind = database.findUserById.bind(database);
+  database.findUserById = (id) => id === session.userId ? undefined : originalFind(id);
+  const response = await runtime.app.handle({
+    method: "POST", path: "/api/v1/auth/refresh", headers: {}, requestId: "missing-user-refresh",
+    body: { appId: "app_a", refreshToken: session.refreshToken, clientType: "app" },
+  });
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.code, "AUTH_REFRESH_TOKEN_REVOKED");
+});
+
 test("auth service allows exactly one concurrent refresh rotation", async () => {
   const runtime = await createApplication();
   const session = await runtime.services.authService.login({
