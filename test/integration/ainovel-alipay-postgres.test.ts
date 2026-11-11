@@ -8,7 +8,7 @@ import { applyBillingEnvironmentFixture } from "./support/ainovel-billing-fixtur
 import { PostgresAlipayOrders } from "../../src/infrastructure/database/postgres/postgres-alipay-orders.ts";
 import { PostgresAiNovelBillingStore } from "../../src/infrastructure/database/postgres/postgres-ainovel-billing.ts";
 import { queryBillingRevenue } from "../../src/infrastructure/database/postgres/postgres-billing-admin.ts";
-import { alipayTransaction } from "../../src/services/ainovel-alipay-projection.ts";
+import { alipaySettlementTransaction, alipayTransaction } from "../../src/services/ainovel-alipay-projection.ts";
 import type { AlipayOrder } from "../../src/modules/billing/alipay-models.ts";
 
 const connectionString = process.env.ALIPAY_TEST_DATABASE_URL;
@@ -50,7 +50,7 @@ test("Alipay migrations and repositories preserve checkout identity, access and 
       membershipExpiresAt: null, conflict: null, accountDeletedAt: null,
     };
     await orders.save(order);
-    assert.deepEqual(await orders.findIdempotency(order.userId, order.idempotencyKey), order);
+    assert.deepEqual(await inBillingEnvironment("sandbox", () => orders.findIdempotency(order.userId, order.idempotencyKey)), order);
     assert.equal((await orders.findOrder(order.orderId))?.status, "pending");
     await assert.rejects(orders.save({ ...order, orderId: `alp_${"b".repeat(32)}` }),
       (error: unknown) => (error as { code?: string }).code === "23505");
@@ -88,6 +88,22 @@ test("Alipay migrations and repositories preserve checkout identity, access and 
     await financial.upsertTransaction({ ...alipayTransaction(order, order.accountDeletedAt), isSandbox: false, amountMinor: 4900 });
     assert.equal((await queryBillingRevenue(query, filter))[0].grossMinor, 3800);
     assert.equal((await queryBillingRevenue(query, { ...filter, sandbox: false }))[0].grossMinor, 4900);
+    const [paid] = (await financial.listTransactions("ai_novel", order.userId)).filter(transaction => transaction.isSandbox);
+    const refundedAt = "2026-10-04T01:59:00.000Z";
+    const refund = alipaySettlementTransaction(order, refundedAt, paid, { amountMinor: 3800, refundedAt });
+    assert.ok(refund);
+    await orders.save({ ...order, accountDeletedAt: null, membershipApplied: false, membershipExpiresAt: null });
+    assert.equal((await orders.listRecovery("sandbox", order.merchantAppId, order.sellerId, 20)).length, 1);
+    await financial.upsertTransaction(refund);
+    assert.equal((await orders.listRecovery("sandbox", order.merchantAppId, order.sellerId, 20)).length, 0);
+    const [refunded] = (await financial.listTransactions("ai_novel", order.userId)).filter(transaction => transaction.isSandbox);
+    assert.equal(refunded.status, "refunded");
+    assert.equal(refunded.refundedAt, refundedAt);
+    assert.equal(refunded.accountDeletedAt, order.accountDeletedAt);
+    assert.equal(alipaySettlementTransaction(order, order.accountDeletedAt, refunded), undefined);
+    assert.deepEqual(await queryBillingRevenue(query, filter), [{ date: "2026-10-04", appId: "ai_novel",
+      source: null, market: null, productKey: null, currency: "CNY", purchaseCount: 1, grossMinor: 3800, refundMinor: 3800 }]);
+    assert.equal((await queryBillingRevenue(query, { ...filter, sandbox: false }))[0].refundMinor, 0);
   } finally {
     // Only the generated schema inside the explicitly isolated test database.
     await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);

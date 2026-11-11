@@ -127,7 +127,13 @@ export class InMemoryDatabase extends ApplicationDatabase {
   findAiNovelAlipayIdempotency(user: string, key: string) { const result = this.alipayOrders.findIdempotency(user, key); return result && structuredClone(result); }
   listAiNovelAlipayOrders(user: string, filter: { before: string; after?: string; limit: number }) { return this.alipayOrders.listOrders(user, filter); }
   listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
-  listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) { return this.alipayOrders.listRecovery(environment, merchant, seller, limit); }
+  listAiNovelAlipayRecovery(environment: string, merchant: string, seller: string, limit: number) {
+    return this.alipayOrders.listRecovery(environment, merchant, seller, limit, order =>
+      this.listAiNovelBillingTransactions("ai_novel", order.userId).some(transaction =>
+        transaction.provider === "alipay" && transaction.providerTransactionId === order.orderId &&
+        transaction.isSandbox === (environment === "sandbox") &&
+        (transaction.status === "refunded" || transaction.status === "revoked")));
+  }
   saveAiNovelAlipayOrder(order: AlipayOrder) { this.alipayOrders.save(order); }
   supportNotes: SupportNote[] = [];
   supportPermissions: SupportPermission[] = [];

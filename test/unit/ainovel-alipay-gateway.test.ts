@@ -73,15 +73,18 @@ for (const platform of ["android", "web"] as const) {
   });
 }
 
-test("official SDK verifies decoded callback values and rejects tampering", async () => {
+test("official SDK verifies decoded full-refund callback fields and rejects tampering", async () => {
   const fields: Record<string, string> = { app_id: "test_app", seller_id: "test_seller",
-    out_trade_no: "alp_test", total_amount: "38.00", trade_status: "TRADE_SUCCESS",
+    out_trade_no: "alp_test", total_amount: "38.00", trade_status: "TRADE_CLOSED",
+    refund_fee: "38.00", gmt_refund: "2026-10-04 18:00:00.320",
     subject: "OrangeWrite 会员 + Plus", sign_type: "RSA2" };
   const content = Object.keys(fields).filter(key => key !== "sign_type").sort()
     .map(key => `${key}=${fields[key]}`).join("&");
   fields.sign = sign("RSA-SHA256", Buffer.from(content), keys.privateKey).toString("base64");
   assert.equal(await gateway.verifyNotify(fields), true);
   assert.equal(await gateway.verifyNotify({ ...fields, total_amount: "0.01" }), false);
+  assert.equal(await gateway.verifyNotify({ ...fields, refund_fee: "0.01" }), false);
+  assert.equal(await gateway.verifyNotify({ ...fields, gmt_refund: "2026-10-04 18:00:00.321" }), false);
   assert.equal(await gateway.verifyNotify({ ...fields, sign_type: "RSA" }), false);
 });
 

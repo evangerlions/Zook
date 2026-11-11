@@ -162,6 +162,61 @@ test("Alipay soft deletion retains late financial payment but never grants delet
   const tx = (await f.database.listAiNovelBillingTransactions("ai_novel", "user_alice"))[0]; assert.equal(tx.amountMinor, 3800); assert.ok(tx.accountDeletedAt);
 });
 
+test("Alipay full refund falls back to the remaining order and survives concurrent replay", async () => {
+  const f = await fixture();
+  const plus = (await f.create()).body.data.order.orderId;
+  await f.notify(plus);
+  const pro = (await f.create({ productKey: "pro_monthly", platform: "android",
+    distribution: "direct_android", idempotencyKey: "refund_test_pro" })).body.data.order.orderId;
+  const payment = { total_amount: "88.00", trade_no: "202610040000000002" };
+  await f.notify(pro, payment);
+  const refund = { ...payment, trade_status: "TRADE_CLOSED", refund_fee: "88.00",
+    gmt_refund: "2026-10-04 18:00:00.320", notify_id: "refund_pro" };
+  assert.equal((await f.notify(pro, { ...refund, sign: "tampered" })).statusCode, 401);
+  assert.equal((await f.notify(pro, { ...payment, refund_fee: "5.00", gmt_refund: refund.gmt_refund })).rawBody, "success");
+  assert.equal((await f.query(pro)).body.data.membership.tier, "pro");
+  for (const response of await Promise.all([f.notify(pro, refund), f.notify(pro, refund), f.notify(pro, payment)])) {
+    assert.equal(response.rawBody, "success");
+  }
+  const result = (await f.query(pro)).body.data;
+  assert.equal(result.order.membershipApplied, false);
+  assert.equal(result.membership.tier, "plus");
+  const tx = (await f.database.listAiNovelBillingTransactions("ai_novel", "user_alice"))
+    .find(item => item.providerTransactionId === pro);
+  assert.equal(tx?.status, "refunded");
+  assert.equal(tx?.amountMinor, 8800);
+  assert.equal(tx?.refundAmountMinor, 8800);
+  assert.equal(tx?.refundedAt, "2026-10-04T10:00:00.320Z");
+  const event = await f.database.findAiNovelBillingWebhookEvent("ai_novel", "alipay:refund_pro");
+  assert.equal(event?.eventType, "ALIPAY_FULL_REFUND");
+  assert.equal(event?.occurredAt, tx?.refundedAt);
+  assert.deepEqual(await f.database.listAiNovelAlipayRecovery("sandbox", "merchant", "seller", 20), []);
+});
+
+test("Alipay refund can precede a callback with the original payment date", async () => {
+  const f = await fixture();
+  const id = (await f.create()).body.data.order.orderId;
+  const refund = { trade_status: "TRADE_CLOSED", refund_fee: "38.00",
+    gmt_refund: "2026-10-04 18:00:00", gmt_payment: "" };
+  for (const invalid of [{ refund_fee: "38.01" }, { gmt_refund: "2026-09-04 18:00:00" },
+    { gmt_refund: "2026-09-31 18:00:00" }, { seller_id: "wrong" }]) {
+    assert.equal((await f.notify(id, { ...refund, ...invalid })).statusCode, 400);
+  }
+  assert.equal((await f.notify(id, refund)).rawBody, "success");
+  const [before] = await f.database.listAiNovelBillingTransactions("ai_novel", "user_alice");
+  assert.equal(before.status, "refunded");
+  assert.equal(before.purchasedAt, null);
+  assert.equal((await f.notify(id, { gmt_payment: "2026-10-04 18:00:01" })).statusCode, 400);
+  assert.equal((await f.notify(id)).rawBody, "success");
+  const [after] = await f.database.listAiNovelBillingTransactions("ai_novel", "user_alice");
+  assert.equal(after.status, "refunded");
+  assert.equal(after.purchasedAt, NOW.toISOString());
+  assert.equal(after.refundedAt, before.refundedAt);
+  const result = (await f.query(id)).body.data;
+  assert.equal(result.order.membershipApplied, false);
+  assert.equal(result.membership.active, false);
+});
+
 test("optional seller configuration allows default-merchant checkout and settlement", async () => {
   for (const sellerId of [undefined, "", "   "]) {
     const f = await fixture({ sellerId });
