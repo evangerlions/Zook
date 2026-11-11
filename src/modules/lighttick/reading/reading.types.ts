@@ -111,6 +111,7 @@ export interface ArticleQuery {
 }
 import type { VocabularyStore } from "./vocabulary.types.ts";
 export interface ReadingRepository extends VocabularyStore {
+  importCandidates(o: LightTickOwner, url: string | null, version: string, limit: number, parentId?: string): Promise<import("./reading-import.types.ts").ReadingImportCandidate[]>;
   reference(
     o: LightTickOwner,
     id: string,

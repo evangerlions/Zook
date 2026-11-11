@@ -60,6 +60,7 @@ export async function exerciseReadingErasure(repo: LightTickRepository) {
     {
       base_revision: 0,
       content: { ...content, title: "Independent surviving article" },
+      import_decision: { scope_digest: (await reading.previewImport(o, {content: {...content, title: "Independent surviving article"}})).digest, mode: "independent", article_id: null },
     },
     "erasure-independent-import",
   );

@@ -1,4 +1,9 @@
 import { articleContent } from "./reading.validation.ts";
+import { readingWorkEntry } from "./reading-work-entry.ts";
+import {
+  resolveReadingImport,
+  readingImportDecision,
+} from "./reading-import.ts";
 import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import type { ReadingWorkService } from "./reading-work.service.ts";
 import type { LightTickOwner } from "../lighttick.types.ts";
@@ -41,22 +46,17 @@ export async function adoptReadingWork(
     if (b.base_article_revision !== null) fail(422, "原文导入不覆盖已有文章。");
     target = String(index);
     if (row.adopted[target]) fail(409, "此结果已导入，请打开原对象。");
-    const reference = row.output.entry_refs?.[index];
-    const asset = reference
-      ? await service.store.assets.get(o, id, reference.asset_id)
-      : undefined;
-    if (
-      reference &&
-      (!asset ||
-        asset.kind !== "entry" ||
-        asset.sha256 !== reference.content_digest ||
-        digest(asset.value) !== reference.content_digest)
-    )
-      fail(409, "Reading result asset unavailable");
-    const content =
-        row.output.entries?.[index] ??
-        (asset!.value as import("./reading.types.ts").ArticleContent),
-      defaultId = "article-" + digest(content).slice(0, 40),
+    const { content, reference, capture } = await readingWorkEntry(
+      service,
+      o,
+      row,
+      index,
+    );
+    const decision =
+      b.import_decision === undefined
+        ? undefined
+        : readingImportDecision(b.import_decision);
+    const defaultId = "article-" + digest(content).slice(0, 40),
       tombstone = await service.repo.readingErasure.contentTombstone(
         o,
         digest(articleContent(content)),
@@ -67,58 +67,77 @@ export async function adoptReadingWork(
         row.input.recommendation?.automatic)
     )
       assertReadingNotErased({ erased: true });
-    const articleId = tombstone
-      ? "article-" + digest([digest(content), row.id, index]).slice(0, 40)
-      : defaultId;
-    const documentAsset = reference
-      ? await service.store.assets.get(o, id, reference.document_id)
-      : undefined;
+    const articleId =
+      decision && decision.mode !== "existing"
+        ? "article-" +
+          digest([digest(content), row.id, index, decision.mode + "-v1"]).slice(
+            0,
+            40,
+          )
+        : tombstone
+          ? "article-" + digest([digest(content), row.id, index]).slice(0, 40)
+          : defaultId;
     if (
-      reference &&
-      (!documentAsset ||
-        documentAsset.kind !== "document" ||
-        digest(documentAsset.value) !== documentAsset.sha256)
+      row.kind === "fetch_full" &&
+      decision?.mode === "edition" &&
+      decision.article_id !== row.input.article_id
     )
-      fail(409, "Reading original document unavailable");
-    const capture =
-      row.output.document ??
-      (documentAsset?.value as
-        | import("./reading-assets.types.ts").ReadingDocumentCapture
-        | undefined);
-    const old = await service.repo.reading.get(o, articleId);
+      fail(
+        409,
+        "补取全文的关联版本须保留本人选定的原父文章；另存独立副本需要明确选择。",
+      );
+    const provenance: import("./reading.types.ts").ReadingProvenance = {
+      kind:
+        row.kind === "fetch_full"
+          ? "full_fetch"
+          : capture?.capture_kind === "feed_entry"
+            ? "feed_entry"
+            : capture?.content_type === "application/pdf"
+              ? "pdf_text"
+              : capture
+                ? "web_text"
+                : "legacy_import",
+      work_id: row.id,
+      source_id: reference?.source_id ?? row.input.source_id ?? null,
+      parent_article_id:
+        row.kind === "fetch_full" ? row.input.article_id! : null,
+      root_article_id: row.input.parent_root_id ?? articleId,
+      fetched_at: capture ? row.updated_at : null,
+      raw_sha256: capture?.sha256 ?? null,
+    };
+    const resolved = decision
+      ? await resolveReadingImport(
+          service.repo,
+          o,
+          articleContent(content),
+          decision,
+          articleId,
+          provenance,
+        )
+      : undefined;
+    const targetId = resolved?.existing_id ?? articleId;
+    const old = await service.repo.reading.get(o, targetId);
     const article =
       old ??
       (await reading.write(
         o,
         articleId,
         "import",
-        { base_revision: 0, content },
+        {
+          base_revision: 0,
+          content,
+          ...(decision ? { import_decision: decision } : {}),
+        },
         "reading-import-" + digest([id, index]).slice(0, 40),
         "manual",
-        {
-          kind:
-            row.kind === "fetch_full"
-              ? "full_fetch"
-              : capture?.capture_kind === "feed_entry"
-                ? "feed_entry"
-                : capture?.content_type === "application/pdf"
-                  ? "pdf_text"
-                  : capture
-                    ? "web_text"
-                    : "legacy_import",
-          work_id: row.id,
-          source_id: reference?.source_id ?? row.input.source_id ?? null,
-          parent_article_id:
-            row.kind === "fetch_full" ? row.input.article_id! : null,
-          root_article_id: row.input.parent_root_id ?? articleId,
-          fetched_at: capture ? row.updated_at : null,
-          raw_sha256: capture?.sha256 ?? null,
-        },
+        provenance,
       ));
     if (old && old.content_version !== digest(articleContent(content)))
       fail(409, "导入对象已变化，不能覆盖。");
     result = { article_id: article.id, revision: article.revision };
   } else {
+    if (b.import_decision !== undefined)
+      fail(422, "AI资料草稿不使用文章导入决定。");
     if (b.index !== null) fail(422, "AI草稿不使用条目编号。");
     target = "draft";
     if (row.adopted[target]) fail(409, "此任务已保存为草稿，请核对文章历史。");

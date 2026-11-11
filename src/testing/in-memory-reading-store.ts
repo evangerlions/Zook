@@ -1,4 +1,5 @@
 import { readingReviewProjection } from "../modules/lighttick/reading/reading-review-projection.ts";
+import { readingImportURL } from "../modules/lighttick/reading/reading-import.types.ts";
 import { readingCatalogEntry } from "../modules/lighttick/reading/reading-article-projection.ts";
 import {
   hasReadingFeedback,
@@ -19,6 +20,16 @@ import { ApplicationError } from "../shared/errors.ts";
 const key = (o: LightTickOwner, id: string) =>
   JSON.stringify([o.appId, o.userId, id]);
 export class InMemoryReadingStore implements ReadingRepository {
+  async importCandidates(o: LightTickOwner, url: string | null, version: string, limit: number, parentId?: string) {
+    return structuredClone([...this.rows.values()]
+      .filter(r => r.owner.appId === o.appId && r.owner.userId === o.userId)
+      .map(r => r.versions.at(-1)!)
+      .filter(r => r.id === parentId || r.content_version === version || (url !== null && readingImportURL(r.content.source_url) === url))
+      .sort((a,b) => a.id < b.id ? -1 : 1).slice(0,limit)
+      .map(r => ({id:r.id,revision:r.revision,content_version:r.content_version,title:r.content.title,
+        source_url:r.content.source_url,archived:r.archived,root_article_id:r.provenance?.root_article_id ?? r.id,
+        parent_article_id:r.provenance?.parent_article_id ?? null})));
+  }
   private vocabulary = new Map<
     string,
     {

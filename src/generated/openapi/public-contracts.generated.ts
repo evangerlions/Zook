@@ -74146,6 +74146,535 @@ export type LightTickReadingCandidateReference = {
   "candidate_id": string;
 };
 
+export const LightTickReadingImportCandidateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "content_version",
+    "title",
+    "source_url",
+    "archived",
+    "root_article_id",
+    "parent_article_id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+      "minLength": 8
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "content_version": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 2048
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "root_article_id": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+      "minLength": 8
+    },
+    "parent_article_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+          "minLength": 8
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingImportCandidate = {
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "title": string;
+  "source_url": string | unknown;
+  "archived": boolean;
+  "root_article_id": string;
+  "parent_article_id": string | unknown;
+};
+
+export const LightTickReadingImportScopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identity_version",
+    "content_version",
+    "url_key",
+    "candidates",
+    "deleted",
+    "digest"
+  ],
+  "properties": {
+    "identity_version": {
+      "type": "string",
+      "const": "whatwg-fragment-v1"
+    },
+    "content_version": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "url_key": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 18432
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "content_version",
+          "title",
+          "source_url",
+          "archived",
+          "root_article_id",
+          "parent_article_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "content_version": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "root_article_id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+            "minLength": 8
+          },
+          "parent_article_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "deleted": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "deleted_at"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+              "minLength": 8
+            },
+            "deleted_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "digest": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickReadingImportScope = {
+  "identity_version": string;
+  "content_version": string;
+  "url_key": string | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "title": string;
+  "source_url": string | unknown;
+  "archived": boolean;
+  "root_article_id": string;
+  "parent_article_id": string | unknown;
+}
+)[];
+  "deleted": (
+{
+  "id": string;
+  "deleted_at": string;
+}
+) | unknown;
+  "digest": string;
+};
+
+export const LightTickReadingImportDecisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scope_digest",
+    "mode",
+    "article_id"
+  ],
+  "properties": {
+    "scope_digest": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "independent",
+        "edition",
+        "existing"
+      ]
+    },
+    "article_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+          "minLength": 8
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingImportDecision = {
+  "scope_digest": string;
+  "mode": "independent" | "edition" | "existing";
+  "article_id": string | unknown;
+};
+
+export const LightTickReadingPasteImportDecisionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scope_digest",
+    "mode",
+    "article_id"
+  ],
+  "properties": {
+    "scope_digest": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "independent",
+        "edition"
+      ]
+    },
+    "article_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+          "minLength": 8
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type LightTickReadingPasteImportDecision = {
+  "scope_digest": string;
+  "mode": "independent" | "edition";
+  "article_id": string | unknown;
+};
+
+export const LightTickReadingImportScopeEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity_version",
+        "content_version",
+        "url_key",
+        "candidates",
+        "deleted",
+        "digest"
+      ],
+      "properties": {
+        "identity_version": {
+          "type": "string",
+          "const": "whatwg-fragment-v1"
+        },
+        "content_version": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "url_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 18432
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "content_version",
+              "title",
+              "source_url",
+              "archived",
+              "root_article_id",
+              "parent_article_id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647
+              },
+              "content_version": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "source_url": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "root_article_id": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                "minLength": 8
+              },
+              "parent_article_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128,
+                    "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                    "minLength": 8
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "deleted": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "deleted_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                  "minLength": 8
+                },
+                "deleted_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "digest": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingImportScopeEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "identity_version": string;
+  "content_version": string;
+  "url_key": string | unknown;
+  "candidates": (
+{
+  "id": string;
+  "revision": number;
+  "content_version": string;
+  "title": string;
+  "source_url": string | unknown;
+  "archived": boolean;
+  "root_article_id": string;
+  "parent_article_id": string | unknown;
+}
+)[];
+  "deleted": (
+{
+  "id": string;
+  "deleted_at": string;
+}
+) | unknown;
+  "digest": string;
+};
+  "requestId": string;
+};
+
 export const LightTickReadingSourceSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -84600,6 +85129,43 @@ export const LightTickReadingWorkAdoptSchema = {
     "response_view": {
       "type": "string",
       "const": "summary"
+    },
+    "import_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_digest",
+        "mode",
+        "article_id"
+      ],
+      "properties": {
+        "scope_digest": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "independent",
+            "edition",
+            "existing"
+          ]
+        },
+        "article_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+              "minLength": 8
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -84610,6 +85176,11 @@ export type LightTickReadingWorkAdopt = {
   "index": number | unknown;
   "base_article_revision": number | unknown;
   "response_view"?: string;
+  "import_decision"?: {
+  "scope_digest": string;
+  "mode": "independent" | "edition" | "existing";
+  "article_id": string | unknown;
+};
 };
 
 export const LightTickReadingWorkAdoptResultSchema = {
@@ -87973,6 +88544,43 @@ export const LightTickReadingWorkReceiptSchema = {
             "response_view": {
               "type": "string",
               "const": "summary"
+            },
+            "import_decision": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scope_digest",
+                "mode",
+                "article_id"
+              ],
+              "properties": {
+                "scope_digest": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "independent",
+                    "edition",
+                    "existing"
+                  ]
+                },
+                "article_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                      "minLength": 8
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
             }
           }
         },
@@ -92822,6 +93430,11 @@ export type LightTickReadingWorkReceipt = {
   "index": number | unknown;
   "base_article_revision": number | unknown;
   "response_view"?: string;
+  "import_decision"?: {
+  "scope_digest": string;
+  "mode": "independent" | "edition" | "existing";
+  "article_id": string | unknown;
+};
 }
 ) | (
 {
@@ -102564,6 +103177,43 @@ export const LightTickReadingWorkReceiptEnvelopeSchema = {
                 "response_view": {
                   "type": "string",
                   "const": "summary"
+                },
+                "import_decision": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "scope_digest",
+                    "mode",
+                    "article_id"
+                  ],
+                  "properties": {
+                    "scope_digest": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "independent",
+                        "edition",
+                        "existing"
+                      ]
+                    },
+                    "article_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 128,
+                          "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+                          "minLength": 8
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             },
@@ -107419,6 +108069,11 @@ export type LightTickReadingWorkReceiptEnvelope = {
   "index": number | unknown;
   "base_article_revision": number | unknown;
   "response_view"?: string;
+  "import_decision"?: {
+  "scope_digest": string;
+  "mode": "independent" | "edition" | "existing";
+  "article_id": string | unknown;
+};
 }
 ) | (
 {
@@ -110498,6 +111153,42 @@ export const LightTickReadingImportSchema = {
           ]
         }
       }
+    },
+    "import_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_digest",
+        "mode",
+        "article_id"
+      ],
+      "properties": {
+        "scope_digest": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "independent",
+            "edition"
+          ]
+        },
+        "article_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^article-[a-zA-Z0-9_-]{1,120}$",
+              "minLength": 8
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
     }
   }
 } as const;
@@ -110522,6 +111213,11 @@ export type LightTickReadingImport = {
 "recent" | "classic" | "manual"
 ) | unknown;
   "published_date"?: string | unknown;
+};
+  "import_decision"?: {
+  "scope_digest": string;
+  "mode": "independent" | "edition";
+  "article_id": string | unknown;
 };
 };
 
@@ -201172,11 +201868,16 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingHistoryPage",
   "LightTickReadingHistoryPageEnvelope",
   "LightTickReadingImport",
+  "LightTickReadingImportCandidate",
+  "LightTickReadingImportDecision",
+  "LightTickReadingImportScope",
+  "LightTickReadingImportScopeEnvelope",
   "LightTickReadingLifecycleWrite",
   "LightTickReadingMaterial",
   "LightTickReadingModelUsage",
   "LightTickReadingPage",
   "LightTickReadingPageEnvelope",
+  "LightTickReadingPasteImportDecision",
   "LightTickReadingPositionWrite",
   "LightTickReadingPreferences",
   "LightTickReadingPreferencesEnvelope",

@@ -86,7 +86,7 @@ test("reading PG migrations, literal search, CAS, rollback, restart and owner de
           owner,
           "article-pg-rollback",
           "import",
-          body,
+          {...body,import_decision:{scope_digest:(await s.previewImport(owner,{content:body.content})).digest,mode:"independent",article_id:null}},
           "reading-pg-rollback",
         );
         throw Error("force rollback");

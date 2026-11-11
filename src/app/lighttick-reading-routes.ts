@@ -27,6 +27,7 @@ export async function handleReadingRequest(
   if (r.path !== root && !r.path.startsWith(root + "/")) return;
   const service = new ReadingService(repo, authorize),
     part = r.path.slice(root.length);
+  if (part === "/import-preview" && r.method === "POST") return service.previewImport(owner, r.body);
   const erasure = new ReadingErasureService(repo, authorize),
     erasureReceipt = /^\/erasure-receipts\/([a-zA-Z0-9_-]+)$/.exec(part),
     eraseArticle =
@@ -143,6 +144,11 @@ export async function handleReadingRequest(
       return asset[2]
         ? w.asset(owner, asset[1], asset[2])
         : w.assets(owner, asset[1]);
+    const importPreview = /^\/work\/(readwork-[a-zA-Z0-9_-]+)\/import-preview$/.exec(part);
+    if (importPreview && r.method === "GET") {
+      if (!/^\d{1,2}$/.test(r.query?.index ?? "")) fail(422, "请明确核对的原文条目编号。");
+      return w.importPreview(owner, importPreview[1], Number(r.query!.index));
+    }
     const job = /^\/work\/(readwork-[a-zA-Z0-9_-]+)(?:\/(cancel|adopt))?$/.exec(
       part,
     );

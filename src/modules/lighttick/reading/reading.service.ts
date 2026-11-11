@@ -1,4 +1,5 @@
 import type { ReadingAIEvidence } from "./reading-ai.types.ts";
+import { readingImportScope, resolveReadingImport } from "./reading-import.ts";
 import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import { assertReadingJSON } from "./reading-json-safe.ts";
 import { writeReadingFeedback } from "./reading-feedback.ts";
@@ -26,6 +27,15 @@ export class ReadingService {
     readonly authorize: () => Promise<void> = async () => {},
     readonly clock = () => new Date(),
   ) {}
+  async previewImport(o: LightTickOwner, raw: unknown) {
+    const b = structuredClone(object(raw));
+    keys(b, ["content"]);
+    const content = articleContent(b.content);
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      return readingImportScope(this.repo, o, content);
+    });
+  }
   async list(
     o: LightTickOwner,
     query: Record<string, string | undefined> = {},
@@ -327,8 +337,10 @@ export class ReadingService {
       const now = this.clock().toISOString();
       let row: ReadingArticle;
       if (action === "import") {
-        keys(body, ["base_revision", "content"]);
+        keys(body, ["base_revision", "content", "import_decision"]);
         const content = articleContent(body.content);
+        const resolved = await resolveReadingImport(this.repo, o, content, body.import_decision, id, frozenProvenance);
+        if (resolved.existing_id) fail(422, "粘贴导入不能更换原请求对象编号，请打开已核对的已有文章。");
         row = {
           id,
           revision: 1,
@@ -343,7 +355,7 @@ export class ReadingService {
             read_at: null,
             positions: {},
           },
-          provenance: frozenProvenance ?? {
+          provenance: resolved.provenance ?? {
             kind: "manual_import",
             work_id: null,
             source_id: null,

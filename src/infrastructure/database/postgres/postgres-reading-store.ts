@@ -1,4 +1,5 @@
 import { READING_SEARCH_SQL } from "./reading-search-query.ts";
+import { postgresReadingImportCandidates, updateReadingImportIndex } from "./reading-import-index.ts";
 import { postgresReadingReviewProjection } from "./reading-review-projection.ts";
 import { READING_CATALOG_SQL } from "./reading-catalog-projection.ts";
 import type { LightTickOwner } from "../../../modules/lighttick/lighttick.types.ts";
@@ -20,6 +21,9 @@ type Query = (
 ) => Promise<{ rows: Record<string, any>[] }>;
 export class PostgresReadingStore implements ReadingRepository {
   constructor(readonly query: Query) {}
+  async importCandidates(o: LightTickOwner, url: string | null, version: string, limit: number, parentId?: string) {
+    return postgresReadingImportCandidates(this.query, o, url, version, limit, parentId);
+  }
   async getVocabulary(o: LightTickOwner, id: string) {
     const row = (
       await this.query(
@@ -236,6 +240,7 @@ export class PostgresReadingStore implements ReadingRepository {
         "LIGHTTICK_VERSION_CONFLICT",
         "Article changed; retain the input.",
       );
+    await updateReadingImportIndex(this.query, o, row.id, row.content_version, row.content.source_url);
     await this.query(
       "INSERT INTO zook_lighttick_reading_versions(app_id,user_id,id,revision,payload) VALUES($1,$2,$3,$4,$5::jsonb)",
       args,

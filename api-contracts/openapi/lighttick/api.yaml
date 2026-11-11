@@ -9791,6 +9791,105 @@ paths:
           $ref: '#/components/responses/LightTickError'
         '503':
           $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/reading/import-preview:
+    post:
+      operationId: previewReadingImport
+      summary: Preview exact content and conservative URL matches before import
+      tags:
+      - lighttick-reading
+      description: Owner metadata only; no source or model call. whatwg-fragment-v1 preserves scheme and query meaning; source payloads/hashes stay immutable. Derived migration117 lookup metadata may be rebuilt under the owner lock. More than100 candidates or10000 legacy index rows rejects wholly; no partial scope.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingImportScopeEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - content
+              properties:
+                content:
+                  $ref: '#/components/schemas/LightTickReadingContent'
+  /api/v1/lighttick/reading/work/{workId}/import-preview:
+    get:
+      operationId: previewReadingWorkImport
+      summary: Review one immutable collected result against existing articles
+      tags:
+      - lighttick-reading
+      description: Owner metadata only; no source or model call. whatwg-fragment-v1 preserves scheme and query meaning; source payloads/hashes stay immutable. Derived migration117 lookup metadata may be rebuilt under the owner lock. More than100 candidates or10000 legacy index rows rejects wholly; no partial scope.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner reading result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingImportScopeEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: workId
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+          pattern: ^readwork-[a-zA-Z0-9_-]{1,119}$
+      - name: index
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 79
 components:
   securitySchemes:
     bearerAuth:
@@ -22334,6 +22433,8 @@ components:
           const: 0
         content:
           $ref: '#/components/schemas/LightTickReadingContent'
+        import_decision:
+          $ref: '#/components/schemas/LightTickReadingPasteImportDecision'
     LightTickReadingPrivateWrite:
       type: object
       additionalProperties: false
@@ -23919,6 +24020,8 @@ components:
         response_view:
           type: string
           const: summary
+        import_decision:
+          $ref: '#/components/schemas/LightTickReadingImportDecision'
     LightTickReadingWorkAdoptResult:
       type: object
       additionalProperties: false
@@ -26701,3 +26804,170 @@ components:
       description: Normalized provider/estimated token facts, not a bill. Missing historical facts stay
         absent/null. No authoritative cost or price is returned by this call boundary, so amount/currency
         remain null; platform caps are not charges.
+    LightTickReadingImportCandidate:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - content_version
+      - title
+      - source_url
+      - archived
+      - root_article_id
+      - parent_article_id
+      properties:
+        id:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        content_version:
+          type: string
+          maxLength: 64
+          pattern: ^[a-f0-9]{64}$
+        title:
+          type: string
+          maxLength: 500
+        source_url:
+          anyOf:
+          - type: string
+            maxLength: 2048
+          - type: 'null'
+        archived:
+          type: boolean
+        root_article_id:
+          type: string
+          maxLength: 128
+          pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+          minLength: 8
+        parent_article_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+            minLength: 8
+          - type: 'null'
+    LightTickReadingImportScope:
+      type: object
+      additionalProperties: false
+      required:
+      - identity_version
+      - content_version
+      - url_key
+      - candidates
+      - deleted
+      - digest
+      properties:
+        identity_version:
+          type: string
+          const: whatwg-fragment-v1
+        content_version:
+          type: string
+          maxLength: 64
+          pattern: ^[a-f0-9]{64}$
+        url_key:
+          anyOf:
+          - type: string
+            maxLength: 18432
+          - type: 'null'
+        candidates:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/LightTickReadingImportCandidate'
+        deleted:
+          anyOf:
+          - type: object
+            additionalProperties: false
+            required:
+            - id
+            - deleted_at
+            properties:
+              id:
+                type: string
+                maxLength: 128
+                pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+                minLength: 8
+              deleted_at:
+                type: string
+                format: date-time
+          - type: 'null'
+        digest:
+          type: string
+          maxLength: 64
+          pattern: ^[a-f0-9]{64}$
+    LightTickReadingImportDecision:
+      type: object
+      additionalProperties: false
+      required:
+      - scope_digest
+      - mode
+      - article_id
+      properties:
+        scope_digest:
+          type: string
+          maxLength: 64
+          pattern: ^[a-f0-9]{64}$
+        mode:
+          type: string
+          enum:
+          - independent
+          - edition
+          - existing
+        article_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+            minLength: 8
+          - type: 'null'
+    LightTickReadingPasteImportDecision:
+      type: object
+      additionalProperties: false
+      required:
+      - scope_digest
+      - mode
+      - article_id
+      properties:
+        scope_digest:
+          type: string
+          maxLength: 64
+          pattern: ^[a-f0-9]{64}$
+        mode:
+          type: string
+          enum:
+          - independent
+          - edition
+        article_id:
+          anyOf:
+          - type: string
+            maxLength: 128
+            pattern: ^article-[a-zA-Z0-9_-]{1,120}$
+            minLength: 8
+          - type: 'null'
+    LightTickReadingImportScopeEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingImportScope'
+        requestId:
+          type: string
+          maxLength: 128

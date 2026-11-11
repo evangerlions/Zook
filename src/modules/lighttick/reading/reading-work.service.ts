@@ -1,4 +1,7 @@
 import { freezeReadingAI } from "./reading-ai-snapshot.ts";
+import { readingWorkEntry } from "./reading-work-entry.ts";
+import { readingImportScope } from "./reading-import.ts";
+import { articleContent } from "./reading.validation.ts";
 import { assertReadingNotErased } from "./reading-erasure.service.ts";
 import { adoptReadingWork } from "./reading-work-adoption.ts";
 import { assertReadingJSON } from "./reading-json-safe.ts";
@@ -267,6 +270,20 @@ export class ReadingWorkService {
       return this.data(row);
     });
   }
+  async importPreview(o: LightTickOwner, id: string, index: number) {
+    identity(id, "readwork-");
+    return this.repo.transaction(o, async () => {
+      await this.authorize();
+      const row = await this.store.get(o, id);
+      if (!row) fail(404, "未找到本人的阅读任务。");
+      const entry = await readingWorkEntry(this, o, row, index);
+      if (row.kind === "fetch_full") {
+        const parent = await this.repo.reading.reference(o, row.input.article_id!);
+        if (!parent || parent.archived || parent.content_version !== row.input.content_version) fail(409, "补取来源已变化，请保留结果核对。");
+      }
+      return readingImportScope(this.repo, o, articleContent(entry.content), row.kind === "fetch_full" ? row.input.article_id : undefined);
+    });
+  }
   async list(o: LightTickOwner, after = "") {
     if (after) identity(after, "readwork-");
     return this.repo.transaction(o, async () => {
@@ -533,6 +550,7 @@ export class ReadingWorkService {
       "index",
       "base_article_revision",
       "response_view",
+      "import_decision",
     ]);
     if (b.response_view !== undefined && b.response_view !== "summary")
       fail(422, "Invalid reading response view");

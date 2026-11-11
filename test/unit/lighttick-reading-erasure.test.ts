@@ -114,6 +114,7 @@ test("article erasure fences an in-flight model that ignores cancellation and la
       index: 0,
       base_article_revision: null,
       response_view: "summary",
+      import_decision: { scope_digest: (await work.importPreview(o, fresh.id, 0)).digest, mode: "independent", article_id: null },
     },
     "erasure-new-copy",
   );
