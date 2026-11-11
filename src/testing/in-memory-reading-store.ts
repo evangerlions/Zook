@@ -24,6 +24,7 @@ export class InMemoryReadingStore implements ReadingRepository {
       owner: LightTickOwner;
       entry: VocabularyEntry | null;
       reviews: VocabularyReview[];
+      reviewRevisions: number[];
     }
   >();
   async getVocabulary(o: LightTickOwner, id: string) {
@@ -103,6 +104,10 @@ export class InMemoryReadingStore implements ReadingRepository {
     this.vocabulary.set(key(o, entry.id), {
       owner: { ...o },
       entry: structuredClone(entry),
+      reviewRevisions: [
+        ...(previous?.reviewRevisions ?? []),
+        ...(review ? [entry.revision] : []),
+      ],
       reviews: [
         ...(previous?.reviews ?? []),
         ...(review ? [structuredClone(review)] : []),
@@ -114,6 +119,7 @@ export class InMemoryReadingStore implements ReadingRepository {
       owner: { ...o },
       entry: null,
       reviews: [],
+      reviewRevisions: [],
     });
   }
   private rows = new Map<

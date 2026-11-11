@@ -70250,6 +70250,1783 @@ export type LightTickReadingSetupEnvelope = {
 };
 };
 
+export const LightTickReadingBackupPartMetadataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "index",
+    "byte_length",
+    "sha256"
+  ],
+  "properties": {
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "byte_length": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 262144
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupPartMetadata = {
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+};
+
+export const LightTickReadingBackupPartSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "index",
+    "byte_length",
+    "sha256",
+    "data_base64"
+  ],
+  "properties": {
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "byte_length": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 262144
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "data_base64": {
+      "type": "string",
+      "maxLength": 349528,
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupPart = {
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+  "data_base64": string;
+};
+
+export const LightTickReadingBackupManifestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "revision",
+    "format",
+    "owner",
+    "created_at",
+    "expires_at",
+    "byte_length",
+    "record_count",
+    "counts",
+    "parts",
+    "content_sha256",
+    "manifest_sha256"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^readbackup-[a-f0-9]{40}$"
+    },
+    "revision": {
+      "type": "integer",
+      "const": 1
+    },
+    "format": {
+      "type": "string",
+      "const": "lighttick-reading-ndjson-v2"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app_id",
+        "user_id"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "byte_length": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 67108864
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "articles",
+        "article_versions",
+        "vocabulary",
+        "vocabulary_reviews",
+        "sources",
+        "source_versions",
+        "work",
+        "work_assets",
+        "preferences",
+        "preference_versions",
+        "schedule",
+        "receipts"
+      ],
+      "properties": {
+        "articles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "article_versions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "vocabulary": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "vocabulary_reviews": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "sources": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "source_versions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "work": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "work_assets": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "preferences": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "preference_versions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "schedule": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "receipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "index",
+          "byte_length",
+          "sha256"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "byte_length": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 262144
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupManifest = {
+  "id": string;
+  "revision": number;
+  "format": string;
+  "owner": {
+  "app_id": string;
+  "user_id": string;
+};
+  "created_at": string;
+  "expires_at": string;
+  "byte_length": number;
+  "record_count": number;
+  "counts": {
+  "articles": number;
+  "article_versions": number;
+  "vocabulary": number;
+  "vocabulary_reviews": number;
+  "sources": number;
+  "source_versions": number;
+  "work": number;
+  "work_assets": number;
+  "preferences": number;
+  "preference_versions": number;
+  "schedule": number;
+  "receipts": number;
+};
+  "parts": (
+{
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+}
+)[];
+  "content_sha256": string;
+  "manifest_sha256": string;
+};
+
+export const LightTickReadingBackupCreateSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format"
+  ],
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "lighttick-reading-ndjson-v2"
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupCreate = {
+  "format": string;
+};
+
+export const LightTickReadingBackupDeleteSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_revision"
+  ],
+  "properties": {
+    "base_revision": {
+      "type": "integer",
+      "const": 1
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupDelete = {
+  "base_revision": number;
+};
+
+export const LightTickReadingBackupDeletedSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "deleted"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^readbackup-[a-f0-9]{40}$"
+    },
+    "deleted": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupDeleted = {
+  "id": string;
+  "deleted": boolean;
+};
+
+export const LightTickReadingBackupPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "format",
+          "owner",
+          "created_at",
+          "expires_at",
+          "byte_length",
+          "record_count",
+          "counts",
+          "parts",
+          "content_sha256",
+          "manifest_sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^readbackup-[a-f0-9]{40}$"
+          },
+          "revision": {
+            "type": "integer",
+            "const": 1
+          },
+          "format": {
+            "type": "string",
+            "const": "lighttick-reading-ndjson-v2"
+          },
+          "owner": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "app_id",
+              "user_id"
+            ],
+            "properties": {
+              "app_id": {
+                "type": "string",
+                "const": "lighttick"
+              },
+              "user_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "byte_length": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 67108864
+          },
+          "record_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "articles",
+              "article_versions",
+              "vocabulary",
+              "vocabulary_reviews",
+              "sources",
+              "source_versions",
+              "work",
+              "work_assets",
+              "preferences",
+              "preference_versions",
+              "schedule",
+              "receipts"
+            ],
+            "properties": {
+              "articles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "article_versions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "vocabulary": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "vocabulary_reviews": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "sources": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "source_versions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "work": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "work_assets": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "preferences": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "preference_versions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "schedule": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "receipts": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              }
+            }
+          },
+          "parts": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "index",
+                "byte_length",
+                "sha256"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 262144
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "manifest_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupPage = {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "format": string;
+  "owner": {
+  "app_id": string;
+  "user_id": string;
+};
+  "created_at": string;
+  "expires_at": string;
+  "byte_length": number;
+  "record_count": number;
+  "counts": {
+  "articles": number;
+  "article_versions": number;
+  "vocabulary": number;
+  "vocabulary_reviews": number;
+  "sources": number;
+  "source_versions": number;
+  "work": number;
+  "work_assets": number;
+  "preferences": number;
+  "preference_versions": number;
+  "schedule": number;
+  "receipts": number;
+};
+  "parts": (
+{
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+}
+)[];
+  "content_sha256": string;
+  "manifest_sha256": string;
+}
+)[];
+};
+
+export const LightTickReadingBackupReceiptSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "format",
+        "owner",
+        "created_at",
+        "expires_at",
+        "byte_length",
+        "record_count",
+        "counts",
+        "parts",
+        "content_sha256",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^readbackup-[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "const": 1
+        },
+        "format": {
+          "type": "string",
+          "const": "lighttick-reading-ndjson-v2"
+        },
+        "owner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "app_id",
+            "user_id"
+          ],
+          "properties": {
+            "app_id": {
+              "type": "string",
+              "const": "lighttick"
+            },
+            "user_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 67108864
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "articles",
+            "article_versions",
+            "vocabulary",
+            "vocabulary_reviews",
+            "sources",
+            "source_versions",
+            "work",
+            "work_assets",
+            "preferences",
+            "preference_versions",
+            "schedule",
+            "receipts"
+          ],
+          "properties": {
+            "articles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "article_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "vocabulary": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "vocabulary_reviews": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "sources": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "source_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "work": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "work_assets": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "preferences": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "preference_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "schedule": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "receipts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            }
+          }
+        },
+        "parts": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "byte_length",
+              "sha256"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "byte_length": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 262144
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "deleted"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^readbackup-[a-f0-9]{40}$"
+        },
+        "deleted": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    }
+  ]
+} as const;
+
+export type LightTickReadingBackupReceipt = {
+  "id": string;
+  "revision": number;
+  "format": string;
+  "owner": {
+  "app_id": string;
+  "user_id": string;
+};
+  "created_at": string;
+  "expires_at": string;
+  "byte_length": number;
+  "record_count": number;
+  "counts": {
+  "articles": number;
+  "article_versions": number;
+  "vocabulary": number;
+  "vocabulary_reviews": number;
+  "sources": number;
+  "source_versions": number;
+  "work": number;
+  "work_assets": number;
+  "preferences": number;
+  "preference_versions": number;
+  "schedule": number;
+  "receipts": number;
+};
+  "parts": (
+{
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+}
+)[];
+  "content_sha256": string;
+  "manifest_sha256": string;
+} | {
+  "id": string;
+  "deleted": boolean;
+};
+
+export const LightTickReadingBackupManifestEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision",
+        "format",
+        "owner",
+        "created_at",
+        "expires_at",
+        "byte_length",
+        "record_count",
+        "counts",
+        "parts",
+        "content_sha256",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^readbackup-[a-f0-9]{40}$"
+        },
+        "revision": {
+          "type": "integer",
+          "const": 1
+        },
+        "format": {
+          "type": "string",
+          "const": "lighttick-reading-ndjson-v2"
+        },
+        "owner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "app_id",
+            "user_id"
+          ],
+          "properties": {
+            "app_id": {
+              "type": "string",
+              "const": "lighttick"
+            },
+            "user_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 67108864
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "articles",
+            "article_versions",
+            "vocabulary",
+            "vocabulary_reviews",
+            "sources",
+            "source_versions",
+            "work",
+            "work_assets",
+            "preferences",
+            "preference_versions",
+            "schedule",
+            "receipts"
+          ],
+          "properties": {
+            "articles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "article_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "vocabulary": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "vocabulary_reviews": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "sources": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "source_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "work": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "work_assets": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "preferences": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "preference_versions": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "schedule": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "receipts": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            }
+          }
+        },
+        "parts": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "byte_length",
+              "sha256"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "byte_length": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 262144
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupManifestEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "format": string;
+  "owner": {
+  "app_id": string;
+  "user_id": string;
+};
+  "created_at": string;
+  "expires_at": string;
+  "byte_length": number;
+  "record_count": number;
+  "counts": {
+  "articles": number;
+  "article_versions": number;
+  "vocabulary": number;
+  "vocabulary_reviews": number;
+  "sources": number;
+  "source_versions": number;
+  "work": number;
+  "work_assets": number;
+  "preferences": number;
+  "preference_versions": number;
+  "schedule": number;
+  "receipts": number;
+};
+  "parts": (
+{
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+}
+)[];
+  "content_sha256": string;
+  "manifest_sha256": string;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingBackupPartEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "byte_length",
+        "sha256",
+        "data_base64"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "data_base64": {
+          "type": "string",
+          "maxLength": 349528,
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupPartEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+  "data_base64": string;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingBackupDeletedEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "deleted"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^readbackup-[a-f0-9]{40}$"
+        },
+        "deleted": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupDeletedEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "deleted": boolean;
+};
+  "requestId": string;
+};
+
+export const LightTickReadingBackupPageEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "revision",
+              "format",
+              "owner",
+              "created_at",
+              "expires_at",
+              "byte_length",
+              "record_count",
+              "counts",
+              "parts",
+              "content_sha256",
+              "manifest_sha256"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^readbackup-[a-f0-9]{40}$"
+              },
+              "revision": {
+                "type": "integer",
+                "const": 1
+              },
+              "format": {
+                "type": "string",
+                "const": "lighttick-reading-ndjson-v2"
+              },
+              "owner": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "app_id",
+                  "user_id"
+                ],
+                "properties": {
+                  "app_id": {
+                    "type": "string",
+                    "const": "lighttick"
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "byte_length": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 67108864
+              },
+              "record_count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "counts": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "articles",
+                  "article_versions",
+                  "vocabulary",
+                  "vocabulary_reviews",
+                  "sources",
+                  "source_versions",
+                  "work",
+                  "work_assets",
+                  "preferences",
+                  "preference_versions",
+                  "schedule",
+                  "receipts"
+                ],
+                "properties": {
+                  "articles": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "article_versions": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "vocabulary": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "vocabulary_reviews": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "sources": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "source_versions": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "work": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "work_assets": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "preferences": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "preference_versions": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "schedule": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "receipts": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  }
+                }
+              },
+              "parts": {
+                "type": "array",
+                "maxItems": 256,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "index",
+                    "byte_length",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "index": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 255
+                    },
+                    "byte_length": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 262144
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              },
+              "content_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "manifest_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupPageEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "items": (
+{
+  "id": string;
+  "revision": number;
+  "format": string;
+  "owner": {
+  "app_id": string;
+  "user_id": string;
+};
+  "created_at": string;
+  "expires_at": string;
+  "byte_length": number;
+  "record_count": number;
+  "counts": {
+  "articles": number;
+  "article_versions": number;
+  "vocabulary": number;
+  "vocabulary_reviews": number;
+  "sources": number;
+  "source_versions": number;
+  "work": number;
+  "work_assets": number;
+  "preferences": number;
+  "preference_versions": number;
+  "schedule": number;
+  "receipts": number;
+};
+  "parts": (
+{
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+}
+)[];
+  "content_sha256": string;
+  "manifest_sha256": string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickReadingBackupReceiptEnvelopeSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "OK"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "revision",
+            "format",
+            "owner",
+            "created_at",
+            "expires_at",
+            "byte_length",
+            "record_count",
+            "counts",
+            "parts",
+            "content_sha256",
+            "manifest_sha256"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^readbackup-[a-f0-9]{40}$"
+            },
+            "revision": {
+              "type": "integer",
+              "const": 1
+            },
+            "format": {
+              "type": "string",
+              "const": "lighttick-reading-ndjson-v2"
+            },
+            "owner": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "app_id",
+                "user_id"
+              ],
+              "properties": {
+                "app_id": {
+                  "type": "string",
+                  "const": "lighttick"
+                },
+                "user_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "byte_length": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 67108864
+            },
+            "record_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "counts": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "articles",
+                "article_versions",
+                "vocabulary",
+                "vocabulary_reviews",
+                "sources",
+                "source_versions",
+                "work",
+                "work_assets",
+                "preferences",
+                "preference_versions",
+                "schedule",
+                "receipts"
+              ],
+              "properties": {
+                "articles": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "article_versions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "vocabulary": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "vocabulary_reviews": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "sources": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "source_versions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "work": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "work_assets": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "preferences": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "preference_versions": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "schedule": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "receipts": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              }
+            },
+            "parts": {
+              "type": "array",
+              "maxItems": 256,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "index",
+                  "byte_length",
+                  "sha256"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                  },
+                  "byte_length": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 262144
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            },
+            "content_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "manifest_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "deleted"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^readbackup-[a-f0-9]{40}$"
+            },
+            "deleted": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+} as const;
+
+export type LightTickReadingBackupReceiptEnvelope = {
+  "code": "OK";
+  "message": string;
+  "data": {
+  "id": string;
+  "revision": number;
+  "format": string;
+  "owner": {
+  "app_id": string;
+  "user_id": string;
+};
+  "created_at": string;
+  "expires_at": string;
+  "byte_length": number;
+  "record_count": number;
+  "counts": {
+  "articles": number;
+  "article_versions": number;
+  "vocabulary": number;
+  "vocabulary_reviews": number;
+  "sources": number;
+  "source_versions": number;
+  "work": number;
+  "work_assets": number;
+  "preferences": number;
+  "preference_versions": number;
+  "schedule": number;
+  "receipts": number;
+};
+  "parts": (
+{
+  "index": number;
+  "byte_length": number;
+  "sha256": string;
+}
+)[];
+  "content_sha256": string;
+  "manifest_sha256": string;
+} | {
+  "id": string;
+  "deleted": boolean;
+};
+  "requestId": string;
+};
+
 export const LightTickReadingCatalogEntrySchema = {
   "type": "object",
   "additionalProperties": false,
@@ -188301,6 +190078,19 @@ export const GeneratedPublicContractNames = [
   "LightTickReadingAssetPage",
   "LightTickReadingAssetPageEnvelope",
   "LightTickReadingAssetSummary",
+  "LightTickReadingBackupCreate",
+  "LightTickReadingBackupDelete",
+  "LightTickReadingBackupDeleted",
+  "LightTickReadingBackupDeletedEnvelope",
+  "LightTickReadingBackupManifest",
+  "LightTickReadingBackupManifestEnvelope",
+  "LightTickReadingBackupPage",
+  "LightTickReadingBackupPageEnvelope",
+  "LightTickReadingBackupPart",
+  "LightTickReadingBackupPartEnvelope",
+  "LightTickReadingBackupPartMetadata",
+  "LightTickReadingBackupReceipt",
+  "LightTickReadingBackupReceiptEnvelope",
   "LightTickReadingCandidate",
   "LightTickReadingCandidateReference",
   "LightTickReadingCatalogEntry",

@@ -1,3 +1,4 @@
+import {PostgresReadingBackupStore} from "./postgres-reading-backup-store.ts";
 import {PostgresReadingWorkStore} from "./postgres-reading-work-store.ts";
 import {PostgresLearningModuleStore} from "./postgres-learning-module-store.ts";
 import { PostgresReadingStore } from "./postgres-reading-store.ts";
@@ -33,6 +34,7 @@ import type {
 import { ApplicationError } from "../../../shared/errors.ts";
 
 export class PostgresLightTickRepository implements LightTickRepository {
+  readonly readingBackups=new PostgresReadingBackupStore((sql,args)=>this.query(sql,args));
   readonly readingWork=new PostgresReadingWorkStore((sql,args)=>this.query(sql,args));
   readonly learningModules=new PostgresLearningModuleStore((sql,args)=>this.query(sql,args));
   readonly researchAI=new PostgresResearchAIStore((sql,args)=>this.query(sql,args));

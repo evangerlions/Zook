@@ -83,7 +83,8 @@ export function attachApplicationLightTickAnalytics(runtime: LightTickRuntime, a
 export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
   storageService: StorageService; fileStore: PersistentFileStore;
- appConfigService:VersionedAppConfigService;kvManager:KVManager;reportReadingScheduleFailure?:(failed:number)=>void;
+ appConfigService:VersionedAppConfigService;kvManager:KVManager;reportReadingBackupFailure?:(failed:number)=>void;
+  reportReadingScheduleFailure?:(failed:number)=>void;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
   input.runtime.scopePolicy = new LightTickScopePolicy(() => input.appConfigService.getRecord("lighttick", "admin.delivery_config"));
   const queue = scopeQueue(input.queue,()=>input.runtime.scopePolicy.assertFull());
@@ -110,7 +111,7 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   const ledger=new InvestmentLedgerService(input.repository,queue);
   input.runtime.investmentLedger=ledger;
   const readingWork=new ReadingWorkService(input.repository,queue);input.runtime.readingWork=readingWork;
-  const reading=new ReadingWorkRunner(readingWork,personalLlm,fetchReadingSource,authorizeOwner,scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene),input.reportReadingScheduleFailure);
+  const reading=new ReadingWorkRunner(readingWork,personalLlm,fetchReadingSource,authorizeOwner,scene=>input.appAiRoutingConfigService.resolveLightTickScene(scene),input.reportReadingScheduleFailure,input.reportReadingBackupFailure);
   const work=new LearningWorkService(new LearningRouteService(input.runtime.nativeLearning),queue);
   input.runtime.learningWork=work;
   const learning=new LearningWorkRunner(work,personalLlm,{

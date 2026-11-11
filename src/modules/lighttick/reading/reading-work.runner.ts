@@ -1,3 +1,4 @@
+import { pruneExpiredReadingBackups } from "./reading-backup-retention.ts";
 import { ReadingScheduleService } from "./reading-schedule.service.ts";
 import { validateReadingRecommendation } from "./reading-recommendation-context.ts";
 import { performReadingRecommendation } from "./reading-recommendation.runner.ts";
@@ -39,6 +40,7 @@ export class ReadingWorkRunner {
     readonly resolveScene = async (name: LightTickAiSceneName) =>
       LIGHTTICK_AI_SCENES[name],
     readonly reportScheduleFailure: (failed: number) => void = () => {},
+    readonly reportBackupFailure: (failed: number) => void = () => {},
   ) {}
   get repo() {
     return this.service.repo;
@@ -73,6 +75,15 @@ export class ReadingWorkRunner {
             );
         });
       else await this.service.dispatch(row, row.id);
+    }
+    try {
+      const retention = await pruneExpiredReadingBackups(
+        this.repo,
+        this.service.clock().toISOString(),
+      );
+      if (retention.failed) this.reportBackupFailure(retention.failed);
+    } catch {
+      this.reportBackupFailure(1);
     }
     try {
       const schedule = await new ReadingScheduleService(

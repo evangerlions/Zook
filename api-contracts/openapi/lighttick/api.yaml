@@ -9227,6 +9227,341 @@ paths:
           pattern: ^article-[a-zA-Z0-9_-]{1,120}$
           minLength: 8
           maxLength: 128
+  /api/v1/lighttick/reading/backups:
+    get:
+      operationId: listReadingBackups
+      summary: listReadingBackups
+      tags:
+      - lighttick-reading
+      description: Owner-only immutable reading backup. Includes all12 portable reading datasets and original
+        receipts, preserving exact text/nulls/raw bytes. Creation copies current facts under the owner
+        transaction; it does not replay unresolved work or overwrite account data. Original key/body replay
+        returns the original capture. Core allows capture/read/download/artifact deletion.24h lifetime,
+        two retained captures,64MiB/100000records; capacity rejects the whole capture.256KiB base64 byte
+        parts may split UTF-8, join bytes before decoding. content_sha256 covers concatenated canonical
+        NDJSON records excluding a client file header; manifest_sha256 covers canonical manifest without
+        that field. Deleted/expired artifacts cannot be downloaded; owner deletion clears all.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner backup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingBackupPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+    post:
+      operationId: createReadingBackup
+      summary: createReadingBackup
+      tags:
+      - lighttick-reading
+      description: Owner-only immutable reading backup. Includes all12 portable reading datasets and original
+        receipts, preserving exact text/nulls/raw bytes. Creation copies current facts under the owner
+        transaction; it does not replay unresolved work or overwrite account data. Original key/body replay
+        returns the original capture. Core allows capture/read/download/artifact deletion.24h lifetime,
+        two retained captures,64MiB/100000records; capacity rejects the whole capture.256KiB base64 byte
+        parts may split UTF-8, join bytes before decoding. content_sha256 covers concatenated canonical
+        NDJSON records excluding a client file header; manifest_sha256 covers canonical manifest without
+        that field. Deleted/expired artifacts cannot be downloaded; owner deletion clears all.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner backup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingBackupManifestEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingBackupCreate'
+  /api/v1/lighttick/reading/backups/{backupId}:
+    get:
+      operationId: getReadingBackup
+      summary: getReadingBackup
+      tags:
+      - lighttick-reading
+      description: Owner-only immutable reading backup. Includes all12 portable reading datasets and original
+        receipts, preserving exact text/nulls/raw bytes. Creation copies current facts under the owner
+        transaction; it does not replay unresolved work or overwrite account data. Original key/body replay
+        returns the original capture. Core allows capture/read/download/artifact deletion.24h lifetime,
+        two retained captures,64MiB/100000records; capacity rejects the whole capture.256KiB base64 byte
+        parts may split UTF-8, join bytes before decoding. content_sha256 covers concatenated canonical
+        NDJSON records excluding a client file header; manifest_sha256 covers canonical manifest without
+        that field. Deleted/expired artifacts cannot be downloaded; owner deletion clears all.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner backup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingBackupManifestEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: backupId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^readbackup-[a-f0-9]{40}$
+  /api/v1/lighttick/reading/backups/{backupId}/parts/{partIndex}:
+    get:
+      operationId: getReadingBackupPart
+      summary: getReadingBackupPart
+      tags:
+      - lighttick-reading
+      description: Owner-only immutable reading backup. Includes all12 portable reading datasets and original
+        receipts, preserving exact text/nulls/raw bytes. Creation copies current facts under the owner
+        transaction; it does not replay unresolved work or overwrite account data. Original key/body replay
+        returns the original capture. Core allows capture/read/download/artifact deletion.24h lifetime,
+        two retained captures,64MiB/100000records; capacity rejects the whole capture.256KiB base64 byte
+        parts may split UTF-8, join bytes before decoding. content_sha256 covers concatenated canonical
+        NDJSON records excluding a client file header; manifest_sha256 covers canonical manifest without
+        that field. Deleted/expired artifacts cannot be downloaded; owner deletion clears all.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner backup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingBackupPartEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: backupId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^readbackup-[a-f0-9]{40}$
+      - name: partIndex
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 255
+  /api/v1/lighttick/reading/backups/{backupId}/delete:
+    post:
+      operationId: deleteReadingBackup
+      summary: deleteReadingBackup
+      tags:
+      - lighttick-reading
+      description: Owner-only immutable reading backup. Includes all12 portable reading datasets and original
+        receipts, preserving exact text/nulls/raw bytes. Creation copies current facts under the owner
+        transaction; it does not replay unresolved work or overwrite account data. Original key/body replay
+        returns the original capture. Core allows capture/read/download/artifact deletion.24h lifetime,
+        two retained captures,64MiB/100000records; capacity rejects the whole capture.256KiB base64 byte
+        parts may split UTF-8, join bytes before decoding. content_sha256 covers concatenated canonical
+        NDJSON records excluding a client file header; manifest_sha256 covers canonical manifest without
+        that field. Deleted/expired artifacts cannot be downloaded; owner deletion clears all.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner backup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingBackupDeletedEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: backupId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^readbackup-[a-f0-9]{40}$
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickReadingBackupDelete'
+  /api/v1/lighttick/reading/backup-receipts/{requestKey}:
+    get:
+      operationId: getReadingBackupReceipt
+      summary: getReadingBackupReceipt
+      tags:
+      - lighttick-reading
+      description: Owner-only immutable reading backup. Includes all12 portable reading datasets and original
+        receipts, preserving exact text/nulls/raw bytes. Creation copies current facts under the owner
+        transaction; it does not replay unresolved work or overwrite account data. Original key/body replay
+        returns the original capture. Core allows capture/read/download/artifact deletion.24h lifetime,
+        two retained captures,64MiB/100000records; capacity rejects the whole capture.256KiB base64 byte
+        parts may split UTF-8, join bytes before decoding. content_sha256 covers concatenated canonical
+        NDJSON records excluding a client file header; manifest_sha256 covers canonical manifest without
+        that field. Deleted/expired artifacts cannot be downloaded; owner deletion clears all.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Owner backup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickReadingBackupReceiptEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '405':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '410':
+          $ref: '#/components/responses/LightTickError'
+        '413':
+          $ref: '#/components/responses/LightTickError'
+        '422':
+          $ref: '#/components/responses/LightTickError'
+        '429':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: requestKey
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
 components:
   securitySchemes:
     bearerAuth:
@@ -25090,6 +25425,316 @@ components:
           maxLength: 1000
         data:
           $ref: '#/components/schemas/LightTickReadingCatalogPage'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingBackupPartMetadata:
+      type: object
+      additionalProperties: false
+      required:
+      - index
+      - byte_length
+      - sha256
+      properties:
+        index: &id027
+          type: integer
+          minimum: 0
+          maximum: 255
+        byte_length: &id028
+          type: integer
+          minimum: 1
+          maximum: 262144
+        sha256: &id029
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    LightTickReadingBackupPart:
+      type: object
+      additionalProperties: false
+      required:
+      - index
+      - byte_length
+      - sha256
+      - data_base64
+      properties:
+        index: *id027
+        byte_length: *id028
+        sha256: *id029
+        data_base64:
+          type: string
+          maxLength: 349528
+          pattern: ^[A-Za-z0-9+/]*={0,2}$
+    LightTickReadingBackupManifest:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - revision
+      - format
+      - owner
+      - created_at
+      - expires_at
+      - byte_length
+      - record_count
+      - counts
+      - parts
+      - content_sha256
+      - manifest_sha256
+      properties:
+        id: &id030
+          type: string
+          pattern: ^readbackup-[a-f0-9]{40}$
+        revision:
+          type: integer
+          const: 1
+        format:
+          type: string
+          const: lighttick-reading-ndjson-v2
+        owner:
+          type: object
+          additionalProperties: false
+          required:
+          - app_id
+          - user_id
+          properties:
+            app_id:
+              type: string
+              const: lighttick
+            user_id:
+              type: string
+              minLength: 1
+              maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        byte_length:
+          type: integer
+          minimum: 0
+          maximum: 67108864
+        record_count:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        counts:
+          type: object
+          additionalProperties: false
+          required:
+          - articles
+          - article_versions
+          - vocabulary
+          - vocabulary_reviews
+          - sources
+          - source_versions
+          - work
+          - work_assets
+          - preferences
+          - preference_versions
+          - schedule
+          - receipts
+          properties:
+            articles:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            article_versions:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            vocabulary:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            vocabulary_reviews:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            sources:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            source_versions:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            work:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            work_assets:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            preferences:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            preference_versions:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            schedule:
+              type: integer
+              minimum: 0
+              maximum: 100000
+            receipts:
+              type: integer
+              minimum: 0
+              maximum: 100000
+        parts:
+          type: array
+          maxItems: 256
+          items:
+            $ref: '#/components/schemas/LightTickReadingBackupPartMetadata'
+        content_sha256: *id029
+        manifest_sha256: *id029
+    LightTickReadingBackupCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - format
+      properties:
+        format:
+          type: string
+          const: lighttick-reading-ndjson-v2
+    LightTickReadingBackupDelete:
+      type: object
+      additionalProperties: false
+      required:
+      - base_revision
+      properties:
+        base_revision:
+          type: integer
+          const: 1
+    LightTickReadingBackupDeleted:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - deleted
+      properties:
+        id: *id030
+        deleted:
+          type: boolean
+          const: true
+    LightTickReadingBackupPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/LightTickReadingBackupManifest'
+    LightTickReadingBackupReceipt:
+      oneOf:
+      - $ref: '#/components/schemas/LightTickReadingBackupManifest'
+      - $ref: '#/components/schemas/LightTickReadingBackupDeleted'
+    LightTickReadingBackupManifestEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingBackupManifest'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingBackupPartEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingBackupPart'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingBackupDeletedEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingBackupDeleted'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingBackupPageEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingBackupPage'
+        requestId:
+          type: string
+          maxLength: 128
+    LightTickReadingBackupReceiptEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+          maxLength: 1000
+        data:
+          $ref: '#/components/schemas/LightTickReadingBackupReceipt'
         requestId:
           type: string
           maxLength: 128

@@ -23,6 +23,7 @@ export function restrictedRequest(r: Pick<HttpRequest, "path" | "method">): bool
   if (["GET", "HEAD", "OPTIONS"].includes(r.method)) return false;
   const p = r.path.replace(/^\/api\/v1\/lighttick\//, "");
   if (r.method === "POST" && /^(investments\/(work|market\/work|research-ai|screening\/runs|observations\/work|backtests|accounts\/[^/]+\/portfolio\/work)|learning\/work|reading\/work|ai\/model-settings\/tests|account\/github\/tests)\/[^/]+\/cancel$/.test(p)) return false;
+  if(r.method==="POST"&&(p==="reading/backups"||/^reading\/backups\/readbackup-[a-f0-9]{40}\/delete$/.test(p)))return false;
   if(r.method==="POST"&&p==="reading/preferences/disable")return false;
   if(r.method==="POST"&&/^reading\/schedule\/\d{4}-\d\d-\d\d\/stop$/.test(p))return false;
   if (r.method === "POST" && /^investments\/observations\/monitors\/[^/]+\/stop$/.test(p)) return false;

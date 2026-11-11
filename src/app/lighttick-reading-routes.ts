@@ -1,3 +1,4 @@
+import { handleReadingBackupRequest } from "./lighttick-reading-backup-routes.ts";
 import { ReadingScheduleService } from "../modules/lighttick/reading/reading-schedule.service.ts";
 import { ReadingRecommendationService } from "../modules/lighttick/reading/reading-recommendation.service.ts";
 import { ReadingPreferencesService } from "../modules/lighttick/reading/reading-preferences.service.ts";
@@ -22,6 +23,12 @@ export async function handleReadingRequest(
   if (r.path !== root && !r.path.startsWith(root + "/")) return;
   const service = new ReadingService(repo, authorize),
     part = r.path.slice(root.length);
+  if (
+    part === "/backups" ||
+    part.startsWith("/backups/") ||
+    part.startsWith("/backup-receipts/")
+  )
+    return handleReadingBackupRequest(repo, owner, r, authorize, part);
   if (
     [
       "/recommendation-scope",
